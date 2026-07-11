@@ -5,6 +5,10 @@ import android.app.Activity;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.webkit.PermissionRequest;
+import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -17,6 +21,7 @@ public class MainActivity extends Activity {
 
     private static final String HOME = "https://elka-kvest-2026.ru/";
     private WebView web;
+    private PermissionRequest pendingRequest;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -45,9 +50,32 @@ public class MainActivity extends Activity {
             }
         });
 
+        // камера для встроенного QR-сканера (getUserMedia внутри WebView)
+        web.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public void onPermissionRequest(PermissionRequest request) {
+                if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.CAMERA}, 1);
+                    pendingRequest = request;
+                    return;
+                }
+                request.grant(request.getResources());
+            }
+        });
+
         // диплинк: QR оплаты отсканирован камерой → приложение открывает нужный экран
         Uri deep = getIntent().getData();
         web.loadUrl(deep != null ? deep.toString() : HOME);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
+        super.onRequestPermissionsResult(code, perms, res);
+        if (pendingRequest != null) {
+            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) pendingRequest.grant(pendingRequest.getResources());
+            else pendingRequest.deny();
+            pendingRequest = null;
+        }
     }
 
     @Override
