@@ -1,0 +1,10 @@
+node_modules/
+*.tar.gz
+client/sc_*.png
+client/live_*.png
+client/fin_*.png
+client/ns_*.png
+client/nv_*.png
+client/new_*.png
+client/link_screen.png
+client/admin.png
