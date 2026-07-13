@@ -52,6 +52,10 @@ if (page === 'index.html' || page === '') {
   });
   const add = document.querySelector('.add');   // «Пополнить» → зарабатывай заданиями
   if (add) add.onclick = () => location.href = 'quests.html';
+  api('/api/surprises').then((sp) => {   // есть тайные подарки → подсветить ссылку
+    if (Array.isArray(sp) && sp.length) { const l = document.getElementById('spLink');
+      if (l) { const n = sp.filter((x) => !x.revealed).length; l.textContent = `🎁 Шишки-сюрпризы${n ? ' (' + n + ')' : ''} →`; l.style.display = 'inline-block'; } }
+  });
   const qrBtn = document.getElementById('qrBtn');   // QR-касса предпринимателя
   const drawQr = () => {
     const amt = parseInt(document.getElementById('qrAmt').value, 10);
@@ -204,6 +208,7 @@ if (page === 'transfers.html') {
       document.getElementById('friendList').innerHTML =
         `<div class="friend sel" style="flex:none;width:100%;padding:12px"><span style="font-size:15px">Платишь: ${r.name}</span></div>`;
       const cards = document.querySelector('.cards'); if (cards) cards.style.display = 'none';   // открытки — только для подарков
+      const anonRow = document.getElementById('anonRow'); if (anonRow) anonRow.style.display = 'none';   // тайно — только для подарков
       const fixedAmt = parseInt(new URLSearchParams(location.search).get('amt'), 10);
       if (fixedAmt > 1) {   // продавец назначил цену — это счёт, сумма зафиксирована
         qrFixedAmt = fixedAmt;
@@ -225,16 +230,26 @@ if (page === 'transfers.html') {
     document.querySelectorAll('.apick .ap').forEach((x) => x.classList.remove('sel')); a.classList.add('sel'); giftAmount = +a.dataset.a; });
   document.querySelectorAll('.postcards .pc').forEach((p) => p.onclick = () => {
     document.querySelectorAll('.postcards .pc').forEach((x) => x.classList.remove('sel')); p.classList.add('sel'); });
+  const anon = document.getElementById('anon');
+  if (anon) anon.onchange = () => {   // тайный подарок — без открытки (это сюрприз)
+    const cards = document.querySelector('.cards'); if (cards) cards.style.display = anon.checked ? 'none' : '';
+    const btn2 = document.querySelector('.btn-lg'); if (btn2 && !qrRecipient) btn2.textContent = anon.checked ? 'Отправить тайно' : 'Отправить подарок';
+  };
   const btn = document.querySelector('.btn-lg');
   if (btn) btn.onclick = async () => {
     const custom = parseInt(document.getElementById('payAmt')?.value, 10);
+    const isAnon = document.getElementById('anon')?.checked;
     const r = qrRecipient
       ? await api('/api/pay', { toCode: qrRecipient, amount: qrFixedAmt || (custom > 0 ? custom : giftAmount) })
-      : await api('/api/transfer', { to: selFriend, amount: giftAmount });
+      : isAnon
+        ? await api('/api/surprise', { to: selFriend, amount: giftAmount })
+        : await api('/api/transfer', { to: selFriend, amount: giftAmount });
     const n = document.getElementById('note'); if (!n) return;
     n.style.display = 'block';
     if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { n.textContent = qrRecipient ? `Оплачено! ${r.to} получил шишки. Осталось ` + r.balance : `Подарок ${giftAmount} отправлен! Осталось ` + r.balance; n.style.color = '#5f8e37'; refreshBalance(); }
+    else { n.textContent = qrRecipient ? `Оплачено! ${r.to} получил шишки. Осталось ` + r.balance
+      : isAnon ? `Тайный подарок отправлен! Друг не узнает кто — если не расследует. Осталось ` + r.balance
+      : `Подарок ${giftAmount} отправлен! Осталось ` + r.balance; n.style.color = '#5f8e37'; refreshBalance(); }
   };
 }
 
@@ -634,6 +649,34 @@ if (page === 'album.html') {
     more.onclick = renderChunk;
     renderChunk();
   });
+}
+
+// ── Шишки-сюрпризы (анонимные подарки + расследование) ──
+if (page === 'surprises.html') {
+  const note = (t, ok) => { const n = document.getElementById('note'); n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; };
+  async function loadSurprises() {
+    const list = await api('/api/surprises');
+    const c = document.getElementById('surpriseList'); c.innerHTML = '';
+    if (list.error) return note(list.error);
+    if (!list.length) { c.innerHTML = '<div style="text-align:center;padding:10px"><span class="on-art" style="color:#8a7358;font-weight:700">Пока тайных подарков нет</span></div>'; return; }
+    for (const s of list) {
+      const when = new Date(s.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      const el = document.createElement('div'); el.className = 'card sp';
+      el.innerHTML = `<img src="assets/coins.webp">
+        <div class="mid"><div class="nm">${s.revealed ? 'Это был(а): ' + s.sender : 'Кто-то подарил тебе шишки!'}</div>
+          <div class="k">${when}</div></div>
+        <div class="amt">+${s.amount}</div>` +
+        (s.revealed ? '' : '<button class="btn btn-sm inv">Расследовать · 1</button>');
+      const inv = el.querySelector('.inv');
+      if (inv) inv.onclick = async () => {
+        const r = await api('/api/surprise/investigate', { id: s.id });
+        if (r.error) note(r.error);
+        else { note(`Тайну раскрыл! Это был(а): ${r.sender}`, 1); refreshBalance(); loadSurprises(); }
+      };
+      c.appendChild(el);
+    }
+  }
+  loadSurprises();
 }
 
 // ── Новости леса (события Банка и семьи) ──

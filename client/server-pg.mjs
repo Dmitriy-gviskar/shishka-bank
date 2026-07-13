@@ -64,6 +64,7 @@ const ACH_DESC = {
   rev: ['Выручи в лавке {n} шишек', 'Выручи в лавке {n} шишек'],
   shopper: ['Купи что-нибудь в лавке друга', 'Купи {n} товаров в лавках друзей'],
   mail: ['Отправь первое письмо', 'Отправь {n} писем'],
+  detective: ['Раскрой тайну анонимной шишки', 'Раскрой {n} анонимных сюрпризов'],
 };
 const achDesc = (track, n) => { const d = ACH_DESC[track]; return d ? (n === 1 ? d[0] : d[1]).replace(/\{n\}/g, n) : null; };
 // проверка владельца/круга — против IDOR (id из тела не должен пускать в чужое)
@@ -135,6 +136,26 @@ const api = {
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'не получилось' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
     return { ok: true, balance: w.balance };
+  },
+
+  'POST /api/surprise': async (b, ctx) => {   // анонимный подарок «Шишка-сюрприз»
+    await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [b.to, ctx.circle], 'нет такого друга');
+    if (b.to === ctx.child) throw { code: 400, msg: 'себе нельзя' };
+    try { await rpc('transfer_surprise', [ctx.child, b.to, parseInt(b.amount, 10)]); }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'не получилось' }; }
+    const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    return { ok: true, balance: w.balance };
+  },
+  'GET /api/surprises': (b, ctx) => q(`select t.id, t.amount, t.revealed, t.created_at at,
+      case when t.revealed then u.name else null end as sender
+    from transactions t left join users u on u.id=t.from_user
+    where t.to_user=$1 and t.is_anonymous order by t.created_at desc`, [ctx.child]),
+  'POST /api/surprise/investigate': async (b, ctx) => {
+    let name;
+    try { name = (await one('select investigate_surprise($1,$2) as sender', [ctx.child, b.id])).sender; }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'нужна 1 шишка на расследование' : 'нет такого сюрприза' }; }
+    const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    return { ok: true, sender: name, balance: w.balance };
   },
 
   'POST /api/pay': async (b, ctx) => {   // ОПЛАТА (не подарок): pay_cones, комиссия 1 шишка сгорает в кассу Банка
