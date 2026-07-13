@@ -1,0 +1,1794 @@
+{
+  "currency": "шишки",
+  "note": "Каталог наполнения Шишка Банк. gifts -> Магазин впечатлений (призы от родителей, B2P). tasks -> Лесные задания (поручения, награда в шишках). price/reward в шишках. daily=повторяемое ежедневно, photo=нужен фотоотчёт.",
+  "gifts": [
+    {
+      "id": "g01",
+      "title": "Мультик +1 час",
+      "price": 30,
+      "category": "экран"
+    },
+    {
+      "id": "g02",
+      "title": "Телефон +30 минут",
+      "price": 40,
+      "category": "экран"
+    },
+    {
+      "id": "g03",
+      "title": "Порулить музыкой в машине",
+      "price": 25,
+      "category": "мелочь"
+    },
+    {
+      "id": "g04",
+      "title": "Мороженое или десерт",
+      "price": 35,
+      "category": "еда"
+    },
+    {
+      "id": "g05",
+      "title": "Выбрать фильм на вечер",
+      "price": 40,
+      "category": "выбор"
+    },
+    {
+      "id": "g06",
+      "title": "Настольная игра всей семьёй",
+      "price": 45,
+      "category": "время"
+    },
+    {
+      "id": "g07",
+      "title": "Лечь спать на 30 мин позже",
+      "price": 45,
+      "category": "привилегия"
+    },
+    {
+      "id": "g08",
+      "title": "Выбор ужина",
+      "price": 50,
+      "category": "еда"
+    },
+    {
+      "id": "g09",
+      "title": "Завтрак в постель",
+      "price": 55,
+      "category": "еда"
+    },
+    {
+      "id": "g10",
+      "title": "Игра с папой в приставку 1 ч",
+      "price": 60,
+      "category": "время"
+    },
+    {
+      "id": "g11",
+      "title": "День без уборки",
+      "price": 70,
+      "category": "привилегия"
+    },
+    {
+      "id": "g12",
+      "title": "Папа строит шалаш",
+      "price": 80,
+      "category": "приключение"
+    },
+    {
+      "id": "g13",
+      "title": "Пицца на ужин",
+      "price": 90,
+      "category": "еда"
+    },
+    {
+      "id": "g14",
+      "title": "Новая книжка",
+      "price": 100,
+      "category": "покупка"
+    },
+    {
+      "id": "g15",
+      "title": "Маленькая игрушка",
+      "price": 110,
+      "category": "покупка"
+    },
+    {
+      "id": "g16",
+      "title": "Поход в кино",
+      "price": 120,
+      "category": "приключение"
+    },
+    {
+      "id": "g17",
+      "title": "Друг в гости с ночёвкой",
+      "price": 130,
+      "category": "приключение"
+    },
+    {
+      "id": "g18",
+      "title": "Поход в парк аттракционов",
+      "price": 150,
+      "category": "приключение"
+    },
+    {
+      "id": "g19",
+      "title": "Поездка в зоопарк",
+      "price": 160,
+      "category": "приключение"
+    },
+    {
+      "id": "g20",
+      "title": "День «я главный» (мой план дня)",
+      "price": 200,
+      "category": "привилегия"
+    },
+    {
+      "id": "g21",
+      "title": "Выбрать мультик всей семье",
+      "price": 40,
+      "category": "выбор"
+    },
+    {
+      "id": "g22",
+      "title": "Дополнительная сказка на ночь",
+      "price": 20,
+      "category": "время"
+    },
+    {
+      "id": "g23",
+      "title": "Порисовать с мамой",
+      "price": 35,
+      "category": "время"
+    },
+    {
+      "id": "g24",
+      "title": "Настольный вечер с друзьями",
+      "price": 70,
+      "category": "время"
+    },
+    {
+      "id": "g25",
+      "title": "Купить любимый снек",
+      "price": 30,
+      "category": "еда"
+    },
+    {
+      "id": "g26",
+      "title": "Мороженое в кафе",
+      "price": 90,
+      "category": "приключение"
+    },
+    {
+      "id": "g27",
+      "title": "Подольше на площадке",
+      "price": 40,
+      "category": "привилегия"
+    },
+    {
+      "id": "g28",
+      "title": "Выбрать наклейки",
+      "price": 25,
+      "category": "покупка"
+    },
+    {
+      "id": "g29",
+      "title": "Праздник «День рождения дерева»",
+      "price": 100,
+      "category": "привилегия"
+    },
+    {
+      "id": "g30",
+      "title": "Мастер-класс или кружок",
+      "price": 130,
+      "category": "приключение"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t01",
+      "title": "Заправить кровать",
+      "reward": 5,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t02",
+      "title": "Почистить зубы вечером",
+      "reward": 4,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t03",
+      "title": "Покормить питомца",
+      "reward": 6,
+      "category": "забота",
+      "daily": true
+    },
+    {
+      "id": "t04",
+      "title": "Накрыть на стол",
+      "reward": 6,
+      "category": "дом"
+    },
+    {
+      "id": "t05",
+      "title": "Вынести мусор",
+      "reward": 8,
+      "category": "дом"
+    },
+    {
+      "id": "t06",
+      "title": "Полить цветы",
+      "reward": 8,
+      "category": "дом"
+    },
+    {
+      "id": "t07",
+      "title": "Зарядка утром",
+      "reward": 8,
+      "category": "здоровье"
+    },
+    {
+      "id": "t08",
+      "title": "Собрать портфель с вечера",
+      "reward": 8,
+      "category": "самостоятельность"
+    },
+    {
+      "id": "t09",
+      "title": "Разложить вещи по местам",
+      "reward": 10,
+      "category": "дом"
+    },
+    {
+      "id": "t10",
+      "title": "Помочь маме с готовкой",
+      "reward": 10,
+      "category": "забота"
+    },
+    {
+      "id": "t11",
+      "title": "Помыть посуду",
+      "reward": 12,
+      "category": "дом"
+    },
+    {
+      "id": "t12",
+      "title": "Нарисовать рисунок",
+      "reward": 12,
+      "category": "развитие",
+      "photo": true
+    },
+    {
+      "id": "t13",
+      "title": "Прогулка на улице 1 час",
+      "reward": 12,
+      "category": "здоровье"
+    },
+    {
+      "id": "t14",
+      "title": "Погулять с собакой",
+      "reward": 14,
+      "category": "забота"
+    },
+    {
+      "id": "t15",
+      "title": "Убрать комнату",
+      "reward": 15,
+      "category": "дом",
+      "photo": true
+    },
+    {
+      "id": "t16",
+      "title": "Пропылесосить",
+      "reward": 15,
+      "category": "дом"
+    },
+    {
+      "id": "t17",
+      "title": "Поиграть с младшим",
+      "reward": 15,
+      "category": "забота"
+    },
+    {
+      "id": "t18",
+      "title": "День без сладкого",
+      "reward": 15,
+      "category": "здоровье"
+    },
+    {
+      "id": "t19",
+      "title": "Собрать шишки и листья в лесу",
+      "reward": 15,
+      "category": "приключение",
+      "photo": true
+    },
+    {
+      "id": "t20",
+      "title": "Прибрать в шкафу",
+      "reward": 16,
+      "category": "дом",
+      "photo": true
+    },
+    {
+      "id": "t21",
+      "title": "Порешать задачки",
+      "reward": 18,
+      "category": "развитие"
+    },
+    {
+      "id": "t22",
+      "title": "Помочь с покупками в магазине",
+      "reward": 18,
+      "category": "самостоятельность"
+    },
+    {
+      "id": "t23",
+      "title": "Доброе дело и рассказать о нём",
+      "reward": 20,
+      "category": "забота"
+    },
+    {
+      "id": "t24",
+      "title": "Почитать книгу 20 минут",
+      "reward": 20,
+      "category": "развитие"
+    },
+    {
+      "id": "t25",
+      "title": "Приготовить простой завтрак сам",
+      "reward": 20,
+      "category": "самостоятельность",
+      "photo": true
+    },
+    {
+      "id": "t26",
+      "title": "Написать письмо бабушке",
+      "reward": 22,
+      "category": "развитие"
+    },
+    {
+      "id": "t27",
+      "title": "Помочь бабушке или соседке",
+      "reward": 25,
+      "category": "забота"
+    },
+    {
+      "id": "t28",
+      "title": "Сделать уроки без напоминаний",
+      "reward": 25,
+      "category": "развитие"
+    },
+    {
+      "id": "t29",
+      "title": "Выучить стихотворение",
+      "reward": 30,
+      "category": "развитие"
+    },
+    {
+      "id": "t30",
+      "title": "Убрать во дворе или в гараже",
+      "reward": 28,
+      "category": "дом",
+      "photo": true
+    },
+    {
+      "id": "t31",
+      "title": "Полить огород",
+      "reward": 10,
+      "category": "дом"
+    },
+    {
+      "id": "t32",
+      "title": "Помыть пол",
+      "reward": 14,
+      "category": "дом"
+    },
+    {
+      "id": "t33",
+      "title": "Протереть пыль",
+      "reward": 10,
+      "category": "дом"
+    },
+    {
+      "id": "t34",
+      "title": "Собрать игрушки",
+      "reward": 6,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t35",
+      "title": "Полить комнатные растения",
+      "reward": 6,
+      "category": "дом"
+    },
+    {
+      "id": "t36",
+      "title": "Разобрать рюкзак",
+      "reward": 6,
+      "category": "самостоятельность"
+    },
+    {
+      "id": "t37",
+      "title": "Написать список покупок",
+      "reward": 8,
+      "category": "самостоятельность"
+    },
+    {
+      "id": "t38",
+      "title": "Приготовить салат",
+      "reward": 18,
+      "category": "самостоятельность",
+      "photo": true
+    },
+    {
+      "id": "t39",
+      "title": "Позаниматься спортом",
+      "reward": 10,
+      "category": "здоровье"
+    },
+    {
+      "id": "t40",
+      "title": "Выпить воды за день",
+      "reward": 5,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t41",
+      "title": "Лечь спать без капризов",
+      "reward": 6,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t42",
+      "title": "Выучить таблицу умножения",
+      "reward": 30,
+      "category": "развитие"
+    },
+    {
+      "id": "t43",
+      "title": "Прочитать главу книги",
+      "reward": 18,
+      "category": "развитие"
+    },
+    {
+      "id": "t44",
+      "title": "Сделать поделку",
+      "reward": 15,
+      "category": "развитие",
+      "photo": true
+    },
+    {
+      "id": "t45",
+      "title": "Порепетировать музыку",
+      "reward": 16,
+      "category": "развитие"
+    },
+    {
+      "id": "t46",
+      "title": "Помочь папе в гараже",
+      "reward": 20,
+      "category": "дом",
+      "photo": true
+    },
+    {
+      "id": "t47",
+      "title": "Убрать за питомцем",
+      "reward": 8,
+      "category": "забота"
+    },
+    {
+      "id": "t48",
+      "title": "Помочь младшему с уроками",
+      "reward": 18,
+      "category": "забота"
+    },
+    {
+      "id": "t49",
+      "title": "Поблагодарить трёх человек",
+      "reward": 10,
+      "category": "забота"
+    },
+    {
+      "id": "t50",
+      "title": "Помочь накрыть праздничный стол",
+      "reward": 12,
+      "category": "забота"
+    }
+  ],
+  "skins": [
+    {
+      "id": "sk_base",
+      "title": "Обычное дерево",
+      "price": 1,
+      "rarity": "base",
+      "asset": "base"
+    },
+    {
+      "id": "sk_autumn",
+      "title": "Осеннее дерево",
+      "price": 30,
+      "rarity": "seasonal",
+      "season": "autumn",
+      "asset": "skin_autumn"
+    },
+    {
+      "id": "sk_winter",
+      "title": "Зимнее дерево",
+      "price": 30,
+      "rarity": "seasonal",
+      "season": "winter",
+      "asset": "skin_winter"
+    },
+    {
+      "id": "sk_gold",
+      "title": "Золотое дерево",
+      "price": 100,
+      "rarity": "rare",
+      "asset": "skin_gold"
+    },
+    {
+      "id": "sk_glow",
+      "title": "Светящееся дерево",
+      "price": 150,
+      "rarity": "rare",
+      "asset": "skin_glow"
+    },
+    {
+      "id": "sk_rainbow",
+      "title": "Радужное дерево",
+      "price": 300,
+      "rarity": "epic",
+      "asset": "skin_rainbow"
+    }
+  ],
+  "horoscopes": [
+    "Сегодня звёзды советуют сделать доброе дело — оно вернётся теплом.",
+    "Хороший день, чтобы поделиться шишкой с другом.",
+    "Лес шепчет: самое время отложить немного в Дупло.",
+    "Сегодня удача любит трудолюбивых — выполни задание.",
+    "Звёзды сулят радостную встречу.",
+    "Маленький добрый поступок сделает этот день ярче.",
+    "Сегодня твоё дерево растёт быстрее — не забудь его навестить.",
+    "День загадок: может, раскроешь тайну анонимной шишки?",
+    "Хороший день для новой идеи в твоей лавке.",
+    "Звёзды советуют сказать спасибо тому, кто рядом.",
+    "Сегодня хороший день, чтобы навести порядок в своей лавке.",
+    "Звёзды советуют открыть новое Дупло.",
+    "Сегодня удача любит смелых — попробуй новое задание.",
+    "Лес шепчет: поделись улыбкой с тем, кто загрустил.",
+    "Хороший день, чтобы поблагодарить родителей.",
+    "Сегодня твои шишки особенно тёплые — потрать их с умом.",
+    "Звёзды сулят приятный сюрприз.",
+    "Сегодня стоит помочь тому, кто младше тебя.",
+    "Лес советует больше гулять на свежем воздухе.",
+    "Хороший день, чтобы начать копить на большую мечту."
+  ],
+  "achievements": [
+    {
+      "code": "work_1",
+      "title": "Первый шаг",
+      "desc": "Первый шаг — достигни 1 (tasks_done)",
+      "metric": "tasks_done",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "work",
+      "level": 1
+    },
+    {
+      "code": "work_2",
+      "title": "Помощник",
+      "desc": "Помощник — достигни 5 (tasks_done)",
+      "metric": "tasks_done",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 0,
+      "track": "work",
+      "level": 2
+    },
+    {
+      "code": "work_3",
+      "title": "Работяга",
+      "desc": "Работяга — достигни 10 (tasks_done)",
+      "metric": "tasks_done",
+      "threshold": 10,
+      "tier": 3,
+      "reward": 0,
+      "track": "work",
+      "level": 3
+    },
+    {
+      "code": "work_4",
+      "title": "Умелец",
+      "desc": "Умелец — достигни 25 (tasks_done)",
+      "metric": "tasks_done",
+      "threshold": 25,
+      "tier": 3,
+      "reward": 10,
+      "track": "work",
+      "level": 4
+    },
+    {
+      "code": "work_5",
+      "title": "Мастер дел",
+      "desc": "Мастер дел — достигни 50 (tasks_done)",
+      "metric": "tasks_done",
+      "threshold": 50,
+      "tier": 3,
+      "reward": 15,
+      "track": "work",
+      "level": 5
+    },
+    {
+      "code": "work_6",
+      "title": "Герой труда",
+      "desc": "Герой труда — достигни 100 (tasks_done)",
+      "metric": "tasks_done",
+      "threshold": 100,
+      "tier": 3,
+      "reward": 25,
+      "track": "work",
+      "level": 6
+    },
+    {
+      "code": "work_7",
+      "title": "Легенда труда",
+      "desc": "Легенда труда — достигни 250 (tasks_done)",
+      "metric": "tasks_done",
+      "threshold": 250,
+      "tier": 3,
+      "reward": 50,
+      "track": "work",
+      "level": 7
+    },
+    {
+      "code": "earn_1",
+      "title": "Первые шишки",
+      "desc": "Первые шишки — достигни 50 (cones_earned)",
+      "metric": "cones_earned",
+      "threshold": 50,
+      "tier": 1,
+      "reward": 0,
+      "track": "earn",
+      "level": 1
+    },
+    {
+      "code": "earn_2",
+      "title": "Запасливый",
+      "desc": "Запасливый — достигни 100 (cones_earned)",
+      "metric": "cones_earned",
+      "threshold": 100,
+      "tier": 2,
+      "reward": 0,
+      "track": "earn",
+      "level": 2
+    },
+    {
+      "code": "earn_3",
+      "title": "Копилка",
+      "desc": "Копилка — достигни 250 (cones_earned)",
+      "metric": "cones_earned",
+      "threshold": 250,
+      "tier": 3,
+      "reward": 10,
+      "track": "earn",
+      "level": 3
+    },
+    {
+      "code": "earn_4",
+      "title": "Богатей леса",
+      "desc": "Богатей леса — достигни 500 (cones_earned)",
+      "metric": "cones_earned",
+      "threshold": 500,
+      "tier": 3,
+      "reward": 15,
+      "track": "earn",
+      "level": 4
+    },
+    {
+      "code": "earn_5",
+      "title": "Шишкомагнат",
+      "desc": "Шишкомагнат — достигни 1000 (cones_earned)",
+      "metric": "cones_earned",
+      "threshold": 1000,
+      "tier": 3,
+      "reward": 25,
+      "track": "earn",
+      "level": 5
+    },
+    {
+      "code": "earn_6",
+      "title": "Шишкобарон",
+      "desc": "Шишкобарон — достигни 2500 (cones_earned)",
+      "metric": "cones_earned",
+      "threshold": 2500,
+      "tier": 3,
+      "reward": 50,
+      "track": "earn",
+      "level": 6
+    },
+    {
+      "code": "streak_1",
+      "title": "Росток привычки",
+      "desc": "Росток привычки — достигни 3 (longest_streak)",
+      "metric": "longest_streak",
+      "threshold": 3,
+      "tier": 1,
+      "reward": 0,
+      "track": "streak",
+      "level": 1
+    },
+    {
+      "code": "streak_2",
+      "title": "Неделя в лесу",
+      "desc": "Неделя в лесу — достигни 7 (longest_streak)",
+      "metric": "longest_streak",
+      "threshold": 7,
+      "tier": 2,
+      "reward": 5,
+      "track": "streak",
+      "level": 2
+    },
+    {
+      "code": "streak_3",
+      "title": "Две недели",
+      "desc": "Две недели — достигни 14 (longest_streak)",
+      "metric": "longest_streak",
+      "threshold": 14,
+      "tier": 3,
+      "reward": 10,
+      "track": "streak",
+      "level": 3
+    },
+    {
+      "code": "streak_4",
+      "title": "Хозяин леса",
+      "desc": "Хозяин леса — достигни 30 (longest_streak)",
+      "metric": "longest_streak",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 20,
+      "track": "streak",
+      "level": 4
+    },
+    {
+      "code": "streak_5",
+      "title": "Верный лесу",
+      "desc": "Верный лесу — достигни 60 (longest_streak)",
+      "metric": "longest_streak",
+      "threshold": 60,
+      "tier": 3,
+      "reward": 35,
+      "track": "streak",
+      "level": 5
+    },
+    {
+      "code": "streak_6",
+      "title": "Легенда леса",
+      "desc": "Легенда леса — достигни 100 (longest_streak)",
+      "metric": "longest_streak",
+      "threshold": 100,
+      "tier": 3,
+      "reward": 50,
+      "track": "streak",
+      "level": 6
+    },
+    {
+      "code": "gift_1",
+      "title": "Добряк",
+      "desc": "Добряк — достигни 10 (gifts_sum)",
+      "metric": "gifts_sum",
+      "threshold": 10,
+      "tier": 1,
+      "reward": 0,
+      "track": "gift",
+      "level": 1
+    },
+    {
+      "code": "gift_2",
+      "title": "Меценат",
+      "desc": "Меценат — достигни 50 (gifts_sum)",
+      "metric": "gifts_sum",
+      "threshold": 50,
+      "tier": 2,
+      "reward": 5,
+      "track": "gift",
+      "level": 2
+    },
+    {
+      "code": "gift_3",
+      "title": "Благодетель",
+      "desc": "Благодетель — достигни 100 (gifts_sum)",
+      "metric": "gifts_sum",
+      "threshold": 100,
+      "tier": 3,
+      "reward": 10,
+      "track": "gift",
+      "level": 3
+    },
+    {
+      "code": "gift_4",
+      "title": "Великий Меценат",
+      "desc": "Великий Меценат — достигни 250 (gifts_sum)",
+      "metric": "gifts_sum",
+      "threshold": 250,
+      "tier": 3,
+      "reward": 20,
+      "track": "gift",
+      "level": 4
+    },
+    {
+      "code": "gift_5",
+      "title": "Душа леса",
+      "desc": "Душа леса — достигни 500 (gifts_sum)",
+      "metric": "gifts_sum",
+      "threshold": 500,
+      "tier": 3,
+      "reward": 40,
+      "track": "gift",
+      "level": 5
+    },
+    {
+      "code": "give_1",
+      "title": "Даритель",
+      "desc": "Даритель — достигни 1 (transfers_count)",
+      "metric": "transfers_count",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "give",
+      "level": 1
+    },
+    {
+      "code": "give_2",
+      "title": "Щедрая рука",
+      "desc": "Щедрая рука — достигни 5 (transfers_count)",
+      "metric": "transfers_count",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 0,
+      "track": "give",
+      "level": 2
+    },
+    {
+      "code": "give_3",
+      "title": "Друголюб",
+      "desc": "Друголюб — достигни 15 (transfers_count)",
+      "metric": "transfers_count",
+      "threshold": 15,
+      "tier": 3,
+      "reward": 10,
+      "track": "give",
+      "level": 3
+    },
+    {
+      "code": "give_4",
+      "title": "Верный друг",
+      "desc": "Верный друг — достигни 30 (transfers_count)",
+      "metric": "transfers_count",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 15,
+      "track": "give",
+      "level": 4
+    },
+    {
+      "code": "give_5",
+      "title": "Ангел леса",
+      "desc": "Ангел леса — достигни 60 (transfers_count)",
+      "metric": "transfers_count",
+      "threshold": 60,
+      "tier": 3,
+      "reward": 30,
+      "track": "give",
+      "level": 5
+    },
+    {
+      "code": "dep_1",
+      "title": "Осторожный",
+      "desc": "Осторожный — достигни 1 (deposits_count)",
+      "metric": "deposits_count",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "dep",
+      "level": 1
+    },
+    {
+      "code": "dep_2",
+      "title": "Копитель",
+      "desc": "Копитель — достигни 3 (deposits_count)",
+      "metric": "deposits_count",
+      "threshold": 3,
+      "tier": 2,
+      "reward": 5,
+      "track": "dep",
+      "level": 2
+    },
+    {
+      "code": "dep_3",
+      "title": "Мудрый вклад",
+      "desc": "Мудрый вклад — достигни 7 (deposits_count)",
+      "metric": "deposits_count",
+      "threshold": 7,
+      "tier": 3,
+      "reward": 15,
+      "track": "dep",
+      "level": 3
+    },
+    {
+      "code": "dep_4",
+      "title": "Дальновидный",
+      "desc": "Дальновидный — достигни 15 (deposits_count)",
+      "metric": "deposits_count",
+      "threshold": 15,
+      "tier": 3,
+      "reward": 30,
+      "track": "dep",
+      "level": 4
+    },
+    {
+      "code": "depc_1",
+      "title": "Терпеливый",
+      "desc": "Терпеливый — достигни 1 (deposits_closed)",
+      "metric": "deposits_closed",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "depc",
+      "level": 1
+    },
+    {
+      "code": "depc_2",
+      "title": "Хранитель",
+      "desc": "Хранитель — достигни 3 (deposits_closed)",
+      "metric": "deposits_closed",
+      "threshold": 3,
+      "tier": 2,
+      "reward": 10,
+      "track": "depc",
+      "level": 2
+    },
+    {
+      "code": "depc_3",
+      "title": "Страж Дупла",
+      "desc": "Страж Дупла — достигни 10 (deposits_closed)",
+      "metric": "deposits_closed",
+      "threshold": 10,
+      "tier": 3,
+      "reward": 25,
+      "track": "depc",
+      "level": 3
+    },
+    {
+      "code": "horo_1",
+      "title": "Любопытный",
+      "desc": "Любопытный — достигни 1 (horoscopes_read)",
+      "metric": "horoscopes_read",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "horo",
+      "level": 1
+    },
+    {
+      "code": "horo_2",
+      "title": "Звездочёт",
+      "desc": "Звездочёт — достигни 7 (horoscopes_read)",
+      "metric": "horoscopes_read",
+      "threshold": 7,
+      "tier": 2,
+      "reward": 5,
+      "track": "horo",
+      "level": 2
+    },
+    {
+      "code": "horo_3",
+      "title": "Астролог",
+      "desc": "Астролог — достигни 30 (horoscopes_read)",
+      "metric": "horoscopes_read",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 15,
+      "track": "horo",
+      "level": 3
+    },
+    {
+      "code": "horo_4",
+      "title": "Оракул леса",
+      "desc": "Оракул леса — достигни 100 (horoscopes_read)",
+      "metric": "horoscopes_read",
+      "threshold": 100,
+      "tier": 3,
+      "reward": 40,
+      "track": "horo",
+      "level": 4
+    },
+    {
+      "code": "skin_1",
+      "title": "Модник",
+      "desc": "Модник — достигни 1 (skins_owned)",
+      "metric": "skins_owned",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "skin",
+      "level": 1
+    },
+    {
+      "code": "skin_2",
+      "title": "Стиляга",
+      "desc": "Стиляга — достигни 3 (skins_owned)",
+      "metric": "skins_owned",
+      "threshold": 3,
+      "tier": 2,
+      "reward": 10,
+      "track": "skin",
+      "level": 2
+    },
+    {
+      "code": "skin_3",
+      "title": "Коллекционер",
+      "desc": "Коллекционер — достигни 5 (skins_owned)",
+      "metric": "skins_owned",
+      "threshold": 5,
+      "tier": 3,
+      "reward": 30,
+      "track": "skin",
+      "level": 3
+    },
+    {
+      "code": "pot_1",
+      "title": "Друг семьи",
+      "desc": "Друг семьи — достигни 1 (pot_contributions)",
+      "metric": "pot_contributions",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "pot",
+      "level": 1
+    },
+    {
+      "code": "pot_2",
+      "title": "Командный игрок",
+      "desc": "Командный игрок — достигни 5 (pot_contributions)",
+      "metric": "pot_contributions",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 10,
+      "track": "pot",
+      "level": 2
+    },
+    {
+      "code": "pot_3",
+      "title": "Опора семьи",
+      "desc": "Опора семьи — достигни 10 (pot_contributions)",
+      "metric": "pot_contributions",
+      "threshold": 10,
+      "tier": 3,
+      "reward": 25,
+      "track": "pot",
+      "level": 3
+    },
+    {
+      "code": "buy_1",
+      "title": "Первая покупка",
+      "desc": "Первая покупка — достигни 1 (purchases_count)",
+      "metric": "purchases_count",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "buy",
+      "level": 1
+    },
+    {
+      "code": "buy_2",
+      "title": "Знаток наград",
+      "desc": "Знаток наград — достигни 5 (purchases_count)",
+      "metric": "purchases_count",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 5,
+      "track": "buy",
+      "level": 2
+    },
+    {
+      "code": "buy_3",
+      "title": "Ценитель",
+      "desc": "Ценитель — достигни 15 (purchases_count)",
+      "metric": "purchases_count",
+      "threshold": 15,
+      "tier": 3,
+      "reward": 15,
+      "track": "buy",
+      "level": 3
+    },
+    {
+      "code": "buy_4",
+      "title": "Гурман впечатлений",
+      "desc": "Гурман впечатлений — достигни 30 (purchases_count)",
+      "metric": "purchases_count",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 30,
+      "track": "buy",
+      "level": 4
+    },
+    {
+      "code": "dq_1",
+      "title": "Исполнитель",
+      "desc": "Исполнитель — достигни 1 (daily_quests_done)",
+      "metric": "daily_quests_done",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "dq",
+      "level": 1
+    },
+    {
+      "code": "dq_2",
+      "title": "Прилежный",
+      "desc": "Прилежный — достигни 7 (daily_quests_done)",
+      "metric": "daily_quests_done",
+      "threshold": 7,
+      "tier": 2,
+      "reward": 5,
+      "track": "dq",
+      "level": 2
+    },
+    {
+      "code": "dq_3",
+      "title": "Квестомастер",
+      "desc": "Квестомастер — достигни 30 (daily_quests_done)",
+      "metric": "daily_quests_done",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 20,
+      "track": "dq",
+      "level": 3
+    },
+    {
+      "code": "dq_4",
+      "title": "Летописец леса",
+      "desc": "Летописец леса — достигни 100 (daily_quests_done)",
+      "metric": "daily_quests_done",
+      "threshold": 100,
+      "tier": 3,
+      "reward": 45,
+      "track": "dq",
+      "level": 4
+    },
+    {
+      "code": "hon_1",
+      "title": "Честный",
+      "desc": "Честный — достигни 5 (rep_honesty)",
+      "metric": "rep_honesty",
+      "threshold": 5,
+      "tier": 1,
+      "reward": 0,
+      "track": "hon",
+      "level": 1
+    },
+    {
+      "code": "hon_2",
+      "title": "Правдивый",
+      "desc": "Правдивый — достигни 20 (rep_honesty)",
+      "metric": "rep_honesty",
+      "threshold": 20,
+      "tier": 2,
+      "reward": 10,
+      "track": "hon",
+      "level": 2
+    },
+    {
+      "code": "hon_3",
+      "title": "Кристально чистый",
+      "desc": "Кристально чистый — достигни 50 (rep_honesty)",
+      "metric": "rep_honesty",
+      "threshold": 50,
+      "tier": 3,
+      "reward": 25,
+      "track": "hon",
+      "level": 3
+    },
+    {
+      "code": "gen_1",
+      "title": "Щедрый",
+      "desc": "Щедрый — достигни 5 (rep_generosity)",
+      "metric": "rep_generosity",
+      "threshold": 5,
+      "tier": 1,
+      "reward": 0,
+      "track": "gen",
+      "level": 1
+    },
+    {
+      "code": "gen_2",
+      "title": "Великодушный",
+      "desc": "Великодушный — достигни 20 (rep_generosity)",
+      "metric": "rep_generosity",
+      "threshold": 20,
+      "tier": 2,
+      "reward": 10,
+      "track": "gen",
+      "level": 2
+    },
+    {
+      "code": "gen_3",
+      "title": "Золотое сердце",
+      "desc": "Золотое сердце — достигни 50 (rep_generosity)",
+      "metric": "rep_generosity",
+      "threshold": 50,
+      "tier": 3,
+      "reward": 25,
+      "track": "gen",
+      "level": 3
+    },
+    {
+      "code": "rel_1",
+      "title": "Надёжный",
+      "desc": "Надёжный — достигни 5 (rep_reliability)",
+      "metric": "rep_reliability",
+      "threshold": 5,
+      "tier": 1,
+      "reward": 0,
+      "track": "rel",
+      "level": 1
+    },
+    {
+      "code": "rel_2",
+      "title": "Крепкая опора",
+      "desc": "Крепкая опора — достигни 20 (rep_reliability)",
+      "metric": "rep_reliability",
+      "threshold": 20,
+      "tier": 2,
+      "reward": 10,
+      "track": "rel",
+      "level": 2
+    },
+    {
+      "code": "rel_3",
+      "title": "Скала леса",
+      "desc": "Скала леса — достигни 50 (rep_reliability)",
+      "metric": "rep_reliability",
+      "threshold": 50,
+      "tier": 3,
+      "reward": 25,
+      "track": "rel",
+      "level": 3
+    },
+    {
+      "code": "wis_1",
+      "title": "Смышлёный",
+      "desc": "Смышлёный — достигни 5 (rep_wisdom)",
+      "metric": "rep_wisdom",
+      "threshold": 5,
+      "tier": 1,
+      "reward": 0,
+      "track": "wis",
+      "level": 1
+    },
+    {
+      "code": "wis_2",
+      "title": "Мудрец",
+      "desc": "Мудрец — достигни 20 (rep_wisdom)",
+      "metric": "rep_wisdom",
+      "threshold": 20,
+      "tier": 2,
+      "reward": 10,
+      "track": "wis",
+      "level": 2
+    },
+    {
+      "code": "wis_3",
+      "title": "Лесной шалфей",
+      "desc": "Лесной шалфей — достигни 50 (rep_wisdom)",
+      "metric": "rep_wisdom",
+      "threshold": 50,
+      "tier": 3,
+      "reward": 25,
+      "track": "wis",
+      "level": 3
+    },
+    {
+      "code": "rain_1",
+      "title": "Под дождём",
+      "desc": "Под дождём — достигни 1 (cone_rain_caught)",
+      "metric": "cone_rain_caught",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "rain",
+      "level": 1
+    },
+    {
+      "code": "rain_2",
+      "title": "Ловец шишек",
+      "desc": "Ловец шишек — достигни 10 (cone_rain_caught)",
+      "metric": "cone_rain_caught",
+      "threshold": 10,
+      "tier": 2,
+      "reward": 10,
+      "track": "rain",
+      "level": 2
+    },
+    {
+      "code": "rain_3",
+      "title": "Дождевик",
+      "desc": "Дождевик — достигни 30 (cone_rain_caught)",
+      "metric": "cone_rain_caught",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 25,
+      "track": "rain",
+      "level": 3
+    },
+    {
+      "code": "freeze_1",
+      "title": "Запасливый дождик",
+      "desc": "Запасливый дождик — достигни 1 (freezes_bought)",
+      "metric": "freezes_bought",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "freeze",
+      "level": 1
+    },
+    {
+      "code": "freeze_2",
+      "title": "Метеоролог",
+      "desc": "Метеоролог — достигни 5 (freezes_bought)",
+      "metric": "freezes_bought",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 15,
+      "track": "freeze",
+      "level": 2
+    },
+    {
+      "code": "int_1",
+      "title": "Процентщик",
+      "desc": "Процентщик — достигни 10 (interest_earned)",
+      "metric": "interest_earned",
+      "threshold": 10,
+      "tier": 1,
+      "reward": 0,
+      "track": "int",
+      "level": 1
+    },
+    {
+      "code": "int_2",
+      "title": "Рантье",
+      "desc": "Рантье — достигни 50 (interest_earned)",
+      "metric": "interest_earned",
+      "threshold": 50,
+      "tier": 2,
+      "reward": 15,
+      "track": "int",
+      "level": 2
+    },
+    {
+      "code": "int_3",
+      "title": "Финансист леса",
+      "desc": "Финансист леса — достигни 200 (interest_earned)",
+      "metric": "interest_earned",
+      "threshold": 200,
+      "tier": 3,
+      "reward": 35,
+      "track": "int",
+      "level": 3
+    },
+    {
+      "code": "bal_1",
+      "title": "Кошелёк звенит",
+      "desc": "Кошелёк звенит — достигни 50 (current_balance)",
+      "metric": "current_balance",
+      "threshold": 50,
+      "tier": 1,
+      "reward": 0,
+      "track": "bal",
+      "level": 1
+    },
+    {
+      "code": "bal_2",
+      "title": "Толстый кошель",
+      "desc": "Толстый кошель — достигни 200 (current_balance)",
+      "metric": "current_balance",
+      "threshold": 200,
+      "tier": 2,
+      "reward": 10,
+      "track": "bal",
+      "level": 2
+    },
+    {
+      "code": "bal_3",
+      "title": "Сундук шишек",
+      "desc": "Сундук шишек — достигни 500 (current_balance)",
+      "metric": "current_balance",
+      "threshold": 500,
+      "tier": 3,
+      "reward": 25,
+      "track": "bal",
+      "level": 3
+    },
+    {
+      "code": "photo_1",
+      "title": "Фотоотчёт",
+      "desc": "Фотоотчёт — достигни 1 (tasks_photo)",
+      "metric": "tasks_photo",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "photo",
+      "level": 1
+    },
+    {
+      "code": "photo_2",
+      "title": "Лесной репортёр",
+      "desc": "Лесной репортёр — достигни 10 (tasks_photo)",
+      "metric": "tasks_photo",
+      "threshold": 10,
+      "tier": 2,
+      "reward": 15,
+      "track": "photo",
+      "level": 2
+    },
+    {
+      "code": "tree_1",
+      "title": "Саженец растёт",
+      "desc": "Саженец растёт — достигни 2 (tree_level)",
+      "metric": "tree_level",
+      "threshold": 2,
+      "tier": 1,
+      "reward": 0,
+      "track": "tree",
+      "level": 1
+    },
+    {
+      "code": "tree_2",
+      "title": "Деревце",
+      "desc": "Деревце — достигни 3 (tree_level)",
+      "metric": "tree_level",
+      "threshold": 3,
+      "tier": 2,
+      "reward": 5,
+      "track": "tree",
+      "level": 2
+    },
+    {
+      "code": "tree_3",
+      "title": "Крепкое дерево",
+      "desc": "Крепкое дерево — достигни 4 (tree_level)",
+      "metric": "tree_level",
+      "threshold": 4,
+      "tier": 3,
+      "reward": 15,
+      "track": "tree",
+      "level": 3
+    },
+    {
+      "code": "tree_4",
+      "title": "Могучее дерево",
+      "desc": "Могучее дерево — достигни 5 (tree_level)",
+      "metric": "tree_level",
+      "threshold": 5,
+      "tier": 3,
+      "reward": 40,
+      "track": "tree",
+      "level": 4
+    },
+    {
+      "code": "recv_1",
+      "title": "Обласканный",
+      "desc": "Обласканный — достигни 1 (transfers_received)",
+      "metric": "transfers_received",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "recv",
+      "level": 1
+    },
+    {
+      "code": "recv_2",
+      "title": "Любимчик",
+      "desc": "Любимчик — достигни 10 (transfers_received)",
+      "metric": "transfers_received",
+      "threshold": 10,
+      "tier": 2,
+      "reward": 10,
+      "track": "recv",
+      "level": 2
+    },
+    {
+      "code": "recv_3",
+      "title": "Звезда леса",
+      "desc": "Звезда леса — достигни 30 (transfers_received)",
+      "metric": "transfers_received",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 25,
+      "track": "recv",
+      "level": 3
+    },
+    {
+      "code": "recvsum_1",
+      "title": "Одаряемый",
+      "desc": "Одаряемый — достигни 50 (gifts_received_sum)",
+      "metric": "gifts_received_sum",
+      "threshold": 50,
+      "tier": 1,
+      "reward": 5,
+      "track": "recvsum",
+      "level": 1
+    },
+    {
+      "code": "recvsum_2",
+      "title": "Купается в шишках",
+      "desc": "Купается в шишках — достигни 200 (gifts_received_sum)",
+      "metric": "gifts_received_sum",
+      "threshold": 200,
+      "tier": 2,
+      "reward": 20,
+      "track": "recvsum",
+      "level": 2
+    },
+    {
+      "code": "rep_1",
+      "title": "Уважаемый",
+      "desc": "Уважаемый — достигни 20 (total_reputation)",
+      "metric": "total_reputation",
+      "threshold": 20,
+      "tier": 1,
+      "reward": 5,
+      "track": "rep",
+      "level": 1
+    },
+    {
+      "code": "rep_2",
+      "title": "Почтенный",
+      "desc": "Почтенный — достигни 50 (total_reputation)",
+      "metric": "total_reputation",
+      "threshold": 50,
+      "tier": 2,
+      "reward": 15,
+      "track": "rep",
+      "level": 2
+    },
+    {
+      "code": "rep_3",
+      "title": "Славный",
+      "desc": "Славный — достигни 100 (total_reputation)",
+      "metric": "total_reputation",
+      "threshold": 100,
+      "tier": 3,
+      "reward": 30,
+      "track": "rep",
+      "level": 3
+    },
+    {
+      "code": "rep_4",
+      "title": "Гордость леса",
+      "desc": "Гордость леса — достигни 200 (total_reputation)",
+      "metric": "total_reputation",
+      "threshold": 200,
+      "tier": 3,
+      "reward": 50,
+      "track": "rep",
+      "level": 4
+    },
+    {
+      "code": "rep_5",
+      "title": "Легенда паспорта",
+      "desc": "Легенда паспорта — достигни 350 (total_reputation)",
+      "metric": "total_reputation",
+      "threshold": 350,
+      "tier": 3,
+      "reward": 75,
+      "track": "rep",
+      "level": 5
+    },
+    {
+      "code": "spend_1",
+      "title": "Тратишка",
+      "desc": "Тратишка — достигни 50 (cones_spent)",
+      "metric": "cones_spent",
+      "threshold": 50,
+      "tier": 1,
+      "reward": 0,
+      "track": "spend",
+      "level": 1
+    },
+    {
+      "code": "spend_2",
+      "title": "Ценитель трат",
+      "desc": "Ценитель трат — достигни 200 (cones_spent)",
+      "metric": "cones_spent",
+      "threshold": 200,
+      "tier": 2,
+      "reward": 10,
+      "track": "spend",
+      "level": 2
+    },
+    {
+      "code": "spend_3",
+      "title": "Король трат",
+      "desc": "Король трат — достигни 500 (cones_spent)",
+      "metric": "cones_spent",
+      "threshold": 500,
+      "tier": 3,
+      "reward": 25,
+      "track": "spend",
+      "level": 3
+    },
+    {
+      "code": "spend_4",
+      "title": "Император трат",
+      "desc": "Император трат — достигни 1000 (cones_spent)",
+      "metric": "cones_spent",
+      "threshold": 1000,
+      "tier": 3,
+      "reward": 50,
+      "track": "spend",
+      "level": 4
+    },
+    {
+      "code": "cat_1",
+      "title": "Разносторонний",
+      "desc": "Разносторонний — достигни 3 (categories_done)",
+      "metric": "categories_done",
+      "threshold": 3,
+      "tier": 1,
+      "reward": 5,
+      "track": "cat",
+      "level": 1
+    },
+    {
+      "code": "cat_2",
+      "title": "Мастер на все руки",
+      "desc": "Мастер на все руки — достигни 5 (categories_done)",
+      "metric": "categories_done",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 20,
+      "track": "cat",
+      "level": 2
+    },
+    {
+      "code": "cat_3",
+      "title": "Универсал леса",
+      "desc": "Универсал леса — достигни 7 (categories_done)",
+      "metric": "categories_done",
+      "threshold": 7,
+      "tier": 3,
+      "reward": 35,
+      "track": "cat",
+      "level": 3
+    },
+    {
+      "code": "sell_1",
+      "title": "Первая продажа",
+      "desc": "Первая продажа — достигни 1 (sales_count)",
+      "metric": "sales_count",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "sell",
+      "level": 1
+    },
+    {
+      "code": "sell_2",
+      "title": "Лавочник",
+      "desc": "Лавочник — достигни 5 (sales_count)",
+      "metric": "sales_count",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 10,
+      "track": "sell",
+      "level": 2
+    },
+    {
+      "code": "sell_3",
+      "title": "Купец",
+      "desc": "Купец — достигни 15 (sales_count)",
+      "metric": "sales_count",
+      "threshold": 15,
+      "tier": 3,
+      "reward": 25,
+      "track": "sell",
+      "level": 3
+    },
+    {
+      "code": "sell_4",
+      "title": "Акула Бизнеса",
+      "desc": "Акула Бизнеса — достигни 30 (sales_count)",
+      "metric": "sales_count",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 50,
+      "track": "sell",
+      "level": 4
+    },
+    {
+      "code": "rev_1",
+      "title": "Оборотистый",
+      "desc": "Оборотистый — достигни 50 (sales_sum)",
+      "metric": "sales_sum",
+      "threshold": 50,
+      "tier": 1,
+      "reward": 5,
+      "track": "rev",
+      "level": 1
+    },
+    {
+      "code": "rev_2",
+      "title": "Богатый купец",
+      "desc": "Богатый купец — достигни 200 (sales_sum)",
+      "metric": "sales_sum",
+      "threshold": 200,
+      "tier": 2,
+      "reward": 20,
+      "track": "rev",
+      "level": 2
+    },
+    {
+      "code": "shopper_1",
+      "title": "Первый покупатель",
+      "desc": "Первый покупатель — достигни 1 (shop_buys)",
+      "metric": "shop_buys",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "shopper",
+      "level": 1
+    },
+    {
+      "code": "shopper_2",
+      "title": "Завсегдатай",
+      "desc": "Завсегдатай — достигни 10 (shop_buys)",
+      "metric": "shop_buys",
+      "threshold": 10,
+      "tier": 2,
+      "reward": 15,
+      "track": "shopper",
+      "level": 2
+    },
+    {
+      "code": "mail_1",
+      "title": "Почтальон",
+      "desc": "Почтальон — достигни 1 (messages_sent)",
+      "metric": "messages_sent",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "mail",
+      "level": 1
+    },
+    {
+      "code": "mail_2",
+      "title": "Лесной вестник",
+      "desc": "Лесной вестник — достигни 10 (messages_sent)",
+      "metric": "messages_sent",
+      "threshold": 10,
+      "tier": 2,
+      "reward": 10,
+      "track": "mail",
+      "level": 2
+    },
+    {
+      "code": "mail_3",
+      "title": "Голубь мира",
+      "desc": "Голубь мира — достигни 30 (messages_sent)",
+      "metric": "messages_sent",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 25,
+      "track": "mail",
+      "level": 3
+    }
+  ]
+}
