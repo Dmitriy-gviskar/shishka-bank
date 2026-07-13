@@ -1,0 +1,29 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесная страховка</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .fund{text-align:center;padding:16px;margin-top:4px}
+  .fund .n{font-size:44px;font-weight:900;color:var(--brown)}
+  .fund .l{font-weight:800;color:#a1876a}
+  h3{text-align:center;color:var(--ink);font-weight:900;margin:12px 0 4px;font-size:16px;background:rgba(255,250,240,.92);border-radius:14px;padding:5px 14px;align-self:center;margin-left:auto;margin-right:auto;width:fit-content}
+  #claims{flex:1 1 auto;min-height:0;overflow-y:auto}#claims::-webkit-scrollbar{width:0}
+  .claim{margin-top:9px;padding:12px}
+  .claim .t{font-weight:900;color:var(--ink);font-size:15px}
+  .claim .row{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .claim .votes{flex:1;color:#a1876a;font-weight:700;font-size:13px}
+  .vbtn{border:none;border-radius:12px;padding:6px 14px;font-weight:900;cursor:pointer;font-size:14px}
+  .yes{background:#8ec44f;color:#fff}.no{background:#e0a99a;color:#5b4636}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесная страховка</div>
+  <div class="card fund"><div class="n" id="fund">…</div><div class="l">шишек в общем фонде</div></div>
+  <button class="btn btn-lg" id="premium">Внести 1 шишку в фонд</button>
+  <h3>Заявки на выплату</h3>
+  <div id="claims"></div>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

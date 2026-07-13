@@ -1,0 +1,42 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Дупло-сейф</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .terms{display:flex;gap:8px;margin-top:6px}
+  .term{flex:1;background:#fbf4e2;border:3px solid #d9c39a;border-radius:16px;padding:10px 4px;
+    text-align:center;cursor:pointer;font-weight:800;color:var(--brown)}
+  .term.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,182,75,.35)}
+  .term b{display:block;font-size:20px}.term small{color:#a1876a;font-size:12px}
+  .sum{margin-top:10px;display:flex;gap:8px;justify-content:center}
+  .sum .s{background:#fff7e8;border:3px solid #d9c39a;border-radius:14px;padding:8px 14px;
+    font-weight:900;color:var(--brown);cursor:pointer;font-size:18px}
+  .sum .s.sel{border-color:var(--gold);background:#fff3d6}
+  h3{text-align:center;color:var(--ink);font-weight:900;margin:14px 0 6px;font-size:16px;background:rgba(255,250,240,.92);border-radius:14px;padding:5px 14px;align-self:center;margin-left:auto;margin-right:auto;width:fit-content}
+  .safe{display:flex;align-items:center;gap:10px;margin-top:9px;padding:12px}
+  .safe .amt{flex:1;font-weight:900;color:var(--brown);font-size:17px}
+  .safe .st{color:#a1876a;font-weight:700;font-size:13px}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Дупло-сейф</div>
+  <div class="card">
+    <div class="terms">
+      <div class="term sel" data-days="3"><b>3 дня</b><small>+5%</small></div>
+      <div class="term" data-days="7"><b>7 дней</b><small>+10%</small></div>
+      <div class="term" data-days="30"><b>30 дней</b><small>+20%</small></div>
+    </div>
+    <div class="sum">
+      <div class="s sel" data-a="10">10</div>
+      <div class="s" data-a="25">25</div>
+      <div class="s" data-a="50">50</div>
+    </div>
+    <button class="btn btn-lg" id="freeze">Заморозить в Дупле</button>
+  </div>
+  <h3>Мои Дупла</h3>
+  <div id="safeList"></div>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

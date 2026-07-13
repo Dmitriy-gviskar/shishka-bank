@@ -1,0 +1,35 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесная почта</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .friends .friend{background:#fbf4e2;border:3px solid #d9c39a;border-radius:16px;padding:6px 4px;text-align:center}
+  .friends .friend.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,182,75,.35)}
+  .friends .friend img{width:44px;height:44px;object-fit:contain}
+  .friends .friend span{display:block;font-weight:800;color:var(--brown);font-size:12px}
+  .send{display:flex;gap:7px;justify-content:center;margin-top:4px;flex-wrap:wrap}
+  .send button{background:#fff7e8;border:3px solid #d9c39a;border-radius:14px;padding:7px 13px;
+    font-weight:800;color:var(--brown);cursor:pointer;font-size:14px}
+  h3{text-align:center;color:var(--ink);font-weight:900;margin:12px 0 4px;font-size:16px;background:rgba(255,250,240,.92);border-radius:14px;padding:5px 14px;align-self:center;margin-left:auto;margin-right:auto;width:fit-content}
+  #inbox{flex:1 1 auto;min-height:0;overflow-y:auto}#inbox::-webkit-scrollbar{width:0}
+  .msg{display:flex;align-items:center;gap:10px;margin-top:9px;padding:12px}
+  .msg .who{width:64px;font-weight:900;color:var(--brown);font-size:14px}
+  .msg .txt{flex:1;color:var(--ink);font-weight:700}
+  .msg .k{color:#a1876a;font-size:12px;font-weight:700}
+  .whisper{background:#fff3d6;border-color:var(--gold)}
+  .wtag{background:var(--gold);color:#5b4636;font-weight:900;font-size:11px;padding:2px 8px;border-radius:9px}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесная почта</div>
+  <div class="card"><div style="text-align:center;font-weight:800;color:var(--brown);margin-bottom:7px">Отправить другу</div>
+    <div class="friends" id="friendList" style="margin:4px 0 10px"></div>
+    <div class="send"><button>Обнимашка</button><button>Жёлудь</button><button>Улыбка</button><button>Спасибо</button></div>
+  </div>
+  <h3>Входящие</h3>
+  <div id="inbox"></div>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

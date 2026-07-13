@@ -1,0 +1,36 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесные лавки</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .shop{display:flex;align-items:center;gap:10px;margin-top:11px;padding:12px;position:relative}
+  .shop img.av{width:58px;height:58px;object-fit:contain;flex:none}
+  .shop .mid{flex:1}
+  .shop .sn{font-weight:900;color:var(--ink);font-size:16px}
+  .shop .it{color:#a1876a;font-weight:700;font-size:13px;margin-top:1px}
+  .shop .right{text-align:center}
+  .shop .price{font-size:20px}
+  .heir{position:absolute;top:-8px;right:10px;background:var(--gold);color:#5b4636;
+    font-weight:900;font-size:11px;padding:3px 9px;border-radius:10px;border:2px solid #b6862c}
+  .mine-tag{position:absolute;top:-8px;left:10px;background:#7bab4c;color:#fff;
+    font-weight:900;font-size:11px;padding:3px 9px;border-radius:10px;border:2px solid #5f8e37}
+  #createForm{margin-top:10px;padding:12px;display:none}
+  #createForm input{width:100%;background:#fffaf0;border:3px solid #d9c39a;border-radius:12px;
+    padding:10px;font-size:15px;font-weight:800;color:var(--ink);outline:none;margin-bottom:8px}
+  #createForm input:focus{border-color:var(--gold)}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесные лавки</div>
+  <div id="marketList"></div>
+  <button class="btn btn-lg" id="openShopBtn">Открыть свою лавку</button>
+  <div class="card" id="createForm">
+    <input id="shopName" placeholder="Название лавки" maxlength="24">
+    <input id="shopLot" placeholder="Что продаёшь" maxlength="24">
+    <input id="shopPrice" type="number" placeholder="Цена в шишках" min="1">
+    <button class="btn btn-lg" id="createShopBtn" style="margin-top:2px">Создать лавку</button>
+  </div>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:10px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div><script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

@@ -1,0 +1,64 @@
+.friends{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+.friends::-webkit-scrollbar{display:none}
+.friends .friend{flex:0 0 88px}
+.on-art{display:inline-block;background:rgba(255,250,240,.92);border:2px solid #d9c39a;border-radius:12px;padding:7px 12px}
+:root{
+  --cream:#f6eede; --card:#efe4cc; --ink:#5b4636; --brown:#6b4f3a;
+  --green:#7bab4c; --green-d:#5f8e37; --gold:#e8b64b; --shadow:rgba(80,55,30,.25);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
+  font-family:"Nunito","Baloo 2","SF Pro Rounded",system-ui,Arial,sans-serif}
+.phone{position:relative;width:min(390px,100vw);height:100vh;height:100dvh;max-height:844px;
+  overflow:hidden;background:center/cover no-repeat}
+.phone::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,80,45,.20));pointer-events:none}
+.wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:18px 16px 0}
+/* длинные списки прокручиваются ВНУТРИ экрана, навбар остаётся внизу */
+#taskList,#shopList,#marketList{flex:1 1 auto;min-height:0;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;padding-bottom:6px}
+#taskList::-webkit-scrollbar,#shopList::-webkit-scrollbar,#marketList::-webkit-scrollbar{width:0}
+
+/* заголовок-плашка */
+.title{align-self:center;background:#fffaf0;border:3px solid var(--brown);border-radius:18px;
+  padding:8px 22px;font-size:22px;font-weight:900;color:var(--ink);
+  box-shadow:0 4px 0 rgba(107,79,58,.25);margin-bottom:4px}
+
+/* приветствие Духа */
+.greet{display:flex;align-items:flex-start;gap:6px}
+.greet img{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 5px var(--shadow))}
+.bubble{background:#fffaf0;border:3px solid var(--brown);border-radius:20px;padding:11px 13px;
+  margin-top:12px;font-weight:800;color:var(--ink);font-size:15px;line-height:1.25;
+  box-shadow:0 4px 0 rgba(107,79,58,.25);position:relative;flex:1}
+.bubble::before{content:"";position:absolute;left:-12px;top:18px;border:8px solid transparent;
+  border-right-color:var(--brown)}
+
+/* карточки */
+.card{background:var(--card);border:4px solid var(--brown);border-radius:22px;
+  box-shadow:0 6px 0 rgba(107,79,58,.28);padding:14px}
+
+/* кнопки */
+.btn{background:var(--green);border:3px solid var(--green-d);color:#fff;font-weight:900;
+  border-radius:18px;box-shadow:0 5px 0 var(--green-d);cursor:pointer;
+  text-shadow:0 1px 1px rgba(0,0,0,.15)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
+.btn-lg{display:block;margin:14px auto 0;font-size:20px;padding:12px 30px}
+.btn-sm{font-size:15px;padding:7px 16px}
+
+/* цена в шишках */
+.price{display:inline-flex;align-items:center;gap:4px;font-weight:900;color:var(--brown);font-size:22px}
+.price img{width:30px;height:30px;object-fit:contain}
+
+/* нижняя навигация */
+.nav{margin-top:auto;display:flex;justify-content:space-around;align-items:center;
+  background:rgba(246,238,222,.94);border-top:3px solid #d9c39a;
+  padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
+.nav button{background:none;border:none;padding:6px;border-radius:16px;cursor:pointer}
+.nav img{width:44px;height:44px;object-fit:contain;display:block}
+.nav .active{background:#fff3d6;box-shadow:0 0 0 3px var(--gold) inset}
+
+/* баланс-шапка (правый верх) */
+#topbar{position:absolute;top:14px;right:14px;z-index:5;display:flex;align-items:center;gap:5px;
+  background:rgba(255,250,240,.95);border:3px solid var(--brown);border-radius:16px;
+  padding:4px 12px 4px 6px;box-shadow:0 3px 0 rgba(107,79,58,.25);font-weight:900;color:var(--brown);font-size:19px}
+#topbar img{width:26px;height:26px;object-fit:contain}

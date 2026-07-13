@@ -1,0 +1,28 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Задания</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .quest{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px}
+  .quest .ic{width:52px;height:52px;flex:none;background:#fbf4e2;border:3px solid #d9c39a;overflow:hidden;
+    border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px}
+  .quest .ic img{width:34px;height:34px;object-fit:contain}
+  .quest .mid{flex:1}
+  .quest .nm{font-weight:900;color:var(--ink);font-size:16px}
+  .quest .rw{display:inline-flex;align-items:center;gap:3px;font-weight:800;color:var(--green-d);font-size:15px;margin-top:2px}
+  .quest .rw img{width:20px;height:20px}
+  .done{background:#eaf4dd;border:3px solid var(--green);color:var(--green-d);font-weight:900;
+    border-radius:14px;padding:7px 12px;font-size:14px}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесные задания</div>
+  <div class="greet">
+    <img src="assets/spirit_scroll.webp">
+    <div class="bubble">Помоги лесу и получи шишки!</div>
+  </div>
+  <div id="taskList"></div>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div><script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

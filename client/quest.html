@@ -1,0 +1,28 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Нарративный квест</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_spring.webp)}
+  .oracle{text-align:center;margin-top:6px}
+  .oracle img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 7px var(--shadow))}
+  .story{padding:16px;text-align:center;font-size:17px;font-weight:800;color:var(--ink);line-height:1.35;margin-top:4px}
+  .qprog{height:16px;background:#e4d3ad;border:2px solid #c9ad7c;border-radius:10px;margin:12px 30px 0;
+    overflow:hidden;position:relative;display:none}
+  .qprog i{display:block;height:100%;background:linear-gradient(90deg,#8ec44f,#5f8e37)}
+  .qprog span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:var(--brown);font-size:12px}
+  .step-tag{text-align:center;color:#a1876a;font-weight:800;font-size:13px;margin-top:8px}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Квест от Духа</div>
+  <div class="oracle"><img src="assets/oracle.webp"></div>
+  <div class="step-tag" id="stepTag"></div>
+  <div class="card story" id="story">…</div>
+  <div class="qprog" id="qprog"><i id="qfill" style="width:0%"></i><span id="qtext"></span></div>
+  <button class="btn btn-lg" id="qact"></button>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

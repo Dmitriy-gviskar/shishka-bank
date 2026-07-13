@@ -1,0 +1,33 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Добро пожаловать</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_spring.webp)}
+  .hello{display:flex;align-items:flex-start;gap:6px;margin-top:10px}
+  .hello img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 5px 6px var(--shadow))}
+  .hello .bubble{margin-top:22px;font-size:16px}
+  .species{display:flex;gap:8px;margin-top:16px}
+  .sp{flex:1;background:#fbf4e2;border:3px solid #d9c39a;border-radius:16px;padding:10px 4px;text-align:center}
+  .sp.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,182,75,.35)}
+  .sp img{width:74px;height:80px;object-fit:contain}
+  .sp span{display:block;font-weight:800;color:var(--brown);font-size:15px;margin-top:2px}
+  .field{margin-top:16px;background:#fff7e8;border:3px solid #d9c39a;border-radius:16px;
+    padding:14px 16px;color:#b09a7c;font-weight:800;font-size:16px}
+</style></head><body data-no-nav>
+<div class="phone"><div class="wrap">
+  <div class="title">Добро пожаловать в лес!</div>
+  <div class="hello">
+    <img src="assets/spirit.webp">
+    <div class="bubble">Привет! Я Лесной Дух. Давай посадим твоё дерево</div>
+  </div>
+  <div class="species">
+    <div class="sp sel" data-tree="pine"><img src="assets/tree3.webp"><span>Сосна</span></div>
+    <div class="sp" data-tree="cedar"><img src="assets/tree4.webp"><span>Кедр</span></div>
+    <div class="sp" data-tree="spruce"><img src="assets/tree2.webp"><span>Ель</span></div>
+  </div>
+  <input class="field" id="treeName" placeholder="Как назовём дерево?" maxlength="16" style="width:100%;outline:none">
+  <button class="btn btn-lg" id="startBtn">Начать приключение</button>
+</div></div>
+<script src="app.js"></script>
+</body></html>

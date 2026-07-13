@@ -1,0 +1,24 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесной гороскоп</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_spring.webp)}
+  .oracle{text-align:center;margin-top:8px}
+  .oracle img{width:200px;height:200px;object-fit:contain;filter:drop-shadow(0 6px 7px var(--shadow))}
+  .pred{margin-top:6px;padding:18px 18px;text-align:center;font-size:19px;font-weight:800;
+    color:var(--ink);line-height:1.35}
+  .bonus{margin-top:12px;text-align:center;display:none}
+  .bonus .pill{display:inline-flex;align-items:center;gap:6px;background:#fff3d6;border:3px solid var(--gold);
+    border-radius:18px;padding:8px 18px;font-weight:900;color:var(--brown);font-size:18px}
+  .bonus .pill img{width:26px;height:26px}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесной гороскоп</div>
+  <div class="oracle"><img src="assets/oracle.webp" alt="Дух-предсказатель"></div>
+  <div class="card pred" id="pred">Дух вглядывается в хрустальную шишку…</div>
+  <div class="bonus" id="bonus"><span class="pill"><img src="assets/coin1.webp"><span id="bonusN"></span></span></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

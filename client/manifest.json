@@ -1,0 +1,14 @@
+{
+  "name": "Шишка Банк",
+  "short_name": "Шишки",
+  "description": "Детский банк лесной экономики",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2c3327",
+  "theme_color": "#7bab4c",
+  "icons": [
+    { "src": "assets/app-icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/app-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

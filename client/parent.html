@@ -1,0 +1,79 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Кабинет ведущего</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .scroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding-bottom:10px}
+  .scroll::-webkit-scrollbar{width:0}
+  h3{display:inline-block;background:rgba(255,250,240,.92);border-radius:11px;padding:4px 13px;
+    color:var(--ink);font-weight:900;font-size:16px;margin:14px 2px 6px}
+  .kid-row{margin-top:8px;padding:11px}
+  .kid-head{display:flex;align-items:center;gap:10px}
+  .kid-head .info{flex:1}
+  .kid-head .nm{font-weight:900;color:var(--ink);font-size:16px}
+  .kid-head .meta{color:#a1876a;font-weight:700;font-size:12px;margin-top:1px}
+  .kid-head .code{display:inline-block;background:#fff3d6;border:2px solid var(--gold);border-radius:8px;
+    padding:2px 9px;font-weight:900;color:var(--brown);font-size:13px;margin-top:4px;cursor:pointer;letter-spacing:.5px}
+  .kid-head .bal{font-weight:900;color:var(--brown);font-size:24px;white-space:nowrap;line-height:1;text-align:right}
+  .kid-head .bal small{display:block;font-size:11px;color:#a1876a;font-weight:700}
+  .give-row{display:flex;gap:6px;margin-top:9px;align-items:center}
+  .give-row .amt{flex:1;min-width:0;background:#fffaf0;border:2px solid #d9c39a;border-radius:10px;
+    padding:7px 10px;font-size:15px;font-weight:800;color:var(--ink);outline:none}
+  .mini{border:none;border-radius:10px;padding:7px 12px;font-weight:900;cursor:pointer;font-size:13px;white-space:nowrap}
+  .mini.g{background:#8ec44f;color:#fff}.mini.r{background:#e0a99a;color:#5b4636}
+  .pend{margin-top:8px;padding:11px}
+  .pend .t{font-weight:900;color:var(--ink);font-size:15px}
+  .pend .row{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .pend .who{flex:1;color:#a1876a;font-weight:700;font-size:13px}
+  details{margin-top:10px;background:var(--card);border:3px solid #cbb083;border-radius:16px;padding:4px 12px}
+  summary{font-weight:900;color:var(--brown);cursor:pointer;padding:8px 0;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"+ ";color:var(--green-d)}
+  details[open] summary::before{content:"– "}
+  .form input,.form select{width:100%;background:#fffaf0;border:3px solid #d9c39a;border-radius:12px;
+    padding:9px;font-size:15px;font-weight:700;color:var(--ink);outline:none;margin-bottom:7px}
+  .form label{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--brown);margin-bottom:8px;font-size:14px}
+  .form input[type=checkbox]{width:auto}
+  .empty{text-align:center;color:#8a7358;font-weight:700;padding:8px;font-size:14px;background:rgba(255,250,240,.92);border:2px solid #d9c39a;border-radius:12px}
+  .logout{margin-top:8px;text-align:center}
+  .logout a{color:var(--brown);font-weight:800;font-size:13px}
+</style></head><body data-no-nav>
+<div class="phone"><div class="wrap">
+  <div class="title">Кабинет ведущего</div>
+  <div class="scroll">
+    <h3>Мои дети</h3>
+    <div id="kids"></div>
+    <details class="form"><summary>Добавить ребёнка</summary>
+      <input id="kidName" placeholder="Имя ребёнка" maxlength="16">
+      <select id="kidTree"><option value="pine">Сосна</option><option value="cedar">Кедр</option><option value="spruce">Ель</option><option value="oak">Дуб</option></select>
+      <button class="btn btn-lg" id="addKid">Создать профиль</button>
+    </details>
+
+    <h3>Задания на проверке</h3>
+    <div id="pending"></div>
+
+    <details class="form"><summary>Выдать задание</summary>
+      <select id="taskKid"></select>
+      <select id="taskTpl"><option value="">Библиотека заданий (50 готовых)…</option></select>
+      <input id="taskTitle" placeholder="Что нужно сделать" maxlength="60">
+      <input id="taskReward" type="number" min="1" placeholder="Награда в шишках">
+      <label><input type="checkbox" id="taskPhoto"> нужно подтвердить фото</label>
+      <button class="btn btn-lg" id="createTask">Выдать задание</button>
+    </details>
+
+    <h3>Гильдии</h3>
+    <div id="guilds"></div>
+
+    <details class="form"><summary>Добавить приз в магазин</summary>
+      <input id="prizeTitle" placeholder="Название приза" maxlength="40">
+      <input id="prizePrice" type="number" min="1" placeholder="Цена в шишках">
+      <button class="btn btn-lg" id="addPrize">Добавить приз</button>
+    </details>
+
+    <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:10px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+    <div class="logout"><a href="#" id="logout">Выйти из кабинета</a></div>
+  </div>
+</div></div>
+<script src="app.js"></script>
+</body></html>

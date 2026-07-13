@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Шишка Банк — Кошелёк</title>
+<style>
+  :root{
+    --cream:#f6eede; --card:#efe4cc; --ink:#5b4636; --brown:#6b4f3a;
+    --green:#7bab4c; --green-d:#5f8e37; --gold:#e8b64b; --shadow:rgba(80,55,30,.25);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
+    font-family:"Nunito","Baloo 2","SF Pro Rounded",system-ui,Arial,sans-serif}
+  .phone{position:relative;width:390px;height:844px;overflow:hidden;
+    background:url(assets/bg.webp) center/cover no-repeat}
+  .phone::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,80,45,.20))}
+  .wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;
+    padding:20px 16px 0}
+
+  /* приветствие Духа */
+  .greet{display:flex;align-items:flex-start;gap:6px;margin-top:6px}
+  .greet img{width:104px;height:104px;object-fit:contain;filter:drop-shadow(0 4px 5px var(--shadow))}
+  .bubble{background:#fffaf0;border:3px solid var(--brown);border-radius:20px;
+    padding:12px 14px;margin-top:14px;font-weight:800;color:var(--ink);font-size:16px;
+    line-height:1.25;box-shadow:0 4px 0 rgba(107,79,58,.25);position:relative;flex:1}
+  .bubble::before{content:"";position:absolute;left:-12px;top:20px;border:8px solid transparent;
+    border-right-color:var(--brown)}
+
+  /* карточка кошелька */
+  .card{margin-top:16px;background:var(--card);border:4px solid var(--brown);
+    border-radius:26px;box-shadow:0 8px 0 rgba(107,79,58,.30);padding:16px;
+    display:flex;gap:10px}
+  .balance{flex:1;background:#fbf4e2;border:3px solid #d9c39a;border-radius:18px;
+    padding:14px 12px;text-align:center;position:relative}
+  .balance .coins{width:96px;height:96px;object-fit:contain;
+    filter:drop-shadow(0 3px 4px var(--shadow))}
+  .balance .num{font-size:52px;font-weight:900;color:var(--brown);line-height:1;margin-top:2px;
+    letter-spacing:-1px}
+  .balance .cur{font-size:20px;font-weight:800;color:var(--brown);margin-top:2px}
+  .balance .sub{font-size:13px;font-weight:700;color:#a1876a;margin-top:2px}
+  .avatar{width:132px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
+  .level{background:#fbf4e2;border:3px solid #d9c39a;border-radius:14px;padding:5px 10px;
+    font-size:12px;font-weight:800;color:var(--brown);text-align:center;line-height:1.15}
+  .avatar img{width:130px;height:150px;object-fit:contain;filter:drop-shadow(0 5px 6px var(--shadow))}
+
+  .add{margin:14px auto 0;display:block;background:var(--green);border:3px solid var(--green-d);
+    color:#fff;font-size:20px;font-weight:900;padding:12px 34px;border-radius:20px;
+    box-shadow:0 5px 0 var(--green-d);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15)}
+  .add:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
+
+  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px;
+    color:var(--brown);font-weight:800;font-size:14px;text-align:center;
+    background:rgba(255,250,240,.85);border-radius:14px;padding:9px 14px}
+  .hint-forest img{width:26px;height:26px;object-fit:contain}
+  /* навигация */
+  .nav{margin-top:auto;display:flex;justify-content:space-around;align-items:center;
+    background:rgba(246,238,222,.94);border-top:3px solid #d9c39a;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));backdrop-filter:blur(2px)}
+  .nav button{background:none;border:none;padding:6px;border-radius:16px;cursor:pointer}
+  .nav img{width:44px;height:44px;object-fit:contain;display:block}
+  .nav .active{background:#fff3d6;box-shadow:0 0 0 3px var(--gold) inset}
+</style>
+</head>
+<body>
+  <div class="phone">
+    <div class="wrap">
+      <div class="greet">
+        <img src="assets/spirit.webp" alt="Лесной Дух">
+        <div class="bubble">С возвращением!</div>
+      </div>
+
+      <div class="card">
+        <div class="balance">
+          <img class="coins" src="assets/coins.webp" alt="">
+          <div class="num" id="bal">…</div>
+          <div class="cur">шишек</div>
+          <div class="sub">в кошельке</div>
+          <a href="album.html" style="display:inline-block;margin-top:6px;font-weight:800;color:var(--green-d);font-size:13px">Лесной альбом →</a>
+          <a href="news.html" style="display:inline-block;margin-top:2px;font-weight:800;color:var(--brown);font-size:13px">Новости леса →</a>
+        </div>
+        <div class="avatar" onclick="location.href='profile.html'" style="cursor:pointer">
+          <div class="level">Дубок<br>Уровень 1</div>
+          <img src="assets/tree.webp" alt="Дерево">
+        </div>
+      </div>
+
+      <button class="add">Заработать шишки</button>
+      <button class="add" id="qrBtn" style="background:#fff3d6;color:var(--brown);box-shadow:0 5px 0 #d9c39a;margin-top:10px">Мой QR — принимать оплату</button>
+      <button class="add" id="scanBtn" style="margin-top:10px">Оплатить по QR</button>
+      <div id="scanBox" style="display:none;position:absolute;inset:0;z-index:20;background:#1d241a">
+        <video id="scanVideo" playsinline style="width:100%;height:100%;object-fit:cover"></video>
+        <div style="position:absolute;top:16px;left:0;right:0;text-align:center;pointer-events:none">
+          <span class="on-art" style="font-weight:900;color:var(--ink)">Наведи на QR продавца</span></div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+          <div style="width:230px;height:230px;border:4px solid #f1c65a;border-radius:22px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)"></div></div>
+        <button id="scanClose" style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);background:#fffaf0;border:3px solid #d9c39a;border-radius:16px;padding:11px 30px;font-size:16px;font-weight:900;color:var(--brown)">Отмена</button>
+      </div>
+      <div id="qrBox" style="display:none;position:absolute;inset:0;z-index:20;background:rgba(29,36,26,.72);align-items:center;justify-content:center;padding:20px">
+        <div style="background:#fffaf0;border:3px solid #d9c39a;border-radius:20px;padding:16px;text-align:center;max-width:300px;width:100%;position:relative">
+          <button id="qrClose" style="position:absolute;top:8px;right:10px;background:none;border:none;font-size:26px;font-weight:900;color:var(--brown);cursor:pointer;line-height:1">&times;</button>
+          <div style="font-weight:900;color:var(--ink);margin-bottom:8px">Покажи этот код покупателю</div>
+          <input id="qrAmt" type="number" min="2" placeholder="Сумма (не обязательно)" inputmode="numeric"
+            style="width:85%;background:#fffaf0;border:3px solid #d9c39a;border-radius:14px;padding:8px;font-size:16px;font-weight:800;color:var(--ink);text-align:center;outline:none;margin-bottom:8px">
+          <div id="qrSvg" style="display:flex;justify-content:center"></div>
+          <div style="font-weight:700;color:#8a7358;font-size:12px;margin-top:6px;line-height:1.4">Покупатель жмёт «Оплатить по QR» и наводит камеру. Комиссия Банка — 1 шишка со сделки</div>
+        </div>
+      </div>
+      <div class="hint-forest">Все занятия леса — на вкладке «Поляна» внизу <img src="assets/nav/n6.png" alt=""></div>
+    </div>
+  </div>
+<script src="assets/qrcode.js"></script>
+<script src="assets/jsqr.js"></script>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>

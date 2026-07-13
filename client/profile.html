@@ -1,0 +1,46 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Моё дерево</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .hero{text-align:center;margin-top:0}
+  .hero img{width:126px;height:142px;object-fit:contain;filter:drop-shadow(0 5px 6px var(--shadow))}
+  .lvl{display:inline-block;font-weight:900;color:var(--ink);font-size:16px;margin-top:2px;
+    background:rgba(255,250,240,.92);border:2px solid #d9c39a;border-radius:12px;padding:3px 14px}
+  .progress{height:14px;background:#e4d3ad;border:2px solid #c9ad7c;border-radius:10px;margin:12px 40px 0;overflow:hidden}
+  .progress i{display:block;height:100%;width:65%;background:linear-gradient(90deg,#f1c65a,#e8a93b)}
+  .passport{margin-top:12px;padding:12px 14px}
+  .passport h3{text-align:center;color:var(--ink);font-weight:900;font-size:16px;margin-bottom:8px}
+  .trait{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+  .trait .nm{width:96px;font-weight:800;color:var(--brown);font-size:13px}
+  .bar{flex:1;height:13px;background:#e4d3ad;border:2px solid #c9ad7c;border-radius:8px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#8ec44f,#5f8e37)}
+  .badges{display:flex;justify-content:space-around;margin-top:10px}
+  .badge{text-align:center}
+  .badge img{width:62px;height:62px;object-fit:contain}
+  .badge span{display:inline-block;font-weight:800;color:var(--brown);font-size:12px;margin-top:2px;background:rgba(255,250,240,.92);border-radius:10px;padding:2px 8px;
+    background:rgba(255,250,240,.92);border-radius:8px;padding:1px 7px}
+  .profile-btn{margin-top:10px}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Моё дерево</div>
+  <div class="hero"><img src="assets/tree5.webp"><div class="lvl" id="levelLabel">Дубок · Уровень 5</div></div>
+  <div class="progress"><i></i></div>
+  <div class="card passport"><h3>Лесной паспорт</h3>
+    <div class="trait"><span class="nm">Честность</span><div class="bar"><i style="width:0%" data-trait="honesty"></i></div></div>
+    <div class="trait"><span class="nm">Щедрость</span><div class="bar"><i style="width:0%" data-trait="generosity"></i></div></div>
+    <div class="trait"><span class="nm">Надёжность</span><div class="bar"><i style="width:0%" data-trait="reliability"></i></div></div>
+    <div class="trait"><span class="nm">Мудрость</span><div class="bar"><i style="width:0%" data-trait="wisdom"></i></div></div>
+  </div>
+  <div class="badges" onclick="location.href='achievements.html'" style="cursor:pointer">
+    <div class="badge"><img src="assets/badge1.webp"><span>Хранитель</span></div>
+    <div class="badge"><img src="assets/badge2.webp"><span>Меценат</span></div>
+    <div class="badge"><img src="assets/badge3.webp"><span>Спаситель</span></div>
+  </div>
+  <button class="btn btn-lg profile-btn">Сменить наряд</button>
+  <div id="pnote" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px;color:#5f8e37"></div>
+  <div style="text-align:center;margin-top:10px"><a href="#" id="switchUser" class="on-art" style="color:var(--brown);font-weight:800;font-size:13px">Сменить пользователя</a></div>
+</div></div><script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

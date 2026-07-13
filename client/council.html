@@ -1,0 +1,25 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесной Совет</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  .sub{background:rgba(255,250,240,.92);border-radius:14px;padding:5px 14px;align-self:center;margin-left:auto;margin-right:auto;width:fit-content;text-align:center;color:var(--ink);font-weight:700;font-size:14px;background:rgba(255,250,240,.9);
+    border-radius:12px;padding:7px 14px;align-self:center;margin-bottom:6px}
+  #props{flex:1 1 auto;min-height:0;overflow-y:auto}#props::-webkit-scrollbar{width:0}
+  .prop{margin-top:10px;padding:13px}
+  .prop .t{font-weight:900;color:var(--ink);font-size:16px;line-height:1.2}
+  .prop .row{display:flex;align-items:center;gap:8px;margin-top:10px}
+  .prop .tally{flex:1;font-weight:800;color:var(--brown);font-size:14px}
+  .vbtn{border:none;border-radius:12px;padding:8px 16px;font-weight:900;cursor:pointer;font-size:14px}
+  .yes{background:#8ec44f;color:#fff}.no{background:#e0a99a;color:#5b4636}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесной Совет</div>
+  <div class="sub">Голосуем всей семьёй — 1 ребёнок, 1 голос</div>
+  <div id="props"></div>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

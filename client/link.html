@@ -1,0 +1,32 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Вход — Шишка Банк</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_spring.webp)}
+  .wrap{justify-content:center;align-items:center;text-align:center;padding:18px 22px}
+  .spirit img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 5px 6px var(--shadow))}
+  h1{font-size:26px;color:var(--ink);font-weight:900;margin-top:6px}
+  .lead{color:var(--brown);font-weight:700;margin-top:6px;font-size:15px;line-height:1.35}
+  .code-in{margin-top:18px;width:100%;background:#fffaf0;border:3px solid var(--brown);border-radius:16px;
+    padding:14px;font-size:22px;font-weight:900;color:var(--ink);text-align:center;outline:none;
+    text-transform:uppercase;letter-spacing:1px}
+  .code-in::placeholder{color:#c3ab8c;font-weight:700;letter-spacing:0}
+  .hint{margin-top:12px;color:#8a7358;font-weight:700;font-size:13px;line-height:1.6}
+  #note{width:100%}
+  .alt-link{display:inline-block;margin-top:10px;background:rgba(255,250,240,.94);border:2px solid #d9c39a;
+    border-radius:12px;padding:8px 14px;font-weight:800;font-size:14px;text-decoration:none}
+</style></head><body data-no-nav>
+<div class="phone"><div class="wrap">
+  <div class="spirit"><img src="assets/spirit.webp" alt="Лесной Дух"></div>
+  <h1>Шишка Банк</h1>
+  <div class="lead">Привет! Введи код, который дал тебе родитель, и заходи в свой лес.</div>
+  <input class="code-in" id="codeInput" placeholder="Код от родителя" maxlength="10" autocapitalize="characters">
+  <button class="btn btn-lg" id="linkBtn" style="width:100%">Войти в лес</button>
+  <div class="hint" id="hint"></div>
+  <div style="margin-top:6px"><a class="alt-link" href="onboarding.html" style="color:var(--brown)">Первый раз? Посади своё дерево →</a></div>
+  <div><a class="alt-link" href="parent.html" style="color:var(--green-d)">Я родитель — открыть кабинет →</a></div>
+  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:10px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+</div></div>
+<script src="app.js"></script>
+</body></html>
