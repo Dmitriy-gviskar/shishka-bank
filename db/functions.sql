@@ -136,6 +136,10 @@ begin
   insert into users(circle_id, role, name, tree_type)
     values (p_circle, 'child', p_name, p_tree_type) returning * into u;
   insert into wallets(user_id) values (u.id);
+  -- весь каталог заданий новому ребёнку (как в сиде gen_seed/seed.sql)
+  insert into tasks(circle_id, child_id, title, reward, category, needs_photo)
+    select p_circle, u.id, t.title, t.reward, coalesce(t.category,'home'), t.needs_photo
+    from task_templates t;
   return u;
 end $$;
 
