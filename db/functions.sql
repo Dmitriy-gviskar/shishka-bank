@@ -941,14 +941,26 @@ end $$;
 
 -- ═══════════════════ Лесной аукцион: ставки с эскроу, победитель платит в кассу банка ═══════════════════
 
--- Админ/банк выставляет супер-лот на торги.
+-- Ближайший понедельник 15:00 по Москве как timestamptz (дедлайн еженедельного аукциона).
+-- Если этот понедельник 15:00 уже прошёл — берём следующий.
+create or replace function next_monday_15msk()
+returns timestamptz language sql stable as $$
+  select (case
+     when (date_trunc('week', (now() at time zone 'Europe/Moscow')) + interval '15 hours')
+          > (now() at time zone 'Europe/Moscow')
+     then (date_trunc('week', (now() at time zone 'Europe/Moscow')) + interval '15 hours')
+     else (date_trunc('week', (now() at time zone 'Europe/Moscow')) + interval '15 hours' + interval '7 days')
+   end) at time zone 'Europe/Moscow'
+$$;
+
+-- Админ/банк выставляет супер-лот на торги. Дедлайн — ближайший понедельник 15:00 МСК.
 create or replace function create_auction(p_title text, p_prize_skin uuid, p_min_bid int, p_created_by uuid default null)
 returns auctions language plpgsql security definer set search_path = public as $$
 declare a auctions;
 begin
   if p_min_bid <= 0 then raise exception 'min_bid must be positive'; end if;
-  insert into auctions(title, prize_skin, min_bid, created_by)
-    values (p_title, p_prize_skin, p_min_bid, p_created_by) returning * into a;
+  insert into auctions(title, prize_skin, min_bid, created_by, ends_at)
+    values (p_title, p_prize_skin, p_min_bid, p_created_by, next_monday_15msk()) returning * into a;
   return a;
 end $$;
 
@@ -960,6 +972,7 @@ begin
   select * into a from auctions where id = p_auction for update;
   if not found then raise exception 'auction not found'; end if;
   if a.status <> 'live' then raise exception 'auction is closed'; end if;
+  if a.ends_at is not null and now() >= a.ends_at then raise exception 'auction ended'; end if;
   if p_bidder = a.current_leader then raise exception 'you are already the top bidder'; end if;
   if p_amount < a.min_bid then raise exception 'bid below minimum %', a.min_bid; end if;
   if p_amount <= a.current_bid then raise exception 'bid must beat current %', a.current_bid; end if;

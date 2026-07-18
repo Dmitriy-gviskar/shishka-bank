@@ -461,10 +461,45 @@ if (page === 'mail.html') {
 // ── Аукцион ──
 let bidAmount = 5, curBidNow = 0;
 if (page === 'auction.html') {
-  const render = (a) => { document.getElementById('lotName').textContent = a.title || '—';
+  let tick = null;
+  const fmt = (ms) => {   // «2д 3ч 15м» / когда меньше суток — «3ч 15м 09с»
+    const s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400),
+      h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
+    return d > 0 ? `${d}д ${h}ч ${m}м` : `${h}ч ${m}м ${String(ss).padStart(2, '0')}с`;
+  };
+  const showWinner = (a) => {   // живого аукциона нет — показать победителя последнего
+    if (tick) clearInterval(tick);
+    document.getElementById('liveBox').style.display = 'none';
+    const box = document.getElementById('winnerBox'); box.style.display = 'block';
+    box.innerHTML = a && a.winner
+      ? `<div class="cup">🏆</div>Победитель аукциона<div class="who">${a.winner}</div>` +
+        `<div class="sub">«${a.title}» — ставка ${a.final_bid} 🌰<br>Новый аукцион скоро!</div>`
+      : `<div class="cup">🌲</div>Аукцион скоро вернётся<div class="sub">Следи за новостями леса</div>`;
+  };
+  const startTimer = (endsAt) => {
+    if (tick) clearInterval(tick);
+    const el = document.getElementById('timer'), val = document.getElementById('timerVal');
+    if (!endsAt) { el.style.display = 'none'; return; }
+    const end = new Date(endsAt).getTime();
+    const upd = () => {
+      const left = end - Date.now();
+      if (left <= 0) { clearInterval(tick); for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k); api('/api/auction').then(render); return; }
+      val.textContent = fmt(left);
+      el.classList.toggle('soon', left < 3600e3);   // меньше часа — красный
+      el.style.display = 'flex';
+    };
+    upd(); tick = setInterval(upd, 1000);
+  };
+  const render = (a) => {
+    if (!a || a.live === false) { showWinner(a); return; }
+    document.getElementById('liveBox').style.display = 'block';
+    document.getElementById('winnerBox').style.display = 'none';
+    document.getElementById('lotName').textContent = a.title || '—';
     curBidNow = a.current_bid || 0;
     document.getElementById('curBid').textContent = curBidNow;
-    document.getElementById('lead').textContent = 'Лидер: ' + (a.leader || 'нет'); };
+    document.getElementById('lead').textContent = 'Лидер: ' + (a.leader || 'нет');
+    startTimer(a.ends_at);
+  };
   api('/api/auction').then(render);
   document.querySelectorAll('.bids .s').forEach((t) => t.onclick = () => { document.querySelectorAll('.bids .s').forEach((x) => x.classList.remove('sel')); t.classList.add('sel'); bidAmount = +t.dataset.a; });
   document.getElementById('doBid').onclick = async () => {

@@ -28,6 +28,18 @@ const memoGet = async (key, ttl, load) => {
   if (hit && Date.now() - hit.t < ttl) return hit.v;
   const v = await load(); memo.set(key, { v, t: Date.now() }); return v;
 };
+
+// Авто-закрытие аукционов: у кого дедлайн (ends_at) наступил — закрываем, объявляем победителя.
+// Дедлайн ставит create_auction/next_monday_15msk (понедельник 15:00 МСК). Идемпотентно.
+async function sweepAuctions() {
+  try {
+    const due = await q("select id from auctions where status='live' and ends_at is not null and now() >= ends_at");
+    for (const a of due) { await rpc('close_auction', [a.id]).catch((e) => console.error('close_auction', a.id, e.message)); }
+    if (due.length) for (const k of memo.keys()) memo.delete(k);   // сбросить кэш новостей/альбома
+  } catch (e) { console.error('sweepAuctions', e.message); }
+}
+setInterval(sweepAuctions, 60e3);   // раз в минуту
+sweepAuctions();                    // и сразу на старте — вдруг сервер лежал в момент дедлайна
 const CTX_TTL = 3e5, ctxCache = new Map(); // код→{v:{child,circle},t}; сбрасывается при добавлении ребёнка
 // гильдейский чат — только готовые фразы (без свободного текста, этика детского общения)
 const GUILD_PHRASES = new Set(['Собираемся!', 'Заказ готов!', 'Молодцы!', 'Нужна помощь', 'Ура!', 'Я за!']);
@@ -313,13 +325,17 @@ const api = {
 
   // ── Аукцион ──
   'GET /api/auction': async (b, ctx) => {
-    const a = await one("select a.id, a.title, a.current_bid, u.name as leader from auctions a left join users u on u.id=a.current_leader where a.status='live' limit 1");
-    return a || {};
+    await sweepAuctions();   // ленивое закрытие: вдруг дедлайн наступил между тиками таймера
+    const a = await one("select a.id, a.title, a.current_bid, a.ends_at, u.name as leader from auctions a left join users u on u.id=a.current_leader where a.status='live' order by a.created_at desc limit 1");
+    if (a) return { live: true, ...a };
+    // живого нет — показать последний закрытый с победителем
+    const last = await one("select a.title, a.current_bid as final_bid, u.name as winner from auctions a left join users u on u.id=a.current_leader where a.status='closed' order by a.created_at desc limit 1");
+    return last ? { live: false, ...last } : { live: false };
   },
   'POST /api/bid': async (b, ctx) => {
     const a = await one("select id from auctions where status='live' limit 1"); if (!a) throw { code: 400, msg: 'нет аукциона' };
     try { await rpc('place_bid', [a.id, ctx.child, parseInt(b.amount, 10)]); }
-    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /top bidder/.test(e.message) ? 'ты уже лидер' : /beat|below/.test(e.message) ? 'ставка мала' : 'нельзя' }; }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /ended/.test(e.message) ? 'аукцион завершён' : /top bidder/.test(e.message) ? 'ты уже лидер' : /beat|below/.test(e.message) ? 'ставка мала' : 'нельзя' }; }
     const nm = (await one('select name from users where id=$1', [ctx.child])).name;
     return { ok: true, current_bid: parseInt(b.amount, 10), leader: nm, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance };
   },
