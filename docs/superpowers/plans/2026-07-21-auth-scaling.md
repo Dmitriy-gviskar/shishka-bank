@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Взрослый входит по постоянной ссылке-ключу, ребёнок — по запомненному устройству, круги изолированы друг от друга; вход по коду остаётся запасным.
+**Goal:** Взрослый заводит круг одним нажатием и его помнит устройство, ребёнок — по ссылке привязки, круги изолированы друг от друга; вход по коду остаётся запасным.
 
 **Architecture:** Логика авторизации выносится из разросшегося `client/server-pg.mjs` (648 строк) в модуль `client/lib/auth.mjs` (контекст запроса, токены устройств, ключи взрослых). Внешних провайдеров входа нет: и взрослый, и ребёнок опознаются по токену-ссылке, устройство помнит его само. Сервер получает единый резолв `{child, circle, role}` и фильтрует родительский контур по кругу. Хранилище — те же `circles/users/child_logins` плюс три новые таблицы.
 
@@ -609,19 +609,20 @@ git commit -m "fix(кабинет): родительский контур огр
 
 ---
 
-### Task 5: Вход взрослого по ссылке-ключу и создание круга
+### Task 5: Взрослый заводит круг (вход бесшовный, ключ спрятан в кабинет)
 
 **Files:**
-- Modify: `client/server-pg.mjs` (роуты `POST /api/circle/create`, `GET /api/adult/session`)
+- Modify: `client/server-pg.mjs` (роуты `POST /api/circle/create`, `GET /api/adult/session`, `POST /api/parent/transfer-link`)
 - Create: `client/start.html`
 - Test: `tests/adult_link.test.mjs`
 
 **Interfaces:**
 - Consumes: `adults`, `memberships`, `adult_sessions` (Task 2), `auth.resolve/newToken/hash` (Task 3).
 - Produces:
-  - `POST /api/circle/create` `{name, kind}` → `{id, key, url}` — заводит взрослого (если сессии нет), круг, членство `owner`, ставит куку `sb_session` и отдаёт постоянную ссылку-ключ `<APP_URL>/parent.html?key=<token>`;
-  - `GET /api/adult/session` → `{ok, circles:[{id,name,kind}]}` — кто я и какими кругами владею; `401`, если ключа нет.
-- Note: `adult_sessions` здесь работает как долговременный ключ доступа (не короткая сессия). Telegram позже добавится вторым способом получить такой же ключ — схема не меняется.
+  - `POST /api/circle/create` `{name, kind}` → `{id, kind}` — заводит взрослого (если куки нет), круг, членство `owner`, ставит `HttpOnly`-куку `sb_session`. Ключ наружу НЕ отдаётся;
+  - `GET /api/adult/session` → `{ok, circles:[{id,name,kind}]}` — кто я и какими кругами владею; `401` без куки;
+  - `POST /api/parent/transfer-link` → `{url}` — выдаёт ссылку переноса доступа на другое устройство (по требованию, из кабинета).
+- Note: `adult_sessions` — долговременный ключ доступа, а не короткая сессия. Пользователь его не видит: вход бесшовный, устройство помнит. Telegram позже добавится вторым способом получить такой же ключ — схема не меняется.
 
 - [ ] **Step 1: Написать тест**
 
@@ -633,52 +634,61 @@ import assert from 'node:assert/strict';
 import pg from 'pg';
 import { setupDb, startServer } from './helpers/db.mjs';
 
-test('взрослый заводит круг по ссылке-ключу и попадает только в свой круг', async (t) => {
+// Кука ставится сервером; ключ пользователю не показывается, но доступ переносится по запросу.
+test('взрослый заводит круг одним нажатием и видит только свой круг', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url, { APP_URL: 'http://localhost:3777' });
   const pool = new pg.Pool({ connectionString: db.url });
   t.after(() => { srv.stop(); pool.end(); });
   const json = { 'Content-Type': 'application/json' };
 
-  const made = await srv.api('/api/circle/create', {
+  const r = await fetch(`http://127.0.0.1:${srv.port}/api/circle/create`, {
     method: 'POST', headers: json, body: JSON.stringify({ name: 'Семья Петровых', kind: 'family' }) });
-  assert.equal(made.status, 200);
-  assert.ok(made.body.key, 'выдан ключ');
-  assert.match(made.body.url, /parent\.html\?key=/);
+  assert.equal(r.status, 200);
+  const made = await r.json();
+  const cookie = (r.headers.get('set-cookie') || '');
+  assert.match(cookie, /sb_session=/);
+  assert.match(cookie, /HttpOnly/);
+  assert.equal(made.key, undefined, 'ключ наружу не отдаётся');
+  const sess = cookie.match(/sb_session=([^;]+)/)[1];
 
-  const key = made.body.key;
-  const me = await srv.api('/api/adult/session', { headers: { cookie: `sb_session=${key}` } });
+  const me = await srv.api('/api/adult/session', { headers: { cookie: `sb_session=${sess}` } });
   assert.equal(me.status, 200);
   assert.equal(me.body.circles.length, 1);
   assert.equal(me.body.circles[0].kind, 'family');
 
-  // в своём круге пусто, чужих детей не видно
-  const kids = await srv.api('/api/parent/children', { headers: { cookie: `sb_session=${key}` } });
+  const kids = await srv.api('/api/parent/children', { headers: { cookie: `sb_session=${sess}` } });
   assert.equal(kids.status, 200);
-  assert.equal(kids.body.length, 0);
+  assert.equal(kids.body.length, 0, 'в новом круге пусто, чужих детей не видно');
 
-  // добавленный ребёнок попадает в круг этого взрослого
   await srv.api('/api/parent/add-child', {
-    method: 'POST', headers: { ...json, cookie: `sb_session=${key}` }, body: JSON.stringify({ name: 'Тимка', tree: 'pine' }) });
-  const [row] = await pool.query('select circle_id from users where name=$1', ['Тимка']).then((r) => r.rows);
-  assert.equal(row.circle_id, made.body.id);
+    method: 'POST', headers: { ...json, cookie: `sb_session=${sess}` }, body: JSON.stringify({ name: 'Тимка', tree: 'pine' }) });
+  const [row] = await pool.query('select circle_id from users where name=$1', ['Тимка']).then((x) => x.rows);
+  assert.equal(row.circle_id, made.id);
 
-  // без ключа — 401
   const anon = await srv.api('/api/adult/session');
   assert.equal(anon.status, 401);
 
-  // второй круг тем же ключом: лагерь
+  // перенос доступа: ссылка выдаётся по требованию и открывает тот же круг
+  const tr = await srv.api('/api/parent/transfer-link', {
+    method: 'POST', headers: { ...json, cookie: `sb_session=${sess}` }, body: JSON.stringify({}) });
+  assert.equal(tr.status, 200);
+  const key2 = new URL(tr.body.url, 'http://x').searchParams.get('key');
+  const me2 = await srv.api('/api/adult/session', { headers: { cookie: `sb_session=${key2}` } });
+  assert.equal(me2.body.circles[0].id, made.id);
+
+  // второй круг тем же взрослым: лагерь
   const camp = await srv.api('/api/circle/create', {
-    method: 'POST', headers: { ...json, cookie: `sb_session=${key}` }, body: JSON.stringify({ name: 'Лагерь Ёлка', kind: 'camp' }) });
+    method: 'POST', headers: { ...json, cookie: `sb_session=${sess}` }, body: JSON.stringify({ name: 'Лагерь Ёлка', kind: 'camp' }) });
   assert.equal(camp.status, 200);
-  const me2 = await srv.api('/api/adult/session', { headers: { cookie: `sb_session=${key}` } });
-  assert.equal(me2.body.circles.length, 2);
+  const me3 = await srv.api('/api/adult/session', { headers: { cookie: `sb_session=${sess}` } });
+  assert.equal(me3.body.circles.length, 2);
 });
 ```
 
 - [ ] **Step 2: Запустить — упадёт**
 
-Run: `cd ~/Desktop/shishka-bank/client && npm test -- --test-name-pattern="ссылке-ключу"`
+Run: `cd ~/Desktop/shishka-bank/client && npm test -- --test-name-pattern="одним нажатием"`
 Expected: FAIL — роуты отдают 404.
 
 - [ ] **Step 3: Добавить роуты**
@@ -698,13 +708,13 @@ const PUBLIC = new Set(['POST /api/link', 'POST /api/circle/create', 'GET /api/a
 И добавить хендлеры в объект `api`:
 
 ```js
-  // Заводит взрослого (если ключа ещё нет), круг и членство. Ключ = постоянная ссылка доступа.
+  // Заводит взрослого (если куки ещё нет), круг и членство. Ключ остаётся в HttpOnly-куке и наружу не отдаётся.
   'POST /api/circle/create': async (b, ctx, res) => {
-    let adultId = ctx.adult, key = null;
+    let adultId = ctx.adult;
     if (!adultId) {
-      const a = await one("insert into adults(name) values ($1) returning id", [(b.adultName || 'Хранитель').slice(0, 40)]);
+      const a = await one('insert into adults(name) values ($1) returning id', [(b.adultName || 'Хранитель').slice(0, 40)]);
       adultId = a.id;
-      key = auth.newToken();
+      const key = auth.newToken();
       await q('insert into adult_sessions(token_hash, adult_id) values ($1,$2)', [auth.hash(key), adultId]);
       res.setHeader('Set-Cookie', `sb_session=${key}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`);
     }
@@ -714,15 +724,23 @@ const PUBLIC = new Set(['POST /api/link', 'POST /api/circle/create', 'GET /api/a
     const c = await one('insert into circles(name, invite_code, kind) values ($1,$2,$3) returning id', [name, invite, kind]);
     await q("insert into memberships(adult_id, circle_id, role) values ($1,$2,'owner')", [adultId, c.id]);
     auth.dropCache();
-    return { id: c.id, kind, key, url: key ? `${APP_URL}/parent.html?key=${key}` : null };
+    return { id: c.id, kind };
   },
 
   'GET /api/adult/session': async (b, ctx) => {
-    if (!ctx.adult) throw { code: 401, msg: 'нужна ссылка взрослого' };
+    if (!ctx.adult) throw { code: 401, msg: 'нужен вход взрослого' };
     const circles = await q(
       'select c.id, c.name, c.kind from circles c join memberships m on m.circle_id=c.id where m.adult_id=$1 order by c.created_at',
       [ctx.adult]);
     return { ok: true, circles };
+  },
+
+  // Перенос доступа на другое устройство: второй ключ к тому же взрослому, по требованию из кабинета.
+  'POST /api/parent/transfer-link': async (b, ctx) => {
+    if (!ctx.adult) throw { code: 401, msg: 'нужен вход взрослого' };
+    const key = auth.newToken();
+    await q('insert into adult_sessions(token_hash, adult_id) values ($1,$2)', [auth.hash(key), ctx.adult]);
+    return { url: `${APP_URL}/parent.html?key=${key}` };
   },
 ```
 
@@ -755,7 +773,6 @@ const PUBLIC = new Set(['POST /api/link', 'POST /api/circle/create', 'GET /api/a
   .lead{color:var(--brown);font-weight:700;margin-top:8px;font-size:15px;line-height:1.35}
   input,select{margin-top:12px;width:100%;background:#fffaf0;border:3px solid var(--brown);border-radius:16px;
     padding:13px;font-size:17px;font-weight:800;color:var(--ink);outline:none}
-  .key{margin-top:14px;word-break:break-all;font-size:13px}
 </style></head><body data-no-nav>
 <div class="phone"><div class="wrap">
   <div class="spirit"><img src="assets/spirit.webp" alt="Лесной Дух"></div>
@@ -764,65 +781,87 @@ const PUBLIC = new Set(['POST /api/link', 'POST /api/circle/create', 'GET /api/a
   <input id="circleName" placeholder="Название, например «Наша семья»" maxlength="40">
   <select id="circleKind"><option value="family">Семья</option><option value="camp">Лагерь или класс</option></select>
   <button class="btn btn-lg" id="createBtn" style="width:100%;margin-top:12px">Создать</button>
-  <div class="key on-art" id="keyBox" style="display:none"></div>
+  <div class="on-art" id="note" style="display:none;margin-top:12px"></div>
 </div></div>
 <script src="app.js"></script>
 </body></html>
 ```
 
-- [ ] **Step 5: Оживить экран и принимать ключ из ссылки**
+- [ ] **Step 5: Оживить экран и принимать ключ переноса**
 
 В `client/app.js` после блока `if (page === 'link.html') { … }` добавить:
 
 ```js
-// ── Ключ взрослого из ссылки: /parent.html?key=… ──
+// ── Ключ переноса из ссылки: /parent.html?key=… (даётся кабинетом по кнопке) ──
 const urlKey = new URLSearchParams(location.search).get('key');
 if (urlKey) {
   document.cookie = `sb_session=${urlKey}; Path=/; Max-Age=31536000; SameSite=Lax`;
   history.replaceState({}, '', location.pathname);   // ключ не остаётся в адресной строке
 }
 
-// ── Создание своего круга ──
+// ── Создание своего круга: ключ не показываем, сразу в кабинет ──
 if (page === 'start.html') {
   document.getElementById('createBtn').onclick = async () => {
     const name = document.getElementById('circleName').value.trim();
     const kind = document.getElementById('circleKind').value;
     const r = await api('/api/circle/create', { name, kind });
-    const box = document.getElementById('keyBox');
-    box.style.display = 'block';
-    if (r.error) { box.textContent = r.error; return; }
-    box.innerHTML = `Готово! Это ваша личная ссылка в кабинет — сохраните её, она заменяет пароль:<br>
-      <a href="${r.url}">${r.url}</a><br><br>
-      <a class="btn" href="parent.html">Открыть кабинет</a>`;
+    if (r.error) {
+      const n = document.getElementById('note'); n.style.display = 'block'; n.textContent = r.error; return;
+    }
+    location.href = 'parent.html';
   };
 }
 ```
 
-Кука ставится клиентом без `HttpOnly` (иначе JS её не запишет) — это осознанно: ключ и так лежит в ссылке у взрослого. Серверная кука при создании круга остаётся `HttpOnly`.
+Кука переноса ставится клиентом без `HttpOnly` (иначе JS её не запишет) — ключ и так пришёл в ссылке самому взрослому. Кука при создании круга остаётся `HttpOnly`.
 
-- [ ] **Step 6: Кабинет пускает по ключу, PIN — запасной**
+- [ ] **Step 6: Кнопка переноса в кабинете**
+
+В `client/parent.html` в конец блока настроек добавить:
+
+```html
+<details><summary>Перенести кабинет на другой телефон</summary>
+  <div class="on-art">Ссылка откроет этот же кабинет на другом устройстве. Никому её не пересылайте — она заменяет пароль.</div>
+  <button class="btn" id="transferBtn">Показать ссылку</button>
+  <div id="transferBox"></div>
+</details>
+```
+
+и в `client/app.js` в блоке кабинета:
+
+```js
+  const tb = document.getElementById('transferBtn');
+  if (tb) tb.onclick = async () => {
+    const r = await api('/api/parent/transfer-link', {});
+    const box = document.getElementById('transferBox');
+    box.innerHTML = r.error ? `<div class="on-art">${r.error}</div>`
+      : `<div class="on-art" style="word-break:break-all"><a href="${r.url}">${r.url}</a></div><div class="qr"></div>`;
+    if (!r.error) new QRCode(box.querySelector('.qr'), { text: r.url, width: 180, height: 180 });
+  };
+```
+
+- [ ] **Step 7: Кабинет пускает по куке, PIN — запасной**
 
 В `client/app.js` кабинет сейчас при ошибке списывает всё на PIN (около строки 794: `localStorage.removeItem('parentPin'); alert('Неверный PIN')`). Заменить на:
 
 ```js
     if (kids.error) {
       localStorage.removeItem('parentPin');
-      alert('Откройте кабинет по своей ссылке или введите PIN ведущего');
       location.href = 'start.html'; return;
     }
 ```
 
-- [ ] **Step 7: Запустить тесты**
+- [ ] **Step 8: Запустить тесты**
 
 Run: `cd ~/Desktop/shishka-bank/client && npm test`
 Expected: PASS, 6 тестов.
 
-- [ ] **Step 8: Коммит**
+- [ ] **Step 9: Коммит**
 
 ```bash
 cd ~/Desktop/shishka-bank
-git add client/server-pg.mjs client/start.html client/app.js tests
-git commit -m "feat(вход): взрослый заводит круг и входит по постоянной ссылке-ключу"
+git add client/server-pg.mjs client/start.html client/parent.html client/app.js tests
+git commit -m "feat(вход): взрослый заводит круг одним нажатием, перенос доступа — из кабинета"
 ```
 
 ---
@@ -1143,7 +1182,7 @@ ssh root@62.113.99.125 'DBURL=$(systemctl show shishka -p Environment --value | 
 cd ~/Desktop/shishka-bank/client
 tar czf /tmp/shishka.tgz *.html *.js *.css manifest.json server-pg.mjs lib assets
 scp /tmp/shishka.tgz root@62.113.99.125:/tmp/
-ssh root@62.113.99.125 'cd /opt/shishka && tar xzf /tmp/shishka.tgz && systemctl show shishka -p Environment --value | grep -q APP_URL || systemctl set-environment X=1; systemctl restart shishka'
+ssh root@62.113.99.125 'cd /opt/shishka && tar xzf /tmp/shishka.tgz'
 ```
 
 В юнит `/etc/systemd/system/shishka.service` добавить `Environment=APP_URL=https://elka-kvest-2026.ru` (иначе ссылки привязки уйдут с дефолтным адресом), затем `systemctl daemon-reload && systemctl restart shishka`.
@@ -1158,4 +1197,4 @@ Expected: 200 и живое состояние ребёнка — старый �
 
 - [ ] **Step 5: Проверить полный путь на себе**
 
-Открыть `https://elka-kvest-2026.ru/start.html` → создать круг «Тест» (семья) → сохранить выданную ссылку-ключ → в кабинете «Подключить устройство» ребёнку → открыть ссылку привязки на втором телефоне: приложение открылось без кода. Затем убедиться, что круг LESFRIEND не затронут — в кабинете тестового круга видно только его детей, а играющие дети продолжают заходить по своим кодам.
+Открыть `https://elka-kvest-2026.ru/start.html` → создать круг «Тест» (семья): кабинет открылся сразу, ничего вводить и запоминать не пришлось → «Подключить устройство» ребёнку → открыть ссылку привязки на втором телефоне: приложение открылось без кода → в кабинете «Перенести на другой телефон» → открыть эту ссылку в другом браузере: тот же кабинет. Затем убедиться, что круг LESFRIEND не затронут — в кабинете тестового круга видно только его детей, а играющие дети продолжают заходить по своим кодам.
