@@ -6,6 +6,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname } from 'node:path';
 import pg from 'pg';
+import { makeAuth } from './lib/auth.mjs';
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 await mkdir(join(DIR, 'uploads'), { recursive: true });
@@ -17,6 +18,7 @@ pool.query('select 1').catch(() => {});                            // прогр
 const q = (sql, p = []) => pool.query(sql, p).then((r) => r.rows);
 const one = (sql, p = []) => q(sql, p).then((r) => r[0] || null);
 const rpc = (fn, args = []) => q(`select * from ${fn}(${args.map((_, i) => '$' + (i + 1)).join(',')}) as r`, args);
+const auth = makeAuth(q, one);
 
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
@@ -40,7 +42,6 @@ async function sweepAuctions() {
 }
 setInterval(sweepAuctions, 60e3);   // раз в минуту
 sweepAuctions();                    // и сразу на старте — вдруг сервер лежал в момент дедлайна
-const CTX_TTL = 3e5, ctxCache = new Map(); // код→{v:{child,circle},t}; сбрасывается при добавлении ребёнка
 // гильдейский чат — только готовые фразы (без свободного текста, этика детского общения)
 const GUILD_PHRASES = new Set(['Собираемся!', 'Заказ готов!', 'Молодцы!', 'Нужна помощь', 'Ура!', 'Я за!']);
 // описания достижений «за что» по треку (в БД desc = title, генерим человеческое)
@@ -449,7 +450,7 @@ const api = {
   'POST /api/parent/add-child': async (b) => {
     const circle = await one("select id from circles order by created_at limit 1");
     const name = String(b.name || '').trim().slice(0, 16); if (!name) throw { code: 400, msg: 'укажи имя' };
-    ctxCache.clear();
+    auth.dropCache();
     const u = (await rpc('add_child', [circle.id, name, b.tree || 'pine']))[0];
     const cnt = (await one('select count(*) c from child_logins')).c;
     const code = name.slice(0, 4).toUpperCase() + '-' + String(Number(cnt) + 1).padStart(2, '0');
@@ -538,18 +539,7 @@ createServer(async (req, res) => {
       if (url.pathname.startsWith('/api/parent/')) {
         if ((req.headers['x-parent-pin'] || '') !== PARENT_PIN) throw { code: 401, msg: 'нужен PIN родителя' };
       }
-      // резолв активного ребёнка по коду (мемо: код→ребёнок меняется редко, экономим запрос на КАЖДЫЙ вызов)
-      let ctx = {};
-      const cc = req.headers['x-child-code'];
-      if (cc) {
-        const key = decodeURIComponent(cc);
-        const hit = ctxCache.get(key);
-        if (hit && Date.now() - hit.t < CTX_TTL) ctx = hit.v;
-        else {
-          const r = await one('select u.id child, u.circle_id circle from child_logins cl join users u on u.id=cl.child_id where cl.code=$1', [key]);
-          if (r) { ctx = { child: r.child, circle: r.circle }; ctxCache.set(key, { v: ctx, t: Date.now() }); }
-        }
-      }
+      const ctx = await auth.resolve(req);
       // детские endpoint'ы требуют валидный код (иначе 401, а не 500/пустота)
       if (!ctx.child && !PUBLIC.has(route) && !url.pathname.startsWith('/api/parent/')) throw { code: 401, msg: 'нужен код входа' };
       const out = JSON.stringify(await handler(body, ctx));
