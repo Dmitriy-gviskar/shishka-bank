@@ -4,10 +4,14 @@ import { promisify } from 'node:util';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import pg from 'pg';
+import { createRequire } from 'node:module';
 
 const run = promisify(execFile);
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
+// pg установлен только в client/node_modules — резолвим require относительно client/,
+// без symlink node_modules в корне репозитория (ломался на свежем клоне)
+const require = createRequire(join(ROOT, 'client/'));
+const pg = require('pg');
 const DB = 'shishka_test';
 // sslmode=disable: сервер жёстко включает ssl-опцию (для прод-Supabase) — для локального postgres её нужно погасить строкой подключения
 export const url = `postgres://${process.env.USER}@localhost:5432/${DB}?sslmode=disable`;
@@ -18,7 +22,7 @@ export async function setupDb() {
   // Supabase-специфика: схема auth и заглушка auth.uid() — их зовут функции из functions.sql
   await run('psql', ['-q', '-d', DB, '-c',
     'create schema if not exists auth; create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;']);
-  for (const f of ['db/schema.sql', 'db/functions.sql', 'db/cards.sql'])
+  for (const f of ['db/schema.sql', 'db/functions.sql'])
     await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, f)]);
   // child_logins не входит в schema.sql — в проде её создаёт db/seed.sql (см. server-pg.mjs: авторизация ребёнка по коду из этой таблицы)
   await run('psql', ['-q', '-d', DB, '-c',
