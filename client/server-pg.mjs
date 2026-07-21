@@ -573,4 +573,6 @@ createServer(async (req, res) => {
     res.writeHead(200); res.end(data);
   }
   catch { res.writeHead(404); res.end('not found'); }
-}).listen(3777, () => console.log('Шишка Банк (Supabase) → http://localhost:3777'));
+}).listen(Number(process.env.PORT) || 3777, function () {
+  console.log('Шишка Банк → http://localhost:' + this.address().port);
+});
