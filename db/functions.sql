@@ -242,36 +242,58 @@ end $$;
 
 -- ═══════════════════ Удержание: стрик-полив, дневной квест, шишечный дождь ═══════════════════
 
--- Ежедневный заход ребёнка. Ведёт серию «полива», растит дерево (по МАКСИМУМУ серии —
--- дерево НЕ деградирует при пропуске), и с шансом дарит «Шишечный дождь».
--- Возвращает json: streak, tree_level, rain (сколько нападало), first_today.
+-- Ежедневный подарок + серия. Первый заход за день (граница — полночь по Москве):
+--   • гарантированный растущий бонус min(серия+1, 10) шишек;
+--   • вехи серии: 7 дней → +25, 14 → +50, 30 → +100 сверху;
+--   • авто-«дождик»-защитник серии раз в 7 дней (не более 2 в запасе) — один пропуск не рвёт серию;
+--   • «Шишечный дождь» ~30% как приятный сюрприз сверху;
+--   • дерево растёт по МАКСИМУМУ серии (не деградирует).
+-- Возвращает json: streak, best, bonus, milestone, rain, freeze_used, freeze_granted, tree_level, first_today.
 create or replace function daily_visit(p_child uuid)
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare u users; d date := current_date; new_streak int; ls int; rain int := 0; lvl int; c_id uuid;
-        used_freeze boolean := false;
+declare u users; d date := (now() at time zone 'Europe/Moscow')::date;
+        new_streak int; ls int; rain int := 0; lvl int; c_id uuid;
+        used_freeze boolean := false; freeze_granted boolean := false;
+        bonus int; milestone int := 0; total int;
 begin
   select * into u from users where id = p_child for update;
   if not found then raise exception 'user not found'; end if;
+  select circle_id into c_id from users where id = p_child;
 
-  if u.last_visit = d then   -- уже заходил сегодня — стрик и дождь не двигаем
-    return jsonb_build_object('streak', u.current_streak, 'tree_level', u.tree_level,
-                              'rain', 0, 'first_today', false, 'freeze_used', false);
+  if u.last_visit = d then   -- уже забирал сегодня — ничего не начисляем повторно
+    return jsonb_build_object('streak', u.current_streak, 'best', u.longest_streak,
+      'tree_level', u.tree_level, 'bonus', 0, 'milestone', 0, 'rain', 0,
+      'first_today', false, 'freeze_used', false, 'freeze_granted', false);
   end if;
 
   if u.last_visit = d - 1 then
     new_streak := u.current_streak + 1;                            -- заходил вчера — серия растёт
   elsif u.last_visit = d - 2 and u.streak_freezes > 0 then
-    new_streak := u.current_streak + 1;                            -- «дождик» спас пропущенный день
+    new_streak := u.current_streak + 1;                            -- защитник спас пропущенный день
     update users set streak_freezes = streak_freezes - 1 where id = p_child;
     used_freeze := true;
   else
     new_streak := 1;                                               -- первый заход или пропуск без защиты
   end if;
   ls := greatest(u.longest_streak, new_streak);
-
-  -- дерево растёт по достигнутому максимуму серии (метафора «поливаешь — растёт», не умирает)
   lvl := case when ls >= 30 then 5 when ls >= 14 then 4
               when ls >= 7 then 3 when ls >= 3 then 2 else 1 end;
+
+  -- гарантированный растущий подарок: день1=2 … потолок 10
+  bonus := least(new_streak + 1, 10);
+  -- крупные вехи серии
+  if    new_streak = 7  then milestone := 25;
+  elsif new_streak = 14 then milestone := 50;
+  elsif new_streak = 30 then milestone := 100;
+  end if;
+
+  -- авто-защитник серии раз в 7 дней (в запасе держим максимум 2)
+  if (u.last_freeze_grant is null or d - u.last_freeze_grant >= 7) and u.streak_freezes < 2 then
+    update users set streak_freezes = streak_freezes + 1, last_freeze_grant = d where id = p_child;
+    freeze_granted := true;
+  elsif u.last_freeze_grant is null or d - u.last_freeze_grant >= 7 then
+    update users set last_freeze_grant = d where id = p_child;   -- отметить окно, даже если запас полон
+  end if;
 
   -- Шишечный дождь: ~30% шанс, 1-3 шишки (переменная награда за возврат)
   if random() < 0.30 then rain := 1 + floor(random() * 3)::int; end if;
@@ -280,17 +302,24 @@ begin
                    longest_streak = ls, tree_level = lvl
     where id = p_child;
 
+  total := bonus + milestone + rain;
+  update wallets set balance = balance + total, total_earned = total_earned + total
+    where user_id = p_child;
+  insert into transactions(circle_id, from_user, to_user, amount, type, message)
+    values (c_id, null, p_child, bonus, 'reward', 'Ежедневный подарок · серия ' || new_streak);
+  if milestone > 0 then
+    insert into transactions(circle_id, from_user, to_user, amount, type, message)
+      values (c_id, null, p_child, milestone, 'reward', 'Серия ' || new_streak || ' дней! 🔥');
+  end if;
   if rain > 0 then
-    update wallets set balance = balance + rain, total_earned = total_earned + rain
-      where user_id = p_child;
-    select circle_id into c_id from users where id = p_child;
     insert into transactions(circle_id, from_user, to_user, amount, type, message)
       values (c_id, null, p_child, rain, 'reward', 'Шишечный дождь');
   end if;
 
   perform check_achievements(p_child);   -- «Неделя в лесу»/«Хозяин леса» по серии
-  return jsonb_build_object('streak', new_streak, 'tree_level', lvl,
-                            'rain', rain, 'first_today', true, 'freeze_used', used_freeze);
+  return jsonb_build_object('streak', new_streak, 'best', ls, 'tree_level', lvl,
+    'bonus', bonus, 'milestone', milestone, 'rain', rain,
+    'first_today', true, 'freeze_used', used_freeze, 'freeze_granted', freeze_granted);
 end $$;
 
 -- Дневной квест от Духа: если на сегодня нет — создаёт из случайного шаблона (награда +5 за ежедневность)

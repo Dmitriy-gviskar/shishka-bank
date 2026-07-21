@@ -92,7 +92,7 @@ const api = {
 
   'GET /api/state': async (b, ctx) => {
     const [u, w] = await Promise.all([
-      one('select name,tree_level,tree_type,avatar_skin from users where id=$1', [ctx.child]),
+      one("select name,tree_level,tree_type,avatar_skin,current_streak, (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily from users where id=$1", [ctx.child]),
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
     ]);
     let tree_asset = TREE[u.tree_type] || 'tree.webp', skin_on = false;
@@ -100,7 +100,14 @@ const api = {
       const sk = await one('select title from shop_items where id=$1', [u.avatar_skin]);
       if (sk && SKIN_ASSET[sk.title] && SKIN_ASSET[sk.title] !== 'base') { tree_asset = SKIN_ASSET[sk.title] + '.png'; skin_on = true; }
     }
-    return { name: u.name, tree_level: u.tree_level, balance: w.balance, total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on };
+    return { name: u.name, tree_level: u.tree_level, balance: w.balance, total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
+             streak: u.current_streak, can_claim_daily: u.can_claim_daily };
+  },
+
+  // Ежедневный подарок: серия + растущий бонус + вехи + авто-защитник (всё в daily_visit)
+  'POST /api/daily': async (b, ctx) => {
+    const r = await one('select daily_visit($1) as v', [ctx.child]);
+    return r.v;
   },
 
   'GET /api/tasks': async (b, ctx) => (await q('select id,title,reward,needs_photo,status from tasks where child_id=$1 order by created_at', [ctx.child]))

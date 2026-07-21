@@ -38,7 +38,8 @@ create table users (
   last_visit      date,
   current_streak  int not null default 0,
   longest_streak  int not null default 0,      -- дерево растёт по МАКСИМУМУ и не деградирует
-  streak_freezes  int not null default 0,      -- «дождики»-защитники серии (покупаются за шишки)
+  streak_freezes  int not null default 0,      -- «дождики»-защитники серии (покупаются + авто раз в неделю)
+  last_freeze_grant date,                       -- когда последний раз выдали авто-freeze (раз в 7 дней)
   created_at   timestamptz not null default now()
 );
 create index on users(circle_id);

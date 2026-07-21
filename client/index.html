@@ -62,6 +62,26 @@
   .nav button{background:none;border:none;padding:6px;border-radius:16px;cursor:pointer}
   .nav img{width:44px;height:44px;object-fit:contain;display:block}
   .nav .active{background:#fff3d6;box-shadow:0 0 0 3px var(--gold) inset}
+
+  /* Ежедневный подарок */
+  .daily{margin-top:12px;background:linear-gradient(135deg,#ffe9a8,#ffd062);
+    border:3px solid #e0a52e;border-radius:20px;padding:12px 14px;
+    box-shadow:0 5px 0 rgba(160,110,20,.30);display:flex;align-items:center;gap:12px}
+  .daily .fire{font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(160,90,20,.4))}
+  .daily .txt{flex:1;text-align:left}
+  .daily .t1{font-weight:900;color:#6b4a12;font-size:16px;line-height:1.1}
+  .daily .t2{font-weight:800;color:#9a7420;font-size:12.5px;margin-top:2px}
+  .daily button{background:var(--green);border:3px solid var(--green-d);color:#fff;
+    font-size:16px;font-weight:900;padding:10px 18px;border-radius:16px;
+    box-shadow:0 4px 0 var(--green-d);cursor:pointer;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.15)}
+  .daily button:active{transform:translateY(2px);box-shadow:0 2px 0 var(--green-d)}
+  .daily.got{background:#eef3e6;border-color:#cdd9b8;box-shadow:0 5px 0 rgba(120,140,90,.2)}
+  .daily.got .t1{color:#5f7a38}
+  /* дождь шишек при получении */
+  .rain{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden}
+  .rain span{position:absolute;top:-40px;font-size:26px;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(900px) rotate(360deg);opacity:.2}}
+  @media(prefers-reduced-motion:reduce){.rain span{animation-duration:.1s!important}}
 </style>
 </head>
 <body>
@@ -70,6 +90,13 @@
       <div class="greet">
         <img src="assets/spirit.webp" alt="Лесной Дух">
         <div class="bubble">С возвращением!</div>
+      </div>
+
+      <div class="daily" id="daily" style="display:none">
+        <div class="fire" id="dailyFire">🎁</div>
+        <div class="txt"><div class="t1" id="dailyT1">Ежедневный подарок</div>
+          <div class="t2" id="dailyT2">Заходи каждый день — серия растёт</div></div>
+        <button id="dailyBtn">Забрать</button>
       </div>
 
       <div class="card">

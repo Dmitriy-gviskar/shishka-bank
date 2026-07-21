@@ -49,9 +49,56 @@ if (page === 'index.html' || page === '') {
     const b = document.querySelector('.bubble'); if (b) b.innerHTML = `С возвращением,<br>${s.name}!`;
     const lvl = document.querySelector('.level'); if (lvl) lvl.innerHTML = `Дубок<br>Уровень ${s.tree_level}`;
     const av = document.querySelector('.avatar img'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
+    initDaily(s);   // ежедневный подарок
   });
   const add = document.querySelector('.add');   // «Пополнить» → зарабатывай заданиями
   if (add) add.onclick = () => location.href = 'quests.html';
+
+  // ── Ежедневный подарок + серия ──
+  function coneRain(n) {   // дождик шишек поверх экрана
+    const phone = document.querySelector('.phone'); if (!phone) return;
+    const box = document.createElement('div'); box.className = 'rain'; phone.appendChild(box);
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement('span'); s.textContent = '🌰';
+      s.style.left = Math.random() * 92 + '%';
+      s.style.animationDuration = (1 + Math.random() * 1.2) + 's';
+      s.style.animationDelay = (Math.random() * .5) + 's';
+      s.style.fontSize = (20 + Math.random() * 16) + 'px';
+      box.appendChild(s);
+    }
+    setTimeout(() => box.remove(), 2600);
+  }
+  function initDaily(s) {
+    const el = document.getElementById('daily'); if (!el) return;
+    const t1 = document.getElementById('dailyT1'), t2 = document.getElementById('dailyT2');
+    const fire = document.getElementById('dailyFire'), btn = document.getElementById('dailyBtn');
+    el.style.display = 'flex';
+    if (!s.can_claim_daily) {   // уже забрал сегодня
+      el.classList.add('got'); fire.textContent = '🌙'; btn.style.display = 'none';
+      t1.textContent = 'Подарок получен';
+      t2.textContent = s.streak > 0 ? `Серия: ${s.streak} 🔥 · заходи завтра` : 'Заходи завтра';
+      return;
+    }
+    fire.textContent = s.streak > 0 ? '🔥' : '🎁';
+    t1.textContent = 'Подарок ждёт!';
+    t2.textContent = s.streak > 0 ? `Серия: ${s.streak} дн. — не потеряй!` : 'Начни свою серию';
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const r = await api('/api/daily', {});
+      if (r.error) { btn.disabled = false; t2.textContent = r.error; return; }
+      const total = (r.bonus || 0) + (r.milestone || 0) + (r.rain || 0);
+      coneRain(12 + (r.milestone ? 18 : 0));
+      el.classList.add('got'); fire.textContent = '🔥'; btn.style.display = 'none';
+      t1.innerHTML = `+${total} 🌰 · серия ${r.streak}`;
+      let line = r.milestone ? `Веха ${r.streak} дней! +${r.milestone} бонус 🎉`
+               : r.freeze_used ? 'Защитник спас серию!'
+               : 'Возвращайся завтра за бо́льшим';
+      if (r.freeze_granted) line += ' · +1 защитник ❄️';
+      t2.textContent = line;
+      const bal = document.getElementById('bal');
+      if (bal) bal.textContent = (parseInt(bal.textContent, 10) || 0) + total;
+    };
+  }
   api('/api/surprises').then((sp) => {   // есть тайные подарки → подсветить ссылку
     if (Array.isArray(sp) && sp.length) { const l = document.getElementById('spLink');
       if (l) { const n = sp.filter((x) => !x.revealed).length; l.textContent = `🎁 Шишки-сюрпризы${n ? ' (' + n + ')' : ''} →`; l.style.display = 'inline-block'; } }
