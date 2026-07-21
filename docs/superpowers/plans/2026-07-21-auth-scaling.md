@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Взрослый входит через Telegram, ребёнок — по запомненному устройству, круги изолированы друг от друга; вход по коду остаётся запасным.
+**Goal:** Взрослый входит по постоянной ссылке-ключу, ребёнок — по запомненному устройству, круги изолированы друг от друга; вход по коду остаётся запасным.
 
-**Architecture:** Логика авторизации выносится из разросшегося `client/server-pg.mjs` (648 строк) в отдельные модули `client/lib/auth.mjs` (контекст запроса, токены устройств, сессии) и `client/lib/tg.mjs` (валидация Telegram initData). Сервер получает единый резолв `{child, circle, role}` и фильтрует родительский контур по кругу. Хранилище — те же `circles/users/child_logins` плюс три новые таблицы.
+**Architecture:** Логика авторизации выносится из разросшегося `client/server-pg.mjs` (648 строк) в модуль `client/lib/auth.mjs` (контекст запроса, токены устройств, ключи взрослых). Внешних провайдеров входа нет: и взрослый, и ребёнок опознаются по токену-ссылке, устройство помнит его само. Сервер получает единый резолв `{child, circle, role}` и фильтрует родительский контур по кругу. Хранилище — те же `circles/users/child_logins` плюс три новые таблицы.
 
 **Tech Stack:** Node 18+ (на проде 18.19, локально 24), `pg`, встроенный `node:test` + `node:crypto`, PostgreSQL 16 (локально brew `postgresql@16`, на проде `shishka_prod`), ванильный JS на клиенте без сборки.
 
@@ -14,7 +14,7 @@
 - Миграции только additive: `create table if not exists`, `alter table … add column if not exists`, `create or replace function`. Ничего не удалять и не переименовывать — образец стиля `db/cards.sql`.
 - Вход по коду (`x-child-code` + `child_logins`) продолжает работать до конца всех задач. Ни одна задача его не ломает.
 - Токены в БД хранятся только как SHA-256 хэш. Сырой токен существует лишь в ответе API и в localStorage/URL.
-- Никаких новых npm-зависимостей: только `pg` (уже стоит) и встроенные модули Node.
+- Никаких новых npm-зависимостей и внешних сервисов: только `pg` (уже стоит) и встроенные модули Node. Telegram — задел на будущее (колонка `adults.tg_id` заводится сразу), в этот план не входит.
 - Русский язык во всех текстах интерфейса и сообщениях об ошибках, без эмодзи в коде сообщений сервера.
 - Прод не трогаем ни на одном шаге: вся разработка и тесты на локальной БД `shishka_test`. Деплой и рестарт `shishka.service` — отдельно, только по явному «да» Дмитрия.
 - Прод-БД называется `shishka_prod`, connection-string брать из systemd-юнита (`systemctl show shishka -p Environment --value`), НЕ из `/root/shishka-local-db.env` (там стоячая копия).
@@ -206,7 +206,7 @@ Expected: FAIL — файла `db/migration_auth.sql` нет.
 
 ```sql
 -- Шишка Банк — авторизация и мультиарендность. Идемпотентно (см. db/cards.sql).
--- Взрослый = субъект с Telegram-аккаунтом; ребёнок входит по токену устройства.
+-- Взрослый = субъект с постоянным ключом доступа (tg_id — задел под Telegram); ребёнок входит по токену устройства.
 
 alter table circles add column if not exists kind text not null default 'family';
 do $$ begin
@@ -538,7 +538,7 @@ Expected: FAIL — `/api/parent/children` вернёт 401 (сейчас тре�
 
 ```js
       const ctx = await auth.resolve(req);
-      // родительский контур: сессия взрослого ИЛИ legacy-PIN (мост, снимается в Task 5)
+      // родительский контур: ключ взрослого ИЛИ legacy-PIN (мост для круга LESFRIEND)
       if (url.pathname.startsWith('/api/parent/')) {
         const byPin = (req.headers['x-parent-pin'] || '') === PARENT_PIN;
         if (!ctx.adult && !byPin) throw { code: 401, msg: 'нужен вход взрослого' };
@@ -609,118 +609,119 @@ git commit -m "fix(кабинет): родительский контур огр
 
 ---
 
-### Task 5: Вход взрослого по Telegram
+### Task 5: Вход взрослого по ссылке-ключу и создание круга
 
 **Files:**
-- Create: `client/lib/tg.mjs`
-- Modify: `client/server-pg.mjs` (роут `POST /api/auth/telegram`, `PUBLIC`)
-- Test: `tests/telegram.test.mjs`
+- Modify: `client/server-pg.mjs` (роуты `POST /api/circle/create`, `GET /api/adult/session`)
+- Create: `client/start.html`
+- Test: `tests/adult_link.test.mjs`
 
 **Interfaces:**
-- Consumes: `adults`, `memberships`, `adult_sessions`; `auth.newToken()`, `auth.hash()`.
-- Produces: `checkInitData(initData, botToken, maxAgeSec = 86400)` → `{ ok: boolean, user?: {id, first_name}, reason?: string }`; роут `POST /api/auth/telegram` с телом `{initData}` → ставит куку `sb_session` и отдаёт `{ok: true, circles: [{id, name, kind}]}`.
+- Consumes: `adults`, `memberships`, `adult_sessions` (Task 2), `auth.resolve/newToken/hash` (Task 3).
+- Produces:
+  - `POST /api/circle/create` `{name, kind}` → `{id, key, url}` — заводит взрослого (если сессии нет), круг, членство `owner`, ставит куку `sb_session` и отдаёт постоянную ссылку-ключ `<APP_URL>/parent.html?key=<token>`;
+  - `GET /api/adult/session` → `{ok, circles:[{id,name,kind}]}` — кто я и какими кругами владею; `401`, если ключа нет.
+- Note: `adult_sessions` здесь работает как долговременный ключ доступа (не короткая сессия). Telegram позже добавится вторым способом получить такой же ключ — схема не меняется.
 
 - [ ] **Step 1: Написать тест**
 
-Создать `tests/telegram.test.mjs`:
+Создать `tests/adult_link.test.mjs`:
 
 ```js
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createHmac } from 'node:crypto';
-import { checkInitData } from '../client/lib/tg.mjs';
+import pg from 'pg';
+import { setupDb, startServer } from './helpers/db.mjs';
 
-const BOT = '123456:TESTTOKEN';
+test('взрослый заводит круг по ссылке-ключу и попадает только в свой круг', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url, { APP_URL: 'http://localhost:3777' });
+  const pool = new pg.Pool({ connectionString: db.url });
+  t.after(() => { srv.stop(); pool.end(); });
+  const json = { 'Content-Type': 'application/json' };
 
-function signed(user, authDate) {
-  const params = { user: JSON.stringify(user), auth_date: String(authDate) };
-  const dcs = Object.keys(params).sort().map((k) => `${k}=${params[k]}`).join('\n');
-  const secret = createHmac('sha256', 'WebAppData').update(BOT).digest();
-  const hash = createHmac('sha256', secret).update(dcs).digest('hex');
-  return new URLSearchParams({ ...params, hash }).toString();
-}
+  const made = await srv.api('/api/circle/create', {
+    method: 'POST', headers: json, body: JSON.stringify({ name: 'Семья Петровых', kind: 'family' }) });
+  assert.equal(made.status, 200);
+  assert.ok(made.body.key, 'выдан ключ');
+  assert.match(made.body.url, /parent\.html\?key=/);
 
-test('initData: валидная подпись принимается, испорченная и просроченная — нет', () => {
-  const now = Math.floor(Date.now() / 1000);
-  const good = checkInitData(signed({ id: 777, first_name: 'Дмитрий' }, now), BOT);
-  assert.equal(good.ok, true);
-  assert.equal(good.user.id, 777);
+  const key = made.body.key;
+  const me = await srv.api('/api/adult/session', { headers: { cookie: `sb_session=${key}` } });
+  assert.equal(me.status, 200);
+  assert.equal(me.body.circles.length, 1);
+  assert.equal(me.body.circles[0].kind, 'family');
 
-  const tampered = signed({ id: 777, first_name: 'Дмитрий' }, now).replace('777', '778');
-  assert.equal(checkInitData(tampered, BOT).ok, false);
+  // в своём круге пусто, чужих детей не видно
+  const kids = await srv.api('/api/parent/children', { headers: { cookie: `sb_session=${key}` } });
+  assert.equal(kids.status, 200);
+  assert.equal(kids.body.length, 0);
 
-  const old = checkInitData(signed({ id: 777, first_name: 'Дмитрий' }, now - 90000), BOT);
-  assert.equal(old.ok, false);
-  assert.equal(old.reason, 'устарело');
+  // добавленный ребёнок попадает в круг этого взрослого
+  await srv.api('/api/parent/add-child', {
+    method: 'POST', headers: { ...json, cookie: `sb_session=${key}` }, body: JSON.stringify({ name: 'Тимка', tree: 'pine' }) });
+  const [row] = await pool.query('select circle_id from users where name=$1', ['Тимка']).then((r) => r.rows);
+  assert.equal(row.circle_id, made.body.id);
+
+  // без ключа — 401
+  const anon = await srv.api('/api/adult/session');
+  assert.equal(anon.status, 401);
+
+  // второй круг тем же ключом: лагерь
+  const camp = await srv.api('/api/circle/create', {
+    method: 'POST', headers: { ...json, cookie: `sb_session=${key}` }, body: JSON.stringify({ name: 'Лагерь Ёлка', kind: 'camp' }) });
+  assert.equal(camp.status, 200);
+  const me2 = await srv.api('/api/adult/session', { headers: { cookie: `sb_session=${key}` } });
+  assert.equal(me2.body.circles.length, 2);
 });
 ```
 
 - [ ] **Step 2: Запустить — упадёт**
 
-Run: `cd ~/Desktop/shishka-bank/client && npm test -- --test-name-pattern="initData"`
-Expected: FAIL — модуля `client/lib/tg.mjs` нет.
+Run: `cd ~/Desktop/shishka-bank/client && npm test -- --test-name-pattern="ссылке-ключу"`
+Expected: FAIL — роуты отдают 404.
 
-- [ ] **Step 3: Написать модуль**
+- [ ] **Step 3: Добавить роуты**
 
-Создать `client/lib/tg.mjs`:
+В `client/server-pg.mjs` рядом с `PARENT_PIN` добавить базовый адрес:
 
 ```js
-// Валидация Telegram Mini App initData: HMAC-SHA256 по bot-token + свежесть auth_date.
-import { createHmac, timingSafeEqual } from 'node:crypto';
-
-export function checkInitData(initData, botToken, maxAgeSec = 86400) {
-  if (!initData || !botToken) return { ok: false, reason: 'нет данных' };
-  const params = new URLSearchParams(initData);
-  const hash = params.get('hash');
-  if (!hash) return { ok: false, reason: 'нет подписи' };
-  params.delete('hash');
-
-  const dcs = [...params.entries()].sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, v]) => `${k}=${v}`).join('\n');
-  const secret = createHmac('sha256', 'WebAppData').update(botToken).digest();
-  const mine = createHmac('sha256', secret).update(dcs).digest('hex');
-  const a = Buffer.from(mine, 'hex'), b = Buffer.from(hash, 'hex');
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return { ok: false, reason: 'подпись не сходится' };
-
-  const authDate = Number(params.get('auth_date') || 0);
-  if (!authDate || Math.floor(Date.now() / 1000) - authDate > maxAgeSec) return { ok: false, reason: 'устарело' };
-
-  let user = null;
-  try { user = JSON.parse(params.get('user') || 'null'); } catch {}
-  if (!user?.id) return { ok: false, reason: 'нет пользователя' };
-  return { ok: true, user };
-}
+const APP_URL = process.env.APP_URL || 'https://elka-kvest-2026.ru';
 ```
 
-- [ ] **Step 4: Добавить роут входа**
-
-В `client/server-pg.mjs` рядом с `PARENT_PIN` добавить:
+Расширить список роутов, которым не нужен код ребёнка:
 
 ```js
-import { checkInitData } from './lib/tg.mjs';
-const TG_BOT_TOKEN = process.env.TG_BOT_TOKEN || '';
+const PUBLIC = new Set(['POST /api/link', 'POST /api/circle/create', 'GET /api/adult/session', 'POST /api/device/claim']);
 ```
 
-Расширить публичные роуты:
+И добавить хендлеры в объект `api`:
 
 ```js
-const PUBLIC = new Set(['POST /api/link', 'POST /api/auth/telegram', 'POST /api/device/claim']);
-```
+  // Заводит взрослого (если ключа ещё нет), круг и членство. Ключ = постоянная ссылка доступа.
+  'POST /api/circle/create': async (b, ctx, res) => {
+    let adultId = ctx.adult, key = null;
+    if (!adultId) {
+      const a = await one("insert into adults(name) values ($1) returning id", [(b.adultName || 'Хранитель').slice(0, 40)]);
+      adultId = a.id;
+      key = auth.newToken();
+      await q('insert into adult_sessions(token_hash, adult_id) values ($1,$2)', [auth.hash(key), adultId]);
+      res.setHeader('Set-Cookie', `sb_session=${key}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`);
+    }
+    const kind = b.kind === 'camp' ? 'camp' : 'family';
+    const name = (b.name || '').trim() || (kind === 'camp' ? 'Лесной лагерь' : 'Моя семья');
+    const invite = 'C' + Math.random().toString(36).slice(2, 8).toUpperCase();
+    const c = await one('insert into circles(name, invite_code, kind) values ($1,$2,$3) returning id', [name, invite, kind]);
+    await q("insert into memberships(adult_id, circle_id, role) values ($1,$2,'owner')", [adultId, c.id]);
+    auth.dropCache();
+    return { id: c.id, kind, key, url: key ? `${APP_URL}/parent.html?key=${key}` : null };
+  },
 
-И добавить хендлер в объект `api`:
-
-```js
-  'POST /api/auth/telegram': async (b, ctx, res) => {
-    const v = checkInitData(b.initData, TG_BOT_TOKEN);
-    if (!v.ok) throw { code: 401, msg: 'вход не подтверждён Telegram (' + v.reason + ')' };
-    let adult = await one('select id from adults where tg_id=$1', [v.user.id]);
-    if (!adult) adult = await one('insert into adults(tg_id, name) values ($1,$2) returning id',
-      [v.user.id, v.user.first_name || 'Хранитель']);
-    const raw = auth.newToken();
-    await q('insert into adult_sessions(token_hash, adult_id) values ($1,$2)', [auth.hash(raw), adult.id]);
-    res.setHeader('Set-Cookie', `sb_session=${raw}; Path=/; HttpOnly; SameSite=Lax; Max-Age=31536000`);
+  'GET /api/adult/session': async (b, ctx) => {
+    if (!ctx.adult) throw { code: 401, msg: 'нужна ссылка взрослого' };
     const circles = await q(
-      'select c.id, c.name, c.kind from circles c join memberships m on m.circle_id=c.id where m.adult_id=$1',
-      [adult.id]);
+      'select c.id, c.name, c.kind from circles c join memberships m on m.circle_id=c.id where m.adult_id=$1 order by c.created_at',
+      [ctx.adult]);
     return { ok: true, circles };
   },
 ```
@@ -737,180 +738,103 @@ const PUBLIC = new Set(['POST /api/link', 'POST /api/auth/telegram', 'POST /api/
       const out = JSON.stringify(await handler(body, ctx, res));
 ```
 
-- [ ] **Step 5: Дописать тест на роут**
+- [ ] **Step 4: Экран «Завести свой лес»**
 
-В конец `tests/telegram.test.mjs` добавить:
+Создать `client/start.html`:
 
-```js
-import { setupDb, startServer } from './helpers/db.mjs';
-
-test('вход через Telegram заводит взрослого и ставит сессию', async (t) => {
-  const db = await setupDb();
-  const srv = await startServer(db.url, { TG_BOT_TOKEN: BOT });
-  t.after(() => srv.stop());
-
-  const now = Math.floor(Date.now() / 1000);
-  const r = await fetch(`http://127.0.0.1:${srv.port}/api/auth/telegram`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ initData: signed({ id: 424242, first_name: 'Тест' }, now) }),
-  });
-  assert.equal(r.status, 200);
-  assert.match(r.headers.get('set-cookie') || '', /sb_session=/);
-  assert.match(r.headers.get('set-cookie') || '', /HttpOnly/);
-
-  const bad = await fetch(`http://127.0.0.1:${srv.port}/api/auth/telegram`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ initData: 'user=%7B%22id%22%3A1%7D&auth_date=1&hash=deadbeef' }),
-  });
-  assert.equal(bad.status, 401);
-});
+```html
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c">
+<title>Завести свой лес — Шишка Банк</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_spring.webp)}
+  .wrap{justify-content:center;align-items:center;text-align:center;padding:18px 22px}
+  .spirit img{width:140px;height:140px;object-fit:contain;filter:drop-shadow(0 5px 6px var(--shadow))}
+  h1{font-size:24px;color:var(--ink);font-weight:900;margin-top:6px}
+  .lead{color:var(--brown);font-weight:700;margin-top:8px;font-size:15px;line-height:1.35}
+  input,select{margin-top:12px;width:100%;background:#fffaf0;border:3px solid var(--brown);border-radius:16px;
+    padding:13px;font-size:17px;font-weight:800;color:var(--ink);outline:none}
+  .key{margin-top:14px;word-break:break-all;font-size:13px}
+</style></head><body data-no-nav>
+<div class="phone"><div class="wrap">
+  <div class="spirit"><img src="assets/spirit.webp" alt="Лесной Дух"></div>
+  <h1>Заведите свой лес</h1>
+  <div class="lead">Вы — Хранитель: выдаёте задания, подтверждаете их и начисляете шишки.</div>
+  <input id="circleName" placeholder="Название, например «Наша семья»" maxlength="40">
+  <select id="circleKind"><option value="family">Семья</option><option value="camp">Лагерь или класс</option></select>
+  <button class="btn btn-lg" id="createBtn" style="width:100%;margin-top:12px">Создать</button>
+  <div class="key on-art" id="keyBox" style="display:none"></div>
+</div></div>
+<script src="app.js"></script>
+</body></html>
 ```
 
-- [ ] **Step 6: Запустить тесты и закоммитить**
+- [ ] **Step 5: Оживить экран и принимать ключ из ссылки**
+
+В `client/app.js` после блока `if (page === 'link.html') { … }` добавить:
+
+```js
+// ── Ключ взрослого из ссылки: /parent.html?key=… ──
+const urlKey = new URLSearchParams(location.search).get('key');
+if (urlKey) {
+  document.cookie = `sb_session=${urlKey}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  history.replaceState({}, '', location.pathname);   // ключ не остаётся в адресной строке
+}
+
+// ── Создание своего круга ──
+if (page === 'start.html') {
+  document.getElementById('createBtn').onclick = async () => {
+    const name = document.getElementById('circleName').value.trim();
+    const kind = document.getElementById('circleKind').value;
+    const r = await api('/api/circle/create', { name, kind });
+    const box = document.getElementById('keyBox');
+    box.style.display = 'block';
+    if (r.error) { box.textContent = r.error; return; }
+    box.innerHTML = `Готово! Это ваша личная ссылка в кабинет — сохраните её, она заменяет пароль:<br>
+      <a href="${r.url}">${r.url}</a><br><br>
+      <a class="btn" href="parent.html">Открыть кабинет</a>`;
+  };
+}
+```
+
+Кука ставится клиентом без `HttpOnly` (иначе JS её не запишет) — это осознанно: ключ и так лежит в ссылке у взрослого. Серверная кука при создании круга остаётся `HttpOnly`.
+
+- [ ] **Step 6: Кабинет пускает по ключу, PIN — запасной**
+
+В `client/app.js` кабинет сейчас при ошибке списывает всё на PIN (около строки 794: `localStorage.removeItem('parentPin'); alert('Неверный PIN')`). Заменить на:
+
+```js
+    if (kids.error) {
+      localStorage.removeItem('parentPin');
+      alert('Откройте кабинет по своей ссылке или введите PIN ведущего');
+      location.href = 'start.html'; return;
+    }
+```
+
+- [ ] **Step 7: Запустить тесты**
 
 Run: `cd ~/Desktop/shishka-bank/client && npm test`
 Expected: PASS, 6 тестов.
 
+- [ ] **Step 8: Коммит**
+
 ```bash
 cd ~/Desktop/shishka-bank
-git add client/lib/tg.mjs client/server-pg.mjs tests
-git commit -m "feat(вход): авторизация взрослого через Telegram initData + сессия-кука"
+git add client/server-pg.mjs client/start.html client/app.js tests
+git commit -m "feat(вход): взрослый заводит круг и входит по постоянной ссылке-ключу"
 ```
 
 ---
 
-### Task 6: Создание круга и Telegram-бот
-
-**Files:**
-- Create: `client/tg-bot.mjs`
-- Modify: `client/server-pg.mjs` (роут `POST /api/circle/create`)
-- Test: `tests/circle_create.test.mjs`
-
-**Interfaces:**
-- Consumes: сессия взрослого (Task 5).
-- Produces: `POST /api/circle/create` с телом `{name, kind}` → `{id}`, создаёт `circles` + `memberships(owner)`; бот `client/tg-bot.mjs` (long-polling `getUpdates`) на `/start` отвечает кнопкой Mini App.
-
-- [ ] **Step 1: Написать тест**
-
-Создать `tests/circle_create.test.mjs`:
-
-```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import pg from 'pg';
-import { setupDb, startServer } from './helpers/db.mjs';
-import { makeAuth } from '../client/lib/auth.mjs';
-
-test('взрослый создаёт круг семьи и круг лагеря, становится владельцем', async (t) => {
-  const db = await setupDb();
-  const pool = new pg.Pool({ connectionString: db.url });
-  const q = (sql, p = []) => pool.query(sql, p).then((r) => r.rows);
-  const auth = makeAuth(q, (s, p) => q(s, p).then((r) => r[0] || null));
-  const [adult] = await q("insert into adults(name) values ('Новый') returning id");
-  const sess = auth.newToken();
-  await q('insert into adult_sessions(token_hash, adult_id) values ($1,$2)', [auth.hash(sess), adult.id]);
-
-  const srv = await startServer(db.url);
-  t.after(() => { srv.stop(); pool.end(); });
-  const headers = { cookie: `sb_session=${sess}`, 'Content-Type': 'application/json' };
-
-  for (const [name, kind] of [['Семья Петровых', 'family'], ['Лагерь Ёлка', 'camp']]) {
-    const r = await srv.api('/api/circle/create', { method: 'POST', headers, body: JSON.stringify({ name, kind }) });
-    assert.equal(r.status, 200);
-    const [c] = await q('select kind from circles where id=$1', [r.body.id]);
-    assert.equal(c.kind, kind);
-    const [m] = await q('select role from memberships where adult_id=$1 and circle_id=$2', [adult.id, r.body.id]);
-    assert.equal(m.role, 'owner');
-  }
-
-  const anon = await srv.api('/api/circle/create', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Чужой', kind: 'family' }) });
-  assert.equal(anon.status, 401);
-});
-```
-
-- [ ] **Step 2: Запустить — упадёт**
-
-Run: `cd ~/Desktop/shishka-bank/client && npm test -- --test-name-pattern="создаёт круг"`
-Expected: FAIL — роут отдаёт 404.
-
-- [ ] **Step 3: Добавить роут**
-
-В `client/server-pg.mjs` в объект `api`:
-
-```js
-  'POST /api/circle/create': async (b, ctx) => {
-    if (!ctx.adult) throw { code: 401, msg: 'нужен вход взрослого' };
-    const kind = b.kind === 'camp' ? 'camp' : 'family';
-    const name = (b.name || '').trim() || (kind === 'camp' ? 'Лесной лагерь' : 'Моя семья');
-    const invite = 'C' + Math.random().toString(36).slice(2, 8).toUpperCase();
-    const c = await one('insert into circles(name, invite_code, kind) values ($1,$2,$3) returning id', [name, invite, kind]);
-    await q("insert into memberships(adult_id, circle_id, role) values ($1,$2,'owner')", [ctx.adult, c.id]);
-    auth.dropCache();
-    return { id: c.id };
-  },
-```
-
-В `createServer` роут `/api/circle/create` не должен требовать код ребёнка — добавить его в `PUBLIC`:
-
-```js
-const PUBLIC = new Set(['POST /api/link', 'POST /api/auth/telegram', 'POST /api/device/claim', 'POST /api/circle/create']);
-```
-
-- [ ] **Step 4: Написать бота**
-
-Создать `client/tg-bot.mjs`:
-
-```js
-// Telegram-бот Шишка Банк: /start открывает Mini App. Long-polling, без зависимостей.
-// Запуск: TG_BOT_TOKEN=... APP_URL=https://elka-kvest-2026.ru node tg-bot.mjs
-const TOKEN = process.env.TG_BOT_TOKEN;
-const APP = process.env.APP_URL || 'https://elka-kvest-2026.ru';
-if (!TOKEN) { console.error('нет TG_BOT_TOKEN'); process.exit(1); }
-const call = (m, body) => fetch(`https://api.telegram.org/bot${TOKEN}/${m}`, {
-  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-}).then((r) => r.json());
-
-let offset = 0;
-console.log('бот запущен');
-for (;;) {
-  try {
-    const upd = await call('getUpdates', { offset, timeout: 30 });
-    for (const u of upd.result || []) {
-      offset = u.update_id + 1;
-      const chat = u.message?.chat?.id;
-      if (!chat) continue;
-      await call('sendMessage', {
-        chat_id: chat,
-        text: 'Шишка Банк — кабинет взрослого. Заводите семью или лагерь, выдавайте детям задания и подключайте их устройства.',
-        reply_markup: { inline_keyboard: [[{ text: 'Открыть кабинет', web_app: { url: `${APP}/parent.html` } }]] },
-      });
-    }
-  } catch (e) { console.error('бот:', e.message); await new Promise((r) => setTimeout(r, 3000)); }
-}
-```
-
-- [ ] **Step 5: Запустить тесты и закоммитить**
-
-Run: `cd ~/Desktop/shishka-bank/client && npm test`
-Expected: PASS, 7 тестов.
-
-```bash
-cd ~/Desktop/shishka-bank
-git add client/tg-bot.mjs client/server-pg.mjs tests
-git commit -m "feat(вход): создание круга (семья/лагерь) и Telegram-бот со ссылкой на кабинет"
-```
-
----
-
-### Task 7: Токен устройства — выдача и обмен
+### Task 6: Токен устройства — выдача и обмен
 
 **Files:**
 - Modify: `client/server-pg.mjs` (роуты `POST /api/parent/device-link`, `POST /api/device/claim`)
 - Test: `tests/device_link.test.mjs`
 
 **Interfaces:**
-- Consumes: `link_tokens`, `device_tokens`, `auth.newToken()/hash()`.
+- Consumes: `link_tokens`, `device_tokens`, `auth.newToken()/hash()`; сессия взрослого из Task 5.
 - Produces:
   - `POST /api/parent/device-link` `{child}` → `{url, expiresIn}` — `url` вида `https://<host>/connect.html?t=<token>`;
   - `POST /api/device/claim` `{t}` → `{token, child: {id, name}}` — обменивает одноразовый `link_token` на `device_token`.
@@ -1025,7 +949,7 @@ git commit -m "feat(вход): одноразовая ссылка привяз�
 
 ---
 
-### Task 8: Клиент — вход без кода
+### Task 7: Клиент — вход без кода
 
 **Files:**
 - Create: `client/connect.html`
@@ -1191,150 +1115,7 @@ git commit -m "feat(вход): ребёнок заходит по запомне
 
 ---
 
-### Task 9: Кабинет — подключение и отзыв устройств
-
-**Files:**
-- Modify: `client/server-pg.mjs` (роуты `GET /api/parent/devices`, `POST /api/parent/device-revoke`)
-- Modify: `client/parent.html` (карточка ребёнка: кнопка «Подключить устройство», список устройств)
-- Test: `tests/devices_manage.test.mjs`
-
-**Interfaces:**
-- Consumes: `device_tokens`, сессия взрослого.
-- Produces: `GET /api/parent/devices?child=<id>` → `[{id, lastSeen, revoked}]`; `POST /api/parent/device-revoke` `{id}` → `{ok:true}`.
-
-- [ ] **Step 1: Написать тест**
-
-Создать `tests/devices_manage.test.mjs`:
-
-```js
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import pg from 'pg';
-import { setupDb, startServer } from './helpers/db.mjs';
-import { makeAuth } from '../client/lib/auth.mjs';
-
-test('отозванное устройство перестаёт пускать', async (t) => {
-  const db = await setupDb();
-  const pool = new pg.Pool({ connectionString: db.url });
-  const q = (sql, p = []) => pool.query(sql, p).then((r) => r.rows);
-  const auth = makeAuth(q, (s, p) => q(s, p).then((r) => r[0] || null));
-  const [adult] = await q("insert into adults(name) values ('Ведущий') returning id");
-  await q("insert into memberships(adult_id, circle_id, role) values ($1,$2,'owner')", [adult.id, db.circleA]);
-  const sess = auth.newToken();
-  await q('insert into adult_sessions(token_hash, adult_id) values ($1,$2)', [auth.hash(sess), adult.id]);
-
-  const srv = await startServer(db.url);
-  t.after(() => { srv.stop(); pool.end(); });
-  const headers = { cookie: `sb_session=${sess}`, 'Content-Type': 'application/json' };
-
-  const link = await srv.api('/api/parent/device-link', { method: 'POST', headers, body: JSON.stringify({ child: db.childA1.id }) });
-  const tok = new URL(link.body.url, 'http://x').searchParams.get('t');
-  const claim = await srv.api('/api/device/claim', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: tok }) });
-
-  const list = await srv.api(`/api/parent/devices?child=${db.childA1.id}`, { headers });
-  assert.equal(list.body.length, 1);
-
-  const rev = await srv.api('/api/parent/device-revoke', { method: 'POST', headers, body: JSON.stringify({ id: list.body[0].id }) });
-  assert.equal(rev.status, 200);
-
-  const after = await srv.api('/api/state', { headers: { 'x-device-token': claim.body.token } });
-  assert.equal(after.status, 401);
-});
-```
-
-- [ ] **Step 2: Запустить — упадёт**
-
-Run: `cd ~/Desktop/shishka-bank/client && npm test -- --test-name-pattern="отозванное устройство"`
-Expected: FAIL — роутов нет (404), а после отзыва запрос всё ещё 200 из-за кэша контекста.
-
-- [ ] **Step 3: Добавить роуты и сброс кэша**
-
-В `client/server-pg.mjs` в объект `api`:
-
-```js
-  'GET /api/parent/devices': async (b, ctx) => {
-    const child = new URL(b._url || '', 'http://x').searchParams.get('child');
-    const own = await one('select 1 from users where id=$1 and circle_id=$2', [child, ctx.circle]);
-    if (!own) throw { code: 403, msg: 'этот ребёнок не из вашего круга' };
-    return q(`select id, last_seen_at as "lastSeen", revoked_at is not null as revoked
-                from device_tokens where child_id=$1 order by created_at desc`, [child]);
-  },
-
-  'POST /api/parent/device-revoke': async (b, ctx) => {
-    const r = await one(`update device_tokens d set revoked_at=now()
-                          from users u where u.id=d.child_id and d.id=$1 and u.circle_id=$2
-                          returning d.id`, [b.id, ctx.circle]);
-    if (!r) throw { code: 403, msg: 'устройство не из вашего круга' };
-    auth.dropCache();
-    return { ok: true };
-  },
-```
-
-Чтобы GET-хендлер видел query-строку, в `createServer` перед вызовом хендлера положить путь с запросом в тело:
-
-```js
-      body._url = req.url;
-```
-
-(строка ставится сразу после разбора `body`).
-
-- [ ] **Step 4: UI в кабинете**
-
-Карточки детей рисует `client/app.js` (`const el = document.createElement('div'); el.className = 'card kid-row';`, около строки 798). В шаблон `el.innerHTML` после блока `.give-row` добавить:
-
-```html
-        <div class="give-row">
-          <button class="mini link-dev">Подключить устройство</button>
-        </div>
-        <div class="devices"></div>
-```
-
-и сразу после существующего обработчика `.code` добавить:
-
-```js
-      el.querySelector('.link-dev').onclick = async () => {
-        const r = await api('/api/parent/device-link', { child: k.id });
-        const box = el.querySelector('.devices');
-        if (r.error) { box.innerHTML = `<div class="on-art">${r.error}</div>`; return; }
-        box.innerHTML = `<div class="on-art">Ссылка для ${r.childName} действует 15 минут.<br>
-          Пусть ребёнок отсканирует QR или откроет ссылку на своём телефоне.<br>
-          <a href="${r.url}">${r.url}</a></div><div class="qr"></div>`;
-        new QRCode(box.querySelector('.qr'), { text: r.url, width: 180, height: 180 });
-      };
-```
-
-В `client/parent.html` перед `<script src="app.js"></script>` добавить `<script src="assets/qrcode.js"></script>` — тот же vendored генератор, что используется QR-кассой на переводах.
-
-- [ ] **Step 5: Кабинет входит по сессии Telegram, PIN — запасной**
-
-В `client/app.js` кабинет сейчас при ошибке списывает всё на PIN (строка ~794: `localStorage.removeItem('parentPin'); alert('Неверный PIN')`). Заменить на:
-
-```js
-    if (kids.error) {
-      const tg = window.Telegram?.WebApp?.initData;
-      if (tg) { const a = await api('/api/auth/telegram', { initData: tg }); if (!a.error) return location.reload(); }
-      localStorage.removeItem('parentPin');
-      alert('Открой кабинет из Telegram или введи PIN ведущего');
-      location.reload(); return;
-    }
-```
-
-В `client/parent.html` перед `<script src="app.js"></script>` добавить `<script src="https://telegram.org/js/telegram-web-app.js"></script>` — при открытии вне Telegram скрипт просто не даёт `window.Telegram`, и работает старый PIN-путь.
-
-- [ ] **Step 6: Запустить тесты и закоммитить**
-
-Run: `cd ~/Desktop/shishka-bank/client && npm test`
-Expected: PASS, 9 тестов.
-
-```bash
-cd ~/Desktop/shishka-bank
-git add client/server-pg.mjs client/parent.html client/app.js tests
-git commit -m "feat(кабинет): подключение устройства по QR, отзыв доступа, вход по сессии Telegram"
-```
-
----
-
-### Task 10: Выкатка на прод
+### Task 8: Выкатка на прод
 
 **Files:**
 - Modify: нет кода — операционная задача.
@@ -1360,10 +1141,12 @@ ssh root@62.113.99.125 'DBURL=$(systemctl show shishka -p Environment --value | 
 
 ```bash
 cd ~/Desktop/shishka-bank/client
-tar czf /tmp/shishka.tgz *.html *.js *.css manifest.json server-pg.mjs lib tg-bot.mjs assets
+tar czf /tmp/shishka.tgz *.html *.js *.css manifest.json server-pg.mjs lib assets
 scp /tmp/shishka.tgz root@62.113.99.125:/tmp/
-ssh root@62.113.99.125 'cd /opt/shishka && tar xzf /tmp/shishka.tgz && systemctl restart shishka'
+ssh root@62.113.99.125 'cd /opt/shishka && tar xzf /tmp/shishka.tgz && systemctl show shishka -p Environment --value | grep -q APP_URL || systemctl set-environment X=1; systemctl restart shishka'
 ```
+
+В юнит `/etc/systemd/system/shishka.service` добавить `Environment=APP_URL=https://elka-kvest-2026.ru` (иначе ссылки привязки уйдут с дефолтным адресом), затем `systemctl daemon-reload && systemctl restart shishka`.
 
 - [ ] **Step 4: Проверить живой прод**
 
@@ -1373,10 +1156,6 @@ curl -s https://elka-kvest-2026.ru/api/state -H "x-child-code: $(printf %s 'ДЕ
 ```
 Expected: 200 и живое состояние ребёнка — старый вход по коду не сломан.
 
-- [ ] **Step 5: Зарегистрировать бота и включить Telegram-вход**
+- [ ] **Step 5: Проверить полный путь на себе**
 
-Получить bot-token у @BotFather, добавить в юнит `Environment=TG_BOT_TOKEN=...` и `Environment=APP_URL=https://elka-kvest-2026.ru`, `systemctl daemon-reload && systemctl restart shishka`. Бота запустить отдельным юнитом `shishka-bot.service` (`node /opt/shishka/tg-bot.mjs`).
-
-- [ ] **Step 6: Проверить полный путь на себе**
-
-Войти в Mini App из Telegram → создать круг «Тест» → подключить устройство ребёнку → открыть ссылку на втором телефоне → приложение открылось без кода → отозвать устройство → доступ пропал. Затем убедиться, что круг LESFRIEND и его дети не затронуты (`GET /api/parent/children` под сессией показывает только тестовый круг).
+Открыть `https://elka-kvest-2026.ru/start.html` → создать круг «Тест» (семья) → сохранить выданную ссылку-ключ → в кабинете «Подключить устройство» ребёнку → открыть ссылку привязки на втором телефоне: приложение открылось без кода. Затем убедиться, что круг LESFRIEND не затронут — в кабинете тестового круга видно только его детей, а играющие дети продолжают заходить по своим кодам.
