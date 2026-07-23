@@ -22,7 +22,8 @@ const auth = makeAuth(q, one);
 
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
-const PARENT_PIN = process.env.PARENT_PIN || '1234';            // PIN родительского кабинета (env в проде)
+const PARENT_PIN = process.env.PARENT_PIN;                       // PIN родительского кабинета — только из env
+if (!PARENT_PIN) { console.error('нет PARENT_PIN в окружении'); process.exit(1); }   // без дефолта '1234' — иначе кабинет открыт публично
 const PUBLIC = new Set(['POST /api/link']); // единственный роут без кода ребёнка
 const memo = new Map();   // серверный кэш редких данных: ключ → {v,t}
 const memoGet = async (key, ttl, load) => {
@@ -31,12 +32,33 @@ const memoGet = async (key, ttl, load) => {
   const v = await load(); memo.set(key, { v, t: Date.now() }); return v;
 };
 
+// Анти-перебор для PIN-кабинета и кодов входа (/api/link): и то, и другое — короткий секрет.
+// 10 неверных попыток с одного IP → лок на 10 минут. Перебор 10k PIN растягивается на годы.
+const FAILS = new Map();               // ip → { n, until }
+const LOCK_AT = 10, LOCK_MS = 10 * 60_000;
+const clientIp = (req) => (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.headers['x-real-ip'] || req.socket.remoteAddress || 'x';   // nginx проставляет X-Real-IP
+const isLocked = (ip) => { const f = FAILS.get(ip); return !!f && f.until > Date.now(); };
+const badTry = (ip) => { const f = FAILS.get(ip) || { n: 0, until: 0 }; f.n++; if (f.n >= LOCK_AT) { f.until = Date.now() + LOCK_MS; f.n = 0; } FAILS.set(ip, f); };
+const okTry = (ip) => FAILS.delete(ip);
+
 // Авто-закрытие аукционов: у кого дедлайн (ends_at) наступил — закрываем, объявляем победителя.
 // Дедлайн ставит create_auction/next_monday_15msk (понедельник 15:00 МСК). Идемпотентно.
 async function sweepAuctions() {
   try {
     const due = await q("select id from auctions where status='live' and ends_at is not null and now() >= ends_at");
     for (const a of due) { await rpc('close_auction', [a.id]).catch((e) => console.error('close_auction', a.id, e.message)); }
+    // сезон с наступившим дедлайном закрывается сам, дети получают шёпот леса
+    const dueSeason = await one("select code, name from card_seasons where status='active' and ends_at is not null and now() >= ends_at");
+    if (dueSeason) {
+      const r = (await one('select switch_season() as v')).v;
+      if (r && r.ok) {
+        for (const c of await q('select id from circles'))
+          await q('select announce_season($1,$2)', [c.id, `Сезон «${r.closed}» завершён. Открыт новый: «${r.opened}» 🌲`]);
+        console.log('сезон переключён:', r.closed, '→', r.opened);
+      }
+    }
+    const dueCards = await q("select id from card_auctions where status='live' and now() >= ends_at");
+    for (const a of dueCards) { await q('select close_card_auction($1)', [a.id]).catch((e) => console.error('close_card_auction', a.id, e.message)); }
     if (due.length) for (const k of memo.keys()) memo.delete(k);   // сбросить кэш новостей/альбома
   } catch (e) { console.error('sweepAuctions', e.message); }
 }
@@ -93,16 +115,23 @@ const api = {
 
   'GET /api/state': async (b, ctx) => {
     const [u, w] = await Promise.all([
-      one("select name,tree_level,tree_type,avatar_skin,current_streak, (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily from users where id=$1", [ctx.child]),
+      one("select name,tree_level,tree_type,avatar_skin,current_streak,familiar_type,familiar_grade, (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily from users where id=$1", [ctx.child]),
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
     ]);
+    // питомец на поляне: код ассета + титул грейда (если ребёнок его выбрал)
+    let familiar = null;
+    if (u.familiar_type) {
+      familiar = await one(`select t.code, t.name, $2::int as grade, l.title, r.color
+        from card_types t left join card_lore l on l.category=t.category and l.grade=$2
+        left join rarities r on r.grade=$2 where t.id=$1`, [u.familiar_type, u.familiar_grade]);
+    }
     let tree_asset = TREE[u.tree_type] || 'tree.webp', skin_on = false;
     if (u.avatar_skin && u.avatar_skin !== 'base') {   // avatar_skin = uuid скина → его asset
       const sk = await one('select title from shop_items where id=$1', [u.avatar_skin]);
       if (sk && SKIN_ASSET[sk.title] && SKIN_ASSET[sk.title] !== 'base') { tree_asset = SKIN_ASSET[sk.title] + '.png'; skin_on = true; }
     }
     return { name: u.name, tree_level: u.tree_level, balance: w.balance, total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
-             streak: u.current_streak, can_claim_daily: u.can_claim_daily };
+             streak: u.current_streak, can_claim_daily: u.can_claim_daily, familiar };
   },
 
   // Ежедневный подарок: серия + растущий бонус + вехи + авто-защитник (всё в daily_visit)
@@ -321,13 +350,187 @@ const api = {
     return { ok: true };
   },
 
+  // ── Лесная коллекция (карточки) ──
+  'GET /api/cards': async (b, ctx) => {
+    const [types, rar, owned, lore, seasons, packs, fam, history, facts] = await Promise.all([
+      q('select id, code, name, category, sort, season, occasion from card_types order by sort'),
+      q('select grade, code, name, color, price, quicksell, weight from rarities order by grade'),
+      q('select type_id, grade, qty, merged from user_cards where user_id=$1', [ctx.child]),
+      q('select category, grade, title, lore from card_lore'),
+      q('select code, name, sort, status from card_seasons order by sort'),
+      one('select packs_opened from users where id=$1', [ctx.child]),
+      one('select familiar_type as type, familiar_grade as grade, market_allowed from users where id=$1', [ctx.child]),
+      // факт открывается только за собранное целиком существо — иначе его можно было бы подсмотреть
+      q(`select t.code, l.grade, round(avg(l.price))::int as avg, count(*)::int as deals
+         from card_listings l join card_types t on t.id=l.type_id
+         where l.circle_id=$1 and l.status='sold' group by t.code, l.grade`, [ctx.circle]),
+      q(`select f.code, f.fact from card_facts f join card_types t on t.code=f.code
+         where (select count(distinct uc.grade) from user_cards uc
+                where uc.user_id=$1 and uc.type_id=t.id and uc.qty>0) = 6`, [ctx.child]),
+    ]);
+    const own = {};   // type_id → {grade: {qty, merged}}
+    for (const r of owned) { (own[r.type_id] ||= {})[r.grade] = { qty: r.qty, merged: r.merged }; }
+    const cards = types.map((t) => {
+      const have = own[t.id] || {};
+      const grades = rar.map((g) => ({ grade: g.grade, qty: (have[g.grade] || {}).qty || 0, merged: (have[g.grade] || {}).merged || 0 }));
+      const best = grades.filter((g) => g.qty > 0).reduce((m, g) => Math.max(m, g.grade), 0);
+      return { id: t.id, code: t.code, name: t.name, category: t.category, season: t.season,
+               occasion: t.occasion, grades, best, owned: best > 0 };
+    });
+    // гарант: каждый 10-й пак — недостающая карта, каждый 50-й — недостающая Эпическая+
+    const opened = (packs && packs.packs_opened) || 0;
+    const pity = { opened, to_new: 10 - (opened % 10), to_top: 50 - (opened % 50) };
+    return { rarities: rar, cards, lore, facts, history, seasons, pity,
+             market_allowed: fam ? fam.market_allowed : true,
+             familiar: fam && fam.type ? fam : null,
+             collected: cards.filter((c) => c.owned && c.category !== 'special').length,
+             total: cards.filter((c) => c.category !== 'special').length };
+  },
+  'POST /api/familiar': async (b, ctx) => {   // питомец на поляне: карта, выбранная ребёнком
+    try { return await one('select set_familiar($1,$2,$3) as v', [ctx.child, b.type || null, b.grade || null]).then((r) => r.v); }
+    catch (e) { throw { code: 400, msg: /no card/.test(e.message) ? 'этой карты у тебя нет' : 'нельзя' }; }
+  },
+  'POST /api/pack/open': async (b, ctx) => {
+    let r;
+    try { r = await one('select open_pack($1) as v', [ctx.child]); }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек на пак' : 'не получилось' }; }
+    const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+    return { cards: r.v, rewards, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance };
+  },
+  'POST /api/card/merge': async (b, ctx) => {
+    let r;
+    try { r = await one('select merge_cards($1,$2,$3) as v', [ctx.child, b.type, b.grade]).then((x) => x.v); }
+    catch (e) { throw { code: 400, msg: /need 3/.test(e.message) ? 'нужно 3 одинаковых' : /max grade/.test(e.message) ? 'выше некуда' : 'нельзя' }; }
+    const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+    return { ...r, rewards };
+  },
+  'POST /api/card/merge-fuel': async (b, ctx) => {   // 2 своих + 4 любых того же ранга
+    let r;
+    try { r = await one('select merge_with_fuel($1,$2,$3,$4) as v', [ctx.child, b.type, b.grade, !!b.allow_unique]).then((x) => x.v); }
+    catch (e) {
+      // «нужны единственные» — не ошибка, а вопрос: клиент переспрашивает и повторяет с allow_unique
+      if (/needs unique/.test(e.message)) throw { code: 409, msg: 'придётся сжечь карты, которые есть в единственном экземпляре' };
+      throw { code: 400, msg: /need 2 own/.test(e.message) ? 'нужно 2 такие карты'
+        : /need 4 fuel/.test(e.message) ? 'не хватает карт того же ранга'
+        : /plain merge/.test(e.message) ? 'у тебя есть 3 такие — прокачивай обычным способом'
+        : /max grade/.test(e.message) ? 'выше некуда' : 'нельзя' };
+    }
+    const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+    return { ...r, rewards };
+  },
+  'POST /api/card/exchange': async (b, ctx) => {   // 5 лишних одного ранга → 1 недостающая того же ранга
+    let r;
+    try { r = await one('select exchange_cards($1,$2) as v', [ctx.child, b.grade]).then((x) => x.v); }
+    catch (e) { throw { code: 400, msg: /need 5 spare/.test(e.message) ? 'нужно 5 лишних карт этого ранга' : 'нельзя' }; }
+    const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+    return { ...r, rewards };
+  },
+  'POST /api/card/gift': async (b, ctx) => {   // подарок карты другу: лимит 3 в день, лог у ведущего
+    await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому подарить');
+    try { return await one('select gift_card($1,$2,$3,$4) as v', [ctx.child, b.to, b.type, b.grade]).then((r) => r.v); }
+    catch (e) {
+      throw { code: 400, msg: /daily gift limit/.test(e.message) ? 'сегодня уже подарено 3 карты — завтра можно снова'
+        : /no card/.test(e.message) ? 'этой карты у тебя нет' : 'нельзя' };
+    }
+  },
+  'POST /api/card/sell': async (b, ctx) => {
+    try { const r = await one('select sell_card_to_bank($1,$2,$3) as v', [ctx.child, b.type, b.grade]).then((x) => x.v);
+      return { ...r, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance }; }
+    catch (e) { throw { code: 400, msg: /no card/.test(e.message) ? 'нет такой карты' : 'нельзя' }; }
+  },
+  'GET /api/market': async (b, ctx) => q(`select l.id, l.price, l.grade, t.code, t.name, t.category, u.name as seller,
+      r.price as nominal, (l.seller_id=$1) as mine,
+      (select round(avg(s.price))::int from card_listings s
+         where s.circle_id=l.circle_id and s.type_id=l.type_id and s.grade=l.grade and s.status='sold') as avg_price
+      from card_listings l join card_types t on t.id=l.type_id
+      join users u on u.id=l.seller_id join rarities r on r.grade=l.grade
+      where l.circle_id=$2 and l.status='open' order by l.created_at desc`,
+      [ctx.child, ctx.circle]),
+  'POST /api/card/list': async (b, ctx) => {
+    try { return await one('select list_card($1,$2,$3,$4) as v', [ctx.child, b.type, b.grade, parseInt(b.price, 10)]).then((r) => r.v); }
+    catch (e) { throw { code: 400, msg: /no card/.test(e.message) ? 'нет такой карты' : /range/.test(e.message) ? 'цена вне допустимого' : 'нельзя' }; }
+  },
+  'POST /api/market/buy': async (b, ctx) => {
+    try { const r = await one('select buy_listing($1,$2) as v', [ctx.child, b.id]).then((x) => x.v);
+      const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+      return { ...r, rewards, listing: b.id, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance }; }
+    catch (e) { throw { code: 400, msg: /market disabled/.test(e.message) ? 'ведущий пока закрыл рынок' : /not enough/.test(e.message) ? 'не хватает шишек' : /own/.test(e.message) ? 'это твой лот' : 'лот недоступен' }; }
+  },
+  'POST /api/market/undo': async (b, ctx) => {   // отмена покупки в течение 5 минут
+    try { return await one('select undo_purchase($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
+    catch (e) { throw { code: 400, msg: /window passed/.test(e.message) ? 'время отмены вышло' : /already gone/.test(e.message) ? 'карты уже нет' : 'нельзя отменить' }; }
+  },
+  'POST /api/market/cancel': async (b, ctx) => {
+    try { return await one('select cancel_listing($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
+    catch (e) { throw { code: 400, msg: 'нельзя снять' }; }
+  },
+
+  // ── Аукцион золотых карт ──
+  'GET /api/card-auctions': (b, ctx) => q(`select a.id, a.grade, a.start_price, a.current_bid, a.ends_at,
+      t.code, t.name, u.name as seller, lu.name as leader,
+      (a.seller_id=$1) as mine, (a.leader_id=$1) as leading,
+      case when a.current_bid is null then a.start_price
+           else greatest(a.current_bid+1, a.current_bid + a.current_bid/10) end as next_bid
+      from card_auctions a join card_types t on t.id=a.type_id
+      join users u on u.id=a.seller_id left join users lu on lu.id=a.leader_id
+      where a.circle_id=$2 and a.status='live' order by a.ends_at`, [ctx.child, ctx.circle]),
+  'POST /api/card-auction/start': async (b, ctx) => {
+    try { return await one('select start_card_auction($1,$2,$3,$4) as v', [ctx.child, b.type, b.grade, parseInt(b.price, 10)]).then((r) => r.v); }
+    catch (e) {
+      throw { code: 400, msg: /market disabled/.test(e.message) ? 'ведущий пока закрыл рынок' : /no card/.test(e.message) ? 'нет такой карты'
+        : /already live/.test(e.message) ? 'твой аукцион уже идёт — дождись его конца'
+        : /range/.test(e.message) ? 'цена вне допустимого' : 'нельзя' };
+    }
+  },
+  'POST /api/card-auction/bid': async (b, ctx) => {
+    try { const r = await one('select bid_card_auction($1,$2,$3) as v', [ctx.child, b.id, parseInt(b.amount, 10)]).then((x) => x.v);
+      return { ...r, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance }; }
+    catch (e) {
+      throw { code: 400, msg: /market disabled/.test(e.message) ? 'ведущий пока закрыл рынок' : /too low/.test(e.message) ? 'ставка слишком мала'
+        : /not enough/.test(e.message) ? 'не хватает шишек'
+        : /own auction/.test(e.message) ? 'это твой лот'
+        : /already leading/.test(e.message) ? 'ты и так лидируешь'
+        : /closed/.test(e.message) ? 'аукцион уже закончился' : 'нельзя' };
+    }
+  },
+
+  // ── Заявки на покупку («Хочу такую карту») ──
+  'GET /api/wants': (b, ctx) => q(`select w.id, w.price, w.grade, t.id as type, t.code, t.name, t.category,
+      u.name as buyer, (w.buyer_id=$1) as mine, r.price as nominal,
+      coalesce((select uc.qty from user_cards uc
+        where uc.user_id=$1 and uc.type_id=w.type_id and uc.grade=w.grade), 0) as i_have,
+      ((select bw.balance from wallets bw where bw.user_id=w.buyer_id) >= w.price) as funded
+      from card_wants w join card_types t on t.id=w.type_id
+      join users u on u.id=w.buyer_id join rarities r on r.grade=w.grade
+      where w.circle_id=$2 and w.status='open' order by w.created_at desc`,
+      [ctx.child, ctx.circle]),
+  'POST /api/want': async (b, ctx) => {
+    try { return await one('select create_want($1,$2,$3,$4) as v', [ctx.child, b.type, b.grade, parseInt(b.price, 10)]).then((r) => r.v); }
+    catch (e) { throw { code: 400, msg: /market disabled/.test(e.message) ? 'ведущий пока закрыл рынок' : /range/.test(e.message) ? 'цена вне допустимого' : /too many/.test(e.message) ? 'слишком много заявок — сними лишние' : 'нельзя' }; }
+  },
+  'POST /api/want/cancel': async (b, ctx) => {
+    try { return await one('select cancel_want($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
+    catch (e) { throw { code: 400, msg: 'нельзя снять' }; }
+  },
+  'POST /api/want/fill': async (b, ctx) => {
+    try { const r = await one('select fill_want($1,$2) as v', [ctx.child, b.id]).then((x) => x.v);
+      return { ...r, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance }; }
+    catch (e) {
+      throw { code: 400, msg: /market disabled/.test(e.message) ? 'ведущий пока закрыл рынок' : /no card/.test(e.message) ? 'у тебя нет такой карты'
+        : /buyer has no cones/.test(e.message) ? 'у покупателя не хватает шишек'
+        : /own want/.test(e.message) ? 'это твоя заявка' : 'заявка недоступна' };
+    }
+  },
+
   // ── Почта ──
   'GET /api/inbox': (b, ctx) => q(`select u.name as from_name, m.type as kind, m.content, m.is_whisper as whisper
       from messages m left join users u on u.id=m.from_user
       where m.to_user=$1 and m.deliver_at<=now() order by m.created_at desc`, [ctx.child]),
   'POST /api/message': async (b, ctx) => {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому отправить');
-    await rpc('send_message', [ctx.child, b.to, 'emoji', b.emoji || 'привет']);
+    // почта — только эмодзи/стикеры: режем угловые скобки и длину (защита в глубину к клиентскому esc)
+    const emoji = String(b.emoji ?? 'привет').replace(/[<>]/g, '').slice(0, 40) || 'привет';
+    await rpc('send_message', [ctx.child, b.to, 'emoji', emoji]);
     return { ok: true };
   },
 
@@ -446,7 +649,7 @@ const api = {
   },
 
   // ── Кабинет родителя ──
-  'GET /api/parent/children': () => q('select cl.code, u.id, u.name, u.tree_level as level, w.balance from child_logins cl join users u on u.id=cl.child_id join wallets w on w.user_id=u.id order by u.created_at'),
+  'GET /api/parent/children': () => q('select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance from child_logins cl join users u on u.id=cl.child_id join wallets w on w.user_id=u.id order by u.created_at'),
   'POST /api/parent/add-child': async (b) => {
     const circle = await one("select id from circles order by created_at limit 1");
     const name = String(b.name || '').trim().slice(0, 16); if (!name) throw { code: 400, msg: 'укажи имя' };
@@ -478,6 +681,55 @@ const api = {
   'GET /api/parent/templates': () => memoGet('templates', 6e5, () =>
     q('select id,title,reward,category,needs_photo from task_templates order by category nulls last, reward, title')),
   'GET /api/parent/pending': () => q("select t.id, t.title, t.reward, t.proof_url as photo, u.name as \"childName\" from tasks t join users u on u.id=t.child_id where t.status='pending_review' order by t.created_at"),
+  // лог сделок картами (мониторинг ведущим): последние 40 продаж/отмен, флаг сделок у краёв коридора
+  'POST /api/parent/market': async (b, ctx) => {
+    await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [b.child, ctx.circle], 'нет такого ребёнка');
+    await q('update users set market_allowed=$2 where id=$1', [b.child, !!b.allowed]);
+    return { ok: true, allowed: !!b.allowed };
+  },
+  'GET /api/parent/card-metrics': (b, ctx) => one('select card_metrics($1,7) as v', [ctx.circle]).then((r) => r.v),
+  'GET /api/parent/card-catalog': () => q(`select t.id, t.name, t.code, s.name as season, t.pack_drop, t.occasion
+      from card_types t left join card_seasons s on s.code=t.season order by t.pack_drop, s.sort, t.sort`),
+  'POST /api/parent/card/grant': async (b, ctx) => {
+    await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [b.child, ctx.circle], 'нет такого ребёнка');
+    try { return await one('select grant_card($1,$2,$3,$4) as v',
+      [b.child, b.type, parseInt(b.grade, 10), (b.reason || '').trim().slice(0, 60) || null]).then((r) => r.v); }
+    catch (e) { throw { code: 400, msg: /no such card/.test(e.message) ? 'нет такой карты' : 'не получилось вручить' }; }
+  },
+  'GET /api/parent/season': async (b, ctx) => {
+    const active = await one("select code, name, sort, ends_at from card_seasons where status='active' order by sort limit 1");
+    const [all, progress] = await Promise.all([
+      q('select code, name, sort, status, ends_at from card_seasons order by sort'),
+      q('select * from season_progress($1)', [ctx.circle]),
+    ]);
+    return { active, seasons: all, progress };
+  },
+  'POST /api/parent/season/next': async (b, ctx) => {
+    const r = (await one('select switch_season($1) as v', [b.code || null])).v;
+    if (r && r.ok) await q('select announce_season($1,$2)', [ctx.circle, `Сезон «${r.closed}» завершён. Открыт новый: «${r.opened}» 🌲`]);
+    if (!r.ok) throw { code: 400, msg: r.reason || 'нельзя переключить' };
+    return r;
+  },
+  'POST /api/parent/season/deadline': async (b) => {
+    const d = b.ends_at ? new Date(b.ends_at) : null;
+    if (b.ends_at && isNaN(d)) throw { code: 400, msg: 'непонятная дата' };
+    await q("update card_seasons set ends_at=$1 where status='active'", [d]);
+    return { ok: true, ends_at: d };
+  },
+  'GET /api/parent/card-gifts': (b, ctx) => q(`select fu.name as from_name, tu.name as to_name, ct.name as card, g.grade, g.created_at
+      from card_gifts g join users fu on fu.id=g.from_user join users tu on tu.id=g.to_user
+      join card_types ct on ct.id=g.type_id
+      where g.circle_id=$1 order by g.created_at desc limit 40`, [ctx.circle]),
+  'GET /api/parent/card-trades': () => q(`select su.name as seller, bu.name as buyer, ct.name as card,
+      rr.name as grade, l.price, r.price as nominal, l.status, l.closed_at,
+      (l.price <= r.price/2 or l.price >= r.price*3) as edge
+      from card_listings l
+      join card_types ct on ct.id=l.type_id
+      join rarities r on r.grade=l.grade
+      left join rarities rr on rr.grade=l.grade
+      join users su on su.id=l.seller_id
+      left join users bu on bu.id=l.buyer_id
+      where l.status in ('sold','cancelled') order by l.closed_at desc limit 40`),
   'POST /api/parent/approve': async (b) => { try { await rpc('approve_task', [b.id]); } catch (e) { throw { code: 400, msg: 'нет задания на проверке' }; } return { ok: true }; },
   'POST /api/parent/reject': async (b) => { await rpc('reject_task', [b.id]).catch(() => {}); return { ok: true }; },
   'POST /api/parent/topup': async (b) => {
@@ -534,15 +786,25 @@ createServer(async (req, res) => {
     const route = `${req.method} ${url.pathname}`;
     const handler = api[route];
     if (!handler) { res.writeHead(404); return res.end('{}'); }
+    const isParent = url.pathname.startsWith('/api/parent/');
+    const guarded = isParent || route === 'POST /api/link';   // роуты, где перебирают короткий секрет
+    const ip = clientIp(req);
     try {
+      if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
       // родительский контур защищён PIN-ом (иначе ребёнок начислит себе шишки)
-      if (url.pathname.startsWith('/api/parent/')) {
-        if ((req.headers['x-parent-pin'] || '') !== PARENT_PIN) throw { code: 401, msg: 'нужен PIN родителя' };
+      if (isParent) {
+        if ((req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN родителя' }; }
+        okTry(ip);   // верный PIN снимает счётчик
       }
       const ctx = await auth.resolve(req);
       // детские endpoint'ы требуют валидный код (иначе 401, а не 500/пустота)
-      if (!ctx.child && !PUBLIC.has(route) && !url.pathname.startsWith('/api/parent/')) throw { code: 401, msg: 'нужен код входа' };
-      const out = JSON.stringify(await handler(body, ctx));
+      if (!ctx.child && !PUBLIC.has(route) && !isParent) throw { code: 401, msg: 'нужен код входа' };
+      let result;
+      if (route === 'POST /api/link') {   // неверный код (throw 400) считаем промахом, верный — сбрасывает счётчик
+        try { result = await handler(body, ctx); okTry(ip); }
+        catch (e) { badTry(ip); throw e; }
+      } else result = await handler(body, ctx);
+      const out = JSON.stringify(result);
       res.writeHead(200); res.end(out);
     } catch (e) {
       // e.code бывает СТРОКОЙ от pg ('23503', 'P0001') — в writeHead только валидный HTTP-статус, иначе краш всего сервера

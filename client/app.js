@@ -22,12 +22,14 @@ async function api(path, body, method) {
   }
   catch { return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' }; }
 }
+// экранирование пользовательских строк перед вставкой в innerHTML (защита от stored XSS)
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 const page = location.pathname.split('/').pop() || 'index.html';
 // вход по ссылке ?code=РОСТ-01 (родитель может дать прямую ссылку)
 const urlCode = new URLSearchParams(location.search).get('code');
 if (urlCode) localStorage.setItem('childCode', urlCode.toUpperCase());
 // не привязан → на экран ввода кода (родителю и онбордингу код не нужен)
-if (page !== 'link.html' && page !== 'onboarding.html' && page !== 'parent.html' && !localStorage.getItem('childCode'))
+if (page !== 'link.html' && page !== 'parent.html' && !localStorage.getItem('childCode'))
   location.href = 'link.html';
 
 // ── Вход по коду (привязка ребёнка) ──
@@ -46,7 +48,7 @@ if (page === 'link.html') {
 if (page === 'index.html' || page === '') {
   api('/api/state').then((s) => {
     const bal = document.getElementById('bal'); if (bal) bal.textContent = s.balance;
-    const b = document.querySelector('.bubble'); if (b) b.innerHTML = `С возвращением,<br>${s.name}!`;
+    const b = document.querySelector('.bubble'); if (b) b.innerHTML = `С возвращением,<br>${esc(s.name)}!`;
     const lvl = document.querySelector('.level'); if (lvl) lvl.innerHTML = `Дубок<br>Уровень ${s.tree_level}`;
     const av = document.querySelector('.avatar img'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
     initDaily(s);   // ежедневный подарок
@@ -217,7 +219,7 @@ async function loadShop() {
   const cont = document.getElementById('shopList'); cont.innerHTML = '';
   for (const it of items) {
     const el = document.createElement('div'); el.className = 'card lot';
-    el.innerHTML = `<div class="nm">${it.title}</div>
+    el.innerHTML = `<div class="nm">${esc(it.title)}</div>
       <div class="right"><div class="price"><img src="assets/coin1.webp">${it.price}</div>
       <button class="btn btn-sm">Купить</button></div>`;
     el.querySelector('button').onclick = async () => {
@@ -238,7 +240,7 @@ async function loadFriends() {
   fr.forEach((f, i) => {
     const el = document.createElement('div'); el.className = 'friend' + (i === 0 ? ' sel' : '');
     if (i === 0) selFriend = f.id;
-    el.innerHTML = `<img src="assets/${f.avatar}"><span>${f.name}</span>`;
+    el.innerHTML = `<img src="assets/${f.avatar}"><span>${esc(f.name)}</span>`;
     el.onclick = () => { selFriend = f.id; [...c.children].forEach((x) => x.classList.remove('sel')); el.classList.add('sel'); };
     c.appendChild(el);
   });
@@ -352,7 +354,7 @@ if (page === 'profile.html') {
     }
     const bc = document.querySelector('.badges'); if (bc) {   // бейджи из данных ребёнка, а не хардкод
       const arts = { guardian: 'badge1.webp', philanthropist: 'badge2.webp', saver: 'badge3.webp' };
-      bc.innerHTML = p.badges.length ? p.badges.map((b) => `<div class="badge"><img src="assets/${arts[b.code] || 'badge1.webp'}"><span>${b.title}</span></div>`).join('')
+      bc.innerHTML = p.badges.length ? p.badges.map((b) => `<div class="badge"><img src="assets/${arts[b.code] || 'badge1.webp'}"><span>${esc(b.title)}</span></div>`).join('')
         : '<div style="width:100%;text-align:center;padding:6px"><span class="on-art" style="color:#8a7358;font-weight:700;font-size:13px">Пока нет наград — выполняй задания!</span></div>';
     }
   });
@@ -441,8 +443,8 @@ if (page === 'pot.html') {
       const pct = Math.min(100, Math.round(p.collected / p.goal * 100));
       const full = p.collected >= p.goal;
       const el = document.createElement('div'); el.className = 'card pcard';
-      el.innerHTML = `${p.guild ? `<span class="tag">${p.guild}</span>` : ''}
-        <div class="pn">${p.title}</div><div class="pa">поставил: ${p.author}</div>
+      el.innerHTML = `${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
+        <div class="pn">${esc(p.title)}</div><div class="pa">поставил: ${esc(p.author)}</div>
         <div class="scale"><i style="width:${pct}%"></i><span>${p.collected} / ${p.goal}</span></div>
         ${full ? '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута!</div>'
                : `<div class="give"><div class="s sel" data-a="5">5</div><div class="s" data-a="10">10</div><div class="s" data-a="20">20</div>
@@ -473,18 +475,7 @@ if (page === 'pot.html') {
   loadPots();
 }
 
-// ── Онбординг ──
-if (page === 'onboarding.html') {
-  let sp = 'pine';
-  document.querySelectorAll('.sp').forEach((s) => s.onclick = () => {
-    document.querySelectorAll('.sp').forEach((x) => x.classList.remove('sel')); s.classList.add('sel'); sp = s.dataset.tree;
-  });
-  document.getElementById('startBtn').onclick = async () => {
-    const name = document.getElementById('treeName').value.trim() || 'Росточек';
-    localStorage.setItem('childCode', 'ТАЯ-01');   // онбординг привязывает к первому профилю
-    await api('/api/onboard', { name, tree: sp }); location.href = 'index.html';
-  };
-}
+// Онбординг убран: дети входят по личному коду от ведущего (см. фикс захвата ТАЯ-01).
 
 // PWA: офлайн-кэш
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -493,7 +484,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catc
 async function loadInbox() {
   const list = await api('/api/inbox'); const c = document.getElementById('inbox'); c.innerHTML = '';
   for (const m of list) { const el = document.createElement('div'); el.className = 'card msg' + (m.whisper ? ' whisper' : '');
-    el.innerHTML = `<div class="who">${m.from_name}</div><div class="txt">${m.content}</div>${m.whisper ? '<span class="wtag">Шёпот</span>' : `<span class="k">${m.kind}</span>`}`;
+    el.innerHTML = `<div class="who">${esc(m.from_name)}</div><div class="txt">${esc(m.content)}</div>${m.whisper ? '<span class="wtag">Шёпот</span>' : `<span class="k">${esc(m.kind)}</span>`}`;
     c.appendChild(el); }
 }
 if (page === 'mail.html') {
@@ -564,7 +555,7 @@ function renderIns(d) { document.getElementById('fund').textContent = d.fund;
   const c = document.getElementById('claims'); c.innerHTML = '';
   for (const cl of d.claims) { const el = document.createElement('div'); el.className = 'card claim';
     const resolved = cl.status && cl.status !== 'voting';
-    el.innerHTML = `<div class="t">${cl.title}</div><div class="row"><span class="votes">За ${cl.yes} · Против ${cl.no} · нужно ${cl.amount}${!resolved && cl.voted ? ' · твой голос учтён' : ''}</span>${resolved ? voteOutcome(cl.status) : (cl.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}</div>`;
+    el.innerHTML = `<div class="t">${esc(cl.title)}</div><div class="row"><span class="votes">За ${cl.yes} · Против ${cl.no} · нужно ${cl.amount}${!resolved && cl.voted ? ' · твой голос учтён' : ''}</span>${resolved ? voteOutcome(cl.status) : (cl.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}</div>`;
     if (!resolved && !cl.voted) {
       el.querySelector('.yes').onclick = async () => { await api('/api/vote', { id: cl.id, choice: 'yes' }); api('/api/insurance').then(renderIns); };
       el.querySelector('.no').onclick = async () => { await api('/api/vote', { id: cl.id, choice: 'no' }); api('/api/insurance').then(renderIns); };
@@ -587,7 +578,7 @@ function voteOutcome(status) {
 function renderProps(list) { const c = document.getElementById('props'); c.innerHTML = '';
   for (const p of list) { const el = document.createElement('div'); el.className = 'card prop';
     const resolved = p.status && p.status !== 'voting';
-    el.innerHTML = `<div class="t">${p.title}</div><div class="row"><span class="tally">За ${p.yes} · Против ${p.no}${!resolved && p.voted ? ' · ты проголосовал' : ''}</span>${resolved ? voteOutcome(p.status) : (p.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}</div>`;
+    el.innerHTML = `<div class="t">${esc(p.title)}</div><div class="row"><span class="tally">За ${p.yes} · Против ${p.no}${!resolved && p.voted ? ' · ты проголосовал' : ''}</span>${resolved ? voteOutcome(p.status) : (p.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}</div>`;
     if (!resolved && !p.voted) {
       el.querySelector('.yes').onclick = async () => { await api('/api/vote', { id: p.id, choice: 'yes' }); api('/api/proposals').then(renderProps); };
       el.querySelector('.no').onclick = async () => { await api('/api/vote', { id: p.id, choice: 'no' }); api('/api/proposals').then(renderProps); };
@@ -608,7 +599,7 @@ if (page === 'guilds.html') {
     if (!gs.length) c.innerHTML = '<div style="text-align:center;padding:10px"><span class="on-art" style="color:#8a7358;font-weight:700">Гильдий пока нет — основай первую!</span></div>';
     for (const g of gs) {
       const el = document.createElement('div'); el.className = 'card gcard';
-      el.innerHTML = `<div class="gn">${g.name}</div><div class="gm">${g.members.map((m) => m.name).join(', ')}</div>
+      el.innerHTML = `<div class="gn">${esc(g.name)}</div><div class="gm">${g.members.map((m) => esc(m.name)).join(', ')}</div>
         <div class="row">${g.mine ? '<button class="btn btn-sm open">Войти</button>' : '<button class="btn btn-sm join" style="background:#e8b64b;box-shadow:0 4px 0 #c79a3c">Вступить</button>'}</div>`;
       const open = el.querySelector('.open');
       if (open) open.onclick = () => showGuild(g);
@@ -627,7 +618,7 @@ if (page === 'guilds.html') {
     if (msgs.error) return;
     const c = document.getElementById('chat'); c.innerHTML = '';
     for (const m of msgs) { const el = document.createElement('div'); el.className = 'msg' + (m.who === 'Банк' ? ' bank' : '');
-      el.innerHTML = `<div class="who">${m.who}</div><div class="txt">${m.content}</div>`; c.appendChild(el); }
+      el.innerHTML = `<div class="who">${esc(m.who)}</div><div class="txt">${esc(m.content)}</div>`; c.appendChild(el); }
     c.scrollTop = c.scrollHeight;
   }
 
@@ -638,7 +629,7 @@ if (page === 'guilds.html') {
     document.getElementById('gTitle').textContent = g.name;
     const m = document.getElementById('gMembers'); m.innerHTML = '';
     for (const x of g.members) { const el = document.createElement('div'); el.className = 'card mrow';
-      el.innerHTML = `<span class="nm">${x.name}</span><span class="share">доля ${x.share}</span>`; m.appendChild(el); }
+      el.innerHTML = `<span class="nm">${esc(x.name)}</span><span class="share">доля ${x.share}</span>`; m.appendChild(el); }
     const p = document.getElementById('phrases'); p.innerHTML = '';
     for (const ph of PHRASES) { const b = document.createElement('button'); b.textContent = ph;
       b.onclick = async () => { const r = await api('/api/guild/say', { id: g.id, phrase: ph }); if (r.error) note(r.error); else loadChat(); };
@@ -694,7 +685,7 @@ async function loadSkins() {
     if (s.equipped) ctrl = '<span class="st on">Надето</span>';
     else if (s.owned) ctrl = '<button class="btn btn-sm eq">Надеть</button>';
     else ctrl = `<button class="btn btn-sm buy">Купить · ${s.price}</button>`;
-    el.innerHTML = `${rarName[s.rarity] ? `<b>${rarName[s.rarity]}</b>` : ''}<img src="assets/${asset}" onerror="this.src='assets/tree.webp'"><div class="t">${s.title}</div>${ctrl}`;
+    el.innerHTML = `${rarName[s.rarity] ? `<b>${rarName[s.rarity]}</b>` : ''}<img src="assets/${asset}" onerror="this.src='assets/tree.webp'"><div class="t">${esc(s.title)}</div>${ctrl}`;
     const buy = el.querySelector('.buy'); if (buy) buy.onclick = async () => { const r = await api('/api/skin/buy', { id: s.id }); if (r.error) skinNote(r.error); else { loadSkins(); refreshBalance(); } };
     const eq = el.querySelector('.eq'); if (eq) eq.onclick = async () => { await api('/api/skin/equip', { id: s.id }); loadSkins(); };
     g.appendChild(el);
@@ -720,7 +711,7 @@ if (page === 'album.html') {
         const [label, sign] = KIND_RU[e.kind] || [e.kind, ''];
         const when = new Date(e.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
         const el = document.createElement('div'); el.className = 'card ev';
-        el.innerHTML = `<img src="assets/coin1.webp"><div><div class="nm">${e.title || label}</div><div class="k">${label} · ${when}</div></div>` +
+        el.innerHTML = `<img src="assets/coin1.webp"><div><div class="nm">${esc(e.title || label)}</div><div class="k">${esc(label)} · ${when}</div></div>` +
           (e.amount ? `<div class="amt" style="color:${sign === '−' ? '#b3452e' : '#5f8e37'}">${sign}${e.amount}</div>` : '');
         c.insertBefore(el, more.parentNode === c ? more : null);
       }
@@ -798,16 +789,23 @@ if (page === 'parent.html') {
       const el = document.createElement('div'); el.className = 'card kid-row';
       el.innerHTML = `
         <div class="kid-head">
-          <div class="info"><div class="nm">${k.name}</div><div class="meta">Уровень ${k.level}</div>
-            <span class="code" title="нажми, чтобы скопировать">${k.code}</span></div>
+          <div class="info"><div class="nm">${esc(k.name)}</div><div class="meta">Уровень ${k.level}</div>
+            <span class="code" title="нажми, чтобы скопировать">${esc(k.code)}</span></div>
           <div class="bal">${k.balance}<small>шишек</small></div>
         </div>
         <div class="give-row">
           <input class="amt" type="number" min="1" placeholder="сколько" inputmode="numeric">
           <button class="mini g add">Начислить</button>
           <button class="mini r sub">Списать</button>
-        </div>`;
+        </div>
+        <label class="mkt"><input type="checkbox" class="mktbox" ${k.market_allowed ? 'checked' : ''}>
+          Рынок карт: покупка, продажа и торги<span class="mkthint">паки, альбом, слияния и подарки работают всегда</span></label>`;
       el.querySelector('.code').onclick = () => { navigator.clipboard?.writeText(k.code); note(`Код ${k.name} скопирован: ${k.code}`, 1); };
+      el.querySelector('.mktbox').onchange = async (e) => {
+        const r = await api('/api/parent/market', { child: k.id, allowed: e.target.checked });
+        if (r.error) { e.target.checked = !e.target.checked; return note(r.error); }
+        note(`${k.name}: рынок ${r.allowed ? 'открыт' : 'закрыт'}`, 1);
+      };
       const amt = el.querySelector('.amt');
       el.querySelector('.add').onclick = async () => {
         const v = parseInt(amt.value, 10); if (!(v > 0)) return note('Укажи сумму');
@@ -829,7 +827,7 @@ if (page === 'parent.html') {
     if (!list.length) { c.innerHTML = '<div class="empty">Нет заданий на проверке</div>'; return; }
     for (const p of list) {
       const el = document.createElement('div'); el.className = 'card pend';
-      el.innerHTML = `<div class="t">${p.title}</div>${p.photo ? `<img src="${p.photo}" style="width:100%;border-radius:12px;margin:6px 0;border:2px solid #d9c39a" loading="lazy">` : ''}<div class="row"><span class="who">${p.childName} · +${p.reward} шишек</span><button class="mini g ap">Одобрить</button><button class="mini r rj">Вернуть</button></div>`;
+      el.innerHTML = `<div class="t">${esc(p.title)}</div>${p.photo ? `<img src="${esc(p.photo)}" style="width:100%;border-radius:12px;margin:6px 0;border:2px solid #d9c39a" loading="lazy">` : ''}<div class="row"><span class="who">${esc(p.childName)} · +${p.reward} шишек</span><button class="mini g ap">Одобрить</button><button class="mini r rj">Вернуть</button></div>`;
       el.querySelector('.ap').onclick = async () => { await api('/api/parent/approve', { id: p.id }); note('Одобрено, шишки начислены', 1); loadPending(); loadKids(); };
       el.querySelector('.rj').onclick = async () => { await api('/api/parent/reject', { id: p.id }); note('Возвращено на доработку', 1); loadPending(); };
       c.appendChild(el);
@@ -841,8 +839,8 @@ if (page === 'parent.html') {
     if (!gs.length) { c.innerHTML = '<div class="empty">Дети ещё не основали гильдий</div>'; return; }
     for (const g of gs) {
       const el = document.createElement('div'); el.className = 'card kid-row';
-      el.innerHTML = `<div class="kid-head"><div class="info"><div class="nm">${g.name}</div>
-          <div class="meta">${g.members.join(', ')}</div></div></div>
+      el.innerHTML = `<div class="kid-head"><div class="info"><div class="nm">${esc(g.name)}</div>
+          <div class="meta">${g.members.map(esc).join(', ')}</div></div></div>
         <div class="give-row"><input class="amt" type="number" min="1" placeholder="выплата за заказ" inputmode="numeric">
         <button class="mini g pay">Выплатить по долям</button></div>`;
       const amt = el.querySelector('.amt');
@@ -890,5 +888,934 @@ if (page === 'parent.html') {
     if (r.error) note(r.error); else { note('Приз добавлен в магазин!', 1); document.getElementById('prizeTitle').value = ''; document.getElementById('prizePrice').value = ''; }
   };
   document.getElementById('logout').onclick = (e) => { e.preventDefault(); location.href = 'link.html'; };
-  loadKids(); loadPending();
+  // ── Лесная коллекция: сезон, дедлайн, прогресс детей ──
+  async function loadSeason() {
+    const d = await api('/api/parent/season');
+    const box = document.getElementById('season');
+    if (!box || d.error) { if (box) box.innerHTML = '<div class="empty">Коллекция ещё не настроена</div>'; return; }
+    const next = (d.seasons || []).find((s) => s.status === 'upcoming');
+    const ends = d.active && d.active.ends_at ? new Date(d.active.ends_at) : null;
+    const daysLeft = ends ? Math.ceil((ends - new Date()) / 86400e3) : null;
+    box.innerHTML = `<div class="season-box">
+      <div class="sname">${d.active ? d.active.name : 'сезон не выбран'}</div>
+      <div class="sinfo">${d.active ? `сейчас выпадает в паках${ends ? ` · до ${ends.toLocaleDateString('ru-RU')} (${daysLeft} дн.)` : ' · срок не задан'}` : ''}</div>
+      ${(d.progress || []).map((p) => `<div class="srow"><span>${p.child}</span><span>${p.done} / ${p.total}</span></div>`).join('')}
+      <div id="cardMetrics" class="metrics"></div>
+      <div class="actions">
+        <input type="date" id="seasonDate" value="${ends ? ends.toISOString().slice(0, 10) : ''}">
+        <button class="btn" id="setDeadline">Срок</button>
+        <button class="btn btn-lg" id="nextSeason" ${next ? '' : 'disabled'}>
+          ${next ? `Начать «${next.name}»` : 'Это последний сезон'}</button>
+      </div>
+      <div class="sinfo" style="margin:8px 0 0">Прошлый сезон не пропадает: его карты остаются у детей,
+        их можно выменять или купить друг у друга, а награда за сезон по-прежнему доступна.</div>
+    </div>`;
+    document.getElementById('setDeadline').onclick = async () => {
+      const r = await api('/api/parent/season/deadline', { ends_at: document.getElementById('seasonDate').value || null });
+      if (r.error) note(r.error); else { note('Срок сезона сохранён', 1); loadSeason(); }
+    };
+    const nb = document.getElementById('nextSeason');
+    if (nb && next) nb.onclick = async () => {
+      if (!confirm(`Завершить «${d.active ? d.active.name : ''}» и начать «${next.name}»?\nВ паках начнут выпадать существа нового сезона.`)) return;
+      const r = await api('/api/parent/season/next', {});
+      if (r.error) note(r.error); else { note(`Открыт сезон «${r.opened}»`, 1); loadSeason(); }
+    };
+  }
+
+  // ── Здоровье экономики карт за неделю: карты должны забирать шишек больше, чем возвращать ──
+  async function loadMetrics() {
+    const m = await api('/api/parent/card-metrics');
+    const box = document.getElementById('cardMetrics');
+    if (!box || m.error) return;
+    const net = (m.earned || 0) - (m.spent || 0);
+    const verdict = m.packs === 0 ? 'паков пока не открывали'
+      : net < 0 ? 'здоровая: карты забирают шишек больше, чем возвращают'
+      : 'внимание: карты вернули больше шишек, чем забрали';
+    box.innerHTML = `<div class="mrow"><b>За неделю:</b> ${m.packs} ${plural(m.packs, 'пак', 'пака', 'паков')}
+      · потрачено ${m.spent} 🌰 · возвращено ${m.earned} 🌰 · комиссия банка ${m.fees} 🌰</div>
+      <div class="mrow ${net < 0 ? 'ok' : 'warn'}">Итог: ${net > 0 ? '+' : ''}${net} 🌰 — ${verdict}</div>
+      <div class="mrow">Играют в карты: ${m.players} из ${m.children}</div>`;
+  }
+
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+    return many;
+  }
+
+  // ── Лог сделок и подарков (предохранитель: видно, кто кому что отдал) ──
+  async function loadCardLog() {
+    const box = document.getElementById('cardLog');
+    if (!box) return;
+    const [trades, gifts] = await Promise.all([api('/api/parent/card-trades'), api('/api/parent/card-gifts')]);
+    const rows = [];
+    for (const t of Array.isArray(trades) ? trades : [])
+      rows.push({ at: t.closed_at || t.created_at, html: `<div class="${t.edge ? 'edge' : ''}">${t.seller} → ${t.buyer}: ${t.card} за ${t.price} 🌰${t.edge ? ' · цена у края коридора' : ''}</div>` });
+    for (const g of Array.isArray(gifts) ? gifts : [])
+      rows.push({ at: g.created_at, html: `<div>${g.from_name} подарил(а) ${g.to_name}: ${g.card}</div>` });
+    rows.sort((x, y) => new Date(y.at) - new Date(x.at));
+    box.innerHTML = rows.length ? rows.map((r) => r.html).join('') : '<div>Сделок и подарков пока не было</div>';
+  }
+
+  // ── Вручение карты за дело (спец-выпуски и награды вне гачи) ──
+  async function loadGrant() {
+    const [kids, cat] = await Promise.all([api('/api/parent/children'), api('/api/parent/card-catalog')]);
+    const kidSel = document.getElementById('grantKid'), cardSel = document.getElementById('grantCard');
+    if (!kidSel || kids.error || cat.error) return;
+    kidSel.innerHTML = kids.map((k) => `<option value="${k.id}">${esc(k.name)}</option>`).join('');
+    cardSel.innerHTML = cat.map((c) => `<option value="${c.id}">${c.pack_drop ? '' : '★ '}${esc(c.name)}${c.occasion ? ` · ${esc(c.occasion)}` : c.season ? ` · ${esc(c.season)}` : ''}</option>`).join('');
+    document.getElementById('grantBtn').onclick = async () => {
+      const r = await api('/api/parent/card/grant', {
+        child: kidSel.value, type: cardSel.value,
+        grade: document.getElementById('grantGrade').value,
+        reason: document.getElementById('grantReason').value,
+      });
+      if (r.error) return note(r.error);
+      note(`Вручено: ${r.name} (${r.grade})`, 1);
+      document.getElementById('grantReason').value = '';
+    };
+  }
+
+  loadKids(); loadPending(); loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
+}
+
+// ── Питомец на поляне: карта, выбранная ребёнком в коллекции ──
+if (page === 'forest.html') {
+  api('/api/state').then((s) => {
+    const box = document.getElementById('fam'); const f = s && s.familiar;
+    if (!box || !f) return;
+    box.style.setProperty('--fc', f.color || '#ffc21f');
+    box.innerHTML = `<img src="assets/cards/thumb/${f.code}_${f.grade}.webp" alt="${esc(f.name)}">
+      <div class="fi"><div class="fn">${esc(f.name)}</div><div class="ft">${esc(f.title || '')}</div></div>
+      <div class="fgo">→</div>`;
+    box.style.display = 'flex';
+    box.onclick = () => location.href = 'collection.html';
+  });
+}
+
+// ══════════════ Лесная коллекция (карточки) ══════════════
+if (page === 'collection.html') {
+  const CAT = { zver: '🦊 Звери', rastenie: '🌿 Растения', nasekomoe: '🐞 Насекомые', special: '🎖 Особые' };
+  const asset = (code, grade) => `assets/cards/${code}_${grade}.webp`;          // крупный показ
+  const thumb = (code, grade) => `assets/cards/thumb/${code}_${grade}.webp`;    // сетки: в 5 раз легче
+  let RAR = {}, DATA = null, LOTS = [], WANTS = [], AUCS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
+  const note = (t) => {   // всплывающая подсказка поверх экрана
+    const el = document.createElement('div'); el.textContent = t;
+    el.style.cssText = 'position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:50;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px 16px;font-weight:800;color:#b3452e;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:80%;text-align:center';
+    document.querySelector('.phone').appendChild(el); setTimeout(() => el.remove(), 2200);
+  };
+
+  // ── свои диалоги вместо системных: детям 7-12 нативные prompt/confirm неудобны ──
+  function ask(title, text, okText = 'Да', cancelText = 'Отмена') {
+    return new Promise((resolve) => {
+      const ov = document.getElementById('askOv'), sheet = document.getElementById('askSheet');
+      sheet.innerHTML = `<h3>${title}</h3><div class="asktext">${text}</div>
+        <div class="acts"><button class="a-ok">${okText}</button><button class="a-no">${cancelText}</button></div>`;
+      const close = (v) => { ov.classList.remove('on'); ov.onclick = null; resolve(v); };
+      sheet.querySelector('.a-ok').onclick = () => close(true);
+      sheet.querySelector('.a-no').onclick = () => close(false);
+      ov.onclick = (e) => { if (e.target.id === 'askOv') close(false); };
+      ov.classList.add('on');
+    });
+  }
+
+  // выбор цены ползунком и пресетами: без клавиатуры и без ввода чисел
+  function askPrice(title, { base, lo, hi, initial, hint, okText = 'Готово' }) {
+    return new Promise((resolve) => {
+      const ov = document.getElementById('askOv'), sheet = document.getElementById('askSheet');
+      const start = Math.min(hi, Math.max(lo, initial || base));
+      sheet.innerHTML = `<h3>${title}</h3>
+        ${hint ? `<div class="asktext">${hint}</div>` : ''}
+        <div class="pricebig"><span id="pv">${start}</span> 🌰</div>
+        <input class="pricerange" type="range" id="pr" min="${lo}" max="${hi}" value="${start}">
+        <div class="presets">
+          <button data-v="${Math.max(lo, Math.round(base * 0.7))}">дешевле</button>
+          <button data-v="${Math.min(hi, Math.max(lo, base))}">обычная</button>
+          <button data-v="${Math.min(hi, Math.round(base * 1.5))}">дороже</button>
+        </div>
+        <div class="asktext" id="pdeal"></div>
+        <div class="acts"><button class="a-ok">${okText}</button><button class="a-no">Отмена</button></div>`;
+      const range = sheet.querySelector('#pr'), val = sheet.querySelector('#pv'), deal = sheet.querySelector('#pdeal');
+      const paint = () => {
+        val.textContent = range.value;
+        const v = +range.value;
+        deal.textContent = v <= base * 0.7 ? 'дёшево — купят быстро'
+          : v >= base * 1.5 ? 'дорого — можно ждать долго' : 'обычная цена';
+      };
+      range.oninput = paint; paint();
+      sheet.querySelectorAll('.presets button').forEach((b) => b.onclick = () => { range.value = b.dataset.v; paint(); });
+      const close = (v) => { ov.classList.remove('on'); ov.onclick = null; resolve(v); };
+      sheet.querySelector('.a-ok').onclick = () => close(+range.value);
+      sheet.querySelector('.a-no').onclick = () => close(null);
+      ov.onclick = (e) => { if (e.target.id === 'askOv') close(null); };
+      ov.classList.add('on');
+    });
+  }
+
+  function render(d) {
+    DATA = d;
+    RAR = {}; d.rarities.forEach((r) => RAR[r.grade] = r);
+    LORE = {}; (d.lore || []).forEach((l) => LORE[l.category + ':' + l.grade] = l);   // титул+фраза по категории и грейду
+    FAM = d.familiar || null;
+    FACTS = {}; (d.facts || []).forEach((f) => FACTS[f.code] = f.fact);   // только за собранных целиком
+    HIST = {}; (d.history || []).forEach((h) => HIST[h.code + ':' + h.grade] = h);   // за сколько такие уходили в круге
+    SEASONS = d.seasons || [];
+    MARKET = d.market_allowed !== false;   // ведущий может закрыть торговлю ребёнку
+    const active = SEASONS.find((s) => s.status === 'active');
+    const isFull = (c) => c.grades.filter((x) => x.qty > 0).length === 6;
+    // прогресс считаем по активному сезону — это достижимая цель, а не «121 существо когда-нибудь»
+    const inSeason = active ? d.cards.filter((c) => c.season === active.code) : d.cards;
+    const doneSeason = inSeason.filter(isFull).length;
+    document.getElementById('progTxt').textContent = active
+      ? `Сезон: ${doneSeason} / ${inSeason.length}`
+      : `Собрано: ${d.collected} / ${d.total}`;
+    document.getElementById('progBar').style.width =
+      Math.round((active ? doneSeason / inSeason.length : d.collected / d.total) * 100) + '%';
+    // гарант новинки — видно, сколько паков осталось
+    const pityEl = document.getElementById('pityTxt');
+    if (pityEl) {
+      const guar = !d.pity ? '' : d.pity.to_top <= d.pity.to_new
+        ? ` · через ${d.pity.to_top} ${plural(d.pity.to_top, 'пак', 'пака', 'паков')} — Эпическая+, которой нет`
+        : ` · через ${d.pity.to_new} ${plural(d.pity.to_new, 'пак', 'пака', 'паков')} — новая карта точно`;
+      pityEl.textContent = `Всего собрано ${d.collected} из ${d.total}${guar}`;
+    }
+    const av = document.getElementById('albumView'); av.innerHTML = '';
+    // сезоны: активный сверху и раскрыт, остальные — свёрнуты (карты остаются в обороте)
+    const order = SEASONS.length ? [...SEASONS].sort((x, y) =>
+      (y.status === 'active') - (x.status === 'active') || x.sort - y.sort) : [{ code: null, name: '' }];
+    for (const s of order) {
+      const cards = s.code ? d.cards.filter((c) => c.season === s.code) : d.cards;
+      if (!cards.length) continue;
+      const done = cards.filter(isFull).length;
+      if (s.code) {
+        const sh = document.createElement('div');
+        sh.className = 'season' + (s.status === 'active' ? ' on' : '');
+        sh.innerHTML = `<span class="sn">${esc(s.name)}</span>
+          ${s.status === 'active' ? '<span class="stag">сейчас в паках</span>'
+            : s.status === 'upcoming' ? '<span class="stag off">скоро</span>'
+            : '<span class="stag off">архив</span>'}
+          <span class="cc-count">${done}/${cards.length}</span><span class="sarrow">${s.status === 'active' ? '▾' : '▸'}</span>`;
+        av.appendChild(sh);
+        const body = document.createElement('div');
+        body.className = 'sbody';
+        if (s.status !== 'active') body.style.display = 'none';
+        sh.onclick = () => {
+          const open = body.style.display !== 'none';
+          if (!open && !body.dataset.built) { renderGroups(cards, body); body.dataset.built = '1'; }
+          body.style.display = open ? 'none' : '';
+          sh.querySelector('.sarrow').textContent = open ? '▸' : '▾';
+        };
+        av.appendChild(body);
+        if (s.status === 'active') renderGroups(cards, body);   // остальные — по тапу, чтобы не держать 726 ячеек в DOM
+      } else {
+        renderGroups(cards, av);
+      }
+    }
+
+    // ── Особые карты: их не выпадает из паков, их вручает ведущий за дело ──
+    const specials = d.cards.filter((c) => c.category === 'special');
+    if (specials.length) {
+      const have = specials.filter((c) => c.grades.some((g) => g.qty > 0)).length;
+      const h = document.createElement('div'); h.className = 'season sp';
+      h.innerHTML = `<span class="sn">🎖 Особые</span><span class="stag off">за дело, не из паков</span>
+        <span class="cc-count">${have}/${specials.length}</span>`;
+      av.appendChild(h);
+      const box = document.createElement('div'); box.className = 'sbody';
+      for (const c of specials) {
+        const g6 = c.grades.find((g) => g.grade === 6) || { qty: 0 };
+        const owned = g6.qty > 0;
+        const el = document.createElement('div'); el.className = 'being spone' + (owned ? ' full' : '');
+        el.innerHTML = `<div class="spcell ${owned ? 'has' : 'locked'}">
+            <img src="${thumb(c.code, 6)}" alt="" loading="lazy">
+            ${g6.qty > 1 ? `<div class="gdup">×${g6.qty}</div>` : ''}</div>
+          <div class="spinfo"><div class="bn">${c.name}</div>
+            <div class="spwhy">${owned ? 'у тебя есть' : (c.occasion || 'особый случай')}</div></div>`;
+        el.onclick = () => openDetail(c, 6);
+        box.appendChild(el);
+      }
+      av.appendChild(box);
+    }
+  }
+
+  function plural(n, one, few, many) {
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
+    return many;
+  }
+
+  function renderGroups(cards, host) {
+    const groups = {};
+    cards.forEach((c) => (groups[c.category] ||= []).push(c));
+    const av = host;
+    for (const cat of ['zver', 'rastenie', 'nasekomoe']) {
+      if (!groups[cat]) continue;
+      const fullN = groups[cat].filter((c) => c.grades.filter((x) => x.qty > 0).length === 6).length;
+      const h = document.createElement('div'); h.className = 'cat';
+      h.innerHTML = `${CAT[cat]}<span class="cc-count">${fullN}/${groups[cat].length}</span>`;
+      av.appendChild(h);
+      // каждое существо = полка из 6 ячеек-грейдов (Panini)
+      for (const c of groups[cat]) {
+        const have6 = c.grades.filter((x) => x.qty > 0).length;
+        const full = have6 === 6;
+        const being = document.createElement('div'); being.className = 'being' + (full ? ' full' : '');
+        const cells = c.grades.map((gr) => {
+          const rc = (RAR[gr.grade] || {}).color || '#9aa4b2';
+          const has = gr.qty > 0;
+          return `<div class="gcell ${has ? 'has g' + gr.grade : 'locked'}" style="--gc:${rc}">
+            <img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy">
+            ${has && gr.qty > 1 ? `<div class="gdup">×${gr.qty}</div>` : ''}</div>`;
+        }).join('');
+        // подсказка возврата: где-то осталась ровно одна карта до слияния
+        const almost = c.grades.some((g) => g.qty === 2 && g.grade < 6);
+        being.innerHTML = `<div class="being-head"><span class="bn">${esc(c.name)}</span>
+          ${almost ? '<span class="bnear">🔥 ещё 1 до эволюции</span>' : ''}
+          <span class="bp ${full ? 'done' : ''}">${have6}/6${full ? ' ✓' : ''}</span></div>
+          <div class="grades6">${cells}</div>`;
+        being.onclick = () => openDetail(c);
+        // тап по конкретной ячейке открывает деталь сразу на этом грейде (пустая — с предложением «Хочу такую»)
+        being.querySelectorAll('.gcell').forEach((cell, i) => cell.onclick = (e) => {
+          e.stopPropagation(); openDetail(c, c.grades[i].grade);
+        });
+        av.appendChild(being);
+      }
+    }
+  }
+
+  function openDetail(c, startGrade) {
+    const sheet = document.getElementById('sheet');
+    const owned = c.grades.filter((g) => g.qty > 0);
+    // активный грейд для действий: заданный тапом по ячейке, иначе лучший собранный
+    let sel = startGrade || (owned.length ? owned[owned.length - 1].grade : (c.best || 1));
+    const draw = () => {
+      const best = c.best || 1;
+      const have6 = c.grades.filter((g) => g.qty > 0).length;
+      const rows = c.grades.map((gr) => {
+        const r = RAR[gr.grade];
+        const active = gr.grade === sel ? ' active' : '';
+        return `<div class="gr ${gr.qty > 0 ? 'has' : 'no'}${active}" data-g="${gr.grade}" style="--gc:${r.color}">
+          <span class="dot"></span><span class="gn">${r.name}</span>
+          <span class="gq">${gr.qty > 0 ? '×' + gr.qty : '—'}</span></div>`;
+      }).join('');
+      const isSpecial = c.category === 'special';
+      const gr = c.grades.find((g) => g.grade === sel) || { qty: 0 };
+      const r = RAR[sel] || RAR[1];
+      // топливо для слияния: карты того же ранга у ДРУГИХ существ (излишки дублей — отдельно)
+      const fuelQty = (DATA.cards || []).filter((x) => x.id !== c.id)
+        .map((x) => (x.grades.find((g) => g.grade === sel) || {}).qty || 0);
+      const fuelTotal = fuelQty.reduce((s, n) => s + n, 0);
+      const fuelDup = fuelQty.reduce((s, n) => s + Math.max(0, n - 1), 0);
+      // что доступно по этой карте на рынке и есть ли моя заявка на неё
+      const offers = LOTS.filter((l) => l.code === c.code && l.grade === sel && !l.mine)
+        .sort((a, b) => a.price - b.price);
+      const myWant = WANTS.find((w) => w.mine && w.code === c.code && w.grade === sel);
+      let acts = '';
+      if (isSpecial && gr.qty > 0) {
+        acts = `<div class="sub">Памятная карта${c.occasion ? `: ${c.occasion.toLowerCase()}` : ''}. Её не продают — но можно подарить другу.</div>`
+          + `<button class="a-fam">${FAM && FAM.type === c.id && FAM.grade === sel ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`
+          + `<button class="a-gift">🎁 Подарить другу</button>`;
+      } else if (isSpecial && gr.qty === 0) {
+        acts = `<div class="sub">Такую карту не выпадет из пака — её вручает ведущий${c.occasion ? `: ${c.occasion.toLowerCase()}` : ''}.</div>`;
+      } else if (gr.qty > 0) {
+        if (gr.qty >= 3 && sel < 6) acts += `<button class="a-merge">⬆ Прокачать · 3 шт → ${RAR[sel + 1].name}</button>`;
+        // 2 своих + 4 любых того же ранга — выход из тупика «дубли есть, тройки нет»
+        else if (gr.qty === 2 && sel < 6 && fuelTotal >= 4) {
+          acts += `<button class="a-fuel">🔥 Слить с топливом · обе твои + 4 любых</button>`;
+        }
+        // видно, сколько осталось до эволюции — иначе «нужно 3» узнаёшь только упершись
+        if (gr.qty < 3 && sel < 6) {
+          const left = 3 - gr.qty;
+          acts += `<div class="evoprog">До эволюции в «${RAR[sel + 1].name}» ${left === 1 ? 'осталась 1 карта' : `осталось ${left} карты`}
+            <div class="ebar"><i style="width:${Math.round(gr.qty / 3 * 100)}%;background:${RAR[sel + 1].color}"></i></div></div>`;
+        }
+        if (!isSpecial) {
+          acts += `<button class="a-sell">💰 Продать Банку · ${r.quicksell} 🌰</button>`;
+          if (MARKET) acts += sel >= 6 ? `<button class="a-auc">🔨 На аукцион · 24 часа</button>`
+                                        : `<button class="a-list">🏷 Выставить на рынок</button>`;
+        }
+        const isFam = FAM && FAM.type === c.id && FAM.grade === sel;
+        acts += `<button class="a-fam">${isFam ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`;
+        acts += `<button class="a-gift">🎁 Подарить другу</button>`;
+      } else {
+        acts = `<div class="sub">Этой карты у тебя ещё нет — ${MARKET ? 'открывай паки или найди на рынке' : 'открывай паки'}.</div>`;
+      }
+      // «Хочу такую»: сначала готовые лоты, потом — объявить свою цену
+      if (MARKET && !isSpecial) {
+        if (offers.length) acts += `<button class="a-buy">🛒 Купить на рынке · ${offers[0].price} 🌰${offers.length > 1 ? ` (лотов: ${offers.length})` : ''}</button>`;
+        if (myWant) acts += `<button class="a-unwant">🙋 Снять заявку (${myWant.price} 🌰)</button>`;
+        else acts += `<button class="a-want">🙋 Хочу такую · оставить заявку</button>`;
+      }
+      sheet.style.setProperty('--rc', (RAR[sel] || RAR[best]).color);
+      const lo = LORE[c.category + ':' + sel] || {};
+      sheet.innerHTML = `<button class="x">&times;</button>
+        <img class="big" src="${asset(c.code, gr.qty > 0 ? sel : best)}" alt="${c.name}">
+        <h3>${c.name}${lo.title ? ' — ' + lo.title.toLowerCase() : ''}</h3>
+        <div class="sub">${CAT[c.category].slice(2)} · ${r.name}</div>
+        ${lo.lore ? `<div class="lore">${lo.lore}</div>` : ''}
+        ${gr.merged > 0 ? `<div class="mtag">✨ прокачана тобой${gr.merged > 1 ? ` (${gr.merged} раза)` : ''}</div>` : ''}
+        ${FACTS[c.code] ? `<div class="fact"><b>Знаешь ли ты?</b> ${FACTS[c.code]}</div>`
+          : (!isSpecial && have6 < 6 ? `<div class="factlock">Собери все 6 карт — узнаешь про ${c.name.toLowerCase()} кое-что настоящее</div>` : '')}
+        ${isSpecial ? '' : `<div class="grades">${rows}</div>`}
+        <div class="acts">${acts}</div>
+        <div class="note2" id="dnote"></div>`;
+      sheet.querySelector('.x').onclick = closeDetail;
+      sheet.querySelectorAll('.gr').forEach((el) => el.onclick = () => { sel = +el.dataset.g; draw(); });
+      const dnote = sheet.querySelector('#dnote');
+      const m = sheet.querySelector('.a-merge');
+      if (m) m.onclick = async () => {
+        const from = sel;
+        if (gr.qty === 3 && !await ask('Прокачать?', `Все три карты «${r.name}» уйдут на эволюцию, и эта ячейка в альбоме опустеет.`, 'Прокачать')) return;
+        m.disabled = true;
+        const r2 = await api('/api/card/merge', { type: c.id, grade: from });
+        if (r2.error) { m.disabled = false; dnote.textContent = r2.error; dnote.style.color = '#b3452e'; return; }
+        closeDetail();
+        await evolveRitual(c, from, r2.new_grade, r2.bonus);   // ритуал: три карты → одна грейдом выше
+        showRewards(r2.rewards);
+        reload();
+      };
+      const s = sheet.querySelector('.a-sell');
+      if (s) s.onclick = async () => {
+        const r2 = await api('/api/card/sell', { type: c.id, grade: sel });
+        if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }
+        else { dnote.textContent = 'Продано за ' + r2.payout + ' 🌰!'; dnote.style.color = '#5f8e37'; refreshBalance(); setTimeout(reload, 700); }
+      };
+      const bAuc = sheet.querySelector('.a-auc');
+      if (bAuc) bAuc.onclick = async () => {
+        const base = RAR[sel].price, lo = Math.max(1, Math.floor(base / 2)), hi = base * 3;
+        const val = await askPrice('С какой цены начать торги?',
+          { base, lo, hi, hint: 'Золотая карта уходит только с молотка — торги идут сутки. Банк удержит 10%.', okText: 'Начать торги' });
+        if (val === null) return;
+        const r2 = await api('/api/card-auction/start', { type: c.id, grade: sel, price: val });
+        if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }
+        else { dnote.textContent = '🔨 Торги начались! Смотри на вкладке «Рынок»'; dnote.style.color = '#5f8e37'; setTimeout(reload, 900); }
+      };
+      const bGift = sheet.querySelector('.a-gift');
+      if (bGift) bGift.onclick = async () => {
+        const friends = await api('/api/friends');
+        if (friends.error || !friends.length) { dnote.textContent = 'в твоём лесу пока нет друзей'; dnote.style.color = '#b3452e'; return; }
+        const gs = document.getElementById('giftSheet');
+        gs.innerHTML = `<button class="x">&times;</button><h3>Кому подарить?</h3>
+          <div class="sub">«${c.name}» · ${RAR[sel].name}. Подарок бесплатный, но не больше трёх в день.</div>
+          ${friends.map((f) => `<button class="gfriend" data-id="${f.id}">${f.name}</button>`).join('')}
+          <div class="note2" id="gnote"></div>`;
+        gs.querySelector('.x').onclick = () => document.getElementById('giftOv').classList.remove('on');
+        gs.querySelectorAll('.gfriend').forEach((btn) => btn.onclick = async () => {
+          if (!await ask('Подарить карту?', `«${c.name}» (${RAR[sel].name}) уйдёт другу ${btn.textContent} насовсем.`, 'Подарить')) return;
+          btn.disabled = true;
+          const r = await api('/api/card/gift', { to: btn.dataset.id, type: c.id, grade: sel });
+          const gn = gs.querySelector('#gnote');
+          if (r.error) { btn.disabled = false; gn.textContent = r.error; gn.style.color = '#b3452e'; return; }
+          document.getElementById('giftOv').classList.remove('on');
+          note(`🎁 Подарено! Сегодня можно ещё ${r.left_today}`);
+          reload();
+        });
+        document.getElementById('giftOv').classList.add('on');
+      };
+      const bFuel = sheet.querySelector('.a-fuel');
+      if (bFuel) bFuel.onclick = async () => {
+        // слияние с топливом всегда забирает ОБЕ твои карты — ячейка этого ранга опустеет
+        const allow = fuelDup < 4;
+        const warn = `Обе твои карты «${r.name}» уйдут в слияние — эта ячейка в альбоме опустеет, `
+          + `зато появится ${RAR[sel + 1].name}.`
+          + (allow ? ' К тому же дублей на топливо не хватает: сгорят и чужие карты, которых у тебя по одной.' : '');
+        if (!await ask('Слить с топливом?', warn, 'Слить')) return;
+        bFuel.disabled = true;
+        const from = sel;
+        const r2 = await api('/api/card/merge-fuel', { type: c.id, grade: from, allow_unique: allow });
+        if (r2.error) { bFuel.disabled = false; dnote.textContent = r2.error; dnote.style.color = '#b3452e'; return; }
+        closeDetail();
+        await evolveRitual(c, from, r2.new_grade, r2.bonus);
+        showRewards(r2.rewards);
+        reload();
+      };
+      const bFam = sheet.querySelector('.a-fam');
+      if (bFam) bFam.onclick = async () => {
+        const isFam = FAM && FAM.type === c.id && FAM.grade === sel;
+        const r2 = await api('/api/familiar', isFam ? {} : { type: c.id, grade: sel });
+        if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; return; }
+        FAM = isFam ? null : { type: c.id, grade: sel };
+        draw();
+        const dn = sheet.querySelector('#dnote');
+        dn.textContent = isFam ? 'Питомец снят с поляны' : '⭐ Теперь он живёт на твоей поляне!';
+        dn.style.color = '#5f8e37';
+      };
+      const bBuy = sheet.querySelector('.a-buy');
+      if (bBuy) bBuy.onclick = async () => { if (await buyLot(offers[0])) reload(); };
+      const bWant = sheet.querySelector('.a-want');
+      if (bWant) bWant.onclick = async () => {
+        const base = RAR[sel].price, lo = Math.max(1, Math.floor(base / 2)), hi = base * 3;
+        const val = await askPrice(`Сколько дашь за «${c.name}»?`,
+          { base, lo, hi, hint: `${RAR[sel].name}. Друзья увидят заявку и смогут продать тебе эту карту.`, okText: 'Оставить заявку' });
+        if (val === null) return;
+        const r2 = await api('/api/want', { type: c.id, grade: sel, price: val });
+        if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }
+        else { await fetchMarket(); draw(); const dn = sheet.querySelector('#dnote'); dn.textContent = '🙋 Заявка размещена — друзья увидят её на рынке'; dn.style.color = '#5f8e37'; }
+      };
+      const bUnwant = sheet.querySelector('.a-unwant');
+      if (bUnwant) bUnwant.onclick = async () => {
+        const r2 = await api('/api/want/cancel', { id: myWant.id });
+        if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }
+        else { await fetchMarket(); draw(); }
+      };
+      const l = sheet.querySelector('.a-list');
+      if (l) l.onclick = async () => {
+        const base = RAR[sel].price, lo = Math.max(1, Math.floor(base / 2)), hi = base * 3;
+        const h = HIST[c.code + ':' + sel];
+        const hint = (h ? ` В вашем лесу такие уходили в среднем за ${h.avg} 🌰 (сделок: ${h.deals}).` : '')
+          + ' Банк удержит 10% с продажи (с цены меньше 10 🌰 — ничего).';
+        const val = await askPrice(`За сколько продать «${c.name}»?`,
+          { base, lo, hi, initial: h ? h.avg : base, hint: `${RAR[sel].name}.${hint}`, okText: 'Выставить' });
+        if (val === null) return;
+        const r2 = await api('/api/card/list', { type: c.id, grade: sel, price: val });
+        if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }
+        else { dnote.textContent = '🏷 Выставлено на рынок!'; dnote.style.color = '#5f8e37'; setTimeout(reload, 700); }
+      };
+    };
+    draw();
+    document.getElementById('detail').classList.add('on');
+  }
+  // показать альбом-награду (после merge может собраться существо)
+  function showRewards(rewards) {
+    (rewards || []).forEach((rw) => {
+      const t = rw.kind === 'being' ? `✨ Собрано существо «${rw.name}» +${rw.reward}🌰`
+              : rw.kind === 'season' ? `🌲 Сезон «${rw.name}» собран целиком! +${rw.reward}🌰`
+              : rw.kind === 'category' ? `🏆 Альбом «${rw.name}» собран! +${rw.reward}🌰`
+              : `👑 Вся коллекция! +${rw.reward}🌰`;
+      const el = document.createElement('div');
+      el.style.cssText = 'position:absolute;left:50%;top:80px;transform:translateX(-50%);z-index:55;background:linear-gradient(135deg,#fff3d6,#ffd062);border:3px solid #e0a52e;border-radius:14px;padding:10px 16px;font-weight:900;color:#6b4a12;font-size:14px;box-shadow:0 6px 16px rgba(0,0,0,.4);max-width:86%;text-align:center';
+      el.textContent = t; document.querySelector('.phone').appendChild(el);
+      setTimeout(() => el.remove(), 3200);
+    });
+  }
+  function closeDetail() { document.getElementById('detail').classList.remove('on'); }
+  document.getElementById('detail').onclick = (e) => { if (e.target.id === 'detail') closeDetail(); };
+
+  async function reload() {
+    closeDetail();
+    const [d] = await Promise.all([api('/api/cards'), fetchMarket()]);
+    if (!d.error) render(d);
+    if (document.getElementById('tabMarket').classList.contains('on')) renderMarket();
+  }
+
+  // честные шансы выпадения (веса открыты — красная линия)
+  document.getElementById('oddsBtn').onclick = () => {
+    if (!DATA) return;
+    const total = DATA.rarities.reduce((s, r) => s + (r.weight || 0), 0) || 100;
+    const rows = DATA.rarities.map((r) => {
+      const pct = ((r.weight || 0) / total * 100);
+      return `<div class="gr has" style="--gc:${r.color}"><span class="dot"></span>
+        <span class="gn">${r.name}</span>
+        <span class="gq">${pct % 1 === 0 ? pct : pct.toFixed(1)}%</span></div>`;
+    }).join('');
+    const sh = document.getElementById('oddsSheet');
+    const p = DATA.pity;
+    const active = (DATA.seasons || []).find((s) => s.status === 'active');
+    sh.innerHTML = `<button class="x">&times;</button>
+      <h3>Шансы выпадения</h3>
+      <div class="sub">В паке 7 карт. У каждой — свой шанс:</div>
+      <div class="grades">${rows}</div>
+      ${p ? `<div class="guar"><b>Без удачи тоже не останешься</b>
+        Каждый 10-й пак приносит карту, которой у тебя ещё нет.
+        Каждый 50-й — карту Эпическую или выше из тех, что у тебя не собраны.
+        ${p.to_new === p.to_top ? `Следующий такой пак — через ${p.to_new}.`
+          : `Новая карта — через ${p.to_new}, Эпическая+ — через ${p.to_top}.`}</div>` : ''}
+      ${active ? `<div class="sub" style="line-height:1.4">Сейчас в паках только существа сезона «${active.name}».
+        Карты других сезонов остаются в альбоме — их можно выменять или купить у друзей.</div>` : ''}
+      <div class="sub" style="margin-top:8px;line-height:1.4">Мы честно показываем шансы. Шишки нельзя купить за деньги — только заработать. 🌲</div>`;
+    sh.querySelector('.x').onclick = () => document.getElementById('oddsOv').classList.remove('on');
+    document.getElementById('oddsOv').classList.add('on');
+  };
+  document.getElementById('oddsOv').onclick = (e) => { if (e.target.id === 'oddsOv') document.getElementById('oddsOv').classList.remove('on'); };
+
+  // ── Обменная полка: 5 лишних карт одного ранга → 1 недостающая того же ранга ──
+  function openExchange() {
+    if (!DATA) return;
+    const sheet = document.getElementById('exchSheet');
+    const spare = (g) => (DATA.cards || []).reduce((s, c) => {
+      const q = (c.grades.find((x) => x.grade === g) || {}).qty || 0; return s + Math.max(0, q - 1); }, 0);
+    const draw = () => {
+      const rows = DATA.rarities.map((r) => {
+        const n = spare(r.grade);
+        return `<div class="exrow" style="--gc:${r.color}"><span class="dot"></span>
+          <span class="en">${r.name}</span><span class="es">лишних: ${n}</span>
+          <button data-g="${r.grade}" ${n >= 5 ? '' : 'disabled'}>Обменять 5</button></div>`;
+      }).join('');
+      sheet.innerHTML = `<button class="x">&times;</button>
+        <h3>Обменная полка</h3>
+        <div class="sub">Отдай 5 лишних карт одного ранга — получишь одну того же ранга, которой у тебя ещё нет.
+          Карты из альбома не пострадают: в обмен уходят только дубли.</div>
+        ${rows}<div class="note2" id="exnote"></div>`;
+      sheet.querySelector('.x').onclick = () => document.getElementById('exchOv').classList.remove('on');
+      sheet.querySelectorAll('.exrow button').forEach((btn) => btn.onclick = async () => {
+        btn.disabled = true;
+        const r = await api('/api/card/exchange', { grade: +btn.dataset.g });
+        const note2 = sheet.querySelector('#exnote');
+        if (r.error) { note2.textContent = r.error; note2.style.color = '#b3452e'; return; }
+        document.getElementById('exchOv').classList.remove('on');
+        await revealCard(r.card);           // новая карта — с той же подачей, что в паке
+        showRewards(r.rewards);
+        await reload(); openExchange();     // полка остаётся открытой: можно менять дальше
+      });
+    };
+    draw();
+    document.getElementById('exchOv').classList.add('on');
+  }
+  document.getElementById('exchBtn').onclick = openExchange;
+  document.getElementById('exchOv').onclick = (e) => { if (e.target.id === 'exchOv') document.getElementById('exchOv').classList.remove('on'); };
+  document.getElementById('giftOv').onclick = (e) => { if (e.target.id === 'giftOv') document.getElementById('giftOv').classList.remove('on'); };
+
+  // показать одну полученную карту: топовые — с walkout, простые — крупно на пару секунд
+  function revealCard(card) {
+    if (card.grade >= 5) return jackpotWalkout(card);
+    return new Promise((resolve) => {
+      const ov = document.getElementById('packOv'), box = document.getElementById('packCards');
+      const done = document.getElementById('packDone'), h = document.getElementById('packH');
+      document.getElementById('crate').style.display = 'none';
+      document.getElementById('packRewards').innerHTML = '';
+      box.innerHTML = ''; h.style.display = 'block'; h.textContent = '♻ Обмен удался!';
+      const col = (RAR[card.grade] || {}).color || '#9aa4b2';
+      const el = document.createElement('div'); el.className = 'pcard'; el.style.setProperty('--rc', col);
+      el.style.width = '150px';
+      el.innerHTML = `<img src="${asset(card.code, card.grade)}">`;
+      box.appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
+      done.style.display = 'block'; done.textContent = 'Забрать';
+      ov.classList.add('on');
+      done.onclick = () => { ov.classList.remove('on'); done.textContent = 'Забрать'; resolve(); };
+    });
+  }
+
+  // щепки + дождь шишек из точки рубки
+  function burstChips(n) {
+    const box = document.getElementById('chips'); box.innerHTML = '';
+    const parts = ['🪵', '🌰', '🪵', '🌰', '✨', '🌰'];
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement('span'); s.textContent = parts[i % parts.length];
+      const ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 160;
+      s.style.setProperty('--dx', Math.cos(ang) * dist + 'px');
+      s.style.setProperty('--dy', (Math.sin(ang) * dist - 60) + 'px');   // чуть вверх
+      s.style.setProperty('--dr', (Math.random() * 720 - 360) + 'deg');
+      s.style.fontSize = (18 + Math.random() * 20) + 'px';
+      box.appendChild(s);
+      requestAnimationFrame(() => s.classList.add('fly'));
+    }
+    setTimeout(() => { box.innerHTML = ''; }, 1000);
+  }
+
+  // JACKPOT walkout: топ-карта (легендарка/золото) огромной в центр с лучами и тряской
+  function jackpotWalkout(card) {
+    return new Promise((resolve) => {
+      const jp = document.getElementById('jackpot'), img = document.getElementById('jpImg');
+      const label = document.getElementById('jpLabel'), cardEl = document.getElementById('jpCard');
+      const parts = document.getElementById('jpParts');
+      const rar = DATA.rarities.find((x) => x.grade === card.grade) || {};
+      const col = rar.color || '#ffc21f';
+      jp.style.setProperty('--jc', col);
+      img.src = asset(card.code, card.grade);
+      label.textContent = card.grade === 6 ? 'Золотая!!!' : 'Легендарная!';
+      // рестарт анимаций
+      cardEl.style.animation = 'none'; label.style.animation = 'none'; void cardEl.offsetWidth;
+      cardEl.style.animation = ''; label.style.animation = '';
+      jp.classList.add('on');
+      const phone = document.querySelector('.phone');
+      phone.classList.remove('shake'); void phone.offsetWidth; phone.classList.add('shake');
+      // взрыв частиц
+      parts.innerHTML = '';
+      const emo = card.grade === 6 ? ['🌟', '🌰', '✨', '👑', '💫'] : ['⭐', '🌰', '✨', '🔥'];
+      for (let i = 0; i < 26; i++) {
+        const s = document.createElement('span'); s.textContent = emo[i % emo.length];
+        const a = Math.random() * 6.28, d = 120 + Math.random() * 220;
+        s.style.setProperty('--dx', Math.cos(a) * d + 'px');
+        s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+        s.style.setProperty('--dr', (Math.random() * 720 - 360) + 'deg');
+        s.style.fontSize = (16 + Math.random() * 22) + 'px';
+        s.style.animationDelay = (Math.random() * .3) + 's';
+        parts.appendChild(s);
+      }
+      const close = () => { jp.classList.remove('on'); jp.onclick = null; resolve(); };
+      // авто-продолжение через 2.6с или по тапу (не раньше 0.8с, чтоб не проскочить)
+      setTimeout(() => { jp.onclick = close; }, 800);
+      setTimeout(close, 2600);
+    });
+  }
+
+  // РИТУАЛ ЭВОЛЮЦИИ: три карты грейда N слетаются в центр, вспышка — рождается карта грейда N+1
+  function evolveRitual(c, fromGrade, toGrade, bonus) {
+    return new Promise((resolve) => {
+      const ov = document.getElementById('evo');
+      const rTo = RAR[toGrade] || {}, rFrom = RAR[fromGrade] || {};
+      ov.style.setProperty('--ec', rTo.color || '#ffc21f');
+      ov.style.setProperty('--ec0', rFrom.color || '#9aa4b2');
+      ['evoS1', 'evoS2', 'evoS3'].forEach((id) => document.getElementById(id).src = thumb(c.code, fromGrade));
+      document.getElementById('evoNewImg').src = asset(c.code, toGrade);
+      document.getElementById('evoLabel').innerHTML = bonus
+        ? `Двойная эволюция! ${c.name} перескочил ранг<b>${rTo.name || ''}!</b>`
+        : `${c.name} стал сильнее<b>${rTo.name || ''}!</b>`;
+      // частицы разлетаются в момент вспышки (0.85с) — эмодзи ярче на верхних грейдах
+      const parts = document.getElementById('evoParts'); parts.innerHTML = '';
+      const emo = toGrade >= 5 ? ['🌟', '✨', '👑', '💫'] : ['✨', '🍃', '⭐', '🌰'];
+      for (let i = 0; i < 22; i++) {
+        const s = document.createElement('span'); s.textContent = emo[i % emo.length];
+        const a = Math.random() * 6.28, d = 90 + Math.random() * 190;
+        s.style.setProperty('--dx', Math.cos(a) * d + 'px');
+        s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+        s.style.setProperty('--dr', (Math.random() * 720 - 360) + 'deg');
+        s.style.fontSize = (14 + Math.random() * 18) + 'px';
+        s.style.animationDelay = (0.85 + Math.random() * 0.3) + 's';
+        parts.appendChild(s);
+      }
+      // рестарт CSS-анимаций (ритуал может запускаться подряд)
+      ov.classList.remove('on'); void ov.offsetWidth; ov.classList.add('on');
+      const phone = document.querySelector('.phone');
+      setTimeout(() => { phone.classList.remove('shake'); void phone.offsetWidth; phone.classList.add('shake'); }, 850);
+      const close = () => { ov.classList.remove('on'); ov.onclick = null; resolve(); };
+      setTimeout(() => { ov.onclick = close; }, 1600);   // тап не раньше, чем родилась карта
+      setTimeout(close, 3400);
+    });
+  }
+
+  // открытие пака: коробка → руби тапом → щепки/шишки → карты → награды
+  document.getElementById('packBtn').onclick = async () => {
+    const ov = document.getElementById('packOv'), box = document.getElementById('packCards');
+    const done = document.getElementById('packDone'), h = document.getElementById('packH');
+    const crate = document.getElementById('crate'), crateBox = document.getElementById('crateBox');
+    const rwBox = document.getElementById('packRewards');
+    box.innerHTML = ''; rwBox.innerHTML = ''; done.style.display = 'none'; h.style.display = 'none';
+    crate.style.display = 'flex'; crateBox.className = 'crate-box'; crateBox.src = 'assets/chest_closed.webp';
+    ov.classList.add('on');
+
+    // запрашиваем пак заранее (пока ребёнок рубит)
+    const packReq = api('/api/pack/open', {});
+    let hits = 0, done_open = false;
+    const reveal = async () => {
+      const r = await packReq;
+      if (r.error) { h.style.display = 'block'; h.textContent = r.error; setTimeout(() => ov.classList.remove('on'), 1500); return; }
+      crate.style.display = 'none';
+      // показываем от простых к редким; топовые (5/6) НЕ спойлерим в сетке — они придут walkout'ом
+      const sorted = r.cards.slice().sort((a, b) => a.grade - b.grade);
+      const addToGrid = (c) => {
+        const col = (DATA.rarities.find((x) => x.grade === c.grade) || {}).color || '#9aa4b2';
+        const el = document.createElement('div'); el.className = 'pcard'; el.style.setProperty('--rc', col);
+        el.innerHTML = `<img src="${thumb(c.code, c.grade)}">${c.is_new ? '<div class="new">NEW</div>' : ''}`;
+        box.appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
+      };
+      const simple = sorted.filter((c) => c.grade < 5);
+      const tops = sorted.filter((c) => c.grade >= 5);   // легендарка → золото, самое крутое последним
+      // 1) простые карты по очереди (нарастание)
+      simple.forEach((c, i) => setTimeout(() => addToGrid(c), 200 + i * 320));
+      const afterSimple = 200 + simple.length * 320 + 300;
+      setTimeout(async () => {
+        // 2) топовые — драматичный walkout по одному, потом встают в сетку
+        for (const c of tops) { await jackpotWalkout(c); addToGrid(c); }
+        h.style.display = 'block';
+        // альбом-награды, если пришли
+        (r.rewards || []).forEach((rw) => {
+          const t = rw.kind === 'being' ? `✨ Собрано существо «${rw.name}» +${rw.reward}🌰`
+                  : rw.kind === 'season' ? `🌲 Сезон «${rw.name}» собран целиком! +${rw.reward}🌰`
+                  : rw.kind === 'category' ? `🏆 Альбом «${rw.name}» собран! +${rw.reward}🌰`
+                  : `👑 Вся коллекция! ${rw.name} +${rw.reward}🌰`;
+          const el = document.createElement('div'); el.className = 'rw'; el.textContent = t; rwBox.appendChild(el);
+        });
+        done.style.display = 'block';
+      }, afterSimple);
+      const bal = document.getElementById('topBal'); if (bal) bal.textContent = r.balance;
+    };
+    crateBox.onclick = () => {
+      if (done_open) return;
+      hits++;
+      crateBox.classList.remove('hit'); void crateBox.offsetWidth; crateBox.classList.add('hit');
+      burstChips(6);
+      if (hits >= 3) {   // 3 удара — сундук распахивается
+        done_open = true;
+        crateBox.src = 'assets/chest_open.webp';   // раскрытый сундук со взрывом света
+        crateBox.classList.add('crack'); burstChips(20);
+        setTimeout(reveal, 560);
+      }
+    };
+    done.onclick = () => { ov.classList.remove('on'); reload(); };
+  };
+
+  // вкладки
+  const tabA = document.getElementById('tabAlbum'), tabM = document.getElementById('tabMarket');
+  const viewA = document.getElementById('albumView'), viewM = document.getElementById('marketView');
+  tabA.onclick = () => { tabA.classList.add('on'); tabM.classList.remove('on'); viewA.style.display = ''; viewM.style.display = 'none'; };
+  tabM.onclick = () => { tabM.classList.add('on'); tabA.classList.remove('on'); viewM.style.display = ''; viewA.style.display = 'none'; loadMarket(); };
+
+  // лоты и заявки круга — в кэш, чтобы деталь карты сразу знала, где её купить
+  async function fetchMarket() {
+    const [lots, wants, aucs] = await Promise.all([api('/api/market'), api('/api/wants'), api('/api/card-auctions')]);
+    LOTS = Array.isArray(lots) ? lots : [];
+    WANTS = Array.isArray(wants) ? wants : [];
+    AUCS = Array.isArray(aucs) ? aucs : [];
+  }
+  async function loadMarket() { await fetchMarket(); renderMarket(); }
+
+  // покупка лота: подтверждение с «обычной ценой» → покупка → плашка отмены на 5 минут
+  async function buyLot(l) {
+    const deal = l.price <= l.nominal * 0.7 ? 'выгодно 👍' : l.price >= l.nominal * 1.5 ? 'дороговато' : 'обычная цена';
+    const past = l.avg_price ? ` В вашем лесу такие уходили в среднем за ${l.avg_price} 🌰.` : '';
+    if (!await ask(`Купить «${l.name}»?`,
+      `Цена ${l.price} 🌰. Обычная цена этой карты — около ${l.nominal} 🌰 (${deal}).${past}`, 'Купить')) return false;
+    const r = await api('/api/market/buy', { id: l.id });
+    if (r.error) { note(r.error); return false; }
+    if (r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
+    showRewards(r.rewards);
+    showUndo(r.listing, l.name);
+    return true;
+  }
+
+  function renderMarket() {
+    const view = document.getElementById('marketView');
+    view.innerHTML = '';
+    if (!MARKET) {
+      view.innerHTML = `<div class="empty2">Ведущий пока закрыл рынок.<br><br>
+        Паки, альбом, слияния, обменная полка и подарки друзьям работают как обычно.</div>`;
+      return;
+    }
+    const col = (g) => (DATA.rarities.find((x) => x.grade === g) || {}).color || '#9aa4b2';
+
+    // ── аукцион золотых карт ──
+    if (AUCS.length) {
+      const sec0 = document.createElement('div'); sec0.className = 'msec'; sec0.textContent = '🔨 Торги';
+      view.appendChild(sec0);
+      for (const au of AUCS) {
+        const el = document.createElement('div'); el.className = 'lot auc'; el.style.setProperty('--rc', col(au.grade));
+        const left = () => {
+          const ms = new Date(au.ends_at) - new Date();
+          if (ms <= 0) return 'вот-вот закончится';
+          const h = Math.floor(ms / 3600e3), m = Math.floor(ms % 3600e3 / 60e3);
+          return h > 0 ? `осталось ${h} ч ${m} мин` : `осталось ${m} мин`;
+        };
+        const state = au.current_bid == null ? `ставок нет · старт ${au.start_price} 🌰`
+          : `${au.leading ? 'ты лидируешь' : 'лидер: ' + au.leader} · ${au.current_bid} 🌰`;
+        el.innerHTML = `<img src="${thumb(au.code, au.grade)}" loading="lazy">
+          <div class="li"><div class="lt">${au.name}</div><div class="ls">${au.mine ? 'твой лот' : 'от ' + au.seller} · ${state}</div>
+            <div class="lh">${left()}</div></div>
+          <button class="${au.mine || au.leading ? 'off' : 'buy'}" ${au.mine || au.leading ? 'disabled' : ''}>${au.mine ? 'твой' : au.leading ? 'лидер' : 'Ставка ' + au.next_bid}</button>`;
+        el.querySelector('button').onclick = async () => {
+          if (!await ask('Сделать ставку?', `${au.next_bid} 🌰 за «${au.name}». Шишки резервируются: если тебя перебьют, они сразу вернутся.`, 'Поставить')) return;
+          const r = await api('/api/card-auction/bid', { id: au.id, amount: au.next_bid });
+          if (r.error) { note(r.error); reload(); return; }
+          if (r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
+          note('Ставка принята!'); reload();
+        };
+        view.appendChild(el);
+      }
+    }
+
+    // ── лоты на продажу ──
+    const sec1 = document.createElement('div'); sec1.className = 'msec'; sec1.textContent = '🏷 Продают';
+    view.appendChild(sec1);
+    if (!LOTS.length) {
+      const e = document.createElement('div'); e.className = 'empty3';
+      e.innerHTML = 'Пока никто ничего не продаёт.<br>Выставь свои дубли!';
+      view.appendChild(e);
+    }
+    for (const l of LOTS) {
+      const el = document.createElement('div'); el.className = 'lot'; el.style.setProperty('--rc', col(l.grade));
+      // «обычно уходит за N» — детский урок про рыночную цену
+      const past = l.avg_price ? `<div class="lh">обычно уходит за ${l.avg_price} 🌰${l.price > l.avg_price * 1.3 ? ' — сейчас дороже' : l.price < l.avg_price * 0.8 ? ' — сейчас дешевле' : ''}</div>` : '';
+      el.innerHTML = `<img src="${thumb(l.code, l.grade)}" loading="lazy">
+        <div class="li"><div class="lt">${l.name}</div><div class="ls">${l.mine ? 'твой лот' : 'от ' + l.seller} · ${l.price} 🌰</div>${past}</div>
+        <button class="${l.mine ? 'cancel' : 'buy'}">${l.mine ? 'Снять' : 'Купить'}</button>`;
+      el.querySelector('button').onclick = async () => {
+        if (l.mine) {
+          const r = await api('/api/market/cancel', { id: l.id });
+          if (r.error) note(r.error); else reload();
+          return;
+        }
+        if (await buyLot(l)) reload();
+      };
+      view.appendChild(el);
+    }
+
+    // ── заявки: кто какую карту ищет ──
+    const sec2 = document.createElement('div'); sec2.className = 'msec'; sec2.textContent = '🙋 Ищут';
+    view.appendChild(sec2);
+    if (!WANTS.length) {
+      const e = document.createElement('div'); e.className = 'empty3';
+      e.innerHTML = 'Заявок пока нет.<br>Тапни пустую ячейку в альбоме и оставь свою!';
+      view.appendChild(e);
+    }
+    for (const w of WANTS) {
+      const el = document.createElement('div'); el.className = 'lot want'; el.style.setProperty('--rc', col(w.grade));
+      const canFill = !w.mine && w.i_have > 0 && w.funded;
+      const state = w.mine ? 'твоя заявка'
+        : !w.funded ? `${w.buyer} копит шишки`
+        : w.i_have > 0 ? `у тебя есть ${w.i_have} шт — можно продать`
+        : `ищет ${w.buyer}`;
+      el.innerHTML = `<img src="${thumb(w.code, w.grade)}" loading="lazy">
+        <div class="li"><div class="lt">${w.name}</div><div class="ls">${state} · ${w.price} 🌰</div></div>
+        <button class="${w.mine ? 'cancel' : canFill ? 'buy' : 'off'}" ${canFill || w.mine ? '' : 'disabled'}>${w.mine ? 'Снять' : 'Продать'}</button>`;
+      el.querySelector('button').onclick = async () => {
+        if (w.mine) {
+          const r = await api('/api/want/cancel', { id: w.id });
+          if (r.error) note(r.error); else reload();
+          return;
+        }
+        // предупреждаем, если это последняя такая карта — не сломать свою полку в альбоме
+        const last = w.i_have === 1 ? ' Это твоя последняя такая карта — ячейка в альбоме опустеет.' : '';
+        if (!await ask('Продать по заявке?', `«${w.name}» уйдёт игроку ${w.buyer} за ${w.price} 🌰.${last}`, 'Продать')) return;
+        const r = await api('/api/want/fill', { id: w.id });
+        if (r.error) { note(r.error); reload(); return; }
+        if (r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
+        note(`Продано за ${r.earned} 🌰!`);
+        reload();
+      };
+      view.appendChild(el);
+    }
+  }
+
+  // плашка отмены сделки на 5 минут после покупки
+  function showUndo(listingId, name) {
+    if (!listingId) return;
+    const old = document.getElementById('undoBar'); if (old) old.remove();
+    const bar = document.createElement('div'); bar.id = 'undoBar';
+    bar.style.cssText = 'position:absolute;left:50%;bottom:96px;transform:translateX(-50%);z-index:50;background:#fffaf0;border:2px solid #d9c39a;border-radius:14px;padding:10px 14px;box-shadow:0 6px 16px rgba(0,0,0,.3);display:flex;align-items:center;gap:10px;max-width:88%';
+    bar.innerHTML = `<span style="font-weight:800;color:#5b4636;font-size:13px">Куплено: ${esc(name)}</span>
+      <button style="background:#e0864b;border:none;color:#fff;font-weight:900;border-radius:10px;padding:7px 12px;font-size:13px;cursor:pointer">Отменить <span id="undoT">5:00</span></button>`;
+    document.querySelector('.phone').appendChild(bar);
+    let left = 300;
+    const tick = setInterval(() => {
+      left--; const t = document.getElementById('undoT');
+      if (t) t.textContent = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
+      if (left <= 0) { clearInterval(tick); bar.remove(); }
+    }, 1000);
+    bar.querySelector('button').onclick = async () => {
+      const r = await api('/api/market/undo', { id: listingId });
+      clearInterval(tick); bar.remove();
+      if (r.error) note(r.error);
+      else { note('Сделка отменена, шишки возвращены'); const s = await api('/api/state'); const b = document.getElementById('topBal'); if (b && s.balance != null) b.textContent = s.balance; reload(); }
+    };
+  }
+
+  // ── Первый вход: три коротких экрана вместо «разбирайся сам» ──
+  const INTRO = [
+    { emo: '🗂', title: 'Это твой альбом',
+      text: 'У каждого лесного жителя шесть обликов — от уличного сорванца до духа леса. Собери все шесть, и он появится в альбоме целиком.' },
+    { emo: '🔥', title: 'Дубли — не мусор',
+      text: 'Три одинаковые карты сливаются в одну рангом выше. Лишние можно обменять на обменной полке или подарить другу.' },
+    { emo: '🙋', title: 'Не хватает карты?',
+      text: 'Тапни пустую ячейку — увидишь, продаёт ли её кто-то в лесу, и сможешь оставить заявку. Друзья её увидят.' },
+  ];
+  async function showIntro() {
+    if (localStorage.getItem('cardsIntro')) return;
+    const ov = document.getElementById('askOv'), sheet = document.getElementById('askSheet');
+    for (let i = 0; i < INTRO.length; i++) {
+      const s = INTRO[i];
+      await new Promise((resolve) => {
+        sheet.innerHTML = `<div class="introemo">${s.emo}</div><h3>${s.title}</h3>
+          <div class="asktext">${s.text}</div>
+          <div class="dots">${INTRO.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</div>
+          <div class="acts"><button class="a-ok">${i === INTRO.length - 1 ? 'Понятно!' : 'Дальше'}</button></div>`;
+        sheet.querySelector('.a-ok').onclick = resolve;
+        ov.onclick = null;
+        ov.classList.add('on');
+      });
+    }
+    ov.classList.remove('on');
+    localStorage.setItem('cardsIntro', '1');
+  }
+
+  reload().then(showIntro);
 }
