@@ -6,7 +6,13 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, extname } from 'node:path';
 import pg from 'pg';
+import { randomInt } from 'node:crypto';
 import { makeAuth } from './lib/auth.mjs';
+
+// Код входа ребёнка: криптослучайный, из алфавита без двусмысленных символов (нет 0/O/1/I/L).
+// Раньше был предсказуемым (ИМЯ+порядковый номер) и ломался на букве Ё — теперь развязан от имени.
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const genLoginCode = () => Array.from({ length: 6 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 await mkdir(join(DIR, 'uploads'), { recursive: true });
@@ -655,8 +661,8 @@ const api = {
     const name = String(b.name || '').trim().slice(0, 16); if (!name) throw { code: 400, msg: 'укажи имя' };
     auth.dropCache();
     const u = (await rpc('add_child', [circle.id, name, b.tree || 'pine']))[0];
-    const cnt = (await one('select count(*) c from child_logins')).c;
-    const code = name.slice(0, 4).toUpperCase() + '-' + String(Number(cnt) + 1).padStart(2, '0');
+    let code;
+    for (let i = 0; i < 6; i++) { code = genLoginCode(); if (!(await one('select 1 from child_logins where code=$1', [code]))) break; }  // на случай коллизии — переген
     await q('insert into child_logins(code,child_id) values($1,$2)', [code, u.id]);
     return { ok: true, name, code };
   },

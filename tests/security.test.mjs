@@ -40,6 +40,24 @@ test('PIN-кабинет: 10 неверных попыток с IP → лок (4
   assert.equal(stillLocked.status, 429, 'лок держится и для верного PIN');
 });
 
+test('новый код входа — криптослучайный из безопасного алфавита, развязан от имени, работает', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const add = await srv.api('/api/parent/add-child', { method: 'POST', headers: { 'x-parent-pin': 'testpin', 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Тимофей', tree: 'pine' }) });
+  assert.equal(add.status, 200);
+  const code = add.body.code;
+  assert.match(code, /^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{6}$/, 'код 6 символов из алфавита без 0/O/1/I/L, латиница → не завязан на кириллическое имя');
+
+  // код реально пускает в аккаунт этого ребёнка
+  const login = await srv.api('/api/link', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ code }) });
+  assert.equal(login.status, 200);
+  const state = await srv.api('/api/state', { headers: { 'x-child-code': code } });
+  assert.equal(state.status, 200);
+  assert.equal(state.body.name, 'Тимофей');
+});
+
 test('вход по коду: 10 неверных кодов с IP → лок (429), верный код сбрасывает счётчик', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
