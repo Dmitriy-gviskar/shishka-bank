@@ -13,7 +13,8 @@ body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
   overflow:hidden;background:center/cover no-repeat}
 .phone::after{content:"";position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,80,45,.20));pointer-events:none}
-.wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:18px 16px 0}
+.wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:18px 16px 0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* длинные списки прокручиваются ВНУТРИ экрана, навбар остаётся внизу */
 #taskList,#shopList,#marketList{flex:1 1 auto;min-height:0;overflow-y:auto;
   -webkit-overflow-scrolling:touch;padding-bottom:6px}
@@ -50,8 +51,9 @@ body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
 .price img{width:30px;height:30px;object-fit:contain}
 
 /* нижняя навигация */
-.nav{margin-top:auto;display:flex;justify-content:space-around;align-items:center;
-  background:rgba(246,238,222,.94);border-top:3px solid #d9c39a;
+.nav{position:sticky;bottom:0;z-index:3;margin-top:auto;flex:0 0 auto;
+  display:flex;justify-content:space-around;align-items:center;
+  background:rgba(246,238,222,.985);border-top:3px solid #d9c39a;
   padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
 .nav button{background:none;border:none;padding:6px;border-radius:16px;cursor:pointer}
 .nav img{width:44px;height:44px;object-fit:contain;display:block}

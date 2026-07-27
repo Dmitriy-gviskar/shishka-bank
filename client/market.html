@@ -4,21 +4,32 @@
 <title>Лесные лавки</title><link rel="stylesheet" href="style.css">
 <style>
   .phone{background-image:url(assets/bg.webp)}
-  .shop{display:flex;align-items:center;gap:10px;margin-top:11px;padding:12px;position:relative}
-  .shop img.av{width:58px;height:58px;object-fit:contain;flex:none}
-  .shop .mid{flex:1}
-  .shop .sn{font-weight:900;color:var(--ink);font-size:16px}
-  .shop .it{color:#a1876a;font-weight:700;font-size:13px;margin-top:1px}
-  .shop .right{text-align:center}
-  .shop .price{font-size:20px}
+  .wrap{overflow-y:hidden}   /* тут свой скролл — #marketList (flex:1+overflow-y), двойной скролл ломал вёрстку */
+  .shop-card{margin-top:11px;padding:12px;position:relative}
+  .shop-head{display:flex;align-items:center;gap:10px}
+  .shop-head img.av{width:52px;height:52px;object-fit:contain;flex:none;border-radius:10px}
+  .shop-head .sn{flex:1;font-weight:900;color:var(--ink);font-size:16px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .shop-mgmt{display:flex;gap:4px;flex:none}
+  .mini{border:none;border-radius:10px;padding:6px 8px;font-weight:900;cursor:pointer;font-size:13px;
+    background:#fbf4e2;border:2px solid #d9c39a}
   .heir{position:absolute;top:-8px;right:10px;background:var(--gold);color:#5b4636;
-    font-weight:900;font-size:11px;padding:3px 9px;border-radius:10px;border:2px solid #b6862c}
+    font-weight:900;font-size:11px;padding:3px 9px;border-radius:10px;border:2px solid #b6862c;z-index:1}
   .mine-tag{position:absolute;top:-8px;left:10px;background:#7bab4c;color:#fff;
-    font-weight:900;font-size:11px;padding:3px 9px;border-radius:10px;border:2px solid #5f8e37}
+    font-weight:900;font-size:11px;padding:3px 9px;border-radius:10px;border:2px solid #5f8e37;z-index:1}
+  .lot-row{display:flex;align-items:center;gap:8px;margin-top:9px;padding-top:9px;border-top:2px solid #efe4cc}
+  .lot-row img.lot-thumb{width:40px;height:40px;object-fit:cover;border-radius:8px;flex:none;background:#fbf4e2}
+  .lot-row .lt{flex:1;font-weight:800;color:var(--ink);font-size:14px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lot-row .price{font-size:16px;flex:none;display:inline-flex;align-items:center;gap:3px;font-weight:900;color:var(--brown)}
+  .lot-row .price img{width:20px;height:20px}
+  .lot-empty{margin-top:9px;color:#a1876a;font-weight:700;font-size:13px;text-align:center}
   #createForm{margin-top:10px;padding:12px;display:none}
-  #createForm input{width:100%;background:#fffaf0;border:3px solid #d9c39a;border-radius:12px;
+  #createForm input, .lotForm input{width:100%;background:#fffaf0;border:3px solid #d9c39a;border-radius:12px;
     padding:10px;font-size:15px;font-weight:800;color:var(--ink);outline:none;margin-bottom:8px}
-  #createForm input:focus{border-color:var(--gold)}
+  #createForm input:focus, .lotForm input:focus{border-color:var(--gold)}
+  .lotForm{margin-top:9px;padding-top:9px;border-top:2px solid #efe4cc;display:none}
+  .lotForm .row{display:flex;gap:8px}
+  .lotForm .row .btn{flex:none}
+  .addLotBtn{margin-top:9px;padding-top:9px;border-top:2px solid #efe4cc;text-align:center}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Лесные лавки</div>
