@@ -264,13 +264,13 @@ create table if not exists adult_sessions (
 В `tests/helpers/db.mjs` в цикле заливки заменить строку
 
 ```js
-  for (const f of ['db/schema.sql', 'db/functions.sql', 'db/cards.sql'])
+  for (const f of ['db/schema.sql', 'db/functions.sql'])
 ```
 
 на
 
 ```js
-  for (const f of ['db/schema.sql', 'db/functions.sql', 'db/cards.sql', 'db/migration_auth.sql'])
+  for (const f of ['db/schema.sql', 'db/functions.sql', 'db/migration_auth.sql'])
 ```
 
 - [ ] **Step 5: Запустить тесты**
