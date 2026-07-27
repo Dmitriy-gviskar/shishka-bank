@@ -26,6 +26,17 @@ const one = (sql, p = []) => q(sql, p).then((r) => r[0] || null);
 const rpc = (fn, args = []) => q(`select * from ${fn}(${args.map((_, i) => '$' + (i + 1)).join(',')}) as r`, args);
 const auth = makeAuth(q, one);
 
+// base64-jpeg (с клиента) → файл в uploads/, возвращает относительный путь для БД. Общий для фото заданий/лавок.
+async function savePhoto(dataUrl, prefix) {
+  const m = /^data:image\/jpeg;base64,(.+)$/.exec(String(dataUrl || ''));
+  if (!m) throw { code: 400, msg: 'нужно фото — попробуй ещё раз' };
+  const buf = Buffer.from(m[1], 'base64');
+  if (buf.length > 4e6) throw { code: 400, msg: 'фото слишком большое' };
+  const path = `uploads/${prefix}_${Date.now()}_${randomInt(1e6)}.jpg`;
+  await writeFile(join(DIR, path), buf);
+  return path;
+}
+
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const PARENT_PIN = process.env.PARENT_PIN;                       // PIN родительского кабинета — только из env
@@ -152,14 +163,7 @@ const api = {
     const t = await one('select needs_photo,status from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);  // только своё задание
     if (!t || t.status === 'done' || t.status === 'pending_review') throw { code: 400, msg: 'задание недоступно' };
     let proof = null;
-    if (t.needs_photo) {   // фото обязательно: base64-jpeg → файл на диске → url в задании
-      const m = /^data:image\/jpeg;base64,(.+)$/.exec(String(b.photo || ''));
-      if (!m) throw { code: 400, msg: 'нужно фото — нажми ещё раз и сфотографируй' };
-      const buf = Buffer.from(m[1], 'base64');
-      if (buf.length > 4e6) throw { code: 400, msg: 'фото слишком большое' };
-      proof = 'uploads/' + b.id + '.jpg';
-      await writeFile(join(DIR, proof), buf);
-    }
+    if (t.needs_photo) proof = await savePhoto(b.photo, 'task_' + b.id);   // фото обязательно: base64-jpeg → файл на диске → url в задании
     await rpc('submit_task', [b.id, proof]);   // ВСЁ через модерацию ведущего (решение 11.07)
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
     return { ok: true, submitted: true, balance: w.balance };
@@ -226,13 +230,15 @@ const api = {
   },
 
   'GET /api/shops': async (b, ctx) => {
-    const rows = await q(`select distinct on (s.id) s.id, s.name, s.is_heir, s.owner_id, u.tree_type,
-        l.id lot_id, l.title lot_title, l.price lot_price
+    const rows = await q(`select s.id, s.name, s.photo, s.is_heir, s.owner_id, u.tree_type,
+        coalesce(jsonb_agg(jsonb_build_object('id',l.id,'title',l.title,'price',l.price,'photo',l.photo)
+          order by l.created_at) filter (where l.id is not null), '[]') as lots
       from shops s join users u on u.id=s.owner_id
-      join shop_lots l on l.shop_id=s.id and l.is_active
-      where s.circle_id=$1 and s.is_active order by s.id, l.created_at`, [ctx.circle]);
-    return rows.map((s) => ({ id: s.id, name: s.name, is_heir: s.is_heir, mine: s.owner_id === ctx.child,
-      avatar: TREE[s.tree_type] || 'tree.webp', lot: { id: s.lot_id, title: s.lot_title, price: s.lot_price } }));
+      left join shop_lots l on l.shop_id=s.id and l.is_active
+      where s.circle_id=$1 and s.is_active
+      group by s.id, u.tree_type order by s.created_at`, [ctx.circle]);
+    return rows.map((s) => ({ id: s.id, name: s.name, photo: s.photo, is_heir: s.is_heir, mine: s.owner_id === ctx.child,
+      avatar: TREE[s.tree_type] || 'tree.webp', lots: s.lots }));
   },
   'POST /api/lot/buy': async (b, ctx) => {
     await assertOwn('select 1 from shop_lots l join shops s on s.id=l.shop_id where l.id=$1 and s.circle_id=$2', [b.id, ctx.circle], 'нет такого лота');
@@ -776,6 +782,53 @@ const api = {
     catch (e) { throw { code: 400, msg: /already has/.test(e.message) ? 'у тебя уже есть лавка' : 'не удалось' }; }
     await rpc('add_lot', [ctx.child, lot.slice(0, 24), 'goods', price]);
     return { ok: true };
+  },
+  'POST /api/shop/rename': async (b, ctx) => {
+    const name = String(b.name || '').trim().slice(0, 24);
+    if (!name) throw { code: 400, msg: 'укажи название' };
+    await assertOwn('select 1 from shops where owner_id=$1', [ctx.child], 'нет лавки');
+    await q('update shops set name=$2 where owner_id=$1', [ctx.child, name]);
+    return { ok: true };
+  },
+  'POST /api/shop/close': async (b, ctx) => {
+    await assertOwn('select 1 from shops where owner_id=$1', [ctx.child], 'нет лавки');
+    await q('update shops set is_active=false where owner_id=$1', [ctx.child]);
+    return { ok: true };
+  },
+  'POST /api/shop/photo': async (b, ctx) => {
+    await assertOwn('select 1 from shops where owner_id=$1', [ctx.child], 'нет лавки');
+    const photo = await savePhoto(b.photo, 'shop_' + ctx.child);
+    await q('update shops set photo=$2 where owner_id=$1', [ctx.child, photo]);
+    return { ok: true, photo };
+  },
+  'POST /api/lot/add': async (b, ctx) => {
+    const title = String(b.title || '').trim().slice(0, 24), price = parseInt(b.price, 10);
+    if (!title) throw { code: 400, msg: 'укажи название товара' };
+    if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
+    let lot;
+    try { [lot] = await rpc('add_lot', [ctx.child, title, 'goods', price]); }
+    catch (e) { throw { code: 400, msg: /open a shop/.test(e.message) ? 'сначала открой лавку' : 'не удалось' }; }
+    if (b.photo) { const photo = await savePhoto(b.photo, 'lot_' + lot.id); await q('update shop_lots set photo=$2 where id=$1', [lot.id, photo]); }
+    return { ok: true };
+  },
+  'POST /api/lot/edit': async (b, ctx) => {
+    const title = String(b.title || '').trim().slice(0, 24), price = parseInt(b.price, 10);
+    if (!title) throw { code: 400, msg: 'укажи название товара' };
+    if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
+    await assertOwn('select 1 from shop_lots l join shops s on s.id=l.shop_id where l.id=$1 and s.owner_id=$2', [b.id, ctx.child], 'нет такого товара');
+    await q('update shop_lots set title=$2, price=$3 where id=$1', [b.id, title, price]);
+    return { ok: true };
+  },
+  'POST /api/lot/remove': async (b, ctx) => {
+    await assertOwn('select 1 from shop_lots l join shops s on s.id=l.shop_id where l.id=$1 and s.owner_id=$2', [b.id, ctx.child], 'нет такого товара');
+    await q('update shop_lots set is_active=false where id=$1', [b.id]);
+    return { ok: true };
+  },
+  'POST /api/lot/photo': async (b, ctx) => {
+    await assertOwn('select 1 from shop_lots l join shops s on s.id=l.shop_id where l.id=$1 and s.owner_id=$2', [b.id, ctx.child], 'нет такого товара');
+    const photo = await savePhoto(b.photo, 'lot_' + b.id);
+    await q('update shop_lots set photo=$2 where id=$1', [b.id, photo]);
+    return { ok: true, photo };
   },
 };
 const SKIN_ASSET = { 'Обычное дерево': 'base', 'Осеннее дерево': 'skin_autumn', 'Зимнее дерево': 'skin_winter', 'Золотое дерево': 'skin_gold', 'Светящееся дерево': 'skin_glow', 'Радужное дерево': 'skin_rainbow' };

@@ -198,6 +198,7 @@ create table shops (
   description text,
   is_heir     boolean not null default false,   -- «Наследник»: участник офлайн-игры
   is_active   boolean not null default true,
+  photo       text,
   created_at  timestamptz not null default now()
 );
 
@@ -208,6 +209,7 @@ create table shop_lots (
   type      text not null default 'goods' check (type in ('goods','service','digital')),
   price     int  not null check (price > 0),
   is_active boolean not null default true,
+  photo     text,
   created_at timestamptz not null default now()
 );
 create index on shop_lots(shop_id, is_active);
@@ -383,3 +385,49 @@ create table events (
   created_at timestamptz not null default now()
 );
 create index on events(circle_id, start_date, end_date);
+
+-- ═══════════════════ Лесная коллекция: карточки-шишки (гача) ═══════════════════
+-- Справочник грейдов рарности (цена = якорь рынка, weight = вес выпадения из пака)
+create table rarities (
+  grade  int primary key check (grade between 1 and 6),
+  code   text not null unique,
+  name   text not null,
+  color  text not null,
+  price  int  not null check (price > 0),
+  weight int  not null check (weight > 0)
+);
+
+-- Каталог существ (тип карты). Ассет карты: assets/cards/<code>_<grade>.webp
+create table card_types (
+  id       uuid primary key default gen_random_uuid(),
+  code     text not null unique,
+  name     text not null,
+  category text not null check (category in ('zver','rastenie','nasekomoe')),
+  sort     int  not null default 0
+);
+
+-- Владение картами: одна строка = существо+грейд, qty = сколько на руках (с дублями)
+create table user_cards (
+  user_id uuid not null references users(id) on delete cascade,
+  type_id uuid not null references card_types(id) on delete cascade,
+  grade   int  not null references rarities(grade),
+  qty     int  not null default 1 check (qty >= 0),
+  first_at timestamptz not null default now(),
+  primary key (user_id, type_id, grade)
+);
+create index on user_cards(user_id);
+
+-- Рынок P2P: лоты на продажу карт за шишки между детьми
+create table card_listings (
+  id         uuid primary key default gen_random_uuid(),
+  seller_id  uuid not null references users(id) on delete cascade,
+  circle_id  uuid not null references circles(id) on delete cascade,
+  type_id    uuid not null references card_types(id) on delete cascade,
+  grade      int  not null references rarities(grade),
+  price      int  not null check (price > 0),
+  status     text not null default 'open' check (status in ('open','sold','cancelled')),
+  buyer_id   uuid references users(id) on delete set null,
+  created_at timestamptz not null default now(),
+  closed_at  timestamptz
+);
+create index on card_listings(circle_id, status);

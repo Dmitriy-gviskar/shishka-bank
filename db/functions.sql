@@ -646,8 +646,11 @@ create or replace function open_shop(p_child uuid, p_name text, p_desc text defa
 returns shops language plpgsql security definer set search_path = public as $$
 declare s shops; c_id uuid;
 begin
-  if exists (select 1 from shops where owner_id = p_child) then
-    raise exception 'child already has a shop';
+  select * into s from shops where owner_id = p_child;
+  if found then
+    if s.is_active then raise exception 'child already has a shop'; end if;
+    update shops set name = p_name, description = p_desc, is_active = true where id = s.id returning * into s;
+    return s;
   end if;
   select circle_id into c_id from users where id = p_child;
   insert into shops(owner_id, circle_id, name, description)
