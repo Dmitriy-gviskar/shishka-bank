@@ -29,5 +29,16 @@
                 <data android:scheme="https" android:host="elka-kvest-2026.ru" />
             </intent-filter>
         </activity>
+
+        <!-- content:// URI для фото с камеры (фото-задания через input[type=file]) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="ru.elkakvest.shishka.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 </manifest>

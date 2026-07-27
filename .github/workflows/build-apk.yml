@@ -5,6 +5,9 @@ on:
   push:
     branches: [ apk ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,7 +28,15 @@ jobs:
           gradle assembleDebug --no-daemon --stacktrace
 
       - uses: actions/upload-artifact@v4
+        continue-on-error: true   # квота Actions-артефактов бывает исчерпана — релиз ниже не зависит от неё
         with:
           name: shishka-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - run: |
+          gh release create "build-${{ github.run_id }}" android/app/build/outputs/apk/debug/app-debug.apk \
+            --repo "${{ github.repository }}" --title "APK build ${{ github.run_id }}" \
+            --notes "Автосборка из ветки apk" --latest
+        env:
+          GH_TOKEN: ${{ github.token }}
