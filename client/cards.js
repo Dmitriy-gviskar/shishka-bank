@@ -67,18 +67,10 @@ window.runCards = function () {
     FAM = d.familiar || null;
     FACTS = {}; (d.facts || []).forEach((f) => FACTS[f.code] = f.fact);   // только за собранных целиком
     HIST = {}; (d.history || []).forEach((h) => HIST[h.code + ':' + h.grade] = h);   // за сколько такие уходили в круге
-    SEASONS = d.seasons || [];
     MARKET = d.market_allowed !== false;   // ведущий может закрыть торговлю ребёнку
-    const active = SEASONS.find((s) => s.status === 'active');
     const isFull = (c) => c.grades.filter((x) => x.qty > 0).length === 6;
-    // прогресс считаем по активному сезону — это достижимая цель, а не «121 существо когда-нибудь»
-    const inSeason = active ? d.cards.filter((c) => c.season === active.code) : d.cards;
-    const doneSeason = inSeason.filter(isFull).length;
-    document.getElementById('progTxt').textContent = active
-      ? `Сезон: ${doneSeason} / ${inSeason.length}`
-      : `Собрано: ${d.collected} / ${d.total}`;
-    document.getElementById('progBar').style.width =
-      Math.round((active ? doneSeason / inSeason.length : d.collected / d.total) * 100) + '%';
+    document.getElementById('progTxt').textContent = `Собрано: ${d.collected} / ${d.total}`;
+    document.getElementById('progBar').style.width = Math.round(d.collected / d.total * 100) + '%';
     // гарант новинки — видно, сколько паков осталось
     const pityEl = document.getElementById('pityTxt');
     if (pityEl) {
@@ -88,37 +80,8 @@ window.runCards = function () {
       pityEl.textContent = `Всего собрано ${d.collected} из ${d.total}${guar}`;
     }
     const av = document.getElementById('albumView'); av.innerHTML = '';
-    // сезоны: активный сверху и раскрыт, остальные — свёрнуты (карты остаются в обороте)
-    const order = SEASONS.length ? [...SEASONS].sort((x, y) =>
-      (y.status === 'active') - (x.status === 'active') || x.sort - y.sort) : [{ code: null, name: '' }];
-    for (const s of order) {
-      const cards = s.code ? d.cards.filter((c) => c.season === s.code) : d.cards;
-      if (!cards.length) continue;
-      const done = cards.filter(isFull).length;
-      if (s.code) {
-        const sh = document.createElement('div');
-        sh.className = 'season' + (s.status === 'active' ? ' on' : '');
-        sh.innerHTML = `<span class="sn">${esc(s.name)}</span>
-          ${s.status === 'active' ? '<span class="stag">сейчас в паках</span>'
-            : s.status === 'upcoming' ? '<span class="stag off">скоро</span>'
-            : '<span class="stag off">архив</span>'}
-          <span class="cc-count">${done}/${cards.length}</span><span class="sarrow">${s.status === 'active' ? '▾' : '▸'}</span>`;
-        av.appendChild(sh);
-        const body = document.createElement('div');
-        body.className = 'sbody';
-        if (s.status !== 'active') body.style.display = 'none';
-        sh.onclick = () => {
-          const open = body.style.display !== 'none';
-          if (!open && !body.dataset.built) { renderGroups(cards, body); body.dataset.built = '1'; }
-          body.style.display = open ? 'none' : '';
-          sh.querySelector('.sarrow').textContent = open ? '▸' : '▾';
-        };
-        av.appendChild(body);
-        if (s.status === 'active') renderGroups(cards, body);   // остальные — по тапу, чтобы не держать 726 ячеек в DOM
-      } else {
-        renderGroups(cards, av);
-      }
-    }
+    const allCards = d.cards.filter((c) => c.category !== 'special');
+    renderGroups(allCards, av);
 
     // ── Особые карты: их не выпадает из паков, их вручает ведущий за дело ──
     const specials = d.cards.filter((c) => c.category === 'special');
@@ -427,8 +390,7 @@ window.runCards = function () {
         Каждый 50-й — карту Эпическую или выше из тех, что у тебя не собраны.
         ${p.to_new === p.to_top ? `Следующий такой пак — через ${p.to_new}.`
           : `Новая карта — через ${p.to_new}, Эпическая+ — через ${p.to_top}.`}</div>` : ''}
-      ${active ? `<div class="sub" style="line-height:1.4">Сейчас в паках только существа сезона «${active.name}».
-        Карты других сезонов остаются в альбоме — их можно выменять или купить у друзей.</div>` : ''}
+      ${active ? `<div class="sub" style="line-height:1.4">Собрано ${d.collected} из ${d.total} существ. Карты можно выменять или купить у друзей.</div>` : ''}
       <div class="sub" style="margin-top:8px;line-height:1.4">Мы честно показываем шансы. Шишки нельзя купить за деньги — только заработать. 🌲</div>`;
     sh.querySelector('.x').onclick = () => document.getElementById('oddsOv').classList.remove('on');
     document.getElementById('oddsOv').classList.add('on');
@@ -809,7 +771,7 @@ window.runCards = function () {
     { emo: '🤝', title: 'Рынок и подарки',
       text: 'Свои карты можно продать друзьям или купить у них — цена подсказывается, чтобы не продешевить. Передумал? Покупку можно отменить в течение пяти минут. А ещё картой можно просто поделиться — подарить другу.' },
     { emo: '🌱', title: 'Сезоны и честный шанс',
-      text: 'Сейчас в паках живут жители сезона «Лесная опушка» — остальные придут позже, а собранное никуда не денется. Каждый десятый пак обязательно принесёт карту, которой у тебя ещё нет, а каждый пятидесятый — редкую и выше.' },
+      text: 'Каждый десятый пак обязательно принесёт карту, которой у тебя ещё нет, а каждый пятидесятый — редкую и выше. Собирай всех!' },
   ];
   // force=true — памятку открыли вручную кнопкой «Памятка», а не первым входом
   async function showIntro(force) {
