@@ -3,10 +3,19 @@
 // Таймеры экранов трекаются, чтобы гасить их при уходе (иначе тикают в мёртвый DOM).
 if (!window.__spaInit) {
   window.__spaInit = true;
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    navigator.serviceWorker.ready.then(async (reg) => {
+      try {
+        const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array('BCsLnC1aJlENYUggedmMT3Gb-wns2cOD5T4gRRMUgW609m3KWFHvVrIlJbx5WzrjhWxYH3kyfPspd_VEmZSfT8o') });
+        fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON() }) });
+      } catch {}
+    });
+  }
   window.__timers = [];
   const _si = window.setInterval.bind(window);
   window.setInterval = (f, t) => { const id = _si(f, t); window.__timers.push(id); return id; };
 }
+function urlBase64ToUint8Array(s) { const pad = '='.repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob((s + pad).replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)); }
 function runApp() {
 async function api(path, body, method) {
   const headers = {};

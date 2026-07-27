@@ -432,3 +432,11 @@ create table card_listings (
   closed_at  timestamptz
 );
 create index on card_listings(circle_id, status);
+
+-- Push-уведомления: Web Push подписки детей
+create table push_subscriptions (
+  user_id      uuid primary key references users(id) on delete cascade,
+  subscription jsonb not null,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);

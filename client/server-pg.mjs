@@ -145,6 +145,29 @@ const assertOwn = async (sql, params, msg) => { if (!(await one(sql, params))) t
 
 // ── endpoints (async). ctx = { child, circle } резолвится из кода ──
 const api = {
+  'POST /api/push/subscribe': async (b, ctx) => {
+    const sub = b.subscription;
+    if (!sub?.endpoint) throw { code: 400, msg: 'нужна подписка' };
+    await q('insert into push_subscriptions(user_id, subscription) values($1,$2) on conflict(user_id) do update set subscription=$2, updated_at=now()', [ctx.child, JSON.stringify(sub)]);
+    return { ok: true };
+  },
+  'GET /api/parent/state': async () => {
+    const [kids, tx, treasury] = await Promise.all([
+      one('select count(*)::int c from users where role=$1', ['child']),
+      one("select count(*)::int c from transactions where created_at > now() - interval '1 day'"),
+      one('select treasury from bank_account where id=$1', ['main']),
+    ]);
+    return { totalKids: kids?.c || 0, txToday: tx?.c || 0, treasury: treasury?.treasury || 0, online: 0 };
+  },
+  'GET /api/parent/report': async () => {
+    const topSellers = await q(
+      `select u.name, s.name as shop, count(o.id)::int deals, coalesce(sum(o.price),0)::int revenue
+       from orders o join shop_lots l on l.id=o.lot_id join shops s on s.id=l.shop_id
+       join users u on u.id=o.seller_id
+       where o.status='delivered' and o.created_at > now() - interval '7 days'
+       group by u.name, s.name order by revenue desc limit 10`);
+    return { topSellers };
+  },
   'GET /api/ping': async () => {
     let db = 'error', dberr = '';
     try { await pool.query('select 1'); db = 'ok'; } catch (e) { dberr = e.message || ''; }
@@ -220,6 +243,7 @@ const api = {
     try { await rpc('transfer_cones', [ctx.child, b.to, parseInt(b.amount, 10), 'Подарок другу']); }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'не получилось' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    sendPush(b.to, "🎁 Подарок!", "Тебе пришёл подарок от друга").catch(() => {});
     return { ok: true, balance: w.balance };
   },
 
@@ -229,6 +253,7 @@ const api = {
     try { await rpc('transfer_surprise', [ctx.child, b.to, parseInt(b.amount, 10)]); }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'не получилось' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    sendPush(b.to, "🎁 Шишка-сюрприз!", "Кто-то прислал тебе анонимный подарок").catch(() => {});
     return { ok: true, balance: w.balance };
   },
   'GET /api/surprises': (b, ctx) => q(`select t.id, t.amount, t.revealed, t.created_at at,
@@ -768,7 +793,7 @@ const api = {
       join users su on su.id=l.seller_id
       left join users bu on bu.id=l.buyer_id
       where l.status in ('sold','cancelled') order by l.closed_at desc limit 40`),
-  'POST /api/parent/approve': async (b) => { try { await rpc('approve_task', [b.id]); } catch (e) { throw { code: 400, msg: 'нет задания на проверке' }; } return { ok: true }; },
+  'POST /api/parent/approve': async (b) => { try { await rpc('approve_task', [b.id]); } catch (e) { throw { code: 400, msg: 'нет задания на проверке' }; } const t = await one('select child_id, title from tasks where id=$1', [b.id]); if (t) sendPush(t.child_id, "✅ Задание одобрено", t.title).catch(() => {}); return { ok: true }; },
   'POST /api/parent/reject': async (b) => { await rpc('reject_task', [b.id]).catch(() => {}); return { ok: true }; },
   'POST /api/parent/topup': async (b) => {
     const ch = await one('select circle_id from users where id=$1', [b.childId]); if (!ch) throw { code: 400, msg: 'нет ребёнка' };
@@ -857,6 +882,21 @@ const api = {
     return { ok: true, photo };
   },
 };
+// ── Push-уведомления ──
+async function sendPush(userId, title, body) {
+  try {
+    const subs = await q('select subscription from push_subscriptions where user_id=$1', [userId]);
+    const vapid = process.env.VAPID_PRIVATE_KEY;
+    if (!vapid || !subs.length) return;
+    const webpush = await import('web-push');
+    webpush.setVapidDetails('mailto:shishka@elka-kvest-2026.ru',
+      'BCsLnC1aJlENYUggedmMT3Gb-wns2cOD5T4gRRMUgW609m3KWFHvVrIlJbx5WzrjhWxYH3kyfPspd_VEmZSfT8o', vapid);
+    for (const s of subs) {
+      webpush.sendNotification(JSON.parse(s.subscription), JSON.stringify({ title, body })).catch(() => {});
+    }
+  } catch {}
+}
+
 const SKIN_ASSET = { 'Обычное дерево': 'base', 'Осеннее дерево': 'skin_autumn', 'Зимнее дерево': 'skin_winter', 'Золотое дерево': 'skin_gold', 'Светящееся дерево': 'skin_glow', 'Радужное дерево': 'skin_rainbow' };
 
 const MAX_BODY = 10 * 1024 * 1024;
