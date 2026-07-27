@@ -3,13 +3,18 @@
 # Ставится cron'ом: 20 3 * * * /root/backup-shishka.sh
 set -uo pipefail
 
-export $(cat /root/shishka-local-db.env)
+# Безопасное чтение переменных из env-файла (без eval/export $(cat), который исполняет shell-инъекции)
+while IFS='=' read -r key value; do
+  [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+  printf -v "$key" '%s' "$value"
+done < /root/shishka-local-db.env
 PROD_URL=$(echo "$LOCAL_URL" | sed "s|/shishka$|/shishka_prod|")
 STAMP=$(date +%F)
 LOG=/root/backup-shishka.log
 TMP=/tmp/shishka-$STAMP.sql
 REPO=/root/shishka-backups
-OFFSITE=root@217.114.8.162:/root/shishka-offsite/
+OFFSITE_HOST="${BACKUP_OFFSITE_HOST:-217.114.8.162}"
+OFFSITE="root@$OFFSITE_HOST:/root/shishka-offsite/"
 
 log() { echo "$(date +'%F %T') $*" >> "$LOG"; }
 
@@ -31,8 +36,8 @@ log "OK локально $F ($(stat -c%s "$F") б)"
 U=/root/backups/uploads-$STAMP.tar.gz
 tar czf "$U" -C /opt/shishka uploads 2>>"$LOG" || log "WARN tar uploads"
 ls -t /root/backups/uploads-*.tar.gz | tail -n +15 | xargs -r rm --
-if scp -q -o BatchMode=yes -o ConnectTimeout=20 "$F" "$U" "$OFFSITE" 2>>"$LOG"; then
-  ssh -o BatchMode=yes -o ConnectTimeout=20 root@217.114.8.162 \
+if scp -q -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 "$F" "$U" "$OFFSITE" 2>>"$LOG"; then
+  ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=20 "$OFFSITE_HOST" \
     'ls -t /root/shishka-offsite/shishka-*.sql.gz | tail -n +15 | xargs -r rm --;
      ls -t /root/shishka-offsite/uploads-*.tar.gz | tail -n +15 | xargs -r rm --' 2>>"$LOG"
   log "OK stukach $STAMP (база + фото)"
@@ -44,7 +49,14 @@ fi
 #    история коммитов = машина времени по дням.
 #    Фото-отчёты по заданиям едут туда же: они append-only, поэтому без --delete —
 #    если на VPS папку почистят, из бэкапа снимки не пропадут.
-cp "$TMP" "$REPO/shishka.sql"
+#    ВАЖНО: репо обязан быть приватным — в дампе имена реальных детей.
+#    Если задан BACKUP_GPG_KEY — дамп шифруется перед коммитом (gpg --encrypt).
+DEST="$REPO/shishka.sql"
+if [[ -n "${BACKUP_GPG_KEY:-}" ]]; then
+  gpg --batch --yes --encrypt --recipient "$BACKUP_GPG_KEY" -o "$DEST.gpg" "$TMP" 2>>"$LOG" && DEST="$DEST.gpg" || log "WARN gpg encrypt — кладём открытым"
+else
+  cp "$TMP" "$DEST"
+fi
 mkdir -p "$REPO/uploads"
 rsync -a /opt/shishka/uploads/ "$REPO/uploads/" 2>>"$LOG" || log "WARN uploads не скопировались"
 cd "$REPO" || exit 1

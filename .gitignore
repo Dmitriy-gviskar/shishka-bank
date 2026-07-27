@@ -5,3 +5,5 @@ node_modules/
 client/*.png
 client/uploads/
 client/*.env
+cards/collection_all.html
+scratchpad/

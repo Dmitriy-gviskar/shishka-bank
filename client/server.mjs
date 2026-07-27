@@ -85,7 +85,7 @@ const api = {
   'GET /api/tasks': () =>
     db.prepare("select id,title,reward,needs_photo,status from tasks where child_id=? order by rowid").all(ACTIVE),
   'POST /api/task/done': (body) => {
-    const t = db.prepare('select * from tasks where id=?').get(body.id);
+    const t = db.prepare('select * from tasks where id=? and child_id=?').get(body.id, ACTIVE);
     if (!t || t.status === 'done' || t.status === 'submitted') throw { code: 400, msg: 'задание недоступно' };
     if (t.needs_photo) {   // фото-задание уходит на проверку родителю, награда после подтверждения
       db.prepare("update tasks set status='submitted' where id=?").run(t.id);

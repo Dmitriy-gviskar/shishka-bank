@@ -389,12 +389,13 @@ create index on events(circle_id, start_date, end_date);
 -- ═══════════════════ Лесная коллекция: карточки-шишки (гача) ═══════════════════
 -- Справочник грейдов рарности (цена = якорь рынка, weight = вес выпадения из пака)
 create table rarities (
-  grade  int primary key check (grade between 1 and 6),
-  code   text not null unique,
-  name   text not null,
-  color  text not null,
-  price  int  not null check (price > 0),
-  weight int  not null check (weight > 0)
+  grade     int primary key check (grade between 1 and 6),
+  code      text not null unique,
+  name      text not null,
+  color     text not null,
+  price     int  not null check (price > 0),
+  weight    int  not null check (weight > 0),
+  quicksell int  not null default 0 check (quicksell >= 0)  -- цена выкупа банком (регрессивная модель)
 );
 
 -- Каталог существ (тип карты). Ассет карты: assets/cards/<code>_<grade>.webp

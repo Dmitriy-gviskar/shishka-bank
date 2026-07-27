@@ -1,7 +1,8 @@
-const CACHE = 'shishka-v16';
+const CACHE = 'shishka-v17';
 const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
+  'parent.html', 'surprises.html', 'link.html',
   'style.css', 'app.js', 'cards.js', 'nav.js', 'assets/qrcode.js', 'assets/jsqr.js'];
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });  // клиент просит новый воркер встать немедленно
 self.addEventListener('install', (e) => {
@@ -13,9 +14,11 @@ self.addEventListener('activate', (e) => { e.waitUntil((async () => {
   const hadOld = keys.some((k) => k !== CACHE);                                   // была прошлая версия = это ОБНОВЛЕНИЕ
   await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))); // снести старый кэш
   await clients.claim();
-  if (hadOld) {                                                                   // сами перезагружаем открытые вкладки на свежий код — без «открой два раза»
+  // не перезагружаем открытые вкладки принудительно — теряется состояние (форма перевода, фото).
+  // Новый sw подхватится при следующей навигации; кэш уже обновлён.
+  if (hadOld) {
     const wins = await clients.matchAll({ type: 'window' });
-    await Promise.all(wins.map((c) => c.navigate(c.url).catch(() => {})));
+    for (const c of wins) c.postMessage('update');  // мягкий сигнал «обнови страницу когда удобно»
   }
 })()); });
 self.addEventListener('fetch', (e) => {

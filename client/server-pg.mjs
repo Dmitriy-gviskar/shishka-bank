@@ -1,13 +1,17 @@
-// Node-прокси Шишка Банк → Supabase (PostgreSQL, прод-схема + 56 функций).
-// Запуск: DATABASE_URL="postgres://..." node server-pg.mjs   (пароль не в файле!)
-// Клиент (те же /api/*) не меняется. Ребёнок резолвится по коду из child_logins (заголовок x-child-code).
+// Node-прокси Шишка Банк → PostgreSQL (прод-схема + функции).
+// Кластеризация: master форкает N воркеров (по числу ядер), каждый на своём event loop.
+// Rate-limit — per-worker (достаточно для детского приложения).
+// Запуск: DATABASE_URL="postgres://..." PARENT_PIN=1234 node server-pg.mjs
 import { createServer } from 'node:http';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+
+
+import { writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { dirname, join, extname } from 'node:path';
+import { dirname, join } from 'node:path';
 import pg from 'pg';
 import { randomInt } from 'node:crypto';
 import { makeAuth } from './lib/auth.mjs';
+import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 
 // Код входа ребёнка: криптослучайный, из алфавита без двусмысленных символов (нет 0/O/1/I/L).
 // Раньше был предсказуемым (ИМЯ+порядковый номер) и ломался на букве Ё — теперь развязан от имени.
@@ -18,6 +22,8 @@ const DIR = dirname(fileURLToPath(import.meta.url));
 await mkdir(join(DIR, 'uploads'), { recursive: true });
 if (!process.env.DATABASE_URL) { console.error('нет DATABASE_URL в окружении'); process.exit(1); }
 // idleTimeoutMillis:0 — не закрывать соединения (дефолт 10с ронял пул, и каждый «первый экран» платил ~0.5с за TLS-реконнект во Франкфурт)
+// rejectUnauthorized:false — локальный PostgreSQL, TLS сертификат на hostname машины (puxdjhjrbn.local),
+// но подключение через 127.0.0.1 (не совпадает). Для удалённой БД — выставить true.
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 0, keepAlive: true });
 setInterval(() => pool.query('select 1').catch(() => {}), 240e3);  // пинг: Supabase-пулер не должен резать idle-соединение
 pool.query('select 1').catch(() => {});                            // прогрев на старте — первый экран не ждёт TLS-коннект
@@ -41,7 +47,7 @@ const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const PARENT_PIN = process.env.PARENT_PIN;                       // PIN родительского кабинета — только из env
 if (!PARENT_PIN) { console.error('нет PARENT_PIN в окружении'); process.exit(1); }   // без дефолта '1234' — иначе кабинет открыт публично
-const PUBLIC = new Set(['POST /api/link']); // единственный роут без кода ребёнка
+const PUBLIC = new Set(['POST /api/link', 'GET /api/ping']); // роуты без кода ребёнка
 const memo = new Map();   // серверный кэш редких данных: ключ → {v,t}
 const memoGet = async (key, ttl, load) => {
   const hit = memo.get(key);
@@ -57,6 +63,21 @@ const clientIp = (req) => (req.headers['x-forwarded-for'] || '').split(',')[0].t
 const isLocked = (ip) => { const f = FAILS.get(ip); return !!f && f.until > Date.now(); };
 const badTry = (ip) => { const f = FAILS.get(ip) || { n: 0, until: 0 }; f.n++; if (f.n >= LOCK_AT) { f.until = Date.now() + LOCK_MS; f.n = 0; } FAILS.set(ip, f); };
 const okTry = (ip) => FAILS.delete(ip);
+
+// Мягкий rate-limit для детских роутов: 100 запросов за 10 сек с IP → 429 на 30 сек.
+// Не блокирует легитимное использование (100 запросов — это больше клика в секунду),
+// но глушит скриптовый перебор API.
+const CHILD_RATE = new Map();  // ip → { n, windowStart }
+const CHILD_LIMIT = 100, CHILD_WINDOW = 10_000, CHILD_LOCK = 30_000;
+const childRateCheck = (ip) => {
+  const now = Date.now();
+  const r = CHILD_RATE.get(ip);
+  if (r && r.lockedUntil > now) return false;
+  if (!r || now - r.windowStart > CHILD_WINDOW) { CHILD_RATE.set(ip, { n: 1, windowStart: now, lockedUntil: 0 }); return true; }
+  r.n++;
+  if (r.n > CHILD_LIMIT) { r.lockedUntil = now + CHILD_LOCK; return false; }
+  return true;
+};
 
 // Авто-закрытие аукционов: у кого дедлайн (ends_at) наступил — закрываем, объявляем победителя.
 // Дедлайн ставит create_auction/next_monday_15msk (понедельник 15:00 МСК). Идемпотентно.
@@ -124,6 +145,11 @@ const assertOwn = async (sql, params, msg) => { if (!(await one(sql, params))) t
 
 // ── endpoints (async). ctx = { child, circle } резолвится из кода ──
 const api = {
+  'GET /api/ping': async () => {
+    let db = 'error', dberr = '';
+    try { await pool.query('select 1'); db = 'ok'; } catch (e) { dberr = e.message || ''; }
+    return { ok: true, ts: Date.now(), db, dberr, uptime: Math.floor(process.uptime()) };
+  },
   'POST /api/link': async (b) => {
     const r = await one('select u.name from child_logins cl join users u on u.id=cl.child_id where cl.code=$1', [String(b.code || '').toUpperCase().trim()]);
     if (!r) throw { code: 400, msg: 'код не найден' };
@@ -833,15 +859,14 @@ const api = {
 };
 const SKIN_ASSET = { 'Обычное дерево': 'base', 'Осеннее дерево': 'skin_autumn', 'Зимнее дерево': 'skin_winter', 'Золотое дерево': 'skin_gold', 'Светящееся дерево': 'skin_glow', 'Радужное дерево': 'skin_rainbow' };
 
-const MIME = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
+const MAX_BODY = 10 * 1024 * 1024;
 
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
+  for (const [k, v] of SEC) res.setHeader(k, v);
   if (url.pathname.startsWith('/api/')) {
     let body = {};
-    if (req.method === 'POST') { const chunks = []; for await (const c of req) chunks.push(c);
-      try { body = JSON.parse(Buffer.concat(chunks).toString() || '{}'); } catch {} }
-    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    if (req.method === 'POST') { body = await readBody(req, res); if (body === null) return; }
     const route = `${req.method} ${url.pathname}`;
     const handler = api[route];
     if (!handler) { res.writeHead(404); return res.end('{}'); }
@@ -850,6 +875,7 @@ createServer(async (req, res) => {
     const ip = clientIp(req);
     try {
       if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
+      if (!guarded && !childRateCheck(ip)) throw { code: 429, msg: 'Слишком много запросов — подожди полминуты.' };
       // родительский контур защищён PIN-ом (иначе ребёнок начислит себе шишки)
       if (isParent) {
         if ((req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN родителя' }; }
@@ -873,17 +899,9 @@ createServer(async (req, res) => {
     }
     return;
   }
-  let p = url.pathname === '/' ? '/index.html' : url.pathname;
-  const ext = extname(p);
-  // отдаём только клиентские ресурсы; серверные исходники (.mjs, .env, .sql, package*) наружу не светим
-  if (!MIME[ext] || /server|\.env|\.sql|package/.test(p)) { res.writeHead(404); return res.end('not found'); }
-  try {
-    const data = await readFile(join(DIR, p));
-    res.setHeader('Content-Type', MIME[ext]);
-    if (p.startsWith('/assets/')) res.setHeader('Cache-Control', 'public, max-age=2592000, immutable');  // арт не меняется
-    res.writeHead(200); res.end(data);
-  }
-  catch { res.writeHead(404); res.end('not found'); }
+  const [status, body, headers] = await serveStatic(url.pathname, DIR);
+  res.writeHead(status, headers || {});
+  res.end(body);
 }).listen(Number(process.env.PORT) || 3777, function () {
   console.log('Шишка Банк → http://localhost:' + this.address().port);
 });

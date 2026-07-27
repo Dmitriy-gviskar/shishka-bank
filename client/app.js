@@ -24,7 +24,9 @@ async function api(path, body, method) {
       const hit = JSON.parse(sessionStorage.getItem(k) || 'null');
       const age = hit ? Date.now() - hit.t : Infinity;
       const load = async () => {
-        const d = await (await fetch(path, opt)).json();
+        const res = await fetch(path, opt);
+        const d = await res.json();
+        if (!res.ok && d.error) d.error = friendlyError(res.status, d.error);
         if (d && !d.error) try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), d })); } catch {}
         return d;
       };
@@ -100,7 +102,7 @@ if (page === 'index.html' || page === '') {
     initDaily(s);   // ежедневный подарок
   });
   const add = document.querySelector('.add');   // «Пополнить» → зарабатывай заданиями
-  if (add) add.onclick = () => location.href = 'quests.html';
+  if (add) add.onclick = () => navigate('quests.html');
 
   // ── Ежедневный подарок + серия ──
   function coneRain(n) {   // дождик шишек поверх экрана
@@ -191,7 +193,7 @@ if (page === 'index.html' || page === '') {
           try {
             const u = new URL(hit.data);
             if (u.pathname.endsWith('/transfers.html') && u.searchParams.get('pay')) {   // только наши платёжные QR
-              stopScan(); location.href = u.pathname + u.search; return;
+              stopScan(); navigate(u.pathname + u.search); return;
             }
           } catch {}
         }
@@ -442,7 +444,7 @@ if (page === 'profile.html') {
   const su = document.getElementById('switchUser');   // сменить пользователя → экран кода
   if (su) su.onclick = (e) => { e.preventDefault(); localStorage.removeItem('childCode'); location.href = 'link.html'; };
   const nar = document.querySelector('.profile-btn'); // «Сменить наряд» → экран нарядов
-  if (nar) nar.onclick = () => location.href = 'skins.html';
+  if (nar) nar.onclick = () => navigate('skins.html');
   api('/api/state').then((s) => { const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset; });  // наряд перекрывает арт только если надет
   api('/api/profile').then((p) => {
     const ll = document.getElementById('levelLabel'); if (ll) ll.textContent = `Дубок · Уровень ${p.tree_level}`;
@@ -1103,7 +1105,7 @@ if (page === 'forest.html') {
       <div class="fi"><div class="fn">${esc(f.name)}</div><div class="ft">${esc(f.title || '')}</div></div>
       <div class="fgo">→</div>`;
     box.style.display = 'flex';
-    box.onclick = () => location.href = 'collection.html';
+    box.onclick = () => navigate('collection.html');
   });
 }
 

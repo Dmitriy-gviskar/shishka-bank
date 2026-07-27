@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Шишка Банк — Дашборд</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0d0e13;color:#ece9f5;font-family:system-ui,sans-serif;padding:24px}
+h1{font-size:24px;margin-bottom:20px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:#181922;border:1px solid #262735;border-radius:12px;padding:18px}
+.card h3{font-size:14px;color:#9c99b0;margin-bottom:8px}.card .v{font-size:32px;font-weight:900}
+.green{color:#46c93a}.red{color:#e04040}.amber{color:#e8b64b}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{padding:8px 12px;text-align:left;border-bottom:1px solid #262735;font-size:13px}
+th{color:#9c99b0;font-weight:700}
+</style>
+<h1>🌲 Шишка Банк — Дашборд</h1>
+<div class="grid">
+  <div class="card"><h3>Детей онлайн</h3><div class="v green" id="online">—</div></div>
+  <div class="card"><h3>Всего детей</h3><div class="v" id="totalKids">—</div></div>
+  <div class="card"><h3>Транзакций за сегодня</h3><div class="v" id="txToday">—</div></div>
+  <div class="card"><h3>Баланс системы</h3><div class="v amber" id="treasury">—</div></div>
+</div>
+<div class="card" style="margin-top:16px">
+  <h3>Топ-продавцы</h3>
+  <table><thead><tr><th>Ребёнок</th><th>Лавка</th><th>Сделок</th><th>Выручка</th></tr></thead>
+  <tbody id="topSellers"></tbody></table>
+</div>
+<script>
+async function load() {
+  try {
+    const pin = localStorage.getItem('parentPin') || prompt('PIN ведущего:');
+    if (pin) localStorage.setItem('parentPin', pin);
+    const h = { 'x-parent-pin': pin };
+    const [s,r] = await Promise.all([
+      fetch('/api/parent/state', { headers: h }).then(r => r.json()),
+      fetch('/api/parent/report', { headers: h }).then(r => r.json())
+    ]);
+    document.getElementById('online').textContent = s.online || 0;
+    document.getElementById('totalKids').textContent = s.totalKids || 0;
+    document.getElementById('txToday').textContent = s.txToday || 0;
+    document.getElementById('treasury').textContent = (s.treasury || 0) + ' 🌰';
+    const tbody = document.getElementById('topSellers');
+    tbody.innerHTML = (r.topSellers || []).map(s =>
+      `<tr><td>${s.name}</td><td>${s.shop || '—'}</td><td>${s.deals}</td><td>${s.revenue} 🌰</td></tr>`
+    ).join('');
+  } catch(e) {
+    document.body.innerHTML = '<h1 style="color:#e04040">Нет связи с сервером</h1>';
+  }
+}
+load();
+setInterval(load, 30000);
+</script>

@@ -12,11 +12,11 @@ alter table rarities add column if not exists quicksell int;
 -- Для собирающего ребёнка ничего не меняется: нетто -43🌰/пак и скорость сбора те же (tools/sim_cards.py).
 insert into rarities(grade,code,name,color,price,quicksell,weight) values
   (1,'common','Обычная','#9aa4b2',1,1,50),
-  (2,'uncommon','Необычная','#46c93a',3,2,27),
-  (3,'rare','Редкая','#3b8eea',10,3,13),
-  (4,'epic','Эпическая','#a24bf0',40,8,6),
-  (5,'legendary','Легендарная','#ff8a2b',150,20,3),
-  (6,'gold','Золотая','#ffc21f',1000,50,1)
+  (2,'uncommon','Необычная','#46c93a',3,1,27),
+  (3,'rare','Редкая','#3b8eea',10,2,13),
+  (4,'epic','Эпическая','#a24bf0',40,3,6),
+  (5,'legendary','Легендарная','#ff8a2b',150,5,3),
+  (6,'gold','Золотая','#ffc21f',1000,14,1)
 on conflict (grade) do update set code=excluded.code,name=excluded.name,
   color=excluded.color,price=excluded.price,quicksell=excluded.quicksell,weight=excluded.weight;
 
