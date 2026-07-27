@@ -1,0 +1,7 @@
+task=019f835a-cf36-7be3-83fa-4f0817eba5a8 name=cards/strekoza_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/strekoza_1_common.png (credits=9)

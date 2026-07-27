@@ -1,0 +1,21 @@
+task=019f848c-a518-7e93-98e1-ce5a550937b6 name=cards/lotos_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: IN_PROGRESS
+poll 14: IN_PROGRESS
+poll 15: IN_PROGRESS
+poll 16: IN_PROGRESS
+poll 17: IN_PROGRESS
+poll 18: IN_PROGRESS
+poll 19: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/lotos_4_epic.png (credits=9)

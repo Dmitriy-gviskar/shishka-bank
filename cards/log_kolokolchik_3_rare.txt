@@ -1,0 +1,8 @@
+task=019f8432-f9e9-7d6b-8cb5-5c24e676880b name=cards/kolokolchik_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kolokolchik_3_rare.png (credits=9)

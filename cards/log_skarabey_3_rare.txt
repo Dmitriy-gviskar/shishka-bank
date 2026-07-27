@@ -1,0 +1,9 @@
+task=019f8456-f819-76e1-977b-b2ec178c07b7 name=cards/skarabey_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/skarabey_3_rare.png (credits=9)

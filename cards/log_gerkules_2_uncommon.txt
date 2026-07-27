@@ -1,0 +1,8 @@
+task=019f8538-08c6-7f14-a56b-c8b28b392bc9 name=cards/gerkules_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/gerkules_2_uncommon.png (credits=9)

@@ -1,0 +1,12 @@
+task=019f8487-da8f-7dd7-a4f2-d2f2d7d284b0 name=cards/horek_6_gold
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/horek_6_gold.png (credits=9)

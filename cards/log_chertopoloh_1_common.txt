@@ -1,0 +1,23 @@
+task=019f8506-d250-7058-960b-35f0152b17b5 name=cards/chertopoloh_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: IN_PROGRESS
+poll 14: IN_PROGRESS
+poll 15: IN_PROGRESS
+poll 16: IN_PROGRESS
+poll 17: IN_PROGRESS
+poll 18: IN_PROGRESS
+poll 19: IN_PROGRESS
+poll 20: 
+poll 21: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/chertopoloh_1_common.png (credits=9)

@@ -1,0 +1,7 @@
+task=019f858a-a27a-7e6b-a4b2-54874470f060 name=cards/kunica_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kunica_3_rare.png (credits=9)

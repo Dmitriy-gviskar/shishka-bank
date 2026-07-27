@@ -1,0 +1,8 @@
+task=019f8463-fc86-7c24-851f-4e01541f1a3e name=cards/osa_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/osa_2_uncommon.png (credits=9)

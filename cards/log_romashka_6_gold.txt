@@ -1,0 +1,8 @@
+task=019f832a-b746-737c-bf27-c25d445dffb9 name=cards/romashka_6_gold
+poll 1: PENDING
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/romashka_6_gold.png (credits=9)

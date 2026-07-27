@@ -1,0 +1,7 @@
+task=019f858f-2e58-7019-8b4d-5f60560f2004 name=cards/lopuh_5_legendary
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: 
+poll 4: 
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/lopuh_5_legendary.png (credits=9)

@@ -1,0 +1,6 @@
+task=019f845f-d188-7a6f-9676-f1c5b8e9a772 name=cards/barsuk_6_gold
+poll 1: IN_PROGRESS
+poll 2: 
+poll 3: IN_PROGRESS
+poll 4: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/barsuk_6_gold.png (credits=9)

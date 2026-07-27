@@ -1,0 +1,8 @@
+task=019f8455-ed30-76bc-aeac-a9424b3e666c name=cards/dub_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/dub_2_uncommon.png (credits=9)

@@ -1,0 +1,7 @@
+task=019f845f-3301-747f-ac1d-c03dff40edc7 name=cards/letuchaya_mysh_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/letuchaya_mysh_1_common.png (credits=9)

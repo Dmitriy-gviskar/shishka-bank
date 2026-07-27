@@ -1,0 +1,8 @@
+task=019f8495-99fd-7204-a4ed-570d359cbde1 name=cards/vodomerka_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/vodomerka_3_rare.png (credits=9)

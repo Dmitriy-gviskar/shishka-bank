@@ -1,0 +1,67 @@
+[
+{"code":"strizh","name":"Стриж","cat":"zver",
+ "ident":"A cute but COOL cartoon SWIFT bird character, sleek dark aerodynamic body, long scythe wings, tiny beak, sharp fearless eyes.",
+ "world":"aviation — a swift pilot-ace, goggles and scarf, biplanes, sky and towering clouds",
+ "scenes":[
+  "a little swift chick with a folded paper plane on a branch, gazing up at the sky, three-quarter view.",
+  "a young flyer in goggles and a scarf launching off a cliff on a tiny glider, side view.",
+  "a skilled pilot in a barrel-roll through clouds trailing a vapor ribbon, dynamic pose.",
+  "an ace aviator leading a small squadron through towering clouds, commanding.",
+  "a legendary sky-ace weaving through an epic aerial storm, dramatic wide.",
+  "a GOD of the sky — a radiant winged ace on a throne of clouds, a crown, godlike."]},
+
+{"code":"okun","name":"Окунь","cat":"zver",
+ "ident":"A cute but COOL cartoon PERCH fish character, bold green-and-black striped body, spiky dorsal fin, a stern honest face.",
+ "world":"river patrol — a perch guard-officer, a badge, a whistle, keeping order underwater",
+ "scenes":[
+  "a little striped perch with a tin toy-badge on a reed, a proud rookie salute, three-quarter view.",
+  "a young patrol-guard with a whistle and cap watching over a river lane, side view.",
+  "a skilled officer raising a staff to keep order in a busy current, dynamic pose.",
+  "a master river-marshal commanding a patrol, badge gleaming, an authoritative stance.",
+  "a legendary guardian of the river holding back an epic flood-beast, dramatic.",
+  "a GOD of order — a radiant armored marshal with a trident of light, a crown, NO wings."]},
+
+{"code":"salamandra","name":"Саламандра","cat":"zver",
+ "ident":"A cute but COOL cartoon SALAMANDER character, glossy black skin with bright orange spots, a long tail, big brave eyes.",
+ "world":"firefighting — a salamander fire-fighter, embers, a hose, a helmet, brave rescues",
+ "scenes":[
+  "a little salamander cupping a tiny flame in its hands, curious warm glow, three-quarter view.",
+  "a young fire-cadet with a small bucket and helmet beside a campfire, side view.",
+  "a skilled firefighter aiming a glowing hose at leaping flames, sparks flying, dynamic pose.",
+  "a master fire-captain carrying someone out of a blaze, a heroic commanding stance.",
+  "a legendary hero salamander in a heavy coat standing calm on a night rooftop, one close portrait, a few embers drifting.",
+  "a GOD of fire — a radiant salamander-titan wreathed in golden flame, a crown, NO wings."]},
+
+{"code":"rosyanka","name":"Росянка","cat":"rastenie",
+ "ident":"A cute but COOL cartoon carnivorous SUNDEW plant character, a rosette of red tendrils tipped with sticky dew droplets, a little face, tiny leaf-arms.",
+ "world":"bog hunting — a carnivorous sundew with sticky dew traps, catching bugs in a misty marsh",
+ "scenes":[
+  "a little sundew sprout with one dewy tendril catching a gnat, curious, three-quarter view.",
+  "a young trapper-plant setting sticky dew-snares among the reeds, side view.",
+  "a skilled hunter-plant snapping its tendrils at prey, glistening dew, dynamic pose.",
+  "a master bog-predator lunging with one big grasping tendril, a commanding hero pose, lush swamp.",
+  "a legendary carnivore-plant towering over an epic misty marsh, dramatic wide.",
+  "a GOD of the bog — a radiant colossal sundew with dew of light, a crown of tendrils, NO wings."]},
+
+{"code":"kukushka","name":"Кукушка","cat":"zver",
+ "ident":"A cute but COOL cartoon CUCKOO bird character, slender grey body, finely barred underparts, a long tail, clever attentive eyes.",
+ "world":"clockmaking — a cuckoo clockmaker, gears, cuckoo-clocks, springs and precise time",
+ "scenes":[
+  "a little cuckoo poking curiously at a tiny pocket-watch on a branch, three-quarter view.",
+  "a young clock-apprentice with a loupe and a spring, tinkering at a bench, side view.",
+  "a skilled clockmaker assembling a glowing cuckoo-clock, gears floating around, dynamic pose.",
+  "a master horologist standing in a hall of giant clocks, a commanding precise pose.",
+  "a legendary keeper of time winding a colossal clock-tower, epic wide.",
+  "a GOD of time — a radiant cuckoo-horologist amid orbiting golden clockwork, a crown, NO wings."]},
+
+{"code":"karas","name":"Карась","cat":"zver",
+ "ident":"A cute but COOL cartoon CRUCIAN CARP character, plump round golden-bronze body, small fins, a cheerful chubby face.",
+ "world":"baking — a crucian-carp baker, ovens, dough, cakes and a cozy warm bakery",
+ "scenes":[
+  "a little round carp dusted with flour holding a tiny fresh bun, cheerful, three-quarter view.",
+  "a young baker in an apron kneading dough at a small counter, side view.",
+  "a skilled pastry-chef piping a glowing decorated cake, sugar sparkling, dynamic pose.",
+  "a master baker presenting a towering cake in a warm bakery, a commanding proud stance.",
+  "a legendary confectioner unveiling an epic feast-table of sweets, dramatic warm light.",
+  "a GOD of the hearth — a radiant golden baker on a throne of cakes, a crown, NO wings."]}
+]

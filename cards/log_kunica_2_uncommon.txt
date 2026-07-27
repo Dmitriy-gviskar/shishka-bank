@@ -1,0 +1,9 @@
+task=019f858a-a2a4-7e6c-9b43-fea894e44acf name=cards/kunica_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: 
+poll 7: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kunica_2_uncommon.png (credits=9)

@@ -1,0 +1,17 @@
+task=019f8437-e7c9-7e97-a283-d88369faf31c name=cards/kuznechik_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: IN_PROGRESS
+poll 14: IN_PROGRESS
+poll 15: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kuznechik_2_uncommon.png (credits=9)

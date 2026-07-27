@@ -1,0 +1,7 @@
+task=019f8462-aa03-7b70-b0b6-901c2d363c97 name=cards/kaktus_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: 
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kaktus_2_uncommon.png (credits=9)

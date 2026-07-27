@@ -1,0 +1,89 @@
+[
+{"code":"som","name":"Сом","cat":"zver",
+ "ident":"A cute but COOL cartoon giant CATFISH character, broad grey-brown body, long drooping whiskers, wide flat mouth, calm strong eyes.",
+ "world":"deep-river fishing and strength — a catfish angler, nets, muddy depths, hauling great catches",
+ "scenes":[
+  "a little catfish with a twig fishing-rod by a muddy bank, whiskers up, curious, three-quarter view.",
+  "a young angler hauling a small net over one shoulder, wading through reeds, side view.",
+  "a skilled fisher casting a big glowing net across a river current, dynamic pose.",
+  "a burly master-angler hauling up a massive catch, muscles straining, commanding stance.",
+  "a legendary depth-fisher wrestling a giant river-beast, churning water, epic wide.",
+  "a GOD of the deep river — a colossal whiskered titan holding a net of pure light, a crown, NO wings."]},
+
+{"code":"drozd","name":"Дрозд","cat":"zver",
+ "ident":"A cute but COOL cartoon THRUSH bird character, speckled warm-brown breast, slim body, bright alert eyes, a neat pointed beak.",
+ "world":"exploration and cartography — a thrush wanderer, rolled maps, forest trails, a walking staff",
+ "scenes":[
+  "a young thrush with a tiny rolled map hopping onto a forest path, three-quarter view.",
+  "a novice wanderer with a walking-stick and a satchel following a winding trail, side view.",
+  "a skilled trailblazer sketching a map on a cliff overlook with a spyglass, dynamic.",
+  "a master explorer planting a flag on a mountain peak, a cloak, a commanding vista.",
+  "a legendary pathfinder crossing an epic canyon on a rope bridge, dramatic wide.",
+  "a GOD of roads and maps — wings of unfurling maps, a glowing compass, a crown, godlike."]},
+
+{"code":"sviristel","name":"Свиристель","cat":"zver",
+ "ident":"A cute but COOL cartoon WAXWING bird character, soft fawn-grey plumage, a jaunty crest, black eye-mask, tiny red wax wing-tips.",
+ "world":"winter mail-coaching — a waxwing coachman, snow, jingling sleigh bells, frosty roads",
+ "scenes":[
+  "a waxwing chick with a tiny bell on a snowy twig, breath steaming, three-quarter view.",
+  "a young postman with a small mailbag trudging through fresh snow, side view.",
+  "a confident winter courier in a warm fur coat holding one glowing lantern, standing still, snowy night behind, a single close hero portrait.",
+  "a master mail-rider on a grand sleigh charging through a blizzard, commanding.",
+  "a legendary winter courier racing a snowstorm under an aurora, epic wide.",
+  "a GOD of winter roads — a radiant coachman on a sleigh of light, a crown of frost, NO wings."]},
+
+{"code":"klyost","name":"Клёст","cat":"zver",
+ "ident":"A cute but COOL cartoon CROSSBILL bird character, brick-red plumage, a distinctive crossed beak, sturdy little body, a determined face.",
+ "world":"forest woodcraft — a crossbill lumberjack-carpenter, pines, an axe, cones and timber",
+ "scenes":[
+  "a little crossbill prying a seed from a pinecone on a branch, three-quarter view.",
+  "a young woodcutter with a small axe beside a stack of logs, side view.",
+  "a skilled carpenter carving a beam with wood-shavings flying, a workshop, dynamic.",
+  "a master builder raising a great timber frame, sawdust in the air, commanding.",
+  "a legendary forest-wright felling a giant ancient pine, epic wide.",
+  "a GOD of the pinewood — a titan wright with an axe of light, a crown of cones, NO wings."]},
+
+{"code":"kolonok","name":"Колонок","cat":"zver",
+ "ident":"A cute but COOL cartoon Siberian WEASEL (kolonok) character, sleek ginger-orange fur, a slender body, a sharp clever face, quick eyes.",
+ "world":"taiga hunting — a weasel archer-tracker, a bow, an autumn forest, stealth and precision",
+ "scenes":[
+  "a little weasel-kit with a twig bow crouched in autumn leaves, three-quarter view.",
+  "a young tracker with a small bow and quiver following pawprints, side view.",
+  "a skilled archer drawing a glowing arrow mid-stalk in the taiga, dynamic.",
+  "a master hunter loosing a perfect shot from a rocky ridge, commanding.",
+  "a legendary tracker in an epic hunt through a storm-lit forest, dramatic.",
+  "a GOD of the hunt — a radiant archer with a bow of light, a crown of antlers, NO wings."]},
+
+{"code":"popolzen","name":"Поползень","cat":"zver",
+ "ident":"A cute but COOL cartoon NUTHATCH bird character, blue-grey back, warm buff belly, a black eye-stripe, a strong straight beak, bold posture.",
+ "world":"high-rise building — a nuthatch climber-architect, scaffolds, dizzying heights, blueprints",
+ "scenes":[
+  "a little nuthatch hanging upside-down on tree bark with a tiny hammer, three-quarter view.",
+  "a young builder with a tool-belt scaling a tree-trunk scaffold, side view.",
+  "a skilled architect unrolling a blueprint on a high beam, a dizzying height, dynamic.",
+  "a master builder directing the raising of a great tower-nest, a commanding view.",
+  "a legendary sky-architect atop an epic spire in the clouds, dramatic wide.",
+  "a GOD of heights — a radiant architect on a tower of light, a crown, godlike."]},
+
+{"code":"vyun","name":"Вьюн","cat":"zver",
+ "ident":"A cute but COOL cartoon weather-LOACH fish (vyun) character, long slinky olive body, tiny barbels, big playful eyes, a limber pose.",
+ "world":"circus acrobatics — a loach contortionist-acrobat, a big top, ribbons and a spotlight",
+ "scenes":[
+  "a little loach doing a wobbly first flip on a lily-pad stage, three-quarter view.",
+  "a young acrobat balancing on a ball with a ribbon in a small tent, side view.",
+  "a skilled contortionist spiraling through glowing hoops, dynamic motion.",
+  "a master performer on a high trapeze under a spotlight, a commanding crowd below.",
+  "a legendary showstopper in an epic aerial spiral amid a confetti storm, dramatic.",
+  "a GOD of the circus — a radiant serpentine acrobat woven of ribbons of light, a crown, NO wings."]},
+
+{"code":"nalim","name":"Налим","cat":"zver",
+ "ident":"A cute but COOL cartoon BURBOT fish (nalim) character, mottled dark-olive body, a single chin barbel, narrowed clever eyes, a sly look.",
+ "world":"noir mystery — a burbot night-detective, dark waters, a lantern, clues, a trench-coat",
+ "scenes":[
+  "a little burbot peeking from under a dark rock with a tiny magnifier, three-quarter view.",
+  "a young sleuth in a small cap holding a lantern, examining a clue in murky water, side view.",
+  "a skilled detective in a coat following a trail of bubbles, a moody dynamic scene.",
+  "a master investigator cornering a mystery in a sunken hall, a commanding pose.",
+  "a legendary depth-detective in an epic showdown in dark churning water, dramatic.",
+  "a GOD of secrets — a radiant noir-titan wielding a lantern of light, a crown, NO wings."]}
+]

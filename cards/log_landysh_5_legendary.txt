@@ -1,0 +1,8 @@
+task=019f8454-3c8b-76f1-a92f-ec3d4d9ffca5 name=cards/landysh_5_legendary
+poll 1: PENDING
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/landysh_5_legendary.png (credits=9)

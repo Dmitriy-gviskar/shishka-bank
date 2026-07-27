@@ -1,0 +1,19 @@
+task=019f832f-736d-74f5-b0d6-0483d3b315ec name=cards/babochka_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: IN_PROGRESS
+poll 14: IN_PROGRESS
+poll 15: IN_PROGRESS
+poll 16: IN_PROGRESS
+poll 17: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/babochka_2_uncommon.png (credits=9)

@@ -36,6 +36,25 @@
   .form label{display:flex;align-items:center;gap:7px;font-weight:800;color:var(--brown);margin-bottom:8px;font-size:14px}
   .form input[type=checkbox]{width:auto}
   .empty{text-align:center;color:#8a7358;font-weight:700;padding:8px;font-size:14px;background:rgba(255,250,240,.92);border:2px solid #d9c39a;border-radius:12px}
+  /* блок сезона коллекции */
+  .season-box{background:rgba(255,250,240,.95);border:2px solid #d9c39a;border-radius:14px;padding:11px;margin-bottom:8px}
+  .season-box .sname{font-weight:900;color:var(--ink);font-size:16px}
+  .season-box .sinfo{color:#8a7358;font-weight:700;font-size:12.5px;margin:2px 0 8px}
+  .season-box .srow{display:flex;align-items:center;justify-content:space-between;
+    font-weight:800;color:var(--brown);font-size:13px;padding:3px 0;border-top:1px dashed #e4d6b8}
+  .season-box .actions{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+  .season-box .actions input{flex:1;min-width:120px}
+  .metrics{margin-top:9px;padding-top:8px;border-top:1px dashed #e4d6b8}
+  .metrics .mrow{font-weight:700;color:#8a7358;font-size:12px;line-height:1.5}
+  .metrics .mrow.ok{color:#5f8e37;font-weight:800}
+  .metrics .mrow.warn{color:#b3452e;font-weight:800}
+  .log{max-height:200px;overflow-y:auto;font-size:12.5px;color:var(--brown);font-weight:700}
+  .log div{padding:4px 0;border-bottom:1px dashed #e4d6b8}
+  .log .edge{color:#b3452e}
+  .mkt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;padding-top:8px;
+    border-top:1px dashed #e4d6b8;font-weight:800;color:var(--brown);font-size:13px;cursor:pointer}
+  .mkt input{width:18px;height:18px;accent-color:#7bab4c}
+  .mkthint{flex-basis:100%;color:#a1876a;font-weight:700;font-size:11.5px}
   .logout{margin-top:8px;text-align:center}
   .logout a{color:var(--brown);font-weight:800;font-size:13px}
 </style></head><body data-no-nav>
@@ -48,6 +67,24 @@
       <input id="kidName" placeholder="Имя ребёнка" maxlength="16">
       <select id="kidTree"><option value="pine">Сосна</option><option value="cedar">Кедр</option><option value="spruce">Ель</option><option value="oak">Дуб</option></select>
       <button class="btn btn-lg" id="addKid">Создать профиль</button>
+    </details>
+
+    <h3>Лесная коллекция</h3>
+    <div id="season"></div>
+    <details class="form"><summary>Вручить карту за дело</summary>
+      <select id="grantKid"></select>
+      <select id="grantCard"></select>
+      <select id="grantGrade">
+        <option value="1">Обычная</option><option value="2">Необычная</option>
+        <option value="3" selected>Редкая</option><option value="4">Эпическая</option>
+        <option value="5">Легендарная</option><option value="6">Золотая</option>
+      </select>
+      <input id="grantReason" placeholder="За что (увидит ребёнок)" maxlength="60">
+      <button class="btn btn-lg" id="grantBtn">Вручить</button>
+    </details>
+
+    <details class="form"><summary>Сделки и подарки детей</summary>
+      <div id="cardLog" class="log">загружаю…</div>
     </details>
 
     <h3>Задания на проверке</h3>

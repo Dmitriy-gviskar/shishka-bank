@@ -1,0 +1,6 @@
+task=019f845f-d17d-7a6e-b55a-2bc26111e274 name=cards/barsuk_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: 
+poll 3: IN_PROGRESS
+poll 4: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/barsuk_2_uncommon.png (credits=9)

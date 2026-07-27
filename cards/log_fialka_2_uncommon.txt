@@ -1,0 +1,12 @@
+task=019f858e-611a-7fc6-8d08-69dc5bb1d7b4 name=cards/fialka_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/fialka_2_uncommon.png (credits=9)

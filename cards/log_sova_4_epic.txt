@@ -1,0 +1,7 @@
+task=019f8329-e44d-7406-96d1-dd9ab2281ea4 name=cards/sova_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/sova_4_epic.png (credits=9)

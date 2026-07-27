@@ -1,0 +1,7 @@
+task=019f84cc-96b5-79bd-ad4d-674560a35a38 name=cards/chest_open2
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: 
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/chest_open2.png (credits=9)

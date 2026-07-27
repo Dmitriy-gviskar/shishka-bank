@@ -1,0 +1,7 @@
+task=019f832d-281c-7d48-8301-bf1e43f424de name=cards/zemlyanika_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/zemlyanika_4_epic.png (credits=9)

@@ -1,0 +1,7 @@
+task=019f8329-e44d-7408-a870-9ee19b44c3b8 name=cards/sova_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/sova_1_common.png (credits=9)

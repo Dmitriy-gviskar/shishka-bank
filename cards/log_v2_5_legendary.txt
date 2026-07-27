@@ -1,0 +1,18 @@
+task=019f7662-90a0-7a5f-bb67-52e40a55659b name=cards/burunduk_v2_5_legendary
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: IN_PROGRESS
+poll 14: IN_PROGRESS
+poll 15: IN_PROGRESS
+poll 16: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/burunduk_v2_5_legendary.png (credits=9)

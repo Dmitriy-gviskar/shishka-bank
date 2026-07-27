@@ -1,0 +1,7 @@
+task=019f832f-7369-74f4-a151-08ca4a1b862d name=cards/babochka_6_gold
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/babochka_6_gold.png (credits=9)

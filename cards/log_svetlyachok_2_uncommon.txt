@@ -1,0 +1,7 @@
+task=019f8436-1fce-7a8c-a298-505a20c420ab name=cards/svetlyachok_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/svetlyachok_2_uncommon.png (credits=9)

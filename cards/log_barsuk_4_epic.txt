@@ -1,0 +1,6 @@
+task=019f845f-d181-79b3-ba21-eb1d38fb6b8b name=cards/barsuk_4_epic
+poll 1: IN_PROGRESS
+poll 2: 
+poll 3: IN_PROGRESS
+poll 4: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/barsuk_4_epic.png (credits=9)

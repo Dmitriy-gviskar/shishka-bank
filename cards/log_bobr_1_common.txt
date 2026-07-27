@@ -1,0 +1,8 @@
+task=019f843f-f772-7d09-91ae-290c5f098d7a name=cards/bobr_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/bobr_1_common.png (credits=9)

@@ -1,0 +1,9 @@
+task=019f8463-fc84-768b-b10a-2b443417b466 name=cards/osa_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/osa_3_rare.png (credits=9)

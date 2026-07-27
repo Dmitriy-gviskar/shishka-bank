@@ -1,0 +1,8 @@
+task=019f8458-f17a-77cd-babf-e9a928fff014 name=cards/gusenica_6_gold
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/gusenica_6_gold.png (credits=9)

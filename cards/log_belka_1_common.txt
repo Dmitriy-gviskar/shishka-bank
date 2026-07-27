@@ -1,0 +1,10 @@
+task=019f843d-f9f6-7c8f-b2d5-add328a2635a name=cards/belka_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/belka_1_common.png (credits=9)

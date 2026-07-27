@@ -1,0 +1,9 @@
+task=019f8432-f9eb-79bc-af03-8918835efd62 name=cards/kolokolchik_6_gold
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kolokolchik_6_gold.png (credits=9)
