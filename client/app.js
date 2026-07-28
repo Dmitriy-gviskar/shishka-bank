@@ -223,7 +223,7 @@ async function loadTasks() {
     const submitted = t.status === 'submitted';
     const el = document.createElement('div'); el.className = 'card quest';
     el.innerHTML = `<div class="ic"><img src="assets/coin1.webp"></div>
-      <div class="mid"><div class="nm">${t.title}</div>
+      <div class="mid"><div class="nm">${esc(t.title)}</div>
         <div class="rw"><img src="assets/coin1.webp">+${t.reward}</div></div>
       ${done ? '<span class="done">Выполнено</span>'
              : submitted ? '<span class="done" style="background:#e8b64b">На проверке</span>'
@@ -287,7 +287,7 @@ if (page === 'transfers.html') {
       qrRecipient = payCode.toUpperCase();
       document.querySelector('.title').textContent = 'Оплата';
       document.getElementById('friendList').innerHTML =
-        `<div class="friend sel" style="flex:none;width:100%;padding:12px"><span style="font-size:15px">Платишь: ${r.name}</span></div>`;
+        `<div class="friend sel" style="flex:none;width:100%;padding:12px"><span style="font-size:15px">Платишь: ${esc(r.name)}</span></div>`;
       const cards = document.querySelector('.cards'); if (cards) cards.style.display = 'none';   // открытки — только для подарков
       const anonRow = document.getElementById('anonRow'); if (anonRow) anonRow.style.display = 'none';   // тайно — только для подарков
       const fixedAmt = parseInt(new URLSearchParams(location.search).get('amt'), 10);
@@ -887,7 +887,7 @@ if (page === 'news.html') {
       const when = new Date(n.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
       const el = document.createElement('div'); el.className = 'card ev';
       el.innerHTML = `<img src="assets/${ICON[n.kind] || 'coin1.webp'}" onerror="this.src='assets/coin1.webp'">
-        <div><div class="nm">${n.kind === 'achievement' ? `${n.who} открыл награду «${n.what}»` : (n.who ? n.who + ': ' : '') + n.what}</div>
+        <div><div class="nm">${n.kind === 'achievement' ? `${esc(n.who)} открыл награду «${esc(n.what)}»` : (n.who ? esc(n.who) + ': ' : '') + esc(n.what)}</div>
         <div class="k">${when}</div></div>` +
         (n.amount ? `<div class="amt" style="color:#5f8e37">${n.amount}</div>` : '');
       c.appendChild(el);

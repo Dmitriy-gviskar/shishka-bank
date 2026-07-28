@@ -5,6 +5,7 @@
 <style>
   .phone{background-image:url(assets/bg.webp)}
   .wrap{overflow-y:hidden}   /* тут свой скролл — #shopList (flex:1+overflow-y), двойной скролл ломал вёрстку */
+  #shopList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
   .lot{display:flex;align-items:center;gap:12px;margin-top:12px;padding:14px}
   .lot .nm{flex:1;font-weight:900;color:var(--ink);font-size:17px;line-height:1.2}
   .lot .right{text-align:center}

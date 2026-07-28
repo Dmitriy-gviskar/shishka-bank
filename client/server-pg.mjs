@@ -661,7 +661,7 @@ const api = {
     return out;
   },
   'POST /api/guild/create': async (b, ctx) => {
-    const name = String(b.name || '').trim().slice(0, 24);
+    const name = String(b.name || "").replace(/[<>]/g, "").trim().slice(0, 24);
     if (name.length < 2) throw { code: 400, msg: 'придумай название' };
     const dup = await one("select 1 from guilds where circle_id=$1 and status='open' and lower(name)=lower($2)", [ctx.circle, name]);
     if (dup) throw { code: 400, msg: 'такая гильдия уже есть' };
@@ -715,7 +715,7 @@ const api = {
   'GET /api/parent/children': () => q('select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance from child_logins cl join users u on u.id=cl.child_id join wallets w on w.user_id=u.id order by u.created_at'),
   'POST /api/parent/add-child': async (b) => {
     const circle = await one("select id from circles order by created_at limit 1");
-    const name = String(b.name || '').trim().slice(0, 16); if (!name) throw { code: 400, msg: 'укажи имя' };
+    const name = String(b.name || "").replace(/[<>]/g, "").trim().slice(0, 16); if (!name) throw { code: 400, msg: 'укажи имя' };
     auth.dropCache();
     const u = (await rpc('add_child', [circle.id, name, b.tree || 'pine']))[0];
     let code;
@@ -824,7 +824,7 @@ const api = {
   },
 
   // ── прочее ──
-  'POST /api/onboard': async (b, ctx) => { if (ctx.child) await q('update users set name=$1, tree_type=$2 where id=$3', [String(b.name || 'Росточек').slice(0, 16), b.tree || 'pine', ctx.child]); return { ok: true }; },
+  'POST /api/onboard': async (b, ctx) => { if (ctx.child) await q('update users set name=$1, tree_type=$2 where id=$3', [String(b.name || "Росточек").replace(/[<>]/g, "").slice(0, 16), b.tree || 'pine', ctx.child]); return { ok: true }; },
   'POST /api/shop/create': async (b, ctx) => {
     const name = String(b.name || '').trim(), lot = String(b.lot || '').trim(), price = parseInt(b.price, 10);
     if (!name || !lot) throw { code: 400, msg: 'заполни название лавки и товар' };
@@ -835,7 +835,7 @@ const api = {
     return { ok: true };
   },
   'POST /api/shop/rename': async (b, ctx) => {
-    const name = String(b.name || '').trim().slice(0, 24);
+    const name = String(b.name || "").replace(/[<>]/g, "").trim().slice(0, 24);
     if (!name) throw { code: 400, msg: 'укажи название' };
     await assertOwn('select 1 from shops where owner_id=$1', [ctx.child], 'нет лавки');
     await q('update shops set name=$2 where owner_id=$1', [ctx.child, name]);
