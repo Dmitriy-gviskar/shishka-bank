@@ -714,7 +714,11 @@ const api = {
   // ── Кабинет родителя ──
   'GET /api/parent/children': () => q('select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance from child_logins cl join users u on u.id=cl.child_id join wallets w on w.user_id=u.id order by u.created_at'),
   'POST /api/parent/add-child': async (b) => {
-    const circle = await one("select id from circles order by created_at limit 1");
+    const cid = b.circle_id || null;
+    const circle = cid
+      ? await one("select id from circles where id = $1", [cid])
+      : await one("select id from circles order by created_at limit 1");
+    if (cid && !circle) throw { code: 400, msg: 'круг не найден' };
     const name = String(b.name || "").replace(/[<>]/g, "").trim().slice(0, 16); if (!name) throw { code: 400, msg: 'укажи имя' };
     auth.dropCache();
     const u = (await rpc('add_child', [circle.id, name, b.tree || 'pine']))[0];
