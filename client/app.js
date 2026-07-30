@@ -778,6 +778,8 @@ if (page === 'mail.html') {
     mediaRecorder.stop(); mediaRecorder = null;
   };
   micBtn.onpointerleave = () => { if (mediaRecorder) micBtn.onpointerup(); };
+  micBtn.ontouchend = (e) => { e.preventDefault(); if (mediaRecorder) micBtn.onpointerup(); };
+  micBtn.ontouchcancel = () => { if (mediaRecorder) micBtn.onpointerup(); };
   // Ответ
   window.cancelReply = () => { replyTo = null; document.getElementById('replyBar').style.display = 'none'; };
   document.getElementById('replyCancel').onclick = cancelReply;
