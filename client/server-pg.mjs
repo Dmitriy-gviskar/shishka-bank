@@ -589,7 +589,7 @@ const api = {
       from messages m left join users u on u.id=m.from_user
       where m.to_user=$1 and m.deliver_at<=now() order by m.created_at desc`, [ctx.child]),
   // Диалог с конкретным другом: все сообщения между мной и ним, по возрастанию времени
-  'GET /api/chat': async (b, ctx) => {
+  'POST /api/chat': async (b, ctx) => {
     const withId = b.with;
     if (!withId) throw { code: 400, msg: 'нужен ?with=ID' };
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [withId, ctx.circle], 'друг не в твоём кругу');
@@ -683,7 +683,7 @@ const api = {
     await rpc('join_guild', [b.id, ctx.child]);
     return { ok: true };
   },
-  'POST /api/guild/chat': async (b, ctx) => {   // POST: id в теле (GET-обёртка без параметров)
+  'GET /api/guild/chat': async (b, ctx) => {   // POST: id в теле (GET-обёртка без параметров)
     await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
     const rows = await q(`select coalesce(u.name,'Банк') as who, gm.content, gm.created_at at from guild_messages gm
       left join users u on u.id=gm.from_user where gm.guild_id=$1 order by gm.created_at desc limit 50`, [b.id]);
