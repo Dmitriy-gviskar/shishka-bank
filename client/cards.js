@@ -271,7 +271,8 @@ window.runCards = function () {
           <div class="note2" id="gnote"></div>`;
         gs.querySelector('.x').onclick = () => document.getElementById('giftOv').classList.remove('on');
         gs.querySelectorAll('.gfriend').forEach((btn) => btn.onclick = async () => {
-          if (!await ask('Подарить карту?', `«${c.name}» (${RAR[sel].name}) уйдёт другу ${btn.textContent} насовсем.`, 'Подарить')) return;
+          document.getElementById('giftOv').classList.remove('on');
+          if (!await ask('Подарить карту?', `«${c.name}» (${RAR[sel].name}) уйдёт другу ${btn.textContent} насовсем.`, 'Подарить')) { document.getElementById('giftOv').classList.add('on'); return; }
           btn.disabled = true;
           const r = await api('/api/card/gift', { to: btn.dataset.id, type: c.id, grade: sel });
           const gn = gs.querySelector('#gnote');
