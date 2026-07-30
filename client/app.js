@@ -844,12 +844,24 @@ if (page === 'mail.html') {
         wrap.style.cssText = 'display:flex;flex-direction:column;';
         if (m.mine) wrap.style.alignItems = 'flex-end'; else wrap.style.alignItems = 'flex-start';
         const el = document.createElement('div');
-        if (m.type === 'sticker') {
+        if (m.type === 'audio') {
+          el.className = 'msgAudio ' + (m.mine ? 'mine' : 'theirs');
+          const a = document.createElement('audio'); a.controls = true; a.playsInline = true; a.preload = 'metadata'; a.src = m.content;
+          el.appendChild(a);
+          const tm = document.createElement('div'); tm.className = 'msgTime'; tm.textContent = fmtTime(m.created_at); el.appendChild(tm);
+        } else if (m.type === 'sticker') {
           el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
+          el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
         } else {
           el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+          el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
         }
-        el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+        // Цитата
+        if (m.reply_to) {
+          const qt = document.createElement('div'); qt.className = 'replyQuote';
+          qt.innerHTML = `<div class="by">↩ ${esc(m.reply_by || '...')}</div>${esc(m.reply_content || '')}`;
+          el.appendChild(qt);
+        }
         if (m.reactions && m.reactions.length) {
           const rxRow = document.createElement('div'); rxRow.className = 'rxRow' + (m.mine ? ' mine' : '');
           const groups = {}; m.reactions.forEach((r) => { groups[r.emoji] = (groups[r.emoji] || 0) + 1; });
