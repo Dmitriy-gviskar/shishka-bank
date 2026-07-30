@@ -104,11 +104,12 @@ if (page === 'link.html') {
 if (page === 'index.html' || page === '') {
   api('/api/state').then((s) => {
     const bal = document.getElementById('bal'); if (bal) bal.textContent = s.balance;
-    const gn = document.getElementById('greetName'); if (gn) gn.textContent = esc(s.name);
-    const tl = document.getElementById('treeLvl'); if (tl) tl.innerHTML = `Уровень ${s.tree_level}<span>Дубок</span>`;
-    const ti = document.getElementById('treeImg'); if (ti && s.tree_asset) ti.src = 'assets/' + s.tree_asset;
-    initDaily(s);
-  });   // «Пополнить» → зарабатывай заданиями
+    const b = document.querySelector('.bubble'); if (b) b.innerHTML = `С возвращением,<br>${esc(s.name)}!`;
+    const lvl = document.querySelector('.level'); if (lvl) lvl.innerHTML = `Дубок<br>Уровень ${s.tree_level}`;
+    const av = document.querySelector('.avatar img'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
+    initDaily(s);   // ежедневный подарок
+  });
+  const add = document.querySelector('.add');   // «Пополнить» → зарабатывай заданиями
   if (add) add.onclick = () => navigate('quests.html');
 
   // ── Ежедневный подарок + серия ──
