@@ -42,14 +42,16 @@
     background:#fffaf0;border:2px solid #e0d3b8;border-radius:16px;margin:10px;line-height:1.5}
   /* Нижняя панель ввода */
   #chatInput{flex:none;position:sticky;bottom:0;z-index:5;background:#fffaf2;border-top:2px solid #e0d3b8;padding:6px 8px 8px}
-  #phraseBar{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px;justify-content:center}
-  #phraseBar button{background:#fff;border:2px solid #d9c39a;border-radius:12px;padding:5px 10px;
-    font-size:12px;font-weight:700;color:var(--brown);cursor:pointer;white-space:nowrap;transition:all .1s}
+  #phraseBar{display:flex;gap:5px;margin-bottom:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  #phraseBar::-webkit-scrollbar{height:0}
+  #phraseBar button{flex:none;background:#fff;border:1.5px solid #d9c39a;border-radius:10px;padding:3px 8px;
+    font-size:11px;font-weight:700;color:var(--brown);cursor:pointer;white-space:nowrap;transition:all .1s}
   #phraseBar button:active{background:#e8dcc8}
   /* Стикеры */
-  #stickerBar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;justify-content:center}
-  #stickerBar button{background:#fffef9;border:2px solid #e0d3b8;border-radius:14px;padding:6px 8px;
-    font-size:26px;cursor:pointer;line-height:1;transition:all .1s}
+  #stickerBar{display:flex;gap:4px;margin-bottom:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  #stickerBar::-webkit-scrollbar{height:0}
+  #stickerBar button{flex:none;background:#fffef9;border:2px solid #e0d3b8;border-radius:12px;padding:4px 6px;
+    font-size:22px;cursor:pointer;line-height:1;transition:all .1s}
   #stickerBar button:active{background:#f0e8d0;transform:scale(.92)}
   .msgSticker{font-size:48px;text-align:center;padding:4px 0;line-height:1}
   .msgSticker.mine{align-self:flex-end}
