@@ -758,7 +758,10 @@ if (page === 'mail.html') {
     if (!chatFriend) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus'
+        : '';
+      mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
       audioChunks = [];
       mediaRecorder.ondataavailable = (e) => { if (e.data.size) audioChunks.push(e.data); };
       mediaRecorder.start();
@@ -771,8 +774,9 @@ if (page === 'mail.html') {
     if (!mediaRecorder) return;
     micBtn.classList.remove('recording'); recTime.style.display = 'none';
     clearInterval(recTimer);
+    const recMime = mediaRecorder.mimeType;
     mediaRecorder.onstop = async () => {
-      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const blob = new Blob(audioChunks, { type: recMime || 'audio/webm' });
       const reader = new FileReader();
       reader.onload = async () => {
         const r = await api('/api/audio', { data: reader.result });
