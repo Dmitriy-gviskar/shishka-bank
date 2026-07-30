@@ -631,6 +631,9 @@ const api = {
     const content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
     const type = b.type === 'sticker' ? 'sticker' : 'emoji';
     await rpc('send_message', [ctx.child, b.to, type, content]);
+    // push-уведомление получателю
+    const sender = await one('select name from users where id=$1', [ctx.child]);
+    if (sender) sendPush(b.to, sender.name, type === 'sticker' ? '🦊 Стикер' : content);
     return { ok: true };
   },
   // Реакции на сообщения

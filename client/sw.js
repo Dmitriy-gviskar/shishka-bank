@@ -1,4 +1,4 @@
-const CACHE = 'shishka-v17';
+const CACHE = 'shishka-v18';
 const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
@@ -36,4 +36,25 @@ self.addEventListener('fetch', (e) => {
   // картинки/ассеты — cache-first (быстро, они не меняются)
   e.respondWith(caches.open(CACHE).then((c) => c.match(e.request).then((hit) =>
     hit || fetch(e.request).then((res) => { if (res.ok) c.put(e.request, res.clone()); return res; }).catch(() => hit))));
+});
+// Push-уведомления
+self.addEventListener('push', (e) => {
+  if (!e.data) return;
+  try {
+    const { title, body } = e.data.json();
+    e.waitUntil(self.registration.showNotification(title, {
+      body,
+      icon: '/assets/app-icon-192.png',
+      badge: '/assets/coin1.webp',
+      vibrate: [200, 100, 200],
+      tag: 'shishka-msg'
+    }));
+  } catch {}
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  e.waitUntil(clients.matchAll({ type: 'window' }).then((wins) => {
+    if (wins.length) { wins[0].focus(); wins[0].navigate('mail.html'); }
+    else clients.openWindow('/mail.html');
+  }));
 });
