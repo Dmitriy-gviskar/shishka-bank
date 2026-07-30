@@ -697,6 +697,31 @@ if (page === 'mail.html') {
     b.onclick = () => { payAmt = a; [...payAmts.children].forEach((x) => x.classList.remove('sel')); b.classList.add('sel'); };
     payAmts.appendChild(b);
   });
+  // Автообновление: чат — каждые 2с, список — каждые 5с
+  let chatPoll = null, lastMsgCount = 0;
+  const startChatPoll = () => {
+    if (chatPoll) clearInterval(chatPoll);
+    chatPoll = setInterval(async () => {
+      if (!chatFriend) return;
+      const msgs = await api('/api/chat', { with: chatFriend });
+      if (msgs.error || !msgs.length) return;
+      if (msgs.length === lastMsgCount) return;   // нет новых — не дёргаем DOM
+      lastMsgCount = msgs.length;
+      const c = document.getElementById('chatMsgs');
+      const wasAtBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
+      c.innerHTML = '';
+      for (const m of msgs) {
+        const el = document.createElement('div');
+        el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+        el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+        c.appendChild(el);
+      }
+      if (wasAtBottom) c.scrollTop = c.scrollHeight;
+    }, 2000);
+  };
+  (window.__timers || (window.__timers = [])).push(setInterval(loadChatList, 5000));
+  const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; startChatPoll(); };
+  const origClose = closeChat; closeChat = () => { if (chatPoll) clearInterval(chatPoll); chatPoll = null; origClose(); };
 }
 
 // ── Аукцион ──
