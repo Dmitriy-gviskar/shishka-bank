@@ -27,9 +27,7 @@ th{color:#9c99b0;font-weight:700}
 <script>
 async function load() {
   try {
-    const pin = localStorage.getItem('parentPin') || prompt('PIN ведущего:');
-    if (pin) localStorage.setItem('parentPin', pin);
-    const h = { 'x-parent-pin': pin };
+    const h = {};
     const [s,r] = await Promise.all([
       fetch('/api/parent/state', { headers: h }).then(r => r.json()),
       fetch('/api/parent/report', { headers: h }).then(r => r.json())

@@ -24,7 +24,7 @@ node --experimental-sqlite server.mjs
 # → http://localhost:3777
 
 # Прод-сервер (PostgreSQL):
-DATABASE_URL="postgres://user:pass@host:5432/db" PARENT_PIN=1234 node server-pg.mjs
+DATABASE_URL="postgres://user:pass@host:5432/db" node server-pg.mjs
 # → http://localhost:3777
 
 # Тесты:
@@ -36,7 +36,7 @@ npm test
 | Переменная | Назначение | По умолчанию |
 |-----------|-----------|-------------|
 | `DATABASE_URL` | Строка подключения PostgreSQL | обязательно |
-| `PARENT_PIN` | PIN родительского кабинета | обязательно, без дефолта |
+| `PARENT_PIN` | PIN родительского кабинета | опционально (если не задан — вход без пароля) |
 | `PORT` | Порт сервера | 3777 |
 | `TELEGRAM_BOT_TOKEN` | Токен бота для алертов | — |
 | `TELEGRAM_CHAT_ID` | ID чата для алертов | — |

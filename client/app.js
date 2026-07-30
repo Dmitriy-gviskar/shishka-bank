@@ -21,7 +21,6 @@ async function api(path, body, method) {
   const headers = {};
   const code = localStorage.getItem('childCode');
   if (code) headers['x-child-code'] = encodeURIComponent(code);   // привязка устройства к профилю
-  if (path.includes('/api/parent/')) { const pin = localStorage.getItem('parentPin'); if (pin) headers['x-parent-pin'] = pin; }
   const post = body !== undefined || method === 'POST';
   const opt = post ? { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }
                    : { headers };
@@ -897,16 +896,10 @@ if (page === 'news.html') {
 
 // ── Кабинет родителя ──
 if (page === 'parent.html') {
-  const urlPin = new URLSearchParams(location.search).get('pin');   // вход по ссылке ?pin=
-  if (urlPin) { localStorage.setItem('parentPin', urlPin); history.replaceState({}, '', 'parent.html'); }
-  if (!localStorage.getItem('parentPin')) {          // PIN-защита кабинета
-    const pin = prompt('PIN ведущего:');
-    if (pin) localStorage.setItem('parentPin', pin); else location.href = 'link.html';
-  }
   const note = (t, ok) => { const n = document.getElementById('note'); n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; };
   async function loadKids() {
     const kids = await api('/api/parent/children');
-    if (kids.error) { localStorage.removeItem('parentPin'); alert('Неверный PIN'); location.reload(); return; }
+    if (kids.error) { alert('Ошибка загрузки: ' + (kids.error || 'попробуйте позже')); return; }
     const c = document.getElementById('kids'); c.innerHTML = '';
     const sel = document.getElementById('taskKid'); sel.innerHTML = '';
     for (const k of kids) {

@@ -45,8 +45,7 @@ async function savePhoto(dataUrl, prefix) {
 
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
-const PARENT_PIN = process.env.PARENT_PIN;                       // PIN родительского кабинета — только из env
-if (!PARENT_PIN) { console.error('нет PARENT_PIN в окружении'); process.exit(1); }   // без дефолта '1234' — иначе кабинет открыт публично
+const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
 const PUBLIC = new Set(['POST /api/link', 'GET /api/ping']); // роуты без кода ребёнка
 const memo = new Map();   // серверный кэш редких данных: ключ → {v,t}
 const memoGet = async (key, ttl, load) => {
@@ -920,10 +919,10 @@ createServer(async (req, res) => {
     try {
       if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
       if (!guarded && !childRateCheck(ip)) throw { code: 429, msg: 'Слишком много запросов — подожди полминуты.' };
-      // родительский контур защищён PIN-ом (иначе ребёнок начислит себе шишки)
+      // родительский контур: PIN опционален (проверка только если PARENT_PIN задан)
       if (isParent) {
-        if ((req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN родителя' }; }
-        okTry(ip);   // верный PIN снимает счётчик
+        if (PARENT_PIN && (req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN родителя' }; }
+        okTry(ip);
       }
       const ctx = await auth.resolve(req);
       // детские endpoint'ы требуют валидный код (иначе 401, а не 500/пустота)
