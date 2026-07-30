@@ -31,6 +31,9 @@ jobs:
         env:
           DATABASE_URL: postgres://shishka:test@localhost:5432/shishka_test
           PARENT_PIN: testpin
+          PGHOST: localhost
+          PGUSER: shishka
+          PGPASSWORD: test
 
   deploy:
     needs: test

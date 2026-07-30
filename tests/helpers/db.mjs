@@ -13,8 +13,9 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const require = createRequire(join(ROOT, 'client/'));
 const pg = require('pg');
 const DB = 'shishka_test';
+const pgUser = process.env.PGUSER || process.env.USER;
 // sslmode=disable: сервер жёстко включает ssl-опцию (для прод-Supabase) — для локального postgres её нужно погасить строкой подключения
-export const url = `postgres://${process.env.USER}@localhost:5432/${DB}?sslmode=disable`;
+export const url = `postgres://${pgUser}@localhost:5432/${DB}?sslmode=disable`;
 
 export async function setupDb() {
   await run('dropdb', ['--if-exists', DB]);
