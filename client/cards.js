@@ -809,5 +809,25 @@ window.runCards = function () {
 
   const helpBtn = document.getElementById('helpBtn');       // памятку можно перечитать в любой момент
   if (helpBtn) helpBtn.onclick = () => showIntro(true);
+  const shareBtn = document.getElementById('shareBtn');
+  if (shareBtn) shareBtn.onclick = async () => {
+    const d = await api('/api/cards');
+    if (!d || d.error) return;
+    const cats = { zver: '🦊', rastenie: '🌿', nasekomoe: '🐞' };
+    const lines = ['🌲 Моя лесная коллекция:', `Собрано ${d.collected} из ${d.total} существ`];
+    for (const [cat, emoji] of Object.entries(cats)) {
+      const c = (d.cards || []).filter((x) => x.category === cat);
+      const full = c.filter((x) => x.grades.filter((g) => g.qty > 0).length === 6).length;
+      if (c.length) lines.push(`${emoji} ${full}/${c.length} полностью`);
+    }
+    const specials = (d.cards || []).filter((x) => x.category === 'special' && x.grades.some((g) => g.qty > 0));
+    if (specials.length) lines.push(`🎖 ${specials.length} особых карт`);
+    const text = lines.join('\n');
+    if (navigator.share) {
+      try { await navigator.share({ title: 'Моя коллекция Шишка Банк', text }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(text).then(() => alert('Скопировано!')).catch(() => prompt('Твоя коллекция:', text));
+    }
+  };
   reload().then(showIntro);
 }
