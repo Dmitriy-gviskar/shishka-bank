@@ -5,47 +5,41 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Шишка Банк — Кошелёк</title>
+<link rel="stylesheet" href="style.css">
 <style>
-  :root{
-    --cream:#f6eede; --card:#efe4cc; --ink:#5b4636; --brown:#6b4f3a;
-    --green:#7bab4c; --green-d:#5f8e37; --gold:#e8b64b; --shadow:rgba(80,55,30,.25);
-  }
-  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
-    font-family:"Nunito","Baloo 2","SF Pro Rounded",system-ui,Arial,sans-serif}
-  .phone{position:relative;width:min(390px,100vw);height:100vh;height:100dvh;max-height:844px;overflow:hidden;
-    background:url(assets/bg.webp) center/cover no-repeat}
-  .phone::after{content:"";position:absolute;inset:0;
-    background:linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,80,45,.20))}
-  .wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;
-    padding:20px 16px 0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .phone{background-image:url(assets/bg_wallet.webp)}
 
-  /* приветствие Духа */
-  .greet{display:flex;align-items:flex-start;gap:6px;margin-top:6px}
-  .greet img{width:104px;height:104px;object-fit:contain;filter:drop-shadow(0 4px 5px var(--shadow))}
-  .bubble{background:#fffaf0;border:3px solid var(--brown);border-radius:20px;
-    padding:12px 14px;margin-top:14px;font-weight:800;color:var(--ink);font-size:16px;
-    line-height:1.25;box-shadow:0 4px 0 rgba(107,79,58,.25);position:relative;flex:1}
-  .bubble::before{content:"";position:absolute;left:-12px;top:20px;border:8px solid transparent;
-    border-right-color:var(--brown)}
+  .greet-row{position:relative;display:flex;align-items:flex-start;gap:8px;padding-right:118px}
+  .greet-row .greet{flex:1;min-width:0}
+  .greet-row .greet img{width:128px;height:128px;filter:drop-shadow(0 4px 6px var(--shadow))}
+  .greet-row .bubble{font-size:13px;padding:9px 11px;margin-top:8px}
 
-  /* карточка кошелька */
-  .card{margin-top:16px;background:var(--card);border:4px solid var(--brown);
-    border-radius:26px;box-shadow:0 8px 0 rgba(107,79,58,.30);padding:16px;
-    display:flex;gap:10px}
-  .balance{flex:1;background:#fbf4e2;border:3px solid #d9c39a;border-radius:18px;
-    padding:14px 12px;text-align:center;position:relative}
-  .balance .coins{width:96px;height:96px;object-fit:contain;
-    filter:drop-shadow(0 3px 4px var(--shadow))}
-  .balance .num{font-size:52px;font-weight:900;color:var(--brown);line-height:1;margin-top:2px;
-    letter-spacing:-1px}
-  .balance .cur{font-size:20px;font-weight:800;color:var(--brown);margin-top:2px}
-  .balance .sub{font-size:13px;font-weight:700;color:#a1876a;margin-top:2px}
-  .avatar{width:132px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px}
-  .level{background:#fbf4e2;border:3px solid #d9c39a;border-radius:14px;padding:5px 10px;
-    font-size:12px;font-weight:800;color:var(--brown);text-align:center;line-height:1.15}
-  .avatar img{width:130px;height:150px;object-fit:contain;filter:drop-shadow(0 5px 6px var(--shadow))}
+  /* уровень дерева — рамка-венок */
+  .lvlbadge{position:absolute;top:0;right:0;width:110px;height:110px;cursor:pointer}
+  .lvlbadge-ring{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  .lvlbadge-tree{position:absolute;top:13%;left:50%;transform:translateX(-50%);width:33%;height:33%;object-fit:contain}
+  .lvlbadge .level{position:absolute;top:48%;left:50%;transform:translateX(-50%);width:72%;
+    font-size:8.5px;font-weight:900;color:var(--brown);text-align:center;line-height:1.1}
 
+  /* карточка кошелька — единая картинка (рамка+сцена написаны вместе) */
+  .wallet-card{position:relative;margin-top:18px;aspect-ratio:1097/798;
+    background-image:url(assets/wallet_card.webp);background-size:100% 100%}
+  .wc-text{position:absolute;left:49%;right:11%;top:10%;bottom:10%;display:flex;flex-direction:column;
+    justify-content:center;text-align:left}
+  .wc-label{font-size:13px;font-weight:800;color:#8a6a45;text-transform:uppercase;letter-spacing:.5px}
+  .wc-num{font-size:56px;font-weight:900;line-height:1;letter-spacing:-1px;
+    background:linear-gradient(180deg,#fff3c9,#e8b64b 55%,#c9871f);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    -webkit-text-stroke:1.5px #5b3a1e;
+    filter:drop-shadow(0 2px 1px rgba(91,58,30,.35))}
+  .wc-unit{font-size:16px;font-weight:900;color:#8a5a20;text-transform:uppercase}
+  .wc-sub{font-size:12px;font-weight:700;color:#8a6a45;margin-top:4px}
+
+  .wc-links{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .wc-links a{font-weight:800;font-size:12px;color:var(--brown);background:rgba(255,250,240,.85);
+    border:2px solid #d9c39a;border-radius:14px;padding:6px 12px;text-decoration:none}
+
+  /* кнопка */
   .add{margin:14px auto 0;display:block;background:var(--green);border:3px solid var(--green-d);
     color:#fff;font-size:20px;font-weight:900;padding:12px 34px;border-radius:20px;
     box-shadow:0 5px 0 var(--green-d);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15)}
@@ -55,14 +49,6 @@
     color:var(--brown);font-weight:800;font-size:14px;text-align:center;
     background:rgba(255,250,240,.85);border-radius:14px;padding:9px 14px}
   .hint-forest img{width:26px;height:26px;object-fit:contain}
-  /* навигация */
-  .nav{position:sticky;bottom:0;z-index:5;margin-top:auto;flex:0 0 auto;
-    display:flex;justify-content:space-around;align-items:center;
-    background:rgba(246,238,222,.985);border-top:3px solid #d9c39a;
-    padding:8px 6px calc(8px + env(safe-area-inset-bottom));backdrop-filter:blur(2px)}
-  .nav button{background:none;border:none;padding:6px;border-radius:16px;cursor:pointer}
-  .nav img{width:44px;height:44px;object-fit:contain;display:block}
-  .nav .active{background:#fff3d6;box-shadow:0 0 0 3px var(--gold) inset}
 
   /* Ежедневный подарок */
   .daily{margin-top:12px;background:linear-gradient(135deg,#ffe9a8,#ffd062);
@@ -88,9 +74,16 @@
 <body>
   <div class="phone">
     <div class="wrap">
-      <div class="greet">
-        <img src="assets/spirit.webp" alt="Лесной Дух">
-        <div class="bubble">С возвращением!</div>
+      <div class="greet-row">
+        <div class="greet">
+          <img src="assets/spirit_bust.webp" alt="Лесной Дух">
+          <div class="bubble">С возвращением!</div>
+        </div>
+        <div class="lvlbadge" onclick="navigate('profile.html')">
+          <img class="lvlbadge-ring" src="assets/badge_level.webp" alt="">
+          <img class="lvlbadge-tree" src="assets/tree.webp" alt="Дерево">
+          <div class="level">Дубок<br>Уровень 1</div>
+        </div>
       </div>
 
       <div class="daily" id="daily" style="display:none">
@@ -100,25 +93,21 @@
         <button id="dailyBtn">Забрать</button>
       </div>
 
-      <div class="card">
-        <div class="balance">
-          <img class="coins" src="assets/coins.webp" alt="">
-          <div class="num" id="bal">…</div>
-          <div class="cur">шишек</div>
-          <div class="sub">в кошельке</div>
-          <a href="collection.html" style="display:inline-block;margin-top:6px;font-weight:900;color:#c98a1a;font-size:13.5px">Лесная коллекция →</a>
-          <a href="album.html" style="display:inline-block;margin-top:2px;font-weight:800;color:var(--green-d);font-size:13px">Лесной альбом →</a>
-          <a href="news.html" style="display:inline-block;margin-top:2px;font-weight:800;color:var(--brown);font-size:13px">Новости леса →</a>
-          <a href="surprises.html" id="spLink" style="display:none;margin-top:2px;font-weight:800;color:#c77b3a;font-size:13px">🎁 Шишки-сюрпризы →</a>
-        </div>
-        <div class="avatar" onclick="navigate('profile.html')" style="cursor:pointer">
-          <div class="level">Дубок<br>Уровень 1</div>
-          <img src="assets/tree.webp" alt="Дерево">
+      <div class="wallet-card">
+        <div class="wc-text">
+          <div class="wc-label">Кошелёк</div>
+          <div class="wc-num" id="bal">…</div>
+          <div class="wc-unit">шишек</div>
+          <div class="wc-sub">Всего накоплено</div>
         </div>
       </div>
+      <button class="add" style="margin-top:14px">Заработать шишки</button>
 
-      <button class="add">Заработать шишки</button>
-      <button class="add" id="qrBtn" style="background:#fff3d6;color:var(--brown);box-shadow:0 5px 0 #d9c39a;margin-top:10px">Мой QR — принимать оплату</button>
+      <div class="wc-links">
+        <a href="surprises.html" id="spLink" style="display:none">🎁 Шишки-сюрпризы →</a>
+      </div>
+
+      <button class="add" id="qrBtn" style="background:#fff3d6;color:var(--brown);box-shadow:0 5px 0 #d9c39a;margin-top:14px">Мой QR — принимать оплату</button>
       <button class="add" id="scanBtn" style="margin-top:10px">Оплатить по QR</button>
       <div id="scanBox" style="display:none;position:absolute;inset:0;z-index:20;background:#1d241a">
         <video id="scanVideo" playsinline style="width:100%;height:100%;object-fit:cover"></video>

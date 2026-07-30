@@ -106,7 +106,7 @@ if (page === 'index.html' || page === '') {
     const bal = document.getElementById('bal'); if (bal) bal.textContent = s.balance;
     const b = document.querySelector('.bubble'); if (b) b.innerHTML = `С возвращением,<br>${esc(s.name)}!`;
     const lvl = document.querySelector('.level'); if (lvl) lvl.innerHTML = `Дубок<br>Уровень ${s.tree_level}`;
-    const av = document.querySelector('.avatar img'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
+    const av = document.querySelector('.lvlbadge-tree'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
     initDaily(s);   // ежедневный подарок
   });
   const add = document.querySelector('.add');   // «Пополнить» → зарабатывай заданиями
