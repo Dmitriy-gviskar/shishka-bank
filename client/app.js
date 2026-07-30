@@ -860,10 +860,10 @@ if (page === 'mail.html') {
           const tm = document.createElement('div'); tm.className = 'msgTime'; tm.textContent = fmtTime(m.created_at); el.appendChild(tm);
         } else if (m.type === 'sticker') {
           el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
-          el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+          el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
         } else {
           el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
-          el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+          el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
         }
         // Цитата
         if (m.reply_to) {
