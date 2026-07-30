@@ -859,7 +859,7 @@ begin
   select circle_id into c_id from users where id=p_child;
   if (select circle_id from users where id=p_to) is distinct from c_id then raise exception 'other circle'; end if;
   select count(*) into today_n from card_gifts
-    where from_user=p_child and created_at >= (now() at time zone 'Europe/Moscow')::date;
+    where from_user=p_child and created_at >= date_trunc('day', now() at time zone 'Europe/Moscow') at time zone 'Europe/Moscow';
   if today_n >= 3 then raise exception 'daily gift limit'; end if;
 
   select qty into have from user_cards where user_id=p_child and type_id=p_type and grade=p_grade for update;
