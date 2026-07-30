@@ -603,7 +603,7 @@ const api = {
   },
   // Список чатов: для каждого друга — последнее сообщение, непрочитанные, аватар
   'POST /api/chat/list': async (b, ctx) => {
-    const rows = await q(`select u.id, u.name, 
+    const rows = await q(`select u.id, u.name, u.last_seen > now() - interval '5 minutes' as online,
         (select content from messages m2 where m2.circle_id=$2 and m2.deliver_at<=now()
          and ((m2.from_user=u.id and m2.to_user=$1) or (m2.from_user=$1 and m2.to_user=u.id))
          order by m2.created_at desc limit 1) as last_msg,
@@ -963,6 +963,8 @@ createServer(async (req, res) => {
       const ctx = await auth.resolve(req);
       // детские endpoint'ы требуют валидный код (иначе 401, а не 500/пустота)
       if (!ctx.child && !PUBLIC.has(route) && !isParent) throw { code: 401, msg: 'нужен код входа' };
+      // статус «в лесу»: обновляем время последней активности (не на каждом пинге)
+      if (ctx.child && route !== 'GET /api/ping') q(`update users set last_seen=now() where id=$1`, [ctx.child]).catch(() => {});
       let result;
       if (route === 'POST /api/link') {   // неверный код (throw 400) считаем промахом, верный — сбрасывает счётчик
         try { result = await handler(body, ctx); okTry(ip); }

@@ -619,7 +619,7 @@ async function loadChatList() {
     const el = document.createElement('div'); el.className = 'chatRow';
     const preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Написать... ✉️';
     const time = ch.last_at ? fmtTime(ch.last_at) : '';
-    el.innerHTML = `<img src="assets/${ch.avatar}"><div class="info"><div class="name">${esc(ch.name)}</div><div class="preview" style="${ch.last_msg ? '' : 'font-style:italic;color:#7bab4c'}">${preview}</div></div>
+    el.innerHTML = `<div class="ava"><img src="assets/${ch.avatar}">${ch.online ? '<div class="dot"></div>' : ''}</div><div class="info"><div class="name">${esc(ch.name)}</div><div class="preview" style="${ch.last_msg ? '' : 'font-style:italic;color:#7bab4c'}">${preview}</div></div>
       <div class="meta"><div class="time">${time}</div>${ch.unread > 0 ? `<div class="badge">${ch.unread}</div>` : ''}</div>`;
     el.onclick = () => { chatFriend = ch.id; chatFriendName = ch.name; openChat(); };
     c.appendChild(el);

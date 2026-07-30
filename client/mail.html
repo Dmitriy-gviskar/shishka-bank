@@ -12,7 +12,10 @@
   .chatRow{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;
     background:#fffef9;border:2px solid #e0d3b8;border-radius:14px;transition:all .12s}
   .chatRow:active{background:#f2ebd8;border-color:#c9b88a}
-  .chatRow img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#d5cfbe;flex:none;border:2px solid #e0d3b8}
+  .chatRow .ava{position:relative;flex:none}
+  .chatRow img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;display:block}
+  .chatRow .ava .dot{position:absolute;bottom:1px;right:1px;width:13px;height:13px;
+    background:#6db83a;border:2px solid #fffef9;border-radius:50%}
   .chatRow .info{flex:1;min-width:0}
   .chatRow .name{font-weight:900;color:#4a3520;font-size:15px}
   .chatRow .preview{font-size:13px;color:#6b5a44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
