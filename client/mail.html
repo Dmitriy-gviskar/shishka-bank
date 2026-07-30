@@ -82,9 +82,9 @@
   #micBtn.recording{background:#e04545;border-color:#c03030;animation:pulse .8s infinite}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,69,69,.5)}50%{box-shadow:0 0 0 12px rgba(224,69,69,0)}}
   #recTime{font-size:11px;font-weight:700;color:#c03030;display:none}
-  .playAudio{background:var(--green);color:#fff;border:none;border-radius:14px;padding:10px 20px;
-    font-size:16px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
-  .playAudio:active{transform:scale(.95)}
+  .msgAudio audio{width:220px;height:38px;border-radius:12px}
+  .msgAudio.mine audio{background:#5f8e37}
+  .msgAudio.theirs audio{background:#f0f0f0}
   /* Попап перевода шишек */
   #payPopup{display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:rgba(0,0,0,.4);
     justify-content:center;align-items:center}

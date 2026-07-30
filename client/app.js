@@ -654,7 +654,7 @@ async function loadChat() {
     const el = document.createElement('div');
     if (m.type === 'audio') {
       el.className = 'msgAudio ' + (m.mine ? 'mine' : 'theirs');
-      el.innerHTML = `<button class="playAudio" data-src="${esc(m.content)}">▶ Воспроизвести</button><div class="msgTime">${fmtTime(m.created_at)}</div>`;
+      el.innerHTML = `<audio controls playsinline preload="metadata" src="${esc(m.content)}"></audio><div class="msgTime">${fmtTime(m.created_at)}</div>`;
     } else if (m.type === 'sticker') {
       el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
       el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
@@ -741,14 +741,7 @@ if (page === 'mail.html') {
   // Стикеры
   const stickerBar = document.getElementById('stickerBar');
   STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
-  // Клик по аудио-кнопке
-  document.getElementById('chatMsgs').addEventListener('click', (e) => {
-    const btn = e.target.closest('.playAudio');
-    if (!btn) return;
-    const audio = new Audio(btn.dataset.src);
-    audio.play().catch(() => {});
-    btn.textContent = '▶▶ '; setTimeout(() => { btn.textContent = '▶ Воспроизвести'; }, audio.duration * 1000 || 5000);
-  });
+
   // Голосовые
   let mediaRecorder = null, audioChunks = [], recTimer = null, recSecs = 0;
   const micBtn = document.getElementById('micBtn'), recTime = document.getElementById('recTime');
