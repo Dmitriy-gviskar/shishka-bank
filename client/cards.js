@@ -82,6 +82,18 @@ window.runCards = function () {
     const av = document.getElementById('albumView'); av.innerHTML = '';
     const allCards = d.cards.filter((c) => c.category !== 'special');
     renderGroups(allCards, av);
+    // Категорийные табы: показать + скролл по клику
+    const catTabs = document.getElementById('catTabs');
+    if (catTabs) {
+      catTabs.style.display = 'flex';
+      catTabs.querySelectorAll('button').forEach((btn) => {
+        btn.onclick = () => {
+          const cat = btn.dataset.cat;
+          const hdr = av.querySelector('.cat[data-cat="' + cat + '"]') || av.querySelectorAll('.cat')[['zver','rastenie','nasekomoe'].indexOf(cat)];
+          if (hdr) hdr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+      });
+    }
 
     // ── Особые карты: их не выпадает из паков, их вручает ведущий за дело ──
     const specials = d.cards.filter((c) => c.category === 'special');
@@ -123,6 +135,7 @@ window.runCards = function () {
       if (!groups[cat]) continue;
       const fullN = groups[cat].filter((c) => c.grades.filter((x) => x.qty > 0).length === 6).length;
       const h = document.createElement('div'); h.className = 'cat';
+      h.setAttribute('data-cat', cat);
       h.innerHTML = `${CAT[cat]}<span class="cc-count">${fullN}/${groups[cat].length}</span>`;
       av.appendChild(h);
       // каждое существо = полка из 6 ячеек-грейдов (Panini)
