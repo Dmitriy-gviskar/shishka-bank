@@ -683,7 +683,7 @@ const api = {
     await rpc('join_guild', [b.id, ctx.child]);
     return { ok: true };
   },
-  'GET /api/guild/chat': async (b, ctx) => {   // POST: id в теле (GET-обёртка без параметров)
+  'POST /api/guild/chat': async (b, ctx) => {   // POST: id в теле (GET-обёртка без параметров)
     await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
     const rows = await q(`select coalesce(u.name,'Банк') as who, gm.content, gm.created_at at from guild_messages gm
       left join users u on u.id=gm.from_user where gm.guild_id=$1 order by gm.created_at desc limit 50`, [b.id]);
