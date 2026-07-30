@@ -605,20 +605,54 @@ if ('serviceWorker' in navigator) {
 
 // ── Чат ──
 const PHRASES = ['Привет! 👋','Как дела? 😊','Давай дружить! 🤝','Спасибо! ❤️','Классно! 🔥','Давай меняться? 🔄','Помоги 🙏','Ура! 🎉','Пока! 👋','Хорошего дня! ☀️','Ты супер! ⭐','Да! ✅','Нет 🙅','Грустно 😢','Весело! 😂'];
-let chatFriend = null;
+let chatFriend = null, chatFriendName = '';
 const fmtTime = (iso) => { const d = new Date(iso); return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
+
+// ── Список чатов ──
+async function loadChatList() {
+  const list = await api('/api/chat/list');
+  const c = document.getElementById('chatList'); c.innerHTML = '';
+  if (list.error) return;
+  if (!list.length) { c.innerHTML = '<div class="noChats">Нет чатов. Подари шишки другу — появится переписка! 🌲</div>'; return; }
+  for (const ch of list) {
+    const el = document.createElement('div'); el.className = 'chatRow';
+    const preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Нет сообщений';
+    const time = ch.last_at ? fmtTime(ch.last_at) : '';
+    el.innerHTML = `<img src="assets/${ch.avatar}"><div class="info"><div class="name">${esc(ch.name)}</div><div class="preview">${preview}</div></div>
+      <div class="meta"><div class="time">${time}</div>${ch.unread > 0 ? `<div class="badge">${ch.unread}</div>` : ''}</div>`;
+    el.onclick = () => { chatFriend = ch.id; chatFriendName = ch.name; openChat(); };
+    c.appendChild(el);
+  }
+}
+
+// ── Детальный чат ──
+function openChat() {
+  document.getElementById('chatList').style.display = 'none';
+  document.getElementById('chatDetail').classList.add('open');
+  document.getElementById('chName').textContent = chatFriendName;
+  document.querySelector('.title').textContent = '↩ ' + chatFriendName;
+  loadChat();
+}
+function closeChat() {
+  document.getElementById('chatDetail').classList.remove('open');
+  document.getElementById('chatList').style.display = '';
+  document.querySelector('.title').textContent = 'Лесная почта';
+  chatFriend = null; chatFriendName = '';
+  loadChatList();
+}
 async function loadChat() {
-  const c = document.getElementById('chat'); c.innerHTML = '';
-  if (!chatFriend) { c.innerHTML = '<div class="emptyChat">👆 Выбери друга, чтобы начать переписку</div>'; return; }
+  const c = document.getElementById('chatMsgs'); c.innerHTML = '';
+  if (!chatFriend) return;
   const msgs = await api('/api/chat', { with: chatFriend });
   if (msgs.error) { c.innerHTML = '<div class="emptyChat">Ошибка загрузки</div>'; return; }
-  if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; return; }
+  if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; }
   for (const m of msgs) {
     const el = document.createElement('div');
     el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
     el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
     c.appendChild(el);
   }
+  loadChatList();   // обновить счётчики в списке
   c.scrollTop = c.scrollHeight;
 }
 async function sendMsg(content) {
@@ -626,32 +660,43 @@ async function sendMsg(content) {
   const r = await api('/api/message', { content, to: chatFriend });
   if (!r.error) { loadChat(); document.getElementById('msgInput').value = ''; }
 }
+
+// ── Перевод шишек из чата ──
+let payAmt = 10;
+function openPay() {
+  document.getElementById('payToName').textContent = 'Кому: ' + chatFriendName;
+  document.getElementById('payPopup').classList.add('open');
+}
+function doPay() {
+  document.getElementById('payPopup').classList.remove('open');
+  api('/api/transfer', { to: chatFriend, amount: payAmt }).then((r) => {
+    if (r.error) { const n = document.createElement('div'); n.className = 'emptyChat'; n.textContent = r.error; document.getElementById('chatMsgs').appendChild(n); }
+    else { loadChat(); document.getElementById('chatMsgs').insertAdjacentHTML('beforeend', `<div class="msgBubble mine" style="background:var(--gold);color:#5b4636">🪙 ${payAmt} шишек<div class="msgTime">сейчас</div></div>`); }
+  });
+}
+
 if (page === 'mail.html') {
-  // Друзья в верхней панели
-  (async function loadFriendBar() {
-    const fr = await api('/api/friends');
-    const bar = document.getElementById('friendBar'); bar.innerHTML = '';
-    document.getElementById('chatInput').style.display = 'none';
-    document.getElementById('chat').innerHTML = '<div class="emptyChat">👆 Выбери друга, чтобы начать переписку</div>';
-    for (const f of fr) {
-      const el = document.createElement('div'); el.className = 'fChip';
-      el.innerHTML = `<img src="assets/${f.avatar}"><span>${esc(f.name)}</span>`;
-      el.onclick = () => {
-        chatFriend = f.id;
-        document.getElementById('chatInput').style.display = '';
-        [...bar.children].forEach((x) => x.classList.remove('sel'));
-        el.classList.add('sel');
-        loadChat();
-      };
-      bar.appendChild(el);
-    }
-  })();
+  loadChatList();
   // Фразы-заготовки
   const phraseBar = document.getElementById('phraseBar');
   PHRASES.forEach((p) => { const b = document.createElement('button'); b.textContent = p; b.onclick = () => sendMsg(p); phraseBar.appendChild(b); });
   // Отправка вручную
   document.getElementById('btnSend').onclick = () => { const v = document.getElementById('msgInput').value.trim(); if (v) sendMsg(v); };
   document.getElementById('msgInput').onkeydown = (e) => { if (e.key === 'Enter') { const v = e.target.value.trim(); if (v) sendMsg(v); } };
+  // Навигация
+  document.getElementById('btnBack').onclick = closeChat;
+  // Перевод шишек
+  document.getElementById('btnPay').onclick = openPay;
+  document.getElementById('btnPayCancel').onclick = () => document.getElementById('payPopup').classList.remove('open');
+  document.getElementById('btnDoPay').onclick = doPay;
+  const payAmts = document.getElementById('payAmts');
+  [1, 5, 10, 25, 50, 100].forEach((a) => {
+    const b = document.createElement('button');
+    b.textContent = a + ' 🪙';
+    if (a === 10) b.classList.add('sel');
+    b.onclick = () => { payAmt = a; [...payAmts.children].forEach((x) => x.classList.remove('sel')); b.classList.add('sel'); };
+    payAmts.appendChild(b);
+  });
 }
 
 // ── Аукцион ──

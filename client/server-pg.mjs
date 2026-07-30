@@ -593,11 +593,35 @@ const api = {
     const withId = b.with;
     if (!withId) throw { code: 400, msg: 'нужен ?with=ID' };
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [withId, ctx.circle], 'друг не в твоём кругу');
+    // Пометить входящие от этого друга как прочитанные
+    await q(`update messages set read_at=now() where to_user=$1 and from_user=$2 and read_at is null`, [ctx.child, withId]);
     const msgs = await q(`select m.content, m.created_at, m.from_user=$1 as mine
         from messages m where m.circle_id=$2 and m.deliver_at<=now()
         and ((m.from_user=$1 and m.to_user=$3) or (m.from_user=$3 and m.to_user=$1))
         order by m.created_at asc`, [ctx.child, ctx.circle, withId]);
     return msgs;
+  },
+  // Список чатов: для каждого друга — последнее сообщение, непрочитанные, аватар
+  'POST /api/chat/list': async (b, ctx) => {
+    const rows = await q(`select u.id, u.name, 
+        (select content from messages m2 where m2.circle_id=$2 and m2.deliver_at<=now()
+         and ((m2.from_user=u.id and m2.to_user=$1) or (m2.from_user=$1 and m2.to_user=u.id))
+         order by m2.created_at desc limit 1) as last_msg,
+        (select m2.created_at from messages m2 where m2.circle_id=$2 and m2.deliver_at<=now()
+         and ((m2.from_user=u.id and m2.to_user=$1) or (m2.from_user=$1 and m2.to_user=u.id))
+         order by m2.created_at desc limit 1) as last_at,
+        (select count(*) from messages m2 where m2.circle_id=$2 and m2.to_user=$1 
+         and m2.from_user=u.id and m2.read_at is null and m2.deliver_at<=now()) as unread
+      from users u where u.circle_id=$2 and u.role='child' and u.id<>$1
+      order by last_at desc nulls last`, [ctx.child, ctx.circle]);
+    return rows.map((r, i) => ({ ...r, avatar: FRIEND_AV[i % 3] }));
+  },
+  // Пометить сообщения от друга как прочитанные
+  'POST /api/message/read': async (b, ctx) => {
+    const fid = b.from;
+    if (!fid) throw { code: 400, msg: 'нужен from' };
+    await q(`update messages set read_at=now() where to_user=$1 and from_user=$2 and read_at is null`, [ctx.child, fid]);
+    return { ok: true };
   },
   'POST /api/message': async (b, ctx) => {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому отправить');
