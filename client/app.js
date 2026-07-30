@@ -606,7 +606,7 @@ if ('serviceWorker' in navigator) {
 // ── Чат ──
 const PHRASES = ['Привет! 👋','Как дела? 😊','Давай дружить! 🤝','Спасибо! ❤️','Классно! 🔥','Давай меняться? 🔄','Помоги 🙏','Ура! 🎉','Пока! 👋','Хорошего дня! ☀️','Ты супер! ⭐','Да! ✅','Нет 🙅','Грустно 😢','Весело! 😂'];
 const STICKERS = ['🦊','🐿️','🦉','🐻','🦌','🐰','🌲','🍄','🌰','🍂','🌟','❤️','🔥','😂','👍','🎉','😢','😡','🤔','🙏'];
-let chatFriend = null, chatFriendName = '';
+let chatFriend = null, chatFriendName = '', replyTo = null;
 const fmtTime = (iso) => { const d = new Date(iso); return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
 
 // ── Список чатов ──
@@ -658,6 +658,12 @@ async function loadChat() {
       el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
     }
     el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+    // Цитата
+    if (m.reply_to) {
+      const qt = document.createElement('div'); qt.className = 'replyQuote';
+      qt.innerHTML = `<div class="by">↩ ${esc(m.reply_by || '...')}</div>${esc(m.reply_content || '')}`;
+      el.appendChild(qt);
+    }
     // Реакции
     if (m.reactions && m.reactions.length) {
       const rxRow = document.createElement('div'); rxRow.className = 'rxRow' + (m.mine ? ' mine' : '');
@@ -674,13 +680,28 @@ async function loadChat() {
     } else {
       wrap.appendChild(el);
     }
-    // Долгий тап → пикер реакций
-    let pressTimer;
+    // Свайп вправо → ответ
+    let swipeX = 0, swipeY = 0;
     el.addEventListener('touchstart', (e) => {
+      swipeX = e.touches[0].clientX; swipeY = e.touches[0].clientY;
       pressTimer = setTimeout(() => { showRxPicker(e, m.id); }, 500);
     }, { passive: true });
-    el.addEventListener('touchend', () => clearTimeout(pressTimer));
-    el.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    el.addEventListener('touchmove', (e) => {
+      clearTimeout(pressTimer);
+      const dx = e.touches[0].clientX - swipeX;
+      if (Math.abs(dx) > 0) { clearTimeout(pressTimer); }
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      clearTimeout(pressTimer);
+      const dx = (e.changedTouches[0]?.clientX || 0) - swipeX;
+      const dy = Math.abs((e.changedTouches[0]?.clientY || 0) - swipeY);
+      if (dx > 60 && dy < 30) {
+        replyTo = m.id;
+        document.getElementById('replyTxt').textContent = esc(m.content).slice(0, 50);
+        document.getElementById('replyBar').style.display = 'flex';
+        document.getElementById('msgInput').focus();
+      }
+    });
     c.appendChild(wrap);
   }
   loadChatList();   // обновить счётчики в списке
@@ -688,8 +709,8 @@ async function loadChat() {
 }
 async function sendMsg(content) {
   if (!chatFriend) return;
-  const r = await api('/api/message', { content, to: chatFriend });
-  if (!r.error) { loadChat(); document.getElementById('msgInput').value = ''; }
+  const r = await api('/api/message', { content, to: chatFriend, reply_to: replyTo });
+  if (!r.error) { loadChat(); document.getElementById('msgInput').value = ''; replyTo = null; cancelReply(); }
 }
 async function sendSticker(emoji) {
   if (!chatFriend) return;
@@ -716,6 +737,9 @@ if (page === 'mail.html') {
   // Стикеры
   const stickerBar = document.getElementById('stickerBar');
   STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
+  // Ответ
+  window.cancelReply = () => { replyTo = null; document.getElementById('replyBar').style.display = 'none'; };
+  document.getElementById('replyCancel').onclick = cancelReply;
   // Реакции
   let rxMsgId = null;
   window.react = async (msgId, emoji) => {

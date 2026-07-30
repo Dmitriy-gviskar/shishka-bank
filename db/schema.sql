@@ -255,6 +255,7 @@ create table messages (
   content    text not null,                 -- эмодзи / id стикера / url аудио (без текста)
   is_whisper boolean not null default false, -- «Шёпот леса» от родителя
   deliver_at timestamptz not null default now(),  -- отложенная доставка
+  reply_to   uuid references messages(id) on delete set null,  -- ответ на сообщение
   read_at    timestamptz,
   created_at timestamptz not null default now()
 );

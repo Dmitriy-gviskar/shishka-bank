@@ -595,7 +595,9 @@ const api = {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [withId, ctx.circle], 'друг не в твоём кругу');
     // Пометить входящие от этого друга как прочитанные
     await q(`update messages set read_at=now() where to_user=$1 and from_user=$2 and read_at is null`, [ctx.child, withId]);
-    const msgs = await q(`select m.id, m.type, m.content, m.created_at, m.from_user=$1 as mine,
+    const msgs = await q(`select m.id, m.type, m.content, m.created_at, m.from_user=$1 as mine, m.reply_to,
+        (select r.content from messages r where r.id=m.reply_to) as reply_content,
+        (select u.name from messages r join users u on u.id=r.from_user where r.id=m.reply_to) as reply_by,
         coalesce((select jsonb_agg(jsonb_build_object('emoji',mr.emoji,'by',u.name)) from message_reactions mr
           join users u on u.id=mr.user_id where mr.message_id=m.id), '[]'::jsonb) as reactions
         from messages m where m.circle_id=$2 and m.deliver_at<=now()
@@ -630,7 +632,8 @@ const api = {
     // режем угловые скобки и длину (защита в глубину к клиентскому esc)
     const content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
     const type = b.type === 'sticker' ? 'sticker' : 'emoji';
-    await rpc('send_message', [ctx.child, b.to, type, content]);
+    const replyId = b.reply_to || null;
+    await rpc('send_message', [ctx.child, b.to, type, content, replyId]);
     // push-уведомление получателю
     const sender = await one('select name from users where id=$1', [ctx.child]);
     if (sender) sendPush(b.to, sender.name, type === 'sticker' ? '🦊 Стикер' : content);
