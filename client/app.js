@@ -811,6 +811,9 @@ if (page === 'mail.html') {
   PHRASES.forEach((p) => { const b = document.createElement('button'); b.textContent = p; b.onclick = () => sendMsg(p); phraseBar.appendChild(b); });
   // Отправка вручную
   document.getElementById('btnSend').onclick = () => { const v = document.getElementById('msgInput').value.trim(); if (v) sendMsg(v); };
+  // На Android WebView клавиатура не двигает вьюпорт — скроллим поле ввода в видимую зону
+  const msgInput = document.getElementById('msgInput');
+  msgInput.addEventListener('focus', () => { setTimeout(() => msgInput.scrollIntoView({ block: 'center' }), 300); });
   document.getElementById('msgInput').onkeydown = (e) => { if (e.key === 'Enter') { const v = e.target.value.trim(); if (v) sendMsg(v); } };
   // Навигация
   document.getElementById('btnBack').onclick = closeChat;
