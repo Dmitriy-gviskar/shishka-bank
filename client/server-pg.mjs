@@ -584,15 +584,26 @@ const api = {
     }
   },
 
-  // ── Почта ──
+  // ── Почта / Чат ──
   'GET /api/inbox': (b, ctx) => q(`select u.name as from_name, m.type as kind, m.content, m.is_whisper as whisper
       from messages m left join users u on u.id=m.from_user
       where m.to_user=$1 and m.deliver_at<=now() order by m.created_at desc`, [ctx.child]),
+  // Диалог с конкретным другом: все сообщения между мной и ним, по возрастанию времени
+  'GET /api/chat': async (b, ctx) => {
+    const withId = b.with;
+    if (!withId) throw { code: 400, msg: 'нужен ?with=ID' };
+    await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [withId, ctx.circle], 'друг не в твоём кругу');
+    const msgs = await q(`select m.content, m.created_at, m.from_user=$1 as mine
+        from messages m where m.circle_id=$2 and m.deliver_at<=now()
+        and ((m.from_user=$1 and m.to_user=$3) or (m.from_user=$3 and m.to_user=$1))
+        order by m.created_at asc`, [ctx.child, ctx.circle, withId]);
+    return msgs;
+  },
   'POST /api/message': async (b, ctx) => {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому отправить');
-    // почта — только эмодзи/стикеры: режем угловые скобки и длину (защита в глубину к клиентскому esc)
-    const emoji = String(b.emoji ?? 'привет').replace(/[<>]/g, '').slice(0, 40) || 'привет';
-    await rpc('send_message', [ctx.child, b.to, 'emoji', emoji]);
+    // режем угловые скобки и длину (защита в глубину к клиентскому esc)
+    const content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
+    await rpc('send_message', [ctx.child, b.to, 'emoji', content]);
     return { ok: true };
   },
 

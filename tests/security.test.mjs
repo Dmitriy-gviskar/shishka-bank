@@ -19,7 +19,7 @@ test('почта: угловые скобки и длина режутся на 
   const msg = inbox.body[0];
   assert.ok(msg, 'сообщение доставлено');
   assert.ok(!msg.content.includes('<') && !msg.content.includes('>'), 'угловые скобки вырезаны');
-  assert.ok(msg.content.length <= 40, `длина ограничена 40 (было ${msg.content.length})`);
+  assert.ok(msg.content.length <= 80, `длина ограничена 80 (было ${msg.content.length})`);
 });
 
 test('PIN-кабинет: 10 неверных попыток с IP → лок (429)', async (t) => {

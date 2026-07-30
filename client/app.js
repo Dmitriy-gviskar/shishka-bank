@@ -603,20 +603,55 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ── Почта ──
-async function loadInbox() {
-  const list = await api('/api/inbox'); const c = document.getElementById('inbox'); c.innerHTML = '';
-  for (const m of list) { const el = document.createElement('div'); el.className = 'card msg' + (m.whisper ? ' whisper' : '');
-    el.innerHTML = `<div class="who">${esc(m.from_name)}</div><div class="txt">${esc(m.content)}</div>${m.whisper ? '<span class="wtag">Шёпот</span>' : `<span class="k">${esc(m.kind)}</span>`}`;
-    c.appendChild(el); }
+// ── Чат ──
+const PHRASES = ['Привет! 👋','Как дела? 😊','Давай дружить! 🤝','Спасибо! ❤️','Классно! 🔥','Давай меняться? 🔄','Помоги 🙏','Ура! 🎉','Пока! 👋','Хорошего дня! ☀️','Ты супер! ⭐','Да! ✅','Нет 🙅','Грустно 😢','Весело! 😂'];
+let chatFriend = null;
+const fmtTime = (iso) => { const d = new Date(iso); return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
+async function loadChat() {
+  const c = document.getElementById('chat'); c.innerHTML = '';
+  if (!chatFriend) { c.innerHTML = '<div class="emptyChat">👆 Выбери друга, чтобы начать переписку</div>'; return; }
+  const msgs = await api('/api/chat', { with: chatFriend });
+  if (msgs.error) { c.innerHTML = '<div class="emptyChat">Ошибка загрузки</div>'; return; }
+  if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; return; }
+  for (const m of msgs) {
+    const el = document.createElement('div');
+    el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+    el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+    c.appendChild(el);
+  }
+  c.scrollTop = c.scrollHeight;
+}
+async function sendMsg(content) {
+  if (!chatFriend) return;
+  const r = await api('/api/message', { content, to: chatFriend });
+  if (!r.error) { loadChat(); document.getElementById('msgInput').value = ''; }
 }
 if (page === 'mail.html') {
-  loadInbox(); loadFriends();
-  document.querySelectorAll('.send button').forEach((b) => b.onclick = async () => {
-    const r = await api('/api/message', { emoji: b.textContent, to: selFriend }); const n = document.getElementById('note');
-    n.style.display = 'block';
-    if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { n.textContent = 'Отправлено: ' + b.textContent; n.style.color = '#5f8e37'; loadInbox(); } });
+  // Друзья в верхней панели
+  (async function loadFriendBar() {
+    const fr = await api('/api/friends');
+    const bar = document.getElementById('friendBar'); bar.innerHTML = '';
+    document.getElementById('chatInput').style.display = 'none';
+    document.getElementById('chat').innerHTML = '<div class="emptyChat">👆 Выбери друга, чтобы начать переписку</div>';
+    for (const f of fr) {
+      const el = document.createElement('div'); el.className = 'fChip';
+      el.innerHTML = `<img src="assets/${f.avatar}"><span>${esc(f.name)}</span>`;
+      el.onclick = () => {
+        chatFriend = f.id;
+        document.getElementById('chatInput').style.display = '';
+        [...bar.children].forEach((x) => x.classList.remove('sel'));
+        el.classList.add('sel');
+        loadChat();
+      };
+      bar.appendChild(el);
+    }
+  })();
+  // Фразы-заготовки
+  const phraseBar = document.getElementById('phraseBar');
+  PHRASES.forEach((p) => { const b = document.createElement('button'); b.textContent = p; b.onclick = () => sendMsg(p); phraseBar.appendChild(b); });
+  // Отправка вручную
+  document.getElementById('btnSend').onclick = () => { const v = document.getElementById('msgInput').value.trim(); if (v) sendMsg(v); };
+  document.getElementById('msgInput').onkeydown = (e) => { if (e.key === 'Enter') { const v = e.target.value.trim(); if (v) sendMsg(v); } };
 }
 
 // ── Аукцион ──
