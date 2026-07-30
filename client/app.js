@@ -654,7 +654,13 @@ async function loadChat() {
     const el = document.createElement('div');
     if (m.type === 'audio') {
       el.className = 'msgAudio ' + (m.mine ? 'mine' : 'theirs');
-      el.innerHTML = `<audio controls playsinline preload="metadata" src="${esc(m.content)}"></audio><div class="msgTime">${fmtTime(m.created_at)}</div>`;
+      const audio = document.createElement('audio');
+      audio.controls = true;
+      audio.playsInline = true;
+      audio.preload = 'metadata';
+      audio.src = m.content;
+      el.appendChild(audio);
+      const tm = document.createElement('div'); tm.className = 'msgTime'; tm.textContent = fmtTime(m.created_at); el.appendChild(tm);
     } else if (m.type === 'sticker') {
       el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
       el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
