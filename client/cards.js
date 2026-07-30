@@ -823,10 +823,11 @@ window.runCards = function () {
     const specials = (d.cards || []).filter((x) => x.category === 'special' && x.grades.some((g) => g.qty > 0));
     if (specials.length) lines.push(`🎖 ${specials.length} особых карт`);
     const text = lines.join('\n');
+    const url = 'https://elka-kvest-2026.ru/collection.html';
     if (navigator.share) {
-      try { await navigator.share({ title: 'Моя коллекция Шишка Банк', text }); } catch {}
+      try { await navigator.share({ title: 'Моя коллекция Шишка Банк', text, url }); } catch {}
     } else {
-      await navigator.clipboard.writeText(text).then(() => alert('Скопировано!')).catch(() => prompt('Твоя коллекция:', text));
+      await navigator.clipboard.writeText(text + '\n' + url).then(() => alert('Ссылка скопирована!')).catch(() => prompt('Твоя коллекция:', text + '\n' + url));
     }
   };
   reload().then(showIntro);
