@@ -754,7 +754,7 @@ if (page === 'mail.html') {
   let mediaRecorder = null, audioChunks = [], recTimer = null, recSecs = 0;
   const micBtn = document.getElementById('micBtn'), recTime = document.getElementById('recTime');
   const fmtSec = (s) => Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
-  micBtn.onpointerdown = async () => {
+  const startRec = async () => {
     if (!chatFriend) return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -770,7 +770,7 @@ if (page === 'mail.html') {
       recTimer = setInterval(() => { recSecs++; recTime.textContent = fmtSec(recSecs); }, 1000);
     } catch { micBtn.textContent = '🚫'; setTimeout(() => micBtn.textContent = '🎤', 2000); }
   };
-  micBtn.onpointerup = async () => {
+  const stopRec = async () => {
     if (!mediaRecorder) return;
     micBtn.classList.remove('recording'); recTime.style.display = 'none';
     clearInterval(recTimer);
@@ -790,9 +790,12 @@ if (page === 'mail.html') {
     };
     mediaRecorder.stop(); mediaRecorder = null;
   };
-  micBtn.onpointerleave = () => { if (mediaRecorder) micBtn.onpointerup(); };
-  micBtn.ontouchend = (e) => { e.preventDefault(); if (mediaRecorder) micBtn.onpointerup(); };
-  micBtn.ontouchcancel = () => { if (mediaRecorder) micBtn.onpointerup(); };
+  micBtn.onpointerdown = startRec;
+  micBtn.ontouchstart = (e) => { e.preventDefault(); startRec(); };
+  micBtn.onpointerup = stopRec;
+  micBtn.ontouchend = (e) => { e.preventDefault(); stopRec(); };
+  micBtn.ontouchcancel = () => { if (mediaRecorder) stopRec(); };
+  micBtn.onpointerleave = () => { if (mediaRecorder) stopRec(); };
   // Ответ
   window.cancelReply = () => { replyTo = null; document.getElementById('replyBar').style.display = 'none'; };
   document.getElementById('replyCancel').onclick = cancelReply;
