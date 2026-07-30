@@ -584,6 +584,27 @@ const api = {
     }
   },
 
+  // ── Последние операции ──
+  'POST /api/transactions': async (b, ctx) => {
+    const limit = Math.min(b.limit || 10, 30);
+    const rows = await q(`select t.amount, t.type,
+        case when t.from_user=$1 then -t.amount else t.amount end as signed,
+        case when t.type='transfer' and t.from_user=$1 then (select name from users where id=t.to_user)
+             when t.type='transfer' then (select name from users where id=t.from_user)
+             when t.type='reward' then 'Награда'
+             when t.type='purchase' then 'Покупка'
+             when t.type='deposit' then 'Дупло'
+             when t.type='interest' then 'Проценты'
+             when t.type='fee' then 'Комиссия'
+             when t.type='payout' then 'Выплата'
+             when t.type='pot_contribution' then 'Котёл'
+             when t.type='insurance' then 'Страховка'
+             else 'Операция' end as label,
+        t.created_at from transactions t
+        where t.circle_id=$2 and (t.from_user=$1 or t.to_user=$1)
+        order by t.created_at desc limit $3`, [ctx.child, ctx.circle, limit]);
+    return rows.map((r) => ({ ...r, amount: parseInt(r.signed, 10), label: r.label, type: r.type }));
+  },
   // ── Почта / Чат ──
   'GET /api/inbox': (b, ctx) => q(`select u.name as from_name, m.type as kind, m.content, m.is_whisper as whisper
       from messages m left join users u on u.id=m.from_user

@@ -103,14 +103,29 @@ if (page === 'link.html') {
 // ── Кошелёк ──
 if (page === 'index.html' || page === '') {
   api('/api/state').then((s) => {
-    const bal = document.getElementById('bal'); if (bal) bal.textContent = s.balance;
-    const b = document.querySelector('.bubble'); if (b) b.innerHTML = `С возвращением,<br>${esc(s.name)}!`;
-    const lvl = document.querySelector('.level'); if (lvl) lvl.innerHTML = `Дубок<br>Уровень ${s.tree_level}`;
-    const av = document.querySelector('.avatar img'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
+    const balEl = document.getElementById('bal'); if (balEl) balEl.innerHTML = s.balance + '<span>шишек</span>';
+    const greet = document.querySelector('#hero .greet'); if (greet) greet.textContent = `Привет, ${esc(s.name)}!`;
+    const treeInfo = document.getElementById('treeInfo'); if (treeInfo) treeInfo.textContent = `Дубок · Ур.${s.tree_level}`;
     initDaily(s);   // ежедневный подарок
+    loadActivity();  // последние операции
   });
-  const add = document.querySelector('.add');   // «Пополнить» → зарабатывай заданиями
-  if (add) add.onclick = () => navigate('quests.html');
+
+  // ── Последние операции ──
+  async function loadActivity() {
+    const tx = await api('/api/transactions', { limit: 10 });
+    const c = document.getElementById('activity'); if (!c) return;
+    if (tx.error || !tx.length) { c.innerHTML = '<div class="noTx">Пока нет операций</div>'; return; }
+    c.innerHTML = '';
+    for (const t of tx) {
+      const el = document.createElement('div'); el.className = 'tx';
+      const dir = t.amount > 0 ? 'plus' : 'minus';
+      const sign = t.amount > 0 ? '+' : '';
+      el.innerHTML = `<div class="txIcon" style="background:${t.amount>0?'rgba(123,171,76,.15)':'rgba(212,147,74,.15)'}">${t.amount>0?'📥':'📤'}</div>
+        <div class="txInfo"><div class="txWho">${esc(t.label || t.who || 'Операция')}</div><div class="txType">${esc(t.type || '')}</div></div>
+        <div class="txAmt ${dir}">${sign}${Math.abs(t.amount)}</div>`;
+      c.appendChild(el);
+    }
+  }
 
   // ── Ежедневный подарок + серия ──
   function coneRain(n) {   // дождик шишек поверх экрана
@@ -131,8 +146,8 @@ if (page === 'index.html' || page === '') {
     const t1 = document.getElementById('dailyT1'), t2 = document.getElementById('dailyT2');
     const fire = document.getElementById('dailyFire'), btn = document.getElementById('dailyBtn');
     el.style.display = 'flex';
-    if (!s.can_claim_daily) {   // уже забрал сегодня
-      el.classList.add('got'); fire.textContent = '🌙'; btn.style.display = 'none';
+    if (!s.can_claim_daily) {
+      el.classList.add('claimed'); fire.textContent = '🌙'; btn.style.display = 'none';
       t1.textContent = 'Подарок получен';
       t2.textContent = s.streak > 0 ? `Серия: ${s.streak} 🔥 · заходи завтра` : 'Заходи завтра';
       return;
@@ -146,36 +161,19 @@ if (page === 'index.html' || page === '') {
       if (r.error) { btn.disabled = false; t2.textContent = r.error; return; }
       const total = (r.bonus || 0) + (r.milestone || 0) + (r.rain || 0);
       coneRain(12 + (r.milestone ? 18 : 0));
-      el.classList.add('got'); fire.textContent = '🔥'; btn.style.display = 'none';
+      el.classList.add('claimed'); fire.textContent = '🔥'; btn.style.display = 'none';
       t1.innerHTML = `+${total} 🌰 · серия ${r.streak}`;
       let line = r.milestone ? `Веха ${r.streak} дней! +${r.milestone} бонус 🎉`
                : r.freeze_used ? 'Защитник спас серию!'
                : 'Возвращайся завтра за бо́льшим';
       if (r.freeze_granted) line += ' · +1 защитник ❄️';
       t2.textContent = line;
-      const bal = document.getElementById('bal');
-      if (bal) bal.textContent = (parseInt(bal.textContent, 10) || 0) + total;
+      const balEl = document.getElementById('bal');
+      if (balEl) balEl.innerHTML = ((parseInt(balEl.textContent, 10) || 0) + total) + '<span>шишек</span>';
+      loadActivity();
     };
   }
-  api('/api/surprises').then((sp) => {   // есть тайные подарки → подсветить ссылку
-    if (Array.isArray(sp) && sp.length) { const l = document.getElementById('spLink');
-      if (l) { const n = sp.filter((x) => !x.revealed).length; l.textContent = `🎁 Шишки-сюрпризы${n ? ' (' + n + ')' : ''} →`; l.style.display = 'inline-block'; } }
-  });
-  const qrBtn = document.getElementById('qrBtn');   // QR-касса предпринимателя
-  const drawQr = () => {
-    const amt = parseInt(document.getElementById('qrAmt').value, 10);
-    let url = location.origin + '/transfers.html?pay=' + encodeURIComponent(localStorage.getItem('childCode') || '');
-    if (amt > 1) url += '&amt=' + amt;                       // цена продавца зашита в код
-    const qr = qrcode(0, 'M'); qr.addData(url); qr.make();
-    const svg = qr.createSvgTag({ cellSize: 5, margin: 2 });
-    document.getElementById('qrSvg').innerHTML = svg.replace('<svg ', '<svg style="width:200px;height:200px" ');
-  };
-  if (qrBtn) qrBtn.onclick = () => {
-    drawQr(); document.getElementById('qrAmt').oninput = drawQr;
-    document.getElementById('qrBox').style.display = 'flex';
-  };
-  const qrClose = document.getElementById('qrClose');
-  if (qrClose) qrClose.onclick = () => { document.getElementById('qrBox').style.display = 'none'; };
+
   // встроенный сканер: камера в приложении → сразу на экран оплаты
   const scanBtn = document.getElementById('scanBtn');
   let scanStream = null, scanRAF = 0;
