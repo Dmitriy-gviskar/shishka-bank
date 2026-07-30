@@ -42,6 +42,16 @@ async function savePhoto(dataUrl, prefix) {
   await writeFile(join(DIR, path), buf);
   return path;
 }
+// base64-webm -> file
+async function saveAudio(dataUrl) {
+  const m = /^data:audio\/[^;]+;base64,(.+)$/.exec(String(dataUrl || ''));
+  if (!m) throw { code: 400, msg: 'bad audio' };
+  const buf = Buffer.from(m[1], 'base64');
+  if (buf.length > 2e6) throw { code: 400, msg: 'too long' };
+  const path = `uploads/audio_${Date.now()}_${randomInt(1e6)}.webm`;
+  await writeFile(join(DIR, path), buf);
+  return path;
+}
 
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];

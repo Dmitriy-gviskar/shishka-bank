@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 
 const MIME = { '.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json',
-  '.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml' };
+  '.png':'image/png','.jpg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.webm':'audio/webm' };
 
 export const SEC = [
   ['Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'"],
