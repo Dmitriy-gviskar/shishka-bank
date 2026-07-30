@@ -60,7 +60,7 @@ body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
 .nav .active{background:#fff3d6;box-shadow:0 0 0 3px var(--gold) inset}
 
 /* баланс-шапка (правый верх) */
-#topbar{position:absolute;top:14px;right:14px;z-index:5;display:flex;align-items:center;gap:5px;
-  background:rgba(255,250,240,.95);border:3px solid var(--brown);border-radius:16px;
-  padding:4px 12px 4px 6px;box-shadow:0 3px 0 rgba(107,79,58,.25);font-weight:900;color:var(--brown);font-size:19px}
-#topbar img{width:26px;height:26px;object-fit:contain}
+#topbar{position:absolute;top:8px;right:8px;z-index:5;display:flex;align-items:center;gap:3px;
+  background:rgba(255,250,240,.92);border:2px solid var(--brown);border-radius:12px;
+  padding:2px 8px 2px 4px;box-shadow:0 2px 0 rgba(107,79,58,.2);font-weight:900;color:var(--brown);font-size:14px}
+#topbar img{width:18px;height:18px;object-fit:contain}
