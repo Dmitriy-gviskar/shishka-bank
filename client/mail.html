@@ -7,16 +7,17 @@
   .wrap{display:flex;flex-direction:column;height:100%;padding:0;position:relative}
   .title{flex:none;margin:8px 0 4px}
   /* Список чатов */
-  #chatList{flex:1;overflow-y:auto;min-height:0}
+  #chatList{flex:1;overflow-y:auto;min-height:0;padding:6px 8px;display:flex;flex-direction:column;gap:6px}
   #chatList::-webkit-scrollbar{width:0}
-  .chatRow{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid #e8ddca;transition:background .1s}
-  .chatRow:active{background:#f5eddb}
-  .chatRow img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#e8e0d0;flex:none}
+  .chatRow{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;
+    background:#fffef9;border:2px solid #e0d3b8;border-radius:14px;transition:all .12s}
+  .chatRow:active{background:#f2ebd8;border-color:#c9b88a}
+  .chatRow img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#d5cfbe;flex:none;border:2px solid #e0d3b8}
   .chatRow .info{flex:1;min-width:0}
-  .chatRow .name{font-weight:800;color:var(--brown);font-size:14px}
-  .chatRow .preview{font-size:12px;color:#8a7a65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .chatRow .name{font-weight:900;color:#4a3520;font-size:15px}
+  .chatRow .preview{font-size:13px;color:#6b5a44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
   .chatRow .meta{text-align:right;flex:none}
-  .chatRow .time{font-size:10px;color:#a09080}
+  .chatRow .time{font-size:11px;color:#8a7a65;font-weight:700}
   .chatRow .badge{display:inline-block;background:var(--green);color:#fff;font-weight:800;font-size:11px;
     min-width:20px;height:20px;line-height:20px;text-align:center;border-radius:10px;padding:0 5px;margin-top:3px}
   .noChats{text-align:center;color:var(--brown);font-weight:800;padding:30px 16px;font-size:15px;
