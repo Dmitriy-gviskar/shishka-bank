@@ -648,15 +648,40 @@ async function loadChat() {
   if (msgs.error) { c.innerHTML = '<div class="emptyChat">Ошибка загрузки</div>'; return; }
   if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; }
   for (const m of msgs) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;';
+    if (m.mine) wrap.style.alignItems = 'flex-end'; else wrap.style.alignItems = 'flex-start';
     const el = document.createElement('div');
     if (m.type === 'sticker') {
       el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
-      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
     } else {
       el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
-      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
     }
-    c.appendChild(el);
+    el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+    // Реакции
+    if (m.reactions && m.reactions.length) {
+      const rxRow = document.createElement('div'); rxRow.className = 'rxRow' + (m.mine ? ' mine' : '');
+      // сгруппировать по emoji
+      const groups = {}; m.reactions.forEach((r) => { groups[r.emoji] = (groups[r.emoji] || 0) + 1; });
+      Object.entries(groups).forEach(([emoji, cnt]) => {
+        const chip = document.createElement('span'); chip.className = 'rxChip';
+        chip.innerHTML = emoji + (cnt > 1 ? `<span class="cnt">${cnt}</span>` : '');
+        chip.onclick = (e) => { e.stopPropagation(); react(m.id, emoji); };
+        rxRow.appendChild(chip);
+      });
+      wrap.appendChild(el);
+      wrap.appendChild(rxRow);
+    } else {
+      wrap.appendChild(el);
+    }
+    // Долгий тап → пикер реакций
+    let pressTimer;
+    el.addEventListener('touchstart', (e) => {
+      pressTimer = setTimeout(() => { showRxPicker(e, m.id); }, 500);
+    }, { passive: true });
+    el.addEventListener('touchend', () => clearTimeout(pressTimer));
+    el.addEventListener('touchmove', () => clearTimeout(pressTimer));
+    c.appendChild(wrap);
   }
   loadChatList();   // обновить счётчики в списке
   c.scrollTop = c.scrollHeight;
@@ -691,6 +716,22 @@ if (page === 'mail.html') {
   // Стикеры
   const stickerBar = document.getElementById('stickerBar');
   STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
+  // Реакции
+  let rxMsgId = null;
+  window.react = async (msgId, emoji) => {
+    await api('/api/message/react', { message_id: msgId, emoji });
+    loadChat();
+  };
+  window.showRxPicker = (e, msgId) => {
+    rxMsgId = msgId;
+    const pk = document.getElementById('rxPicker');
+    const t = e.touches ? e.touches[0] : e;
+    pk.style.display = 'flex'; pk.style.left = Math.min(t.clientX - 80, window.innerWidth - 200) + 'px';
+    pk.style.top = (t.clientY - 50) + 'px';
+    setTimeout(() => document.addEventListener('click', hideRxPicker, { once: true }), 50);
+  };
+  const hideRxPicker = () => { document.getElementById('rxPicker').style.display = 'none'; rxMsgId = null; };
+  document.querySelectorAll('#rxPicker button').forEach((b) => b.onclick = () => { if (rxMsgId) { react(rxMsgId, b.textContent); hideRxPicker(); } });
   // Фразы-заготовки
   const phraseBar = document.getElementById('phraseBar');
   PHRASES.forEach((p) => { const b = document.createElement('button'); b.textContent = p; b.onclick = () => sendMsg(p); phraseBar.appendChild(b); });
@@ -725,6 +766,9 @@ if (page === 'mail.html') {
       const wasAtBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
       c.innerHTML = '';
       for (const m of msgs) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;flex-direction:column;';
+        if (m.mine) wrap.style.alignItems = 'flex-end'; else wrap.style.alignItems = 'flex-start';
         const el = document.createElement('div');
         if (m.type === 'sticker') {
           el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
@@ -732,7 +776,18 @@ if (page === 'mail.html') {
           el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
         }
         el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
-        c.appendChild(el);
+        if (m.reactions && m.reactions.length) {
+          const rxRow = document.createElement('div'); rxRow.className = 'rxRow' + (m.mine ? ' mine' : '');
+          const groups = {}; m.reactions.forEach((r) => { groups[r.emoji] = (groups[r.emoji] || 0) + 1; });
+          Object.entries(groups).forEach(([emoji, cnt]) => {
+            const chip = document.createElement('span'); chip.className = 'rxChip';
+            chip.innerHTML = emoji + (cnt > 1 ? `<span class="cnt">${cnt}</span>` : '');
+            chip.onclick = (e) => { e.stopPropagation(); react(m.id, emoji); };
+            rxRow.appendChild(chip);
+          });
+          wrap.appendChild(el); wrap.appendChild(rxRow);
+        } else { wrap.appendChild(el); }
+        c.appendChild(wrap);
       }
       if (wasAtBottom) c.scrollTop = c.scrollHeight;
     }, 2000);

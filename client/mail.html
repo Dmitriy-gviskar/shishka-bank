@@ -54,6 +54,16 @@
   .msgSticker{font-size:48px;text-align:center;padding:4px 0;line-height:1}
   .msgSticker.mine{align-self:flex-end}
   .msgSticker.theirs{align-self:flex-start}
+  /* Реакции */
+  .rxRow{display:flex;gap:3px;margin-top:1px}
+  .rxRow.mine{justify-content:flex-end}
+  .rxChip{background:#fffef9;border:1.5px solid #e0d3b8;border-radius:10px;padding:1px 6px;
+    font-size:13px;line-height:1.3;cursor:pointer;transition:all .1s;display:flex;gap:2px;align-items:center}
+  .rxChip .cnt{font-size:10px;font-weight:700;color:#8a7a65}
+  #rxPicker{display:none;position:fixed;z-index:50;background:#fffef9;border:2px solid #e0d3b8;border-radius:14px;
+    padding:6px 8px;gap:4px;box-shadow:0 4px 16px rgba(0,0,0,.15)}
+  #rxPicker button{background:none;border:none;font-size:28px;padding:4px 6px;cursor:pointer;border-radius:10px;transition:all .1s}
+  #rxPicker button:active{background:#f0e8d0;transform:scale(1.25)}
   #inputRow{display:flex;gap:6px}
   #inputRow input{flex:1;border:2px solid #d9c39a;border-radius:12px;padding:8px 12px;
     font-size:14px;font-family:inherit;font-weight:600;color:var(--ink);outline:none}
@@ -104,6 +114,8 @@
       <button class="cancel" id="btnPayCancel">Отмена</button>
     </div>
   </div>
+  <!-- Пикер реакций -->
+  <div id="rxPicker"><button>❤️</button><button>🔥</button><button>😂</button><button>👍</button><button>😢</button></div>
 </div></div>
 <script src="app.js"></script>
 <script src="nav.js"></script>
