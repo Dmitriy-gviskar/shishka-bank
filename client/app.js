@@ -610,7 +610,7 @@ const fmtTime = (iso) => { const d = new Date(iso); return d.toLocaleTimeString(
 
 // ── Список чатов ──
 async function loadChatList() {
-  const list = await api('/api/chat/list');
+  const list = await api('/api/chat/list', {});
   const c = document.getElementById('chatList'); c.innerHTML = '';
   if (list.error) return;
   if (!list.length) { c.innerHTML = '<div class="noChats">В твоём кругу пока никого нет. Позови ведущего! 🌲</div>'; return; }
