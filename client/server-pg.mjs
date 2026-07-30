@@ -595,7 +595,7 @@ const api = {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [withId, ctx.circle], 'друг не в твоём кругу');
     // Пометить входящие от этого друга как прочитанные
     await q(`update messages set read_at=now() where to_user=$1 and from_user=$2 and read_at is null`, [ctx.child, withId]);
-    const msgs = await q(`select m.content, m.created_at, m.from_user=$1 as mine
+    const msgs = await q(`select m.type, m.content, m.created_at, m.from_user=$1 as mine
         from messages m where m.circle_id=$2 and m.deliver_at<=now()
         and ((m.from_user=$1 and m.to_user=$3) or (m.from_user=$3 and m.to_user=$1))
         order by m.created_at asc`, [ctx.child, ctx.circle, withId]);
@@ -627,7 +627,8 @@ const api = {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому отправить');
     // режем угловые скобки и длину (защита в глубину к клиентскому esc)
     const content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
-    await rpc('send_message', [ctx.child, b.to, 'emoji', content]);
+    const type = b.type === 'sticker' ? 'sticker' : 'emoji';
+    await rpc('send_message', [ctx.child, b.to, type, content]);
     return { ok: true };
   },
 

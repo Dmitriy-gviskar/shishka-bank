@@ -605,6 +605,7 @@ if ('serviceWorker' in navigator) {
 
 // ── Чат ──
 const PHRASES = ['Привет! 👋','Как дела? 😊','Давай дружить! 🤝','Спасибо! ❤️','Классно! 🔥','Давай меняться? 🔄','Помоги 🙏','Ура! 🎉','Пока! 👋','Хорошего дня! ☀️','Ты супер! ⭐','Да! ✅','Нет 🙅','Грустно 😢','Весело! 😂'];
+const STICKERS = ['🦊','🐿️','🦉','🐻','🦌','🐰','🌲','🍄','🌰','🍂','🌟','❤️','🔥','😂','👍','🎉','😢','😡','🤔','🙏'];
 let chatFriend = null, chatFriendName = '';
 const fmtTime = (iso) => { const d = new Date(iso); return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
 
@@ -648,8 +649,13 @@ async function loadChat() {
   if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; }
   for (const m of msgs) {
     const el = document.createElement('div');
-    el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
-    el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+    if (m.type === 'sticker') {
+      el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
+      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+    } else {
+      el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
+    }
     c.appendChild(el);
   }
   loadChatList();   // обновить счётчики в списке
@@ -659,6 +665,11 @@ async function sendMsg(content) {
   if (!chatFriend) return;
   const r = await api('/api/message', { content, to: chatFriend });
   if (!r.error) { loadChat(); document.getElementById('msgInput').value = ''; }
+}
+async function sendSticker(emoji) {
+  if (!chatFriend) return;
+  const r = await api('/api/message', { content: emoji, to: chatFriend, type: 'sticker' });
+  if (!r.error) loadChat();
 }
 
 // ── Перевод шишек из чата ──
@@ -677,6 +688,9 @@ function doPay() {
 
 if (page === 'mail.html') {
   loadChatList();
+  // Стикеры
+  const stickerBar = document.getElementById('stickerBar');
+  STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
   // Фразы-заготовки
   const phraseBar = document.getElementById('phraseBar');
   PHRASES.forEach((p) => { const b = document.createElement('button'); b.textContent = p; b.onclick = () => sendMsg(p); phraseBar.appendChild(b); });
@@ -712,7 +726,11 @@ if (page === 'mail.html') {
       c.innerHTML = '';
       for (const m of msgs) {
         const el = document.createElement('div');
-        el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+        if (m.type === 'sticker') {
+          el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
+        } else {
+          el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+        }
         el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
         c.appendChild(el);
       }

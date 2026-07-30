@@ -43,6 +43,14 @@
   #phraseBar button{background:#fff;border:2px solid #d9c39a;border-radius:12px;padding:5px 10px;
     font-size:12px;font-weight:700;color:var(--brown);cursor:pointer;white-space:nowrap;transition:all .1s}
   #phraseBar button:active{background:#e8dcc8}
+  /* Стикеры */
+  #stickerBar{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;justify-content:center}
+  #stickerBar button{background:#fffef9;border:2px solid #e0d3b8;border-radius:14px;padding:6px 8px;
+    font-size:26px;cursor:pointer;line-height:1;transition:all .1s}
+  #stickerBar button:active{background:#f0e8d0;transform:scale(.92)}
+  .msgSticker{font-size:48px;text-align:center;padding:4px 0;line-height:1}
+  .msgSticker.mine{align-self:flex-end}
+  .msgSticker.theirs{align-self:flex-start}
   #inputRow{display:flex;gap:6px}
   #inputRow input{flex:1;border:2px solid #d9c39a;border-radius:12px;padding:8px 12px;
     font-size:14px;font-family:inherit;font-weight:600;color:var(--ink);outline:none}
@@ -75,6 +83,7 @@
     </div>
     <div id="chatMsgs"></div>
     <div id="chatInput">
+      <div id="stickerBar"></div>
       <div id="phraseBar"></div>
       <div id="inputRow">
         <input type="text" id="msgInput" placeholder="Сообщение..." maxlength="80" autocomplete="off">
