@@ -617,7 +617,9 @@ async function loadChatList() {
   if (!list.length) { c.innerHTML = '<div class="noChats">В твоём кругу пока никого нет. Позови ведущего! 🌲</div>'; return; }
   for (const ch of list) {
     const el = document.createElement('div'); el.className = 'chatRow';
-    const preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Написать... ✉️';
+    let preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Написать... ✉️';
+    if (preview.startsWith('/uploads/audio_')) preview = '🎤 Голосовое сообщение';
+    else if (preview.startsWith('Дарю тебе карту:')) preview = '🃏 ' + preview;
     const time = ch.last_at ? fmtTime(ch.last_at) : '';
     el.innerHTML = `<div class="ava"><img src="assets/${ch.avatar}">${ch.online ? '<div class="dot"></div>' : ''}</div><div class="info"><div class="name">${esc(ch.name)}</div><div class="preview" style="${ch.last_msg ? '' : 'font-style:italic;color:#7bab4c'}">${preview}</div></div>
       <div class="meta"><div class="time">${time}</div>${ch.unread > 0 ? `<div class="badge">${ch.unread}</div>` : ''}</div>`;
