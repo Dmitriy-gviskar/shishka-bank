@@ -1032,7 +1032,7 @@ update card_types set season='s5' where code in ('letuchaya_mysh','krot','letyag
 update card_types set season='s6' where code in ('los','gluhar','voron','soroka','snegir','sinica','solovey','olen','kaban','zubr','kosulya','kabarga','lan','dyatel','dub','bereza','klen','ryabina','shipovnik','vinograd','zveroboy');
 -- Активный сезон (тот, из которого падают карты в паках)
 create or replace function active_season() returns text
-  language sql stable as $$ select code from card_seasons where status='active' order by sort limit 1 $$;
+  language sql stable as $$ select case when (select count(*) from card_seasons where status='active') > 2 then null else (select code from card_seasons where status='active' order by sort limit 1) end $$;
 
 -- ═══════════════════ Гарант новинки (pity) ═══════════════════
 -- Пити по РАНГАМ бессмысленно: Эпическая+ есть в 52% паков, Легендарная+ — в 25%, так что
