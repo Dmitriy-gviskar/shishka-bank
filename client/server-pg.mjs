@@ -636,7 +636,7 @@ const api = {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому отправить');
     // режем угловые скобки и длину (защита в глубину к клиентскому esc)
     const content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
-    const type = b.type === 'sticker' ? 'sticker' : 'emoji';
+    const type = b.type === 'sticker' ? 'sticker' : b.type === 'audio' ? 'audio' : 'emoji';
     const replyId = b.reply_to || null;
     await rpc('send_message', [ctx.child, b.to, type, content, replyId]);
     // push-уведомление получателю
