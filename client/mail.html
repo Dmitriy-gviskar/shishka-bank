@@ -77,6 +77,13 @@
   #inputRow input:focus{border-color:var(--green)}
   #inputRow button{background:var(--green);color:#fff;border:none;border-radius:12px;
     padding:8px 16px;font-weight:800;font-size:14px;cursor:pointer}
+  #micBtn{width:40px;height:40px;border-radius:50%;background:#e8dcc8;border:2px solid #d9c39a;
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+  #micBtn.recording{background:#e04545;border-color:#c03030;animation:pulse .8s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,69,69,.5)}50%{box-shadow:0 0 0 12px rgba(224,69,69,0)}}
+  #recTime{font-size:11px;font-weight:700;color:#c03030;display:none}
+  .msgAudio audio{width:180px;height:36px;border-radius:10px;outline:none}
+  .msgAudio audio::-webkit-media-controls-panel{background:#fffef9}
   /* Попап перевода шишек */
   #payPopup{display:none;position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:rgba(0,0,0,.4);
     justify-content:center;align-items:center}
@@ -107,7 +114,9 @@
       <div id="stickerBar"></div>
       <div id="phraseBar"></div>
       <div id="inputRow">
+        <button id="micBtn">🎤</button>
         <input type="text" id="msgInput" placeholder="Сообщение..." maxlength="80" autocomplete="off">
+        <span id="recTime">0:00</span>
         <button id="btnSend">→</button>
       </div>
     </div>

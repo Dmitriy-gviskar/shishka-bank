@@ -584,6 +584,11 @@ const api = {
     }
   },
 
+  // Голосовое сообщение: загрузка аудио
+  'POST /api/audio': async (b, ctx) => {
+    const path = await saveAudio(b.data);
+    return { url: '/' + path };
+  },
   // ── Почта / Чат ──
   'GET /api/inbox': (b, ctx) => q(`select u.name as from_name, m.type as kind, m.content, m.is_whisper as whisper
       from messages m left join users u on u.id=m.from_user

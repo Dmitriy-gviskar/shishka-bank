@@ -652,12 +652,16 @@ async function loadChat() {
     wrap.style.cssText = 'display:flex;flex-direction:column;';
     if (m.mine) wrap.style.alignItems = 'flex-end'; else wrap.style.alignItems = 'flex-start';
     const el = document.createElement('div');
-    if (m.type === 'sticker') {
+    if (m.type === 'audio') {
+      el.className = 'msgAudio ' + (m.mine ? 'mine' : 'theirs');
+      el.innerHTML = `<audio controls src="${esc(m.content)}"></audio><div class="msgTime">${fmtTime(m.created_at)}</div>`;
+    } else if (m.type === 'sticker') {
       el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
+      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
     } else {
       el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
     }
-    el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}</div>`;
     // Цитата
     if (m.reply_to) {
       const qt = document.createElement('div'); qt.className = 'replyQuote';
@@ -737,6 +741,43 @@ if (page === 'mail.html') {
   // Стикеры
   const stickerBar = document.getElementById('stickerBar');
   STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
+  // Голосовые
+  let mediaRecorder = null, audioChunks = [], recTimer = null, recSecs = 0;
+  const micBtn = document.getElementById('micBtn'), recTime = document.getElementById('recTime');
+  const fmtSec = (s) => Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  micBtn.onpointerdown = async () => {
+    if (!chatFriend) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      audioChunks = [];
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size) audioChunks.push(e.data); };
+      mediaRecorder.start();
+      micBtn.classList.add('recording'); recTime.style.display = 'inline';
+      recSecs = 0; recTime.textContent = '0:00';
+      recTimer = setInterval(() => { recSecs++; recTime.textContent = fmtSec(recSecs); }, 1000);
+    } catch { micBtn.textContent = '🚫'; setTimeout(() => micBtn.textContent = '🎤', 2000); }
+  };
+  micBtn.onpointerup = async () => {
+    if (!mediaRecorder) return;
+    micBtn.classList.remove('recording'); recTime.style.display = 'none';
+    clearInterval(recTimer);
+    mediaRecorder.onstop = async () => {
+      const blob = new Blob(audioChunks, { type: 'audio/webm' });
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const r = await api('/api/audio', { data: reader.result });
+        if (!r.error && r.url) {
+          await api('/api/message', { content: r.url, to: chatFriend, type: 'audio' });
+          loadChat();
+        }
+      };
+      reader.readAsDataURL(blob);
+      mediaRecorder.stream.getTracks().forEach((t) => t.stop());
+    };
+    mediaRecorder.stop(); mediaRecorder = null;
+  };
+  micBtn.onpointerleave = () => { if (mediaRecorder) micBtn.onpointerup(); };
   // Ответ
   window.cancelReply = () => { replyTo = null; document.getElementById('replyBar').style.display = 'none'; };
   document.getElementById('replyCancel').onclick = cancelReply;
