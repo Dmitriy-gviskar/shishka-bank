@@ -613,12 +613,12 @@ async function loadChatList() {
   const list = await api('/api/chat/list');
   const c = document.getElementById('chatList'); c.innerHTML = '';
   if (list.error) return;
-  if (!list.length) { c.innerHTML = '<div class="noChats">Нет чатов. Подари шишки другу — появится переписка! 🌲</div>'; return; }
+  if (!list.length) { c.innerHTML = '<div class="noChats">В твоём кругу пока никого нет. Позови ведущего! 🌲</div>'; return; }
   for (const ch of list) {
     const el = document.createElement('div'); el.className = 'chatRow';
-    const preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Нет сообщений';
+    const preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Написать... ✉️';
     const time = ch.last_at ? fmtTime(ch.last_at) : '';
-    el.innerHTML = `<img src="assets/${ch.avatar}"><div class="info"><div class="name">${esc(ch.name)}</div><div class="preview">${preview}</div></div>
+    el.innerHTML = `<img src="assets/${ch.avatar}"><div class="info"><div class="name">${esc(ch.name)}</div><div class="preview" style="${ch.last_msg ? '' : 'font-style:italic;color:#7bab4c'}">${preview}</div></div>
       <div class="meta"><div class="time">${time}</div>${ch.unread > 0 ? `<div class="badge">${ch.unread}</div>` : ''}</div>`;
     el.onclick = () => { chatFriend = ch.id; chatFriendName = ch.name; openChat(); };
     c.appendChild(el);
