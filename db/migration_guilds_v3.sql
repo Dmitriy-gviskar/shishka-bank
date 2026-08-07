@@ -144,30 +144,30 @@ returns void language sql security definer set search_path = public as $$
 $$;
 
 -- 8. Смена роли участника (только основатель).
-create or replace function guild_set_role(p_guild uuid, p_child uuid, p_new_role text)
+create or replace function guild_set_role(p_guild uuid, p_target uuid, p_new_role text, p_caller uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare g guilds;
 begin
   select * into g from guilds where id = p_guild;
   if not found then raise exception 'guild not found'; end if;
   if g.status <> 'open' then raise exception 'guild is not open'; end if;
-  if not exists (select 1 from guild_members where guild_id = p_guild and child_id = p_child and role = 'founder') then
+  if not exists (select 1 from guild_members where guild_id = p_guild and child_id = p_caller and role = 'founder') then
     raise exception 'only founder can change roles'; end if;
   if p_new_role = 'founder' then raise exception 'cannot reassign founder'; end if;
-  update guild_members set role = p_new_role where guild_id = p_guild and child_id = p_child;
+  update guild_members set role = p_new_role where guild_id = p_guild and child_id = p_target;
   if not found then raise exception 'member not found'; end if;
-  insert into guild_history(guild_id, kind, title) values (p_guild, 'role_changed', (select name from users where id = p_child) || ' → ' || p_new_role);
+  insert into guild_history(guild_id, kind, title) values (p_guild, 'role_changed', (select name from users where id = p_target) || ' → ' || p_new_role);
   perform bump_guild_activity(p_guild);
 end $$;
 
 -- 9. Смена доли участника (казначей или основатель).
-create or replace function guild_set_share(p_guild uuid, p_child uuid, p_share int)
+create or replace function guild_set_share(p_guild uuid, p_target uuid, p_share int, p_caller uuid)
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if p_share < 1 then raise exception 'share must be positive'; end if;
-  if not exists (select 1 from guild_members where guild_id = p_guild and child_id = p_child and role in ('founder','treasurer')) then
+  if not exists (select 1 from guild_members where guild_id = p_guild and child_id = p_caller and role in ('founder','treasurer')) then
     raise exception 'only founder or treasurer can change shares'; end if;
-  update guild_members set share = p_share where guild_id = p_guild and child_id = p_child;
+  update guild_members set share = p_share where guild_id = p_guild and child_id = p_target;
   if not found then raise exception 'member not found'; end if;
   perform bump_guild_activity(p_guild);
 end $$;

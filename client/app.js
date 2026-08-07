@@ -502,42 +502,11 @@ async function refreshBalance() {
 }
 mountTopbar(); refreshBalance();
 
-// ── Дупло-сейф ──
-let depDays = 3, depAmount = 10;
-async function loadSafes() {
-  const safes = await api('/api/safes'); const c = document.getElementById('safeList'); c.innerHTML = '';
-  if (!safes.length) { c.innerHTML = '<div style="text-align:center;padding:10px"><span class="on-art" style="color:#8a7358;font-weight:700;font-size:13px">Пока ничего не заморожено</span></div>'; return; }
-  for (const s of safes) {
-    const el = document.createElement('div'); el.className = 'card safe';
-    el.innerHTML = `<div class="amt">${s.amount} <img src="assets/coin1.webp" style="width:20px;vertical-align:-3px"> +${s.rate}%</div>
-      ${s.ready ? '<button class="btn btn-sm">Забрать</button>' : `<span class="st">осталось ${s.days_left} дн.</span>`}`;
-    if (s.ready) el.querySelector('button').onclick = async () => {
-      const r = await api('/api/safe/redeem', { id: s.id }); const n = document.getElementById('note'); n.style.display = 'block';
-      if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-      else { n.textContent = 'Забрал ' + r.gained + ' шишек!'; n.style.color = '#5f8e37'; loadSafes(); refreshBalance(); }
-    };
-    c.appendChild(el);
-  }
-}
-if (page === 'deposit.html') {
-  loadSafes();
-  document.querySelectorAll('.term').forEach((t) => t.onclick = () => { document.querySelectorAll('.term').forEach((x) => x.classList.remove('sel')); t.classList.add('sel'); depDays = +t.dataset.days; });
-  document.querySelectorAll('.sum .s').forEach((t) => t.onclick = () => { document.querySelectorAll('.sum .s').forEach((x) => x.classList.remove('sel')); t.classList.add('sel'); depAmount = +t.dataset.a; });
-  document.getElementById('freeze').onclick = async () => {
-    const r = await api('/api/safe/open', { amount: depAmount, days: depDays }); const n = document.getElementById('note'); n.style.display = 'block';
-    if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { n.textContent = `Заморожено ${depAmount} на ${depDays} дн.`; n.style.color = '#5f8e37'; loadSafes(); refreshBalance(); }
-  };
-}
+// ── Дупло-сейф (вынесен в deposit.js) ──
+if (page === 'deposit.html' && window.runDeposit) window.runDeposit();
 
-// ── Гороскоп ──
-if (page === 'horoscope.html') {
-  api('/api/horoscope').then((h) => {
-    document.getElementById('pred').textContent = h.text;
-    if (h.bonus > 0) { document.getElementById('bonus').style.display = 'block';
-      document.getElementById('bonusN').textContent = '+' + h.bonus + ' счастливых шишек'; refreshBalance(); }
-  });
-}
+// ── Гороскоп (вынесен в horoscope.js) ──
+if (page === 'horoscope.html' && window.runHoroscope) window.runHoroscope();
 
 // ── Котлы желаний: общий список + свои котлы (в т.ч. гильдейские) ──
 if (page === 'pot.html') {
@@ -985,156 +954,11 @@ function renderProps(list) { const c = document.getElementById('props'); c.inner
     c.appendChild(el); } }
 if (page === 'council.html') api('/api/proposals').then(renderProps);
 
-// ── Гильдии: список → своя гильдия с чатом-костром, ролями и историей ──
-if (page === 'guilds.html') {
-  const note = (t, ok) => { const n = document.getElementById('note'); n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; };
-  const PHRASES = ['Собираемся!', 'Заказ готов!', 'Молодцы!', 'Нужна помощь', 'Ура!', 'Я за!'];
-  const ROLE_NAMES = { founder: 'Основатель', treasurer: 'Казначей', herald: 'Глашатай', member: 'Участник' };
-  let curGuild = null, chatTimer = null;
+// ── Гильдии (вынесены в guilds.js) ──
+if (page === 'guilds.html' && window.runGuilds) window.runGuilds();
 
-  async function loadGuilds() {
-    const gs = await api('/api/guilds');
-    const c = document.getElementById('glist'); c.innerHTML = '';
-    if (gs.error) return note(gs.error);
-    if (!gs.length) c.innerHTML = '<div style="text-align:center;padding:10px"><span class="on-art" style="color:#8a7358;font-weight:700">Гильдий пока нет — основай первую!</span></div>';
-    for (const g of gs) {
-      const el = document.createElement('div'); el.className = 'card gcard';
-      const statusTag = g.status === 'sleeping' ? '<span style="color:#d4953a;font-weight:800;font-size:12px">💤 Спит</span>' : '';
-      el.innerHTML = `<div class="gn">${esc(g.name)} ${statusTag}</div><div class="gm">${g.members.map((m) => `${esc(m.name)}${m.role ? ' (' + ROLE_NAMES[m.role] + ')' : ''}`).join(', ')}</div>
-        <div class="row">${g.mine
-          ? (g.status === 'sleeping' ? '<button class="btn btn-sm wake" style="background:#d4953a;box-shadow:0 4px 0 #b37a2c">Разбудить</button>' : '<button class="btn btn-sm open">Войти</button>')
-          : (g.status === 'open' ? '<button class="btn btn-sm join" style="background:#e8b64b;box-shadow:0 4px 0 #c79a3c">Вступить</button>' : '')}</div>`;
-      const open = el.querySelector('.open');
-      if (open) open.onclick = () => showGuild(g);
-      const wake = el.querySelector('.wake');
-      if (wake) wake.onclick = async () => {
-        const r = await api('/api/guild/awaken', { id: g.id });
-        if (r.error) note(r.error); else { note('Гильдия пробудилась!', 1); loadGuilds(); }
-      };
-      const join = el.querySelector('.join');
-      if (join) join.onclick = async () => {
-        const r = await api('/api/guild/join', { id: g.id });
-        if (r.error) note(r.error); else { note('Ты в гильдии!', 1); loadGuilds(); }
-      };
-      c.appendChild(el);
-    }
-  }
-
-  async function loadChat() {
-    if (!curGuild) return;
-    const msgs = await api('/api/guild/chat', { id: curGuild.id });
-    if (msgs.error) return;
-    const c = document.getElementById('chat'); c.innerHTML = '';
-    for (const m of msgs) { const el = document.createElement('div'); el.className = 'msg' + (m.who === 'Банк' ? ' bank' : '');
-      el.innerHTML = `<div class="who">${esc(m.who)}</div><div class="txt">${esc(m.content)}</div>`; c.appendChild(el); }
-    c.scrollTop = c.scrollHeight;
-  }
-
-  async function loadHistory() {
-    if (!curGuild) return;
-    const h = await api('/api/guild/history', { id: curGuild.id });
-    const c = document.getElementById('history'); c.innerHTML = '';
-    if (h.error || !h.length) { c.innerHTML = '<div style="text-align:center;padding:6px;color:#a1876a;font-weight:700;font-size:13px">История пока пуста</div>'; return; }
-    for (const ev of h) {
-      const icons = { order_completed: '💰', task_created: '📋', member_joined: '👋', role_changed: '🔄', awakened: '☀️' };
-      const when = new Date(ev.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-      const el = document.createElement('div');
-      el.style.cssText = 'display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;font-weight:700;color:var(--ink)';
-      el.innerHTML = `<span>${icons[ev.kind] || ''}</span><span>${esc(ev.title)}</span>${ev.amount ? '<span style="margin-left:auto;color:#5f8e37">+' + ev.amount + ' 🌰</span>' : ''}<span style="font-size:11px;color:#a1876a;margin-left:4px">${when}</span>`;
-      c.appendChild(el);
-    }
-  }
-
-  async function refreshGuildDetail() {
-    const gs = await api('/api/guilds');
-    if (gs.error) return;
-    const g = gs.find((x) => x.id === curGuild.id);
-    if (g) curGuild = g;
-    showGuild(curGuild);
-  }
-
-  function showGuild(g) {
-    curGuild = g;
-    document.getElementById('listView').style.display = 'none';
-    document.getElementById('guildView').style.display = 'flex';
-    document.getElementById('gTitle').textContent = g.name + (g.status === 'sleeping' ? ' 💤' : '');
-    // участники с ролями и долями
-    const m = document.getElementById('gMembers'); m.innerHTML = '';
-    const myRole = g.members.find((x) => x.mine)?.role;
-    const isFounder = myRole === 'founder';
-    const canManage = myRole === 'founder' || myRole === 'treasurer';
-    for (const x of g.members) {
-      const el = document.createElement('div'); el.className = 'card mrow';
-      let controls = '';
-      if (canManage && x.role !== 'founder') {
-        controls = `<select class="roleSel" data-id="${x.id}" style="margin-left:auto;font-size:12px;font-weight:800;background:#fff7e8;border:2px solid #d9c39a;border-radius:8px;padding:2px 4px">
-          <option value="member" ${x.role==='member'?'selected':''}>Участник</option>
-          <option value="treasurer" ${x.role==='treasurer'?'selected':''}>Казначей</option>
-          <option value="herald" ${x.role==='herald'?'selected':''}>Глашатай</option></select>`;
-        if (canManage) controls += `<input class="shareInp" data-id="${x.id}" type="number" min="1" max="10" value="${x.share}" style="width:38px;font-size:13px;font-weight:800;background:#fffaf0;border:2px solid #d9c39a;border-radius:8px;text-align:center;margin-left:4px">`;
-      }
-      el.innerHTML = `<span class="nm">${esc(x.name)}${x.role ? '<span style="font-size:10px;color:#a1876a;margin-left:4px">' + ROLE_NAMES[x.role] + '</span>' : ''}</span>${controls}<span class="share" style="${canManage ? 'display:none' : ''}">доля ${x.share}</span>`;
-      m.appendChild(el);
-    }
-    // обработчики ролей и долей
-    m.querySelectorAll('.roleSel').forEach((sel) => {
-      sel.onchange = async () => {
-        const r = await api('/api/guild/role', { id: g.id, childId: sel.dataset.id, role: sel.value });
-        if (r.error) note(r.error); else { note('Роль изменена', 1); refreshGuildDetail(); }
-      };
-    });
-    m.querySelectorAll('.shareInp').forEach((inp) => {
-      inp.onchange = async () => {
-        const v = parseInt(inp.value, 10); if (!(v > 0)) return;
-        const r = await api('/api/guild/share', { id: g.id, childId: inp.dataset.id, share: v });
-        if (r.error) note(r.error); else { note('Доля изменена', 1); refreshGuildDetail(); }
-      };
-    });
-    // чат
-    const p = document.getElementById('phrases'); p.innerHTML = '';
-    if (g.status === 'open') {
-      for (const ph of PHRASES) { const b = document.createElement('button'); b.textContent = ph;
-        b.onclick = async () => { const r = await api('/api/guild/say', { id: g.id, phrase: ph }); if (r.error) note(r.error); else loadChat(); };
-        p.appendChild(b); }
-    }
-    loadChat();
-    loadHistory();
-    chatTimer = setInterval(() => { loadChat(); loadHistory(); }, 15e3);
-  }
-
-  document.getElementById('backToList').onclick = () => {
-    clearInterval(chatTimer); curGuild = null;
-    document.getElementById('guildView').style.display = 'none';
-    document.getElementById('listView').style.display = 'flex';
-    loadGuilds();
-  };
-  document.getElementById('createG').onclick = async () => {
-    const r = await api('/api/guild/create', { name: document.getElementById('gName').value });
-    if (r.error) note(r.error);
-    else { document.getElementById('gName').value = ''; note(`Гильдия «${r.name}» основана!`, 1); loadGuilds(); }
-  };
-  loadGuilds();
-}
-
-// ── Нарративный квест ──
-function qnote(t) { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t; n.style.color = '#b3452e'; } }
-function renderQuest(q) {
-  const btn = document.getElementById('qact'), pr = document.getElementById('qprog');
-  if (q.done || q.status === 'completed') { document.getElementById('story').textContent = 'Квест пройден! Награда получена всей семьёй.';
-    document.getElementById('stepTag').textContent = 'Завершено'; btn.style.display = 'none'; pr.style.display = 'none'; return; }
-  const st = q.step; document.getElementById('story').textContent = st.text;
-  document.getElementById('stepTag').textContent = 'Шаг ' + st.ord;
-  const stepDone = (st.kind === 'collect' || st.kind === 'task') && st.progress >= st.goal;
-  if (st.kind === 'collect' || st.kind === 'task') { pr.style.display = 'block';
-    document.getElementById('qfill').style.width = Math.min(100, Math.round(st.progress / st.goal * 100)) + '%';
-    document.getElementById('qtext').textContent = st.progress + ' / ' + st.goal; } else pr.style.display = 'none';
-  if (st.kind === 'narrative' || stepDone) { btn.textContent = 'Дальше';
-    btn.onclick = async () => { const r = await api('/api/quest/advance', {}); if (r.error) qnote(r.error); else renderQuest(r); }; }
-  else if (st.kind === 'collect') { btn.textContent = 'Вложить 5 в фонд';
-    btn.onclick = async () => { const r = await api('/api/quest/act', { amount: 5 }); if (r.error) qnote(r.error); else { renderQuest(r); refreshBalance(); } }; }
-  else { btn.textContent = 'Обыскать поляну'; btn.onclick = async () => renderQuest(await api('/api/quest/act', {})); }
-}
-if (page === 'quest.html') api('/api/quest').then(renderQuest);
+// ── Нарративный квест (вынесен в quest.js) ──
+if (page === 'quest.html' && window.runQuest) window.runQuest();
 
 // ── Наряды дерева (скины) ──
 function skinNote(t, ok) { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; } }
@@ -1216,24 +1040,8 @@ if (page === 'surprises.html') {
   loadSurprises();
 }
 
-// ── Новости леса (события Банка и семьи) ──
-if (page === 'news.html') {
-  const ICON = { achievement: 'ach/icon_work.webp', rain: 'coin1.webp', payout: 'coin1.webp', guild_pay: 'coin1.webp',
-    pot: 'pot.webp', guild_new: 'nav/n5.webp', auction: 'auction.webp', event: 'spirit.webp' };
-  api('/api/news').then((list) => {
-    const c = document.getElementById('newsList'); c.innerHTML = '';
-    if (list.error || !list.length) { c.innerHTML = '<div style="text-align:center;padding:10px"><span class="on-art" style="color:#8a7358;font-weight:700">В лесу пока тихо</span></div>'; return; }
-    for (const n of list) {
-      const when = new Date(n.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-      const el = document.createElement('div'); el.className = 'card ev';
-      el.innerHTML = `<img src="assets/${ICON[n.kind] || 'coin1.webp'}" onerror="this.src='assets/coin1.webp'">
-        <div><div class="nm">${n.kind === 'achievement' ? `${esc(n.who)} открыл награду «${esc(n.what)}»` : (n.who ? esc(n.who) + ': ' : '') + esc(n.what)}</div>
-        <div class="k">${when}</div></div>` +
-        (n.amount ? `<div class="amt" style="color:#5f8e37">${n.amount}</div>` : '');
-      c.appendChild(el);
-    }
-  });
-}
+// ── Новости леса (вынесен в news.js) ──
+if (page === 'news.html' && window.runNews) window.runNews();
 
 // ── Кабинет родителя ──
 if (page === 'parent.html') {

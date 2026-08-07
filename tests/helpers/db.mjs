@@ -24,7 +24,8 @@ export async function setupDb() {
   await run('psql', ['-q', '-d', DB, '-c',
     'create schema if not exists auth; create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;']);
   // cards.sql — часть прод-схемы (карты, лор, рынок, аукцион): /api/state читает familiar_* из неё
-  for (const f of ['db/schema.sql', 'db/functions.sql', 'db/migration_auth.sql', 'db/cards.sql'])
+  for (const f of ['db/schema.sql', 'db/functions.sql', 'db/migration_auth.sql', 'db/cards.sql',
+                     'db/migration_guilds_v2.sql', 'db/migration_guilds_v3.sql'])
     await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, f)]);
   // child_logins не входит в schema.sql — в проде её создаёт db/seed.sql (см. server-pg.mjs: авторизация ребёнка по коду из этой таблицы)
   await run('psql', ['-q', '-d', DB, '-c',

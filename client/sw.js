@@ -1,9 +1,10 @@
-const CACHE = 'shishka-v19';
+const CACHE = 'shishka-v20';
 const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
   'parent.html', 'surprises.html', 'link.html',
-  'style.css', 'app.js', 'cards.js', 'nav.js', 'assets/qrcode.js', 'assets/jsqr.js'];
+  'style.css', 'app.js', 'cards.js', 'deposit.js', 'horoscope.js', 'quest.js', 'news.js', 'guilds.js', 'nav.js',
+  'assets/qrcode.js', 'assets/jsqr.js'];
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });  // клиент просит новый воркер встать немедленно
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PAGES)).catch(() => {}));  // все экраны в кэш сразу

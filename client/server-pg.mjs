@@ -779,12 +779,12 @@ const api = {
   },
   'POST /api/guild/role': async (b, ctx) => {
     await assertOwn("select 1 from guild_members where guild_id=$1 and child_id=$2 and role='founder'", [b.id, ctx.child], 'только основатель');
-    await rpc('guild_set_role', [b.id, b.childId, b.role]);
+    await rpc('guild_set_role', [b.id, b.childId, b.role, ctx.child]);
     return { ok: true };
   },
   'POST /api/guild/share': async (b, ctx) => {
     await assertOwn("select 1 from guild_members where guild_id=$1 and child_id=$2 and role in ('founder','treasurer')", [b.id, ctx.child], 'только казначей или основатель');
-    await rpc('guild_set_share', [b.id, b.childId, b.share]);
+    await rpc('guild_set_share', [b.id, b.childId, b.share, ctx.child]);
     return { ok: true };
   },
   'POST /api/guild/awaken': async (b, ctx) => {
