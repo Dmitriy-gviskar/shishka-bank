@@ -223,8 +223,11 @@ const api = {
     return r.v;
   },
 
-  'GET /api/tasks': async (b, ctx) => (await q('select id,title,reward,needs_photo,status from tasks where child_id=$1 order by created_at', [ctx.child]))
-    .map((t) => ({ id: t.id, title: t.title, reward: t.reward, needs_photo: t.needs_photo, status: t.status === 'pending_review' ? 'submitted' : t.status })),
+  'GET /api/tasks': async (b, ctx) => {
+    await rpc('ensure_daily_tasks', [ctx.child]).catch(() => {});
+    return (await q('select id,title,reward,needs_photo,status from tasks where child_id=$1 order by created_at', [ctx.child]))
+      .map((t) => ({ id: t.id, title: t.title, reward: t.reward, needs_photo: t.needs_photo, status: t.status === 'pending_review' ? 'submitted' : t.status }));
+  },
   'POST /api/task/done': async (b, ctx) => {
     const t = await one('select needs_photo,status from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);  // только своё задание
     if (!t || t.status === 'done' || t.status === 'pending_review') throw { code: 400, msg: 'задание недоступно' };
