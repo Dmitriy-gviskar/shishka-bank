@@ -738,7 +738,8 @@ declare g guilds; c_id uuid;
 begin
   select circle_id into c_id from users where id = p_creator;
   insert into guilds(circle_id, name, created_by) values (c_id, p_name, p_creator) returning * into g;
-  insert into guild_members(guild_id, child_id, share) values (g.id, p_creator, greatest(p_share,1));
+  insert into guild_members(guild_id, child_id, share, role) values (g.id, p_creator, greatest(p_share,1), 'founder');
+  insert into guild_history(guild_id, kind, title) values (g.id, 'member_joined', (select name from users where id = p_creator));
   return g;
 end $$;
 

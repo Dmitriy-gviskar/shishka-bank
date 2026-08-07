@@ -28,18 +28,19 @@ window.runCards = function () {
   }
 
   // выбор цены ползунком и пресетами: без клавиатуры и без ввода чисел
-  function askPrice(title, { base, lo, hi, initial, hint, okText = 'Готово' }) {
+  function askPrice(title, { base, lo, hi, initial, hint, okText = 'Готово', mode = 'sell' }) {
     return new Promise((resolve) => {
       const ov = document.getElementById('askOv'), sheet = document.getElementById('askSheet');
       const start = Math.min(hi, Math.max(lo, initial || base));
+      const isBuy = mode === 'buy';
       sheet.innerHTML = `<h3>${title}</h3>
         ${hint ? `<div class="asktext">${hint}</div>` : ''}
         <div class="pricebig"><span id="pv">${start}</span> 🌰</div>
         <input class="pricerange" type="range" id="pr" min="${lo}" max="${hi}" value="${start}">
         <div class="presets">
-          <button data-v="${Math.max(lo, Math.round(base * 0.7))}">дешевле</button>
+          <button data-v="${Math.max(lo, Math.round(base * 0.7))}">${isBuy ? 'экономно' : 'дешевле'}</button>
           <button data-v="${Math.min(hi, Math.max(lo, base))}">обычная</button>
-          <button data-v="${Math.min(hi, Math.round(base * 1.5))}">дороже</button>
+          <button data-v="${Math.min(hi, Math.round(base * 1.5))}">${isBuy ? 'щедро' : 'дороже'}</button>
         </div>
         <div class="asktext" id="pdeal"></div>
         <div class="acts"><button class="a-ok">${okText}</button><button class="a-no">Отмена</button></div>`;
@@ -47,8 +48,11 @@ window.runCards = function () {
       const paint = () => {
         val.textContent = range.value;
         const v = +range.value;
-        deal.textContent = v <= base * 0.7 ? 'дёшево — купят быстро'
-          : v >= base * 1.5 ? 'дорого — можно ждать долго' : 'обычная цена';
+        deal.textContent = isBuy
+          ? (v <= base * 0.7 ? 'мало — могут не продать'
+            : v >= base * 1.5 ? 'щедро — продадут охотно' : 'обычная цена')
+          : (v <= base * 0.7 ? 'дёшево — купят быстро'
+            : v >= base * 1.5 ? 'дорого — можно ждать долго' : 'обычная цена');
       };
       range.oninput = paint; paint();
       sheet.querySelectorAll('.presets button').forEach((b) => b.onclick = () => { range.value = b.dataset.v; paint(); });
@@ -330,7 +334,7 @@ window.runCards = function () {
       if (bWant) bWant.onclick = async () => {
         const base = RAR[sel].price, lo = Math.max(1, Math.floor(base / 2)), hi = base * 3;
         const val = await askPrice(`Сколько дашь за «${c.name}»?`,
-          { base, lo, hi, hint: `${RAR[sel].name}. Друзья увидят заявку и смогут продать тебе эту карту.`, okText: 'Оставить заявку' });
+          { base, lo, hi, mode: 'buy', hint: `${RAR[sel].name}. Друзья увидят заявку и смогут продать тебе эту карту.`, okText: 'Оставить заявку' });
         if (val === null) return;
         const r2 = await api('/api/want', { type: c.id, grade: sel, price: val });
         if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }
@@ -349,7 +353,7 @@ window.runCards = function () {
         const hint = (h ? ` В вашем лесу такие уходили в среднем за ${h.avg} 🌰 (сделок: ${h.deals}).` : '')
           + ' Банк удержит 10% с продажи (с цены меньше 10 🌰 — ничего).';
         const val = await askPrice(`За сколько продать «${c.name}»?`,
-          { base, lo, hi, initial: h ? h.avg : base, hint: `${RAR[sel].name}.${hint}`, okText: 'Выставить' });
+          { base, lo, hi, initial: h ? h.avg : base, mode: 'sell', hint: `${RAR[sel].name}.${hint}`, okText: 'Выставить' });
         if (val === null) return;
         const r2 = await api('/api/card/list', { type: c.id, grade: sel, price: val });
         if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }

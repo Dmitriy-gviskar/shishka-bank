@@ -1789,6 +1789,18 @@
       "reward": 25,
       "track": "mail",
       "level": 3
-    }
+    },
+    { "code": "gord_1", "title": "Первый заказ", "desc": "Первый заказ — достигни 1 (guild_orders)", "metric": "guild_orders", "threshold": 1, "tier": 1, "reward": 0, "track": "gord", "level": 1 },
+    { "code": "gord_2", "title": "Гильдейский подмастерье", "desc": "Гильдейский подмастерье — достигни 5 (guild_orders)", "metric": "guild_orders", "threshold": 5, "tier": 2, "reward": 10, "track": "gord", "level": 2 },
+    { "code": "gord_3", "title": "Мастер заказов", "desc": "Мастер заказов — достигни 15 (guild_orders)", "metric": "guild_orders", "threshold": 15, "tier": 3, "reward": 25, "track": "gord", "level": 3 },
+    { "code": "gord_4", "title": "Опора гильдии", "desc": "Опора гильдии — достигни 30 (guild_orders)", "metric": "guild_orders", "threshold": 30, "tier": 3, "reward": 50, "track": "gord", "level": 4 },
+    { "code": "gcone_1", "title": "Гильдейский доход", "desc": "Гильдейский доход — достигни 50 (guild_cones)", "metric": "guild_cones", "threshold": 50, "tier": 1, "reward": 5, "track": "gcone", "level": 1 },
+    { "code": "gcone_2", "title": "Кормилец гильдии", "desc": "Кормилец гильдии — достигни 200 (guild_cones)", "metric": "guild_cones", "threshold": 200, "tier": 2, "reward": 15, "track": "gcone", "level": 2 },
+    { "code": "gcone_3", "title": "Золотая гильдия", "desc": "Золотая гильдия — достигни 500 (guild_cones)", "metric": "guild_cones", "threshold": 500, "tier": 3, "reward": 35, "track": "gcone", "level": 3 },
+    { "code": "gfound_1", "title": "Основатель", "desc": "Основатель — достигни 1 (guild_founded)", "metric": "guild_founded", "threshold": 1, "tier": 1, "reward": 0, "track": "gfound", "level": 1 },
+    { "code": "gfound_2", "title": "Гильдмейстер", "desc": "Гильдмейстер — достигни 3 (guild_founded)", "metric": "guild_founded", "threshold": 3, "tier": 2, "reward": 15, "track": "gfound", "level": 2 },
+    { "code": "grec_1", "title": "Вербовщик", "desc": "Вербовщик — достигни 1 (guild_members_recruited)", "metric": "guild_members_recruited", "threshold": 1, "tier": 1, "reward": 0, "track": "grec", "level": 1 },
+    { "code": "grec_2", "title": "Душа компании", "desc": "Душа компании — достигни 5 (guild_members_recruited)", "metric": "guild_members_recruited", "threshold": 5, "tier": 2, "reward": 10, "track": "grec", "level": 2 },
+    { "code": "grec_3", "title": "Лесной вожак", "desc": "Лесной вожак — достигни 12 (guild_members_recruited)", "metric": "guild_members_recruited", "threshold": 12, "tier": 3, "reward": 25, "track": "grec", "level": 3 }
   ]
 }

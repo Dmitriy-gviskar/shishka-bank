@@ -1,0 +1,39 @@
+{
+  "project": "Shishka Bank",
+  "character": "Lisa ASCENDED (Fox Divine Spirit)",
+  "source_card": "payload_lisa_6_gold.json",
+  "card_rank": "gold",
+  "meshy_tasks": {
+    "preview_task_id": "019fd896-f98b-7461-ba7d-b14420bade54",
+    "refine_task_id": "019fd899-ee5f-7cb2-9f03-7594b5dfb353"
+  },
+  "credits_spent": {
+    "preview": 20,
+    "refine": 10,
+    "total": 30
+  },
+  "prompt": "An anthropomorphic fox warrior in ASCENDED divine form, neutral heroic standing pose. Orange fur, white chest and muzzle, black paws, large fluffy tail with white tip, amber eyes. Ornate golden leaf-armor on torso and shoulders. Large glowing wings made of layered golden autumn leaves spread from back. Radiant halo of light above head. Game-ready proportions, medium build, distinct readable silhouette for third-person action game. Clean watertight closed mesh. No ground plane.",
+  "texture_prompt": "Vivid orange fur with white chest and muzzle, black paws, amber eyes. Ornate gold leaf-armor with metallic shine and engraved forest patterns. Glowing golden autumn-leaf wings with semi-translucent amber edges and iridescent gold veins. Radiant warm golden halo. PBR textures: shiny metallic gold armor, soft fuzzy fur, glowing emission on wings and halo. Vibrant saturated colors, game-ready stylized look.",
+  "settings": {
+    "model_type": "standard",
+    "ai_model": "meshy-6 (latest)",
+    "enable_pbr": true,
+    "should_remesh": true,
+    "topology": "quad",
+    "target_polycount": 50000,
+    "seed": 42,
+    "texture_richness": "high",
+    "remove_lighting": true
+  },
+  "files": {
+    "model": "fox_ascended.glb",
+    "thumbnail": "thumbnail.png",
+    "textures": {
+      "base_color": "textures/base_color.png",
+      "metallic": "textures/metallic.png",
+      "roughness": "textures/roughness.png",
+      "normal": "textures/normal.png",
+      "emission": "textures/emission.png"
+    }
+  }
+}

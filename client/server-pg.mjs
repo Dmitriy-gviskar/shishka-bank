@@ -111,6 +111,14 @@ async function sweepAuctions() {
 }
 setInterval(sweepAuctions, 60e3);   // раз в минуту
 sweepAuctions();                    // и сразу на старте — вдруг сервер лежал в момент дедлайна
+
+// Авто-сон гильдий: без активности 7 дней → sleeping
+async function sweepGuilds() {
+  try { const r = await q('select sweep_sleeping_guilds(7) as cnt'); if (r[0].cnt > 0) console.log('sweepGuilds: усыплено', r[0].cnt); }
+  catch (e) { console.error('sweepGuilds', e.message); }
+}
+setInterval(sweepGuilds, 3600e3);  // раз в час
+sweepGuilds();
 // гильдейский чат — только готовые фразы (без свободного текста, этика детского общения)
 const GUILD_PHRASES = new Set(['Собираемся!', 'Заказ готов!', 'Молодцы!', 'Нужна помощь', 'Ура!', 'Я за!']);
 // описания достижений «за что» по треку (в БД desc = title, генерим человеческое)
@@ -733,11 +741,11 @@ const api = {
 
   // ── Гильдия ──
   'GET /api/guilds': async (b, ctx) => {
-    const gs = await q("select g.id, g.name from guilds g where g.circle_id=$1 and g.status='open' order by g.created_at", [ctx.circle]);
+    const gs = await q("select g.id, g.name, g.status from guilds g where g.circle_id=$1 and g.status in ('open','sleeping') order by g.created_at", [ctx.circle]);
     const out = [];
     for (const g of gs) {
-      const members = await q('select u.id, u.name, gm.share from guild_members gm join users u on u.id=gm.child_id where gm.guild_id=$1 order by gm.share desc, u.name', [g.id]);
-      out.push({ id: g.id, name: g.name, members: members.map((m) => ({ name: m.name, share: m.share })), mine: members.some((m) => m.id === ctx.child) });
+      const members = await q('select u.id, u.name, gm.share, gm.role from guild_members gm join users u on u.id=gm.child_id where gm.guild_id=$1 order by gm.role asc, gm.share desc, u.name', [g.id]);
+      out.push({ id: g.id, name: g.name, status: g.status, members: members.map((m) => ({ id: m.id, name: m.name, share: m.share, role: m.role, mine: m.id === ctx.child })), mine: members.some((m) => m.id === ctx.child) });
     }
     return out;
   },
@@ -752,6 +760,8 @@ const api = {
   'POST /api/guild/join': async (b, ctx) => {
     await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
     await rpc('join_guild', [b.id, ctx.child]);
+    await rpc('bump_guild_activity', [b.id]).catch(() => {});
+    await q('insert into guild_history(guild_id, kind, title) values($1,$2,$3)', [b.id, 'member_joined', (await one('select name from users where id=$1', [ctx.child])).name]);
     return { ok: true };
   },
   'POST /api/guild/chat': async (b, ctx) => {   // POST: id в теле (GET-обёртка без параметров)
@@ -764,7 +774,27 @@ const api = {
     if (!GUILD_PHRASES.has(b.phrase)) throw { code: 400, msg: 'выбери фразу' };   // свободного текста нет — этика
     await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
     await q('insert into guild_messages(guild_id, from_user, content) values($1,$2,$3)', [b.id, ctx.child, b.phrase]);
+    await rpc('bump_guild_activity', [b.id]).catch(() => {});
     return { ok: true };
+  },
+  'POST /api/guild/role': async (b, ctx) => {
+    await assertOwn("select 1 from guild_members where guild_id=$1 and child_id=$2 and role='founder'", [b.id, ctx.child], 'только основатель');
+    await rpc('guild_set_role', [b.id, b.childId, b.role]);
+    return { ok: true };
+  },
+  'POST /api/guild/share': async (b, ctx) => {
+    await assertOwn("select 1 from guild_members where guild_id=$1 and child_id=$2 and role in ('founder','treasurer')", [b.id, ctx.child], 'только казначей или основатель');
+    await rpc('guild_set_share', [b.id, b.childId, b.share]);
+    return { ok: true };
+  },
+  'POST /api/guild/awaken': async (b, ctx) => {
+    await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
+    await rpc('guild_awaken', [b.id]);
+    return { ok: true };
+  },
+  'POST /api/guild/history': async (b, ctx) => {
+    await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
+    return await q('select kind, title, amount, created_at at from guild_history where guild_id=$1 order by created_at desc limit 30', [b.id]);
   },
 
   // ── Нарративный квест ──
@@ -823,8 +853,21 @@ const api = {
   'POST /api/parent/guild-payout': async (b) => {
     const amount = parseInt(b.amount, 10); if (!(amount > 0)) throw { code: 400, msg: 'укажи сумму' };
     const paid = (await rpc('guild_payout', [b.id, amount, 'Заказ гильдии выполнен']))[0].r;
-    await q('insert into guild_messages(guild_id, from_user, content) values($1,null,$2)', [b.id, `Заказ выполнен! Выплата ${amount} шишек`]);
     return { ok: true, paid };
+  },
+  'POST /api/parent/guild-task': async (b) => {
+    const title = String(b.title || '').trim().slice(0, 60); const reward = parseInt(b.reward, 10);
+    if (!title) throw { code: 400, msg: 'укажи задание' }; if (!(reward > 0)) throw { code: 400, msg: 'укажи награду' };
+    const g = await one("select circle_id, created_by from guilds where id=$1 and status in ('open','sleeping')", [b.guildId]);
+    if (!g) throw { code: 400, msg: 'гильдия не найдена' };
+    const kids = await q('select child_id from guild_members where guild_id=$1', [b.guildId]);
+    for (const k of kids) {
+      await q('insert into tasks(circle_id,child_id,title,reward,category,guild_id,guild_task_type) values($1,$2,$3,$4,$5,$6,$7)',
+        [g.circle_id, k.child_id, title, reward, 'guild', b.guildId, b.type || 'joint']);
+    }
+    await q('insert into guild_history(guild_id, kind, title, amount) values($1,$2,$3,$4)', [b.guildId, 'task_created', title, reward]);
+    await rpc('bump_guild_activity', [b.guildId]).catch(() => {});
+    return { ok: true, kids: kids.length };
   },
   'GET /api/parent/templates': () => memoGet('templates', 6e5, () =>
     q('select id,title,reward,category,needs_photo from task_templates order by category nulls last, reward, title')),
