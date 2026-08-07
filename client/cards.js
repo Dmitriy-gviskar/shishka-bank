@@ -814,24 +814,25 @@ window.runCards = function () {
   const helpBtn = document.getElementById('helpBtn');       // памятку можно перечитать в любой момент
   if (helpBtn) helpBtn.onclick = () => showIntro(true);
   const shareBtn = document.getElementById('shareBtn');
-  if (shareBtn) shareBtn.onclick = async () => {
-    const d = await api('/api/cards');
-    if (!d || d.error) return;
+  if (shareBtn) shareBtn.onclick = () => {
+    // данные коллекции уже в DATA после reload() — без await, чтобы navigator.share не терял жест
+    if (!DATA || DATA.error) return;
     const cats = { zver: '🦊', rastenie: '🌿', nasekomoe: '🐞' };
-    const lines = ['🌲 Моя лесная коллекция:', `Собрано ${d.collected} из ${d.total} существ`];
+    const lines = ['🌲 Моя лесная коллекция:', `Собрано ${DATA.collected} из ${DATA.total} существ`];
     for (const [cat, emoji] of Object.entries(cats)) {
-      const c = (d.cards || []).filter((x) => x.category === cat);
+      const c = (DATA.cards || []).filter((x) => x.category === cat);
       const full = c.filter((x) => x.grades.filter((g) => g.qty > 0).length === 6).length;
       if (c.length) lines.push(`${emoji} ${full}/${c.length} полностью`);
     }
-    const specials = (d.cards || []).filter((x) => x.category === 'special' && x.grades.some((g) => g.qty > 0));
+    const specials = (DATA.cards || []).filter((x) => x.category === 'special' && x.grades.some((g) => g.qty > 0));
     if (specials.length) lines.push(`🎖 ${specials.length} особых карт`);
     const text = lines.join('\n');
     const url = 'https://elka-kvest-2026.ru/collection.html';
     if (navigator.share) {
-      try { await navigator.share({ title: 'Моя коллекция Шишка Банк', text, url }); } catch {}
+      // синхронный вызов внутри обработчика клика — user gesture сохранён
+      try { navigator.share({ title: 'Моя коллекция Шишка Банк', text, url }).catch(() => {}); } catch {}
     } else {
-      await navigator.clipboard.writeText(text + '\n' + url).then(() => alert('Ссылка скопирована!')).catch(() => prompt('Твоя коллекция:', text + '\n' + url));
+      navigator.clipboard.writeText(text + '\n' + url).then(() => alert('Ссылка скопирована!')).catch(() => prompt('Твоя коллекция:', text + '\n' + url));
     }
   };
   reload().then(showIntro);
