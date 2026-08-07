@@ -308,13 +308,23 @@ if (page === 'transfers.html') {
   } else loadFriends();
   document.querySelectorAll('.apick .ap').forEach((a) => a.onclick = () => {
     document.querySelectorAll('.apick .ap').forEach((x) => x.classList.remove('sel')); a.classList.add('sel'); giftAmount = +a.dataset.a; });
-  document.querySelectorAll('.postcards .pc').forEach((p) => p.onclick = () => {
-    document.querySelectorAll('.postcards .pc').forEach((x) => x.classList.remove('sel')); p.classList.add('sel'); });
   const anon = document.getElementById('anon');
-  if (anon) anon.onchange = () => {   // тайный подарок — без открытки (это сюрприз)
-    const cards = document.querySelector('.cards'); if (cards) cards.style.display = anon.checked ? 'none' : '';
+  if (anon) anon.onchange = () => {
     const btn2 = document.querySelector('.btn-lg'); if (btn2 && !qrRecipient) btn2.textContent = anon.checked ? 'Отправить тайно' : 'Отправить подарок';
   };
+  // входящие подарки — кто и сколько подарил
+  api('/api/gifts/received').then((list) => {
+    const c = document.getElementById('giftsReceived');
+    if (!c || list.error) return;
+    if (!list.length) { c.innerHTML = '<div style="text-align:center;padding:8px;color:#a1876a;font-weight:700;font-size:13px">Подарков пока нет</div>'; return; }
+    c.innerHTML = list.map((g) => {
+      const when = new Date(g.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+      return `<div style="display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;gap:8px">
+        <span style="font-weight:900;color:var(--ink);font-size:14px">${esc(g.sender)}</span>
+        <span style="margin-left:auto;font-weight:900;color:#5f8e37">+${g.amount} 🌰</span>
+        <span style="font-size:11px;color:#a1876a">${when}</span></div>`;
+    }).join('');
+  });
   const btn = document.querySelector('.btn-lg');
   if (btn) btn.onclick = async () => {
     const custom = parseInt(document.getElementById('payAmt')?.value, 10);

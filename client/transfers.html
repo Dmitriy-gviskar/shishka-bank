@@ -12,14 +12,6 @@
   .amount{margin-top:12px;text-align:center;background:#fbf4e2;border:3px solid #d9c39a;border-radius:16px;padding:10px}
   .amount .n{font-size:46px;font-weight:900;color:var(--brown);line-height:1}
   .amount .l{font-weight:800;color:var(--brown);font-size:15px}
-  .cards{margin-top:12px}
-  .cards h3{text-align:center;color:var(--ink);font-weight:900;font-size:16px;margin-bottom:8px}
-  .postcards{display:flex;gap:8px;justify-content:center}
-  .pc{width:78px;height:64px;border-radius:12px;border:3px solid #d9c39a;background:#fff7e8;cursor:pointer}
-  .pc.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,182,75,.35)}
-  .pc:nth-child(1){background:linear-gradient(135deg,#ffe6a8,#f5c96a)}
-  .pc:nth-child(2){background:linear-gradient(135deg,#c7e6a0,#8ec44f)}
-  .pc:nth-child(3){background:linear-gradient(135deg,#ffd3c9,#e8a99a)}
   .apick{margin-top:12px;display:flex;gap:8px;justify-content:center}
   .apick .ap{background:#fbf4e2;border:3px solid #d9c39a;border-radius:14px;padding:9px 20px;
     font-weight:900;color:var(--brown);cursor:pointer;font-size:20px}
@@ -29,13 +21,12 @@
   <div class="title">Подарить шишки</div>
   <div class="friends" id="friendList"></div>
   <div class="apick"><div class="ap" data-a="10">10</div><div class="ap sel" data-a="25">25</div><div class="ap" data-a="50">50</div></div>
-  <div class="cards"><h3>Выбери открытку</h3>
-    <div class="postcards"><div class="pc sel" data-c="0"></div><div class="pc" data-c="1"></div><div class="pc" data-c="2"></div></div>
-  </div>
   <label id="anonRow" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;font-weight:800;color:var(--brown);cursor:pointer">
     <input type="checkbox" id="anon" style="width:20px;height:20px"> Отправить тайно (Шишка-сюрприз)
   </label>
   <button class="btn btn-lg">Отправить подарок</button>
+  <h3 style="margin-top:16px">Кто тебе подарил</h3>
+  <div id="giftsReceived" style="max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
   <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:10px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
 </div></div><script src="app.js"></script>
 <script src="nav.js"></script>

@@ -273,6 +273,10 @@ const api = {
     sendPush(b.to, "🎁 Шишка-сюрприз!", "Кто-то прислал тебе анонимный подарок").catch(() => {});
     return { ok: true, balance: w.balance };
   },
+  'GET /api/gifts/received': (b, ctx) => q(`select t.amount, u.name as sender, t.created_at at
+    from transactions t join users u on u.id=t.from_user
+    where t.to_user=$1 and t.type='transfer' and t.from_user is not null
+    order by t.created_at desc limit 20`, [ctx.child]),
   'GET /api/surprises': (b, ctx) => q(`select t.id, t.amount, t.revealed, t.created_at at,
       case when t.revealed then u.name else null end as sender
     from transactions t left join users u on u.id=t.from_user

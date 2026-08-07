@@ -386,35 +386,6 @@ window.runCards = function () {
     if (document.getElementById('tabMarket').classList.contains('on')) renderMarket();
   }
 
-  // честные шансы выпадения (веса открыты — красная линия)
-  document.getElementById('oddsBtn').onclick = () => {
-    if (!DATA) return;
-    const total = DATA.rarities.reduce((s, r) => s + (r.weight || 0), 0) || 100;
-    const rows = DATA.rarities.map((r) => {
-      const pct = ((r.weight || 0) / total * 100);
-      return `<div class="gr has" style="--gc:${r.color}"><span class="dot"></span>
-        <span class="gn">${r.name}</span>
-        <span class="gq">${pct % 1 === 0 ? pct : pct.toFixed(1)}%</span></div>`;
-    }).join('');
-    const sh = document.getElementById('oddsSheet');
-    const p = DATA.pity;
-    const active = (DATA.seasons || []).find((s) => s.status === 'active');
-    sh.innerHTML = `<button class="x">&times;</button>
-      <h3>Шансы выпадения</h3>
-      <div class="sub">В паке 7 карт. У каждой — свой шанс:</div>
-      <div class="grades">${rows}</div>
-      ${p ? `<div class="guar"><b>Без удачи тоже не останешься</b>
-        Каждый 10-й пак приносит карту, которой у тебя ещё нет.
-        Каждый 50-й — карту Эпическую или выше из тех, что у тебя не собраны.
-        ${p.to_new === p.to_top ? `Следующий такой пак — через ${p.to_new}.`
-          : `Новая карта — через ${p.to_new}, Эпическая+ — через ${p.to_top}.`}</div>` : ''}
-      ${active ? `<div class="sub" style="line-height:1.4">Собрано ${d.collected} из ${d.total} существ. Карты можно выменять или купить у друзей.</div>` : ''}
-      <div class="sub" style="margin-top:8px;line-height:1.4">Мы честно показываем шансы. Шишки нельзя купить за деньги — только заработать. 🌲</div>`;
-    sh.querySelector('.x').onclick = () => document.getElementById('oddsOv').classList.remove('on');
-    document.getElementById('oddsOv').classList.add('on');
-  };
-  document.getElementById('oddsOv').onclick = (e) => { if (e.target.id === 'oddsOv') document.getElementById('oddsOv').classList.remove('on'); };
-
   // ── Обменная полка: 5 лишних карт одного ранга → 1 недостающая того же ранга ──
   function openExchange() {
     if (!DATA) return;
