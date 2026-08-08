@@ -68,7 +68,7 @@ window.runCards = function () {
     DATA = d;
     RAR = {}; d.rarities.forEach((r) => RAR[r.grade] = r);
     LORE = {}; (d.lore || []).forEach((l) => LORE[l.category + ':' + l.grade] = l);   // титул+фраза по категории и грейду
-    FAM = d.familiar || null;
+    FAM = d.familiars || [];
     FACTS = {}; (d.facts || []).forEach((f) => FACTS[f.code] = f.fact);   // только за собранных целиком
     HIST = {}; (d.history || []).forEach((h) => HIST[h.code + ':' + h.grade] = h);   // за сколько такие уходили в круге
     MARKET = d.market_allowed !== false;   // ведущий может закрыть торговлю ребёнку
@@ -197,10 +197,11 @@ window.runCards = function () {
       const offers = LOTS.filter((l) => l.code === c.code && l.grade === sel && !l.mine)
         .sort((a, b) => a.price - b.price);
       const myWant = WANTS.find((w) => w.mine && w.code === c.code && w.grade === sel);
+      const otherWants = WANTS.filter((w) => !w.mine && w.code === c.code && w.grade === sel);
       let acts = '';
       if (isSpecial && gr.qty > 0) {
         acts = `<div class="sub">Памятная карта${c.occasion ? `: ${c.occasion.toLowerCase()}` : ''}. Её не продают — но можно подарить другу.</div>`
-          + `<button class="a-fam">${FAM && FAM.type === c.id && FAM.grade === sel ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`
+          + `<button class="a-fam">${FAM.some((f) => f.type === c.id && f.grade === sel) ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`
           + `<button class="a-gift">🎁 Подарить другу</button>`;
       } else if (isSpecial && gr.qty === 0) {
         acts = `<div class="sub">Такую карту не выпадет из пака — её вручает ведущий${c.occasion ? `: ${c.occasion.toLowerCase()}` : ''}.</div>`;
@@ -221,7 +222,7 @@ window.runCards = function () {
           if (MARKET) acts += sel >= 6 ? `<button class="a-auc">🔨 На аукцион · 24 часа</button>`
                                         : `<button class="a-list">🏷 Выставить на рынок</button>`;
         }
-        const isFam = FAM && FAM.type === c.id && FAM.grade === sel;
+        const isFam = FAM.some((f) => f.type === c.id && f.grade === sel);
         acts += `<button class="a-fam">${isFam ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`;
         acts += `<button class="a-gift">🎁 Подарить другу</button>`;
       } else {
@@ -244,8 +245,9 @@ window.runCards = function () {
         ${FACTS[c.code] ? `<div class="fact"><b>Знаешь ли ты?</b> ${FACTS[c.code]}</div>`
           : (!isSpecial && have6 < 6 ? `<div class="factlock">Собери все 6 карт — узнаешь про ${c.name.toLowerCase()} кое-что настоящее</div>` : '')}
         ${isSpecial ? '' : `<div class="grades">${rows}</div>`}
-        <div class="acts">${acts}</div>
-        <div class="note2" id="dnote"></div>`;
+         <div class="acts">${acts}</div>
+         ${otherWants.length ? `<div class="sub" style="margin-top:4px;line-height:1.5">🙋 Ищут: ${otherWants.map((w) => `${esc(w.buyer)} за ${w.price}🌰`).join(', ')}</div>` : ''}
+         <div class="note2" id="dnote"></div>`;
       sheet.querySelector('.x').onclick = closeDetail;
       sheet.querySelectorAll('.gr').forEach((el) => el.onclick = () => { sel = +el.dataset.g; draw(); });
       const dnote = sheet.querySelector('#dnote');
@@ -319,10 +321,11 @@ window.runCards = function () {
       };
       const bFam = sheet.querySelector('.a-fam');
       if (bFam) bFam.onclick = async () => {
-        const isFam = FAM && FAM.type === c.id && FAM.grade === sel;
-        const r2 = await api('/api/familiar', isFam ? {} : { type: c.id, grade: sel });
+        const isFam = FAM.some((f) => f.type === c.id && f.grade === sel);
+        const r2 = await api('/api/familiar', isFam ? { type: c.id, grade: sel, remove: true } : { type: c.id, grade: sel });
         if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; return; }
-        FAM = isFam ? null : { type: c.id, grade: sel };
+        if (isFam) FAM = FAM.filter((f) => !(f.type === c.id && f.grade === sel));
+        else FAM.push({ type: c.id, grade: sel });
         draw();
         const dn = sheet.querySelector('#dnote');
         dn.textContent = isFam ? 'Питомец снят с поляны' : '⭐ Теперь он живёт на твоей поляне!';

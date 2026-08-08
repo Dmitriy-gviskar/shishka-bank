@@ -198,23 +198,24 @@ const api = {
 
   'GET /api/state': async (b, ctx) => {
     const [u, w] = await Promise.all([
-      one("select name,tree_level,tree_type,avatar_skin,current_streak,familiar_type,familiar_grade, (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily from users where id=$1", [ctx.child]),
+      one("select name,tree_level,tree_type,avatar_skin,current_streak, (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily from users where id=$1", [ctx.child]),
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
     ]);
-    // питомец на поляне: код ассета + титул грейда (если ребёнок его выбрал)
-    let familiar = null;
-    if (u.familiar_type) {
-      familiar = await one(`select t.code, t.name, $2::int as grade, l.title, r.color
-        from card_types t left join card_lore l on l.category=t.category and l.grade=$2
-        left join rarities r on r.grade=$2 where t.id=$1`, [u.familiar_type, u.familiar_grade]);
-    }
+    // питомцы на поляне: массив (до 5), каждый с фразой
+    const familiars = await q(`select t.code, t.name, t.category, f.grade, l.title, r.color,
+        coalesce((select phrase from familiar_phrases fp
+          where fp.category in (t.category,'any') order by random() limit 1), 'Привет!') as phrase
+      from familiars f join card_types t on t.id=f.type_id
+      left join card_lore l on l.category=t.category and l.grade=f.grade
+      left join rarities r on r.grade=f.grade
+      where f.user_id=$1 order by f.slot`, [ctx.child]);
     let tree_asset = TREE[u.tree_type] || 'tree.webp', skin_on = false;
-    if (u.avatar_skin && u.avatar_skin !== 'base') {   // avatar_skin = uuid скина → его asset
+    if (u.avatar_skin && u.avatar_skin !== 'base') {
       const sk = await one('select title from shop_items where id=$1', [u.avatar_skin]);
       if (sk && SKIN_ASSET[sk.title] && SKIN_ASSET[sk.title] !== 'base') { tree_asset = SKIN_ASSET[sk.title] + '.png'; skin_on = true; }
     }
     return { name: u.name, tree_level: u.tree_level, balance: w.balance, total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
-             streak: u.current_streak, can_claim_daily: u.can_claim_daily, familiar };
+             streak: u.current_streak, can_claim_daily: u.can_claim_daily, familiars };
   },
 
   // Ежедневный подарок: серия + растущий бонус + вехи + авто-защитник (всё в daily_visit)
@@ -393,9 +394,10 @@ const api = {
   },
 
   // ── Общий котёл ──
-  'GET /api/pot': (b, ctx) => q(`select p.id, p.title, p.goal, p.collected, p.status, g.name as guild, coalesce(u.name,'семья') as author
+  'GET /api/pot': (b, ctx) => q(`select p.id, p.title, p.goal, p.collected, p.status, p.created_by, g.name as guild, coalesce(u.name,'семья') as author
     from pots p left join guilds g on g.id=p.guild_id left join users u on u.id=p.created_by
-    where p.circle_id=$1 and p.status in ('open','reached') order by p.created_at desc`, [ctx.circle]),
+    where p.circle_id=$1 and p.status in ('open','reached') order by p.created_at desc`, [ctx.circle])
+    .then((rows) => rows.map((r) => ({ ...r, mine: r.created_by === ctx.child, created_by: undefined }))),
   'POST /api/pot/create': async (b, ctx) => {
     const title = String(b.title || '').trim().slice(0, 40);
     const goal = parseInt(b.goal, 10);
@@ -412,6 +414,13 @@ const api = {
     try { pot = (await rpc('contribute_pot', [ctx.child, b.id, parseInt(b.amount, 10)]))[0]; }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'нет котла' }; }
     return { ok: true, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance, collected: pot.collected, goal: pot.goal };
+  },
+  'POST /api/pot/delete': async (b, ctx) => {
+    const p = await one('select created_by from pots where id=$1 and circle_id=$2', [b.id, ctx.circle]);
+    if (!p) throw { code: 400, msg: 'котёл не найден' };
+    if (p.created_by !== ctx.child) throw { code: 400, msg: 'только создатель может удалить котёл' };
+    await q("update pots set status='fulfilled' where id=$1", [b.id]);
+    return { ok: true };
   },
 
   // ── Гороскоп ──
@@ -446,7 +455,7 @@ const api = {
       q('select category, grade, title, lore from card_lore'),
       q('select code, name, sort, status from card_seasons order by sort'),
       one('select packs_opened from users where id=$1', [ctx.child]),
-      one('select familiar_type as type, familiar_grade as grade, market_allowed from users where id=$1', [ctx.child]),
+      q('select type_id as type, grade from familiars where user_id=$1', [ctx.child]),
       // факт открывается только за собранное целиком существо — иначе его можно было бы подсмотреть
       q(`select t.code, l.grade, round(avg(l.price))::int as avg, count(*)::int as deals
          from card_listings l join card_types t on t.id=l.type_id
@@ -467,15 +476,21 @@ const api = {
     // гарант: каждый 10-й пак — недостающая карта, каждый 50-й — недостающая Эпическая+
     const opened = (packs && packs.packs_opened) || 0;
     const pity = { opened, to_new: 10 - (opened % 10), to_top: 50 - (opened % 50) };
+    const marketAllowed = await one('select market_allowed from users where id=$1', [ctx.child]);
+    const familiars = (fam || []).filter((f) => f.type);
     return { rarities: rar, cards, lore, facts, history, seasons, pity,
-             market_allowed: fam ? fam.market_allowed : true,
-             familiar: fam && fam.type ? fam : null,
+             market_allowed: marketAllowed ? marketAllowed.market_allowed : true,
+             familiars,
              collected: cards.filter((c) => c.owned && c.category !== 'special').length,
              total: cards.filter((c) => c.category !== 'special').length };
   },
-  'POST /api/familiar': async (b, ctx) => {   // питомец на поляне: карта, выбранная ребёнком
-    try { return await one('select set_familiar($1,$2,$3) as v', [ctx.child, b.type || null, b.grade || null]).then((r) => r.v); }
-    catch (e) { throw { code: 400, msg: /no card/.test(e.message) ? 'этой карты у тебя нет' : 'нельзя' }; }
+  'POST /api/familiar': async (b, ctx) => {
+    try {
+      if (b.remove) return await one('select remove_familiar($1,$2,$3) as v', [ctx.child, b.type, b.grade]).then((r) => r.v);
+      return await one('select add_familiar($1,$2,$3) as v', [ctx.child, b.type, b.grade]).then((r) => r.v);
+    }
+    catch (e) { throw { code: 400, msg: /no card/.test(e.message) ? 'этой карты у тебя нет'
+      : /already/.test(e.message) ? 'уже твой питомец' : /max 5/.test(e.message) ? 'максимум 5 питомцев' : 'нельзя' }; }
   },
   'POST /api/pack/open': async (b, ctx) => {
     let r;

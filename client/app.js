@@ -530,7 +530,7 @@ if (page === 'pot.html') {
       const pct = Math.min(100, Math.round(p.collected / p.goal * 100));
       const full = p.collected >= p.goal;
       const el = document.createElement('div'); el.className = 'card pcard';
-      el.innerHTML = `${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
+      el.innerHTML = `${p.mine ? '<button class="mini potDel" style="float:right;font-size:16px;line-height:1;padding:2px 6px" title="Удалить">×</button>' : ''}${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
         <div class="pn">${esc(p.title)}</div><div class="pa">поставил: ${esc(p.author)}</div>
         <div class="scale"><i style="width:${pct}%"></i><span>${p.collected} / ${p.goal}</span></div>
         ${full ? '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута!</div>'
@@ -539,6 +539,12 @@ if (page === 'pot.html') {
       let amt = 5;
       el.querySelectorAll('.give .s').forEach((t) => t.onclick = () => {
         el.querySelectorAll('.give .s').forEach((x) => x.classList.remove('sel')); t.classList.add('sel'); amt = +t.dataset.a; });
+      const del = el.querySelector('.potDel');
+      if (del) del.onclick = async () => {
+        if (!confirm('Удалить котёл «' + p.title + '»?')) return;
+        const r = await api('/api/pot/delete', { id: p.id });
+        if (r.error) note(r.error); else loadPots();
+      };
       const btn = el.querySelector('.give .btn');
       if (btn) btn.onclick = async () => {
         const r = await api('/api/pot/contribute', { id: p.id, amount: amt });
@@ -1256,17 +1262,24 @@ if (page === 'parent.html') {
   loadKids(); loadPending(); loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
 }
 
-// ── Питомец на поляне: карта, выбранная ребёнком в коллекции ──
+// ── Питомцы на поляне: до 5 карт, каждая с фразой ──
 if (page === 'forest.html') {
   api('/api/state').then((s) => {
-    const box = document.getElementById('fam'); const f = s && s.familiar;
-    if (!box || !f) return;
-    box.style.setProperty('--fc', f.color || '#ffc21f');
-    box.innerHTML = `<img src="assets/cards/thumb/${f.code}_${f.grade}.webp" alt="${esc(f.name)}">
-      <div class="fi"><div class="fn">${esc(f.name)}</div><div class="ft">${esc(f.title || '')}</div></div>
-      <div class="fgo">→</div>`;
-    box.style.display = 'flex';
-    box.onclick = () => navigate('collection.html');
+    const cont = document.getElementById('famList');
+    if (!cont) return;
+    const fams = s && s.familiars;
+    if (!fams || !fams.length) { cont.innerHTML = '<div style="text-align:center;color:#a1876a;font-weight:700;padding:8px">Питомцев пока нет — сделай карту питомцем в коллекции!</div>'; return; }
+    cont.innerHTML = fams.map((f) => {
+      return `<div class="famCard" style="--fc:${f.color || '#ffc21f'};display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:6px;background:rgba(255,250,240,.85);border:2px solid var(--fc);border-radius:14px;cursor:pointer"
+          onclick="navigate('collection.html')">
+        <img src="assets/cards/thumb/${f.code}_${f.grade}.webp" alt="${esc(f.name)}" style="width:48px;height:48px;object-fit:contain;border-radius:10px;flex:none">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;color:var(--ink);font-size:14px">${esc(f.name)}</div>
+          <div style="font-size:11px;color:#a1876a;font-weight:700;margin-top:1px">${esc(f.title || '')}</div>
+          <div style="font-size:12px;color:var(--brown);font-style:italic;margin-top:2px">«${esc(f.phrase || 'Привет!')}»</div>
+        </div>
+      </div>`;
+    }).join('');
   });
 }
 
