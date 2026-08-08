@@ -78,3 +78,34 @@ insert into familiar_phrases(category, mood, phrase) values
   ('special','happy','Ты особенный, и я тоже!'),
   ('special','wise','Помни: ты — легенда этого леса.')
   on conflict do nothing;
+
+-- 5. Диалоговые фразы: ответы питомца на действия ребёнка
+create table if not exists familiar_dialogs (
+  id       uuid primary key default gen_random_uuid(),
+  category text not null default 'any',
+  trigger  text not null,  -- greet / howareyou / secret / play / task_done / card_sold / gift_sent
+  phrase   text not null
+);
+
+insert into familiar_dialogs(category, trigger, phrase) values
+  ('any','greet','Привет-привет! Рад тебя видеть на поляне.'),
+  ('any','greet','О, ты пришёл! Я как раз думал о тебе.'),
+  ('any','howareyou','У меня всё отлично! А у тебя как дела?'),
+  ('any','howareyou','Лес сегодня особенно красивый. Чувствую себя прекрасно!'),
+  ('zver','howareyou','Шерсть блестит, когти острые — всё путём!'),
+  ('rastenie','howareyou','Новый листок распустился — жизнь хороша!'),
+  ('nasekomoe','howareyou','Жжжж! Крылья гудят от радости.'),
+  ('any','secret','Хочешь секрет? Задания с фотоотчётом приносят больше шишек!'),
+  ('any','secret','Говорят, в дупле старого дуба спрятан клад. Но это не точно.'),
+  ('zver','secret','Самые редкие карты выпадают тем, кто не пропускает ни дня.'),
+  ('rastenie','secret','Если поливать дерево каждый день — оно вырастет до небес.'),
+  ('special','secret','Ты — избранный. Лес выбрал тебя не случайно.'),
+  ('any','play','Давай! Я знаю отличную игру — кто больше заданий сделает за день?'),
+  ('any','play','Сыграем в лесную угадайку? Я загадал зверя — попробуй угадать!'),
+  ('zver','play','Побежали наперегонки! ... Ладно, ты выиграл. В этот раз.'),
+  ('nasekomoe','play','Давай полетаем над лесом! Закрой глаза и представь...'),
+  ('any','task_done','Молодец! Ещё одно задание позади. Ты растёшь!'),
+  ('any','task_done','Так держать! Скоро ты станешь легендой леса.'),
+  ('any','card_sold','Хорошая сделка! Шишки не должны лежать без дела.'),
+  ('any','gift_sent','Подарок — это здорово! Друзья это ценят.')
+  on conflict do nothing;

@@ -1262,7 +1262,7 @@ if (page === 'parent.html') {
   loadKids(); loadPending(); loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
 }
 
-// ── Питомцы на поляне: до 5 карт, каждая с фразой ──
+// ── Питомцы на поляне: до 5 карт, каждая с фразой + диалог ──
 if (page === 'forest.html') {
   api('/api/state').then((s) => {
     const cont = document.getElementById('famList');
@@ -1270,8 +1270,7 @@ if (page === 'forest.html') {
     const fams = s && s.familiars;
     if (!fams || !fams.length) { cont.innerHTML = '<div style="text-align:center;color:#a1876a;font-weight:700;padding:8px">Питомцев пока нет — сделай карту питомцем в коллекции!</div>'; return; }
     cont.innerHTML = fams.map((f) => {
-      return `<div class="famCard" style="--fc:${f.color || '#ffc21f'};display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:6px;background:rgba(255,250,240,.85);border:2px solid var(--fc);border-radius:14px;cursor:pointer"
-          onclick="navigate('collection.html')">
+      return `<div class="famCard" style="--fc:${f.color || '#ffc21f'};display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:6px;background:rgba(255,250,240,.85);border:2px solid var(--fc);border-radius:14px;cursor:pointer">
         <img src="assets/cards/thumb/${f.code}_${f.grade}.webp" alt="${esc(f.name)}" style="width:48px;height:48px;object-fit:contain;border-radius:10px;flex:none">
         <div style="flex:1;min-width:0">
           <div style="font-weight:900;color:var(--ink);font-size:14px">${esc(f.name)}</div>
@@ -1280,7 +1279,42 @@ if (page === 'forest.html') {
         </div>
       </div>`;
     }).join('');
+    // тап по питомцу → диалог
+    cont.querySelectorAll('.famCard').forEach((el, i) => {
+      el.onclick = () => openFamiliarTalk(fams[i]);
+    });
   });
+
+  async function openFamiliarTalk(f) {
+    const ov = document.getElementById('talkOv'), bubble = document.getElementById('talkBubble');
+    const btns = document.getElementById('talkBtns');
+    document.getElementById('talkImg').src = `assets/cards/${f.code}_${f.grade}.webp`;
+    document.getElementById('talkName').textContent = f.name;
+    ov.classList.add('on');
+
+    const say = async (trigger) => {
+      bubble.textContent = '...';
+      const r = await api('/api/familiar/talk', { type: f.type, grade: f.grade, trigger });
+      bubble.textContent = r.phrase || '...';
+    };
+
+    const actions = [
+      ['👋 Привет!', 'greet'],
+      ['💚 Как дела?', 'howareyou'],
+      ['🤫 Расскажи секрет', 'secret'],
+      ['🎮 Давай играть!', 'play'],
+    ];
+    btns.innerHTML = actions.map(([label, trigger]) =>
+      `<button class="btn btn-sm" style="background:#fff7e8;border:2px solid #d9c39a;color:var(--brown);font-weight:800">${label}</button>`
+    ).join('');
+    btns.querySelectorAll('button').forEach((btn, j) => {
+      btn.onclick = () => say(actions[j][1]);
+    });
+
+    await say('greet');
+  }
+  document.getElementById('talkClose').onclick = () => document.getElementById('talkOv').classList.remove('on');
+  document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') e.target.classList.remove('on'); };
 }
 
 // ══════════════ Лесная коллекция (карточки) ══════════════

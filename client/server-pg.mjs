@@ -202,7 +202,7 @@ const api = {
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
     ]);
     // питомцы на поляне: массив (до 5), каждый с фразой
-    const familiars = await q(`select t.code, t.name, t.category, f.grade, l.title, r.color,
+    const familiars = await q(`select f.type_id as type, t.code, t.name, t.category, f.grade, l.title, r.color,
         coalesce((select phrase from familiar_phrases fp
           where fp.category in (t.category,'any') order by random() limit 1), 'Привет!') as phrase
       from familiars f join card_types t on t.id=f.type_id
@@ -483,6 +483,14 @@ const api = {
              familiars,
              collected: cards.filter((c) => c.owned && c.category !== 'special').length,
              total: cards.filter((c) => c.category !== 'special').length };
+  },
+  'POST /api/familiar/talk': async (b, ctx) => {
+    const f = await one('select t.category from familiars fm join card_types t on t.id=fm.type_id where fm.user_id=$1 and fm.type_id=$2 and fm.grade=$3',
+      [ctx.child, b.type, b.grade]);
+    if (!f) throw { code: 400, msg: 'нет такого питомца' };
+    const phrase = await one(`select phrase from familiar_dialogs
+      where category in ($1,'any') and trigger=$2 order by random() limit 1`, [f.category, b.trigger || 'greet']);
+    return { phrase: phrase ? phrase.phrase : 'Мяу? То есть... привет!' };
   },
   'POST /api/familiar': async (b, ctx) => {
     try {

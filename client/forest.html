@@ -26,6 +26,14 @@
 <div class="phone"><div class="wrap">
   <div class="title">Лесная поляна</div>
   <div id="famList"></div>
+  <!-- диалог с питомцем -->
+  <div class="ov" id="talkOv"><div class="sheet" id="talkSheet" style="max-width:320px;text-align:center">
+    <button class="x" id="talkClose">&times;</button>
+    <img id="talkImg" src="" style="width:90px;height:120px;object-fit:cover;border-radius:14px;margin-bottom:6px">
+    <h3 id="talkName" style="margin:0 0 4px">...</h3>
+    <div id="talkBubble" style="background:#f6ecd6;border-radius:14px;padding:10px 14px;font-weight:700;color:var(--ink);font-size:14px;line-height:1.4;margin-bottom:10px;min-height:40px">...</div>
+    <div id="talkBtns" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div></div>
   <div id="grid">
     <a class="tile" href="collection.html"><img src="assets/chest_closed.webp"><span>Коллекция</span></a>
     <a class="tile" href="deposit.html"><img src="assets/tree.webp"><span>Дупло</span></a>
