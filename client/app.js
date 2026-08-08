@@ -1312,8 +1312,8 @@ if (page === 'forest.html') {
 
     await say('greet');
   }
-  document.getElementById('talkClose').onclick = () => document.getElementById('talkOv').classList.remove('on');
-  document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') e.target.classList.remove('on'); };
+  if (document.getElementById('talkClose')) document.getElementById('talkClose').onclick = () => document.getElementById('talkOv').classList.remove('on');
+  if (document.getElementById('talkOv')) document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') e.target.classList.remove('on'); };
 
   // ── Игра: таблица умножения ──
   let gameQuestions = [], gameIdx = 0, gameCorrect = 0, gameReward = 0;
@@ -1341,7 +1341,7 @@ if (page === 'forest.html') {
     document.getElementById('gameA').focus();
   }
 
-  document.getElementById('gameBtn').onclick = async () => {
+  if (document.getElementById('gameBtn')) document.getElementById('gameBtn').onclick = async () => {
     const val = parseInt(document.getElementById('gameA').value, 10);
     if (isNaN(val)) return;
     const q = gameQuestions[gameIdx];

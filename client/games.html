@@ -35,11 +35,26 @@
     </div>
   </div></div>
   <div id="grid">
-    <div class="tile" onclick="window._startMultiply&&window._startMultiply()"><img src="assets/chest_closed.webp"><span class="tn">✖️ Умножение</span><span class="td">Таблица умножения<br>для 7–12 лет</span></div>
-    <div class="tile" onclick="window._startGuess&&window._startGuess()"><img src="assets/spirit_scroll.webp"><span class="tn">🔍 Угадайка</span><span class="td">Лесные загадки<br>про животных</span></div>
-    <div class="tile" onclick="window._startCount&&window._startCount()"><img src="assets/coin1.webp"><span class="tn">⏱ Блиц-счёт</span><span class="td">Сложение и вычитание<br>на скорость</span></div>
+    <div class="tile" id="gmMultiply"><img src="assets/chest_closed.webp"><span class="tn">✖️ Умножение</span><span class="td">Таблица умножения<br>для 7–12 лет</span></div>
+    <div class="tile" id="gmGuess"><img src="assets/spirit_scroll.webp"><span class="tn">🔍 Угадайка</span><span class="td">Лесные загадки<br>про животных</span></div>
+    <div class="tile" id="gmCount"><img src="assets/coin1.webp"><span class="tn">⏱ Блиц-счёт</span><span class="td">Сложение и вычитание<br>на скорость</span></div>
   </div>
 </div></div>
 <script src="app.js"></script>
 <script src="nav.js"></script>
+<script>
+  // Привязка кликов после инициализации app.js
+  (function bindGames() {
+    if (window._startMultiply) {
+      var m = document.getElementById('gmMultiply');
+      var g = document.getElementById('gmGuess');
+      var c = document.getElementById('gmCount');
+      if (m) m.onclick = window._startMultiply;
+      if (g) g.onclick = window._startGuess;
+      if (c) c.onclick = window._startCount;
+    } else {
+      setTimeout(bindGames, 100);
+    }
+  })();
+</script>
 </body></html>
