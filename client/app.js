@@ -1302,21 +1302,12 @@ if (page === 'forest.html') {
       ['👋 Привет!', 'greet'],
       ['💚 Как дела?', 'howareyou'],
       ['🤫 Расскажи секрет', 'secret'],
-      ['✖️ Таблица умножения', 'multiply'],
-      ['🔍 Лесная угадайка', 'guess'],
-      ['⏱ Блиц-счёт', 'count'],
     ];
-    const gameTriggers = { multiply: actions.length - 3, guess: actions.length - 2, count: actions.length - 1 };
     btns.innerHTML = actions.map(([label, trigger]) =>
       `<button class="btn btn-sm" style="background:#fff7e8;border:2px solid #d9c39a;color:var(--brown);font-weight:800">${label}</button>`
     ).join('');
     btns.querySelectorAll('button').forEach((btn, j) => {
-      btn.onclick = () => {
-        if (j === gameTriggers.multiply) { document.getElementById('talkOv').classList.remove('on'); startMultiplyGame(); }
-        else if (j === gameTriggers.guess) { document.getElementById('talkOv').classList.remove('on'); startGuessGame(); }
-        else if (j === gameTriggers.count) { document.getElementById('talkOv').classList.remove('on'); startCountGame(); }
-        else say(actions[j][1]);
-      };
+      btn.onclick = () => say(actions[j][1]);
     });
 
     await say('greet');

@@ -1,0 +1,45 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Развивающие игры</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg.webp)}
+  #grid{flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(2,1fr);
+    gap:14px;padding:14px 6px 16px}
+  #grid::-webkit-scrollbar{width:0}
+  .tile{background:var(--card);border:3px solid #cbb083;border-radius:20px;padding:18px 10px 14px;
+    text-align:center;text-decoration:none;box-shadow:0 4px 0 rgba(107,79,58,.22);
+    display:flex;flex-direction:column;align-items:center;gap:8px;transition:transform .08s;cursor:pointer}
+  .tile:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(107,79,58,.22)}
+  .tile img{width:82px;height:82px;object-fit:contain;filter:drop-shadow(0 3px 4px var(--shadow))}
+  .tile .tn{font-weight:900;color:var(--ink);font-size:16px}
+  .tile .td{font-weight:700;color:#a1876a;font-size:12px;line-height:1.3;text-align:center}
+  .ov{position:absolute;inset:0;z-index:30;background:rgba(20,26,18,.82);display:none;
+    align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+  .ov.on{display:flex}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">🎮 Развивающие игры</div>
+  <!-- игра: таблица умножения / угадайка / блиц-счёт -->
+  <div class="ov" id="gameOv"><div class="sheet" id="gameSheet" style="max-width:320px;text-align:center">
+    <button class="x" id="gameClose">&times;</button>
+    <h3 id="gameTitle" style="margin:0 0 8px">Таблица умножения</h3>
+    <div id="gameProg" style="font-weight:800;color:var(--brown);font-size:13px;margin-bottom:6px">0 / 10</div>
+    <div id="gameQ" style="font-size:28px;font-weight:900;color:var(--ink);margin:10px 0">7 × 8 = ?</div>
+    <input id="gameA" type="number" inputmode="numeric" style="width:100px;font-size:24px;font-weight:900;text-align:center;background:#fffaf0;border:3px solid #d9c39a;border-radius:14px;padding:10px;outline:none;color:var(--ink)" autofocus>
+    <button class="btn btn-lg" id="gameBtn" style="margin-top:8px;width:100%">Ответить</button>
+    <div id="gameMsg" style="font-weight:800;margin-top:6px;font-size:14px;min-height:20px"></div>
+    <div id="gameDone" style="display:none;margin-top:10px">
+      <div id="gameResult" style="font-size:18px;font-weight:900;color:var(--ink);margin-bottom:8px"></div>
+      <button class="btn btn-lg" id="gameClaim" style="width:100%">Забрать шишки</button>
+    </div>
+  </div></div>
+  <div id="grid">
+    <div class="tile" onclick="window._startMultiply&&window._startMultiply()"><img src="assets/chest_closed.webp"><span class="tn">✖️ Умножение</span><span class="td">Таблица умножения<br>для 7–12 лет</span></div>
+    <div class="tile" onclick="window._startGuess&&window._startGuess()"><img src="assets/spirit_scroll.webp"><span class="tn">🔍 Угадайка</span><span class="td">Лесные загадки<br>про животных</span></div>
+    <div class="tile" onclick="window._startCount&&window._startCount()"><img src="assets/coin1.webp"><span class="tn">⏱ Блиц-счёт</span><span class="td">Сложение и вычитание<br>на скорость</span></div>
+  </div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>
