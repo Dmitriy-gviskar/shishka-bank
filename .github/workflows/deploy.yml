@@ -9,15 +9,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: easingthemes/ssh-deploy@v5.1.0
+      - name: Copy client to VPS
+        uses: appleboy/scp-action@v0.1.7
         with:
-          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
-          REMOTE_HOST: ${{ secrets.VPS_HOST }}
-          REMOTE_USER: root
-          REMOTE_PORT: 22
-          SOURCE: "client/"
-          TARGET: "/opt/shishka/"
-          EXCLUDE: "node_modules/, uploads/, .DS_Store, package-lock.json"
-          SCRIPT_AFTER: |
-            systemctl restart shishka
-            curl -sf http://127.0.0.1:3777/api/ping || exit 1
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "client/*"
+          target: "/opt/shishka/"
+          strip_components: 1
+          rm: false
+      - name: Restart server
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: systemctl restart shishka
