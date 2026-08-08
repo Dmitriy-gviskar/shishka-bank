@@ -1,0 +1,8 @@
+task=019f858f-fed3-762c-a54d-6ab3fcad1ee1 name=cards/mayskiy_zhuk_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/mayskiy_zhuk_2_uncommon.png (credits=9)

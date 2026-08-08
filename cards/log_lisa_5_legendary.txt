@@ -1,0 +1,7 @@
+task=019f8328-7c9c-73c0-bf94-16fc856b10ec name=cards/lisa_5_legendary
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/lisa_5_legendary.png (credits=9)

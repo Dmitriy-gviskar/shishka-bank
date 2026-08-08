@@ -1,0 +1,19 @@
+task=019f8488-a7d6-7434-bca8-8f2e6d77971a name=cards/los_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: IN_PROGRESS
+poll 14: IN_PROGRESS
+poll 15: IN_PROGRESS
+poll 16: IN_PROGRESS
+poll 17: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/los_1_common.png (credits=9)

@@ -1,0 +1,8 @@
+task=019f8592-3dec-76fe-8750-8b7f59a01063 name=cards/zlatoglazka_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/zlatoglazka_3_rare.png (credits=9)

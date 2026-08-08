@@ -1,0 +1,8 @@
+task=019f835a-cf25-769d-b49e-48d87b4b719b name=cards/strekoza_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/strekoza_4_epic.png (credits=9)

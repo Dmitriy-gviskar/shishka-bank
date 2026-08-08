@@ -1,0 +1,16 @@
+task=019f8449-7eb4-75ca-81a3-f66eeabeb177 name=cards/ulitka_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: 
+poll 14: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/ulitka_3_rare.png (credits=9)

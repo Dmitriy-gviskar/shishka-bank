@@ -1,0 +1,10 @@
+task=019f848c-a50d-7e92-9d51-beb0087b2a61 name=cards/lotos_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/lotos_1_common.png (credits=9)

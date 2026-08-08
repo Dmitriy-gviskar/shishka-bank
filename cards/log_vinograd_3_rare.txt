@@ -1,0 +1,10 @@
+task=019f848e-3ace-7d14-a882-70c24c08ac88 name=cards/vinograd_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/vinograd_3_rare.png (credits=9)

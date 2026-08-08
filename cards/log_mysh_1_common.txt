@@ -1,0 +1,8 @@
+task=019f845d-c8ab-78a9-a87e-fd49f8a5d860 name=cards/mysh_1_common
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/mysh_1_common.png (credits=9)

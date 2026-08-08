@@ -1,0 +1,8 @@
+task=019f8591-aebd-76e1-b612-1c363bdd1c42 name=cards/plavunec_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/plavunec_4_epic.png (credits=9)

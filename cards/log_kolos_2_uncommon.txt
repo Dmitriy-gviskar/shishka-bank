@@ -1,0 +1,9 @@
+task=019f858b-9134-7740-919d-49c830f56b20 name=cards/kolos_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kolos_2_uncommon.png (credits=9)

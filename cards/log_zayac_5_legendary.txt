@@ -1,0 +1,6 @@
+task=019f8359-53ed-7662-9686-32174a49b5f0 name=cards/zayac_5_legendary
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/zayac_5_legendary.png (credits=9)

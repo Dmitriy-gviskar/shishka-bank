@@ -1,0 +1,9 @@
+task=019f848e-3adc-7f08-aeac-ec32156a01e1 name=cards/vinograd_2_uncommon
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/vinograd_2_uncommon.png (credits=9)

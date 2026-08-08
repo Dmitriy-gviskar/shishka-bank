@@ -1,0 +1,8 @@
+task=019f8462-aa05-7b9e-b77f-aa2066cf0612 name=cards/kaktus_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: 
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kaktus_4_epic.png (credits=9)

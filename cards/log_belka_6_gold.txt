@@ -1,0 +1,19 @@
+task=019f843d-f9fa-7371-92ce-d8aa29806b7a name=cards/belka_6_gold
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: IN_PROGRESS
+poll 13: IN_PROGRESS
+poll 14: IN_PROGRESS
+poll 15: IN_PROGRESS
+poll 16: 
+poll 17: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/belka_6_gold.png (credits=9)

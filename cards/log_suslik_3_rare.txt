@@ -1,0 +1,7 @@
+task=019f858a-1217-770c-9128-8ef7571f222c name=cards/suslik_3_rare
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/suslik_3_rare.png (credits=9)

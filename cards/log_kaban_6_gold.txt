@@ -1,0 +1,7 @@
+task=019f8451-7d6c-7147-be86-7feb96d00358 name=cards/kaban_6_gold
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: 
+poll 4: 
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kaban_6_gold.png (credits=9)

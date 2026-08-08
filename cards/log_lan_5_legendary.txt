@@ -1,0 +1,9 @@
+task=019f8502-8aa6-7466-a228-10c9a2b19f15 name=cards/lan_5_legendary
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/lan_5_legendary.png (credits=9)

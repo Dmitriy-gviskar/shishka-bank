@@ -1,0 +1,8 @@
+task=019f848e-3ad1-7d15-a09d-59d6a77cbc16 name=cards/vinograd_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/vinograd_4_epic.png (credits=9)

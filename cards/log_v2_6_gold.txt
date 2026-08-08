@@ -1,0 +1,7 @@
+task=019f766a-4981-77ff-8647-e74249086852 name=cards/burunduk_v2_6_gold
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/burunduk_v2_6_gold.png (credits=9)

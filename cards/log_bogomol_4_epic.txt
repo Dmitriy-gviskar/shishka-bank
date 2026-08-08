@@ -1,0 +1,7 @@
+task=019f8448-f0cb-7f20-ac83-7ab035182975 name=cards/bogomol_4_epic
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/bogomol_4_epic.png (credits=9)

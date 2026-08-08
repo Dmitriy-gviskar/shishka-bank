@@ -1,0 +1,7 @@
+task=019f858a-a28b-73b3-aba3-5fd1df34c1c9 name=cards/kunica_5_legendary
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/kunica_5_legendary.png (credits=9)

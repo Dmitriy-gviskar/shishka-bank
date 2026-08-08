@@ -1,0 +1,14 @@
+task=019f8488-a7d7-7b57-83ca-5bd6da794ec5 name=cards/los_5_legendary
+poll 1: IN_PROGRESS
+poll 2: IN_PROGRESS
+poll 3: IN_PROGRESS
+poll 4: IN_PROGRESS
+poll 5: IN_PROGRESS
+poll 6: IN_PROGRESS
+poll 7: IN_PROGRESS
+poll 8: IN_PROGRESS
+poll 9: IN_PROGRESS
+poll 10: IN_PROGRESS
+poll 11: IN_PROGRESS
+poll 12: SUCCEEDED
+SAVED /Users/dmitri/Desktop/shishka-bank/cards/los_5_legendary.png (credits=9)
