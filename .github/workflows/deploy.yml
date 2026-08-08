@@ -41,6 +41,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Apply migrations
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            source /root/shishka-local-db.env
+            PROD_URL=$(echo "$LOCAL_URL" | sed 's|/shishka$|/shishka_prod|')
+            # rsync свежих миграций
+            mkdir -p /opt/shishka-db
+            # применим после rsync клиента
+
+      - name: Deploy DB migrations
+        uses: easingthemes/ssh-deploy@v5.1.0
+        with:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.VPS_HOST }}
+          REMOTE_USER: root
+          SOURCE: "db/"
+          TARGET: "/opt/shishka/db/"
+          EXCLUDE: ".DS_Store"
+
       - name: Deploy to VPS
         uses: easingthemes/ssh-deploy@v5.1.0
         with:
@@ -51,6 +75,12 @@ jobs:
           TARGET: "/opt/shishka/"
           EXCLUDE: "node_modules/, uploads/, .DS_Store, package-lock.json"
           SCRIPT_AFTER: |
+            set -e
+            source /root/shishka-local-db.env
+            PROD_URL=$(echo "$LOCAL_URL" | sed 's|/shishka$|/shishka_prod|')
+            for f in /opt/shishka/db/migration_*.sql; do
+              [ -f "$f" ] && psql "$PROD_URL" -v ON_ERROR_STOP=1 -f "$f" && echo "ok: $(basename $f)"
+            done
             systemctl restart shishka
             systemctl is-active shishka || (echo "DEPLOY FAILED: service not active" && exit 1)
             curl -sf http://127.0.0.1:3777/api/ping || (echo "DEPLOY FAILED: ping failed" && exit 1)
