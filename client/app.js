@@ -1453,6 +1453,9 @@ if (page === 'forest.html') {
       origClaim.call(this);
     }
   };
+
+  window._startMultiply = startMultiplyGame;
+  window._startGuess = startGuessGame;
 }
 
 // ══════════════ Лесная коллекция (карточки) ══════════════
