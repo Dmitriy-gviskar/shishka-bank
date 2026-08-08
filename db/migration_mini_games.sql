@@ -24,6 +24,7 @@ returns int language sql stable security definer set search_path = public as $$
     when 'guild_members_recruited' then (select count(distinct gh.title) from guild_history gh
       join guilds g on g.id=gh.guild_id where g.created_by=p_child and gh.kind='member_joined')
     when 'math_score'       then (select coalesce(score,0) from mini_games where child_id=p_child and game='multiply')
+    when 'count_score'      then (select coalesce(score,0) from mini_games where child_id=p_child and game='count')
     else achievement_metric_legacy(p_child, p_metric)
   end;
 $$;
@@ -55,3 +56,9 @@ insert into familiar_dialogs(category, trigger, phrase) values
   ('any','guess_wrong','Мимо! Я загадал {name}. Продолжим?'),
   ('any','guess_done','Все загадки разгаданы! Ты отлично знаешь лесных жителей.')
   on conflict do nothing;
+
+-- 6. Блиц-счёт: ачивки
+insert into achievements(code, title, description, metric, threshold, tier, reward) values
+  ('count_1', 'Считатель',  '30 правильных ответов в блиц-счёте', 'count_score', 30,  1, 5),
+  ('count_2', 'Калькулятор','100 правильных ответов',             'count_score', 100, 2, 15)
+  on conflict (code) do nothing;

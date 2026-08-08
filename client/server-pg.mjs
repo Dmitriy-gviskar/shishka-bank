@@ -507,6 +507,20 @@ const api = {
     }
     return { correct };
   },
+  'POST /api/game/count/start': async (b, ctx) => {
+    // генерируем 50 примеров на сложение/вычитание (a+b где 1-20)
+    const questions = [];
+    for (let i = 0; i < 50; i++) {
+      const op = Math.random() < 0.5 ? '+' : '-';
+      let a = Math.floor(Math.random() * 20) + 1;
+      let b = Math.floor(Math.random() * 20) + 1;
+      if (op === '-' && b > a) [a, b] = [b, a]; // без отрицательных
+      questions.push({ a, op, b, answer: op === '+' ? a + b : a - b });
+    }
+    await q(`insert into mini_games(child_id, game, last_played) values ($1,'count',current_date)
+      on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+    return { questions, duration: 30 };
+  },
   'POST /api/game/guess/start': async (b, ctx) => {
     const beings = await q(`select t.code, t.name, t.category, coalesce(f.fact,'') as fact
       from card_types t left join card_facts f on f.code=t.code order by random() limit 5`);
@@ -532,9 +546,14 @@ const api = {
   'POST /api/game/finish': async (b, ctx) => {
     const score = parseInt(b.score) || 0;
     const reward = parseInt(b.reward) || 3;
+    const game = String(b.game || 'multiply');
     if (score > 0) {
+      await q('update mini_games set score=score+$2 where child_id=$1 and game=$3', [ctx.child, score, game]);
+      const label = game === 'multiply' ? 'Мини-игра: таблица умножения'
+        : game === 'guess' ? 'Мини-игра: лесная угадайка'
+        : 'Мини-игра: блиц-счёт';
       await q("update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1", [ctx.child, reward]);
-      await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', 'Мини-игра: таблица умножения' from users where id=$1", [ctx.child, reward]);
+      await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', $3 from users where id=$1", [ctx.child, reward, label]);
       await rpc('check_achievements', [ctx.child]).catch(() => {});
     }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);

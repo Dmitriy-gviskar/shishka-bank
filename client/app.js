@@ -1304,8 +1304,9 @@ if (page === 'forest.html') {
       ['🤫 Расскажи секрет', 'secret'],
       ['✖️ Таблица умножения', 'multiply'],
       ['🔍 Лесная угадайка', 'guess'],
+      ['⏱ Блиц-счёт', 'count'],
     ];
-    const gameTriggers = { multiply: actions.length - 2, guess: actions.length - 1 };
+    const gameTriggers = { multiply: actions.length - 3, guess: actions.length - 2, count: actions.length - 1 };
     btns.innerHTML = actions.map(([label, trigger]) =>
       `<button class="btn btn-sm" style="background:#fff7e8;border:2px solid #d9c39a;color:var(--brown);font-weight:800">${label}</button>`
     ).join('');
@@ -1313,6 +1314,7 @@ if (page === 'forest.html') {
       btn.onclick = () => {
         if (j === gameTriggers.multiply) { document.getElementById('talkOv').classList.remove('on'); startMultiplyGame(); }
         else if (j === gameTriggers.guess) { document.getElementById('talkOv').classList.remove('on'); startGuessGame(); }
+        else if (j === gameTriggers.count) { document.getElementById('talkOv').classList.remove('on'); startCountGame(); }
         else say(actions[j][1]);
       };
     });
@@ -1377,7 +1379,7 @@ if (page === 'forest.html') {
 
   document.getElementById('gameClaim').onclick = async () => {
     if (gameCorrect === 0) { document.getElementById('gameOv').classList.remove('on'); return; }
-    const r = await api('/api/game/finish', { score: gameCorrect, reward: gameReward });
+    const r = await api('/api/game/finish', { game: 'multiply', score: gameCorrect, reward: gameReward });
     if (r.ok && r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
     document.getElementById('gameOv').classList.remove('on');
   };
@@ -1416,7 +1418,26 @@ if (page === 'forest.html') {
 
   const origGameBtn = document.getElementById('gameBtn').onclick;
   document.getElementById('gameBtn').onclick = async function(e) {
-    if (document.getElementById('gameTitle').textContent === 'Лесная угадайка') {
+    const title = document.getElementById('gameTitle').textContent;
+    if (title === 'Блиц-счёт') {
+      const val = parseInt(document.getElementById('gameA').value, 10);
+      if (isNaN(val)) return;
+      const q = countQuestions[countIdx];
+      if (val === q.answer) {
+        countScore++;
+        document.getElementById('gameMsg').textContent = '✅';
+        document.getElementById('gameMsg').style.color = '#5f8e37';
+        countIdx++;
+        if (countIdx >= countQuestions.length || countLeft <= 0) { endCountGame(); return; }
+        document.getElementById('gameQ').textContent = `${countQuestions[countIdx].a} ${countQuestions[countIdx].op} ${countQuestions[countIdx].b} = ?`;
+        document.getElementById('gameA').value = '';
+        document.getElementById('gameA').focus();
+      } else {
+        document.getElementById('gameMsg').textContent = `❌ ${q.a} ${q.op} ${q.b} = ${q.answer}`;
+        document.getElementById('gameMsg').style.color = '#b3452e';
+        endCountGame();
+      }
+    } else if (title === 'Лесная угадайка') {
       const val = document.getElementById('gameA').value.trim();
       if (!val) return;
       const q = guessQuestions[guessIdx];
@@ -1444,9 +1465,15 @@ if (page === 'forest.html') {
 
   const origClaim = document.getElementById('gameClaim').onclick;
   document.getElementById('gameClaim').onclick = async function() {
-    if (document.getElementById('gameTitle').textContent === 'Лесная угадайка') {
+    const title = document.getElementById('gameTitle').textContent;
+    if (title === 'Блиц-счёт') {
+      if (countScore === 0) { document.getElementById('gameOv').classList.remove('on'); return; }
+      const r = await api('/api/game/finish', { game: 'count', score: countScore, reward: countScore });
+      if (r.ok && r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
+      document.getElementById('gameOv').classList.remove('on');
+    } else if (title === 'Лесная угадайка') {
       if (guessCorrect === 0) { document.getElementById('gameOv').classList.remove('on'); return; }
-      const r = await api('/api/game/finish', { score: guessCorrect, reward: guessReward });
+      const r = await api('/api/game/finish', { game: 'guess', score: guessCorrect, reward: guessReward });
       if (r.ok && r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
       document.getElementById('gameOv').classList.remove('on');
     } else {
@@ -1456,6 +1483,43 @@ if (page === 'forest.html') {
 
   window._startMultiply = startMultiplyGame;
   window._startGuess = startGuessGame;
+  window._startCount = startCountGame;
+
+  // ── Игра: Блиц-счёт ──
+  let countQuestions = [], countIdx = 0, countScore = 0, countTimer = null, countLeft = 0;
+
+  async function startCountGame() {
+    const r = await api('/api/game/count/start', {});
+    if (r.error) return;
+    countQuestions = r.questions; countIdx = 0; countScore = 0; countLeft = r.duration;
+    document.getElementById('gameTitle').textContent = 'Блиц-счёт';
+    document.getElementById('gameProg').textContent = `⏱ ${countLeft}с · 0`;
+    document.getElementById('gameDone').style.display = 'none';
+    document.getElementById('gameBtn').style.display = '';
+    document.getElementById('gameBtn').textContent = 'Ответить';
+    document.getElementById('gameA').style.display = '';
+    document.getElementById('gameA').value = '';
+    document.getElementById('gameA').placeholder = 'Ответ';
+    document.getElementById('gameQ').textContent = `${countQuestions[0].a} ${countQuestions[0].op} ${countQuestions[0].b} = ?`;
+    document.getElementById('gameMsg').textContent = '';
+    document.getElementById('gameOv').classList.add('on');
+    document.getElementById('gameA').focus();
+    clearInterval(countTimer);
+    countTimer = setInterval(() => {
+      countLeft--;
+      document.getElementById('gameProg').textContent = `⏱ ${countLeft}с · ${countScore}`;
+      if (countLeft <= 0) endCountGame();
+    }, 1000);
+  }
+
+  function endCountGame() {
+    clearInterval(countTimer);
+    document.getElementById('gameBtn').style.display = 'none';
+    document.getElementById('gameA').style.display = 'none';
+    document.getElementById('gameProg').textContent = `⏱ 0с · ${countScore}`;
+    document.getElementById('gameDone').style.display = 'block';
+    document.getElementById('gameResult').textContent = `Время вышло! Правильно: ${countScore}`;
+  }
 }
 
 // ══════════════ Лесная коллекция (карточки) ══════════════
