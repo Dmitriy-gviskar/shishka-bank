@@ -1302,16 +1302,17 @@ if (page === 'forest.html') {
       ['👋 Привет!', 'greet'],
       ['💚 Как дела?', 'howareyou'],
       ['🤫 Расскажи секрет', 'secret'],
-      ['🎮 Таблица умножения!', 'play'],
+      ['✖️ Таблица умножения', 'multiply'],
+      ['🔍 Лесная угадайка', 'guess'],
     ];
-    // последняя кнопка запускает игру
-    const playIdx = actions.length - 1;
+    const gameTriggers = { multiply: actions.length - 2, guess: actions.length - 1 };
     btns.innerHTML = actions.map(([label, trigger]) =>
       `<button class="btn btn-sm" style="background:#fff7e8;border:2px solid #d9c39a;color:var(--brown);font-weight:800">${label}</button>`
     ).join('');
     btns.querySelectorAll('button').forEach((btn, j) => {
       btn.onclick = () => {
-        if (j === playIdx) { document.getElementById('talkOv').classList.remove('on'); startMultiplyGame(); }
+        if (j === gameTriggers.multiply) { document.getElementById('talkOv').classList.remove('on'); startMultiplyGame(); }
+        else if (j === gameTriggers.guess) { document.getElementById('talkOv').classList.remove('on'); startGuessGame(); }
         else say(actions[j][1]);
       };
     });
@@ -1383,6 +1384,75 @@ if (page === 'forest.html') {
 
   document.getElementById('gameClose').onclick = () => document.getElementById('gameOv').classList.remove('on');
   document.getElementById('gameOv').onclick = (e) => { if (e.target.id === 'gameOv') e.target.classList.remove('on'); };
+
+  // ── Игра: Лесная угадайка ──
+  let guessQuestions = [], guessIdx = 0, guessCorrect = 0, guessReward = 0;
+
+  async function startGuessGame() {
+    const r = await api('/api/game/guess/start', {});
+    if (r.error) return;
+    guessQuestions = r.questions; guessIdx = 0; guessCorrect = 0; guessReward = r.reward;
+    document.getElementById('gameTitle').textContent = 'Лесная угадайка';
+    document.getElementById('gameProg').textContent = '0 / 5';
+    document.getElementById('gameDone').style.display = 'none';
+    document.getElementById('gameBtn').style.display = '';
+    document.getElementById('gameBtn').textContent = 'Угадать';
+    document.getElementById('gameA').style.display = '';
+    document.getElementById('gameA').value = '';
+    document.getElementById('gameA').placeholder = 'Кто это?';
+    document.getElementById('gameMsg').textContent = '';
+    document.getElementById('gameOv').classList.add('on');
+    showGuessQ();
+  }
+
+  function showGuessQ() {
+    const q = guessQuestions[guessIdx];
+    document.getElementById('gameQ').textContent = '';
+    document.getElementById('gameMsg').innerHTML = q.hints.map((h) => `<div style="margin:2px 0">${h}</div>`).join('');
+    document.getElementById('gameProg').textContent = `${guessIdx} / 5`;
+    document.getElementById('gameA').value = '';
+    document.getElementById('gameA').focus();
+  }
+
+  const origGameBtn = document.getElementById('gameBtn').onclick;
+  document.getElementById('gameBtn').onclick = async function(e) {
+    if (document.getElementById('gameTitle').textContent === 'Лесная угадайка') {
+      const val = document.getElementById('gameA').value.trim();
+      if (!val) return;
+      const q = guessQuestions[guessIdx];
+      const r = await api('/api/game/guess/answer', { answer: val, name: q.name });
+      if (r.correct) {
+        guessCorrect++;
+        document.getElementById('gameMsg').innerHTML = `<div style="color:#5f8e37;font-weight:900">✅ Верно! Это ${q.name}!</div>`;
+      } else {
+        document.getElementById('gameMsg').innerHTML = `<div style="color:#b3452e;font-weight:900">❌ Нет, это ${q.name}</div>`;
+      }
+      guessIdx++;
+      if (guessIdx >= 5) {
+        document.getElementById('gameBtn').style.display = 'none';
+        document.getElementById('gameA').style.display = 'none';
+        document.getElementById('gameProg').textContent = '5 / 5';
+        document.getElementById('gameDone').style.display = 'block';
+        document.getElementById('gameResult').textContent = `Угадано: ${guessCorrect} из 5`;
+      } else {
+        setTimeout(showGuessQ, 1200);
+      }
+    } else {
+      origGameBtn.call(this, e);
+    }
+  };
+
+  const origClaim = document.getElementById('gameClaim').onclick;
+  document.getElementById('gameClaim').onclick = async function() {
+    if (document.getElementById('gameTitle').textContent === 'Лесная угадайка') {
+      if (guessCorrect === 0) { document.getElementById('gameOv').classList.remove('on'); return; }
+      const r = await api('/api/game/finish', { score: guessCorrect, reward: guessReward });
+      if (r.ok && r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
+      document.getElementById('gameOv').classList.remove('on');
+    } else {
+      origClaim.call(this);
+    }
+  };
 }
 
 // ══════════════ Лесная коллекция (карточки) ══════════════

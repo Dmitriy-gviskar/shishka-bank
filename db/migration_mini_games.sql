@@ -45,3 +45,13 @@ insert into familiar_dialogs(category, trigger, phrase) values
   ('any','multiply_done','Умница! Ты решил все примеры. Возвращайся завтра!'),
   ('any','multiply_done','Отлично потренировались! До завтра!')
   on conflict do nothing;
+
+-- 5. Лесная угадайка: фразы триггеров
+insert into familiar_dialogs(category, trigger, phrase) values
+  ('any','guess_start','Давай поиграем в угадайку! Я опишу лесного жителя, а ты угадай кто это.'),
+  ('any','guess_correct','Точно! Ты настоящий следопыт!'),
+  ('any','guess_correct','Угадал! Отлично знаешь лес!'),
+  ('any','guess_wrong','Не угадал. Это был {name}. Ничего, следующий раз повезёт!'),
+  ('any','guess_wrong','Мимо! Я загадал {name}. Продолжим?'),
+  ('any','guess_done','Все загадки разгаданы! Ты отлично знаешь лесных жителей.')
+  on conflict do nothing;

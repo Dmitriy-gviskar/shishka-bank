@@ -507,6 +507,28 @@ const api = {
     }
     return { correct };
   },
+  'POST /api/game/guess/start': async (b, ctx) => {
+    const beings = await q(`select t.code, t.name, t.category, coalesce(f.fact,'') as fact
+      from card_types t left join card_facts f on f.code=t.code order by random() limit 5`);
+    const questions = beings.map((b) => {
+      const hints = [`Это ${b.category === 'zver' ? 'зверь' : b.category === 'rastenie' ? 'растение' : b.category === 'nasekomoe' ? 'насекомое' : 'особое существо'}.`];
+      if (b.fact) hints.push(b.fact.slice(0, 80) + (b.fact.length > 80 ? '...' : ''));
+      const nameHint = b.name.length <= 5 ? `В имени ${b.name.length} букв.`
+        : `В имени первая буква «${b.name[0]}».`;
+      hints.push(nameHint);
+      return { code: b.code, name: b.name, hints };
+    });
+    await q(`insert into mini_games(child_id, game, last_played) values ($1,'guess',current_date)
+      on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+    return { questions, reward: 5 };
+  },
+  'POST /api/game/guess/answer': async (b, ctx) => {
+    const correct = String(b.answer || '').trim().toLowerCase() === String(b.name || '').toLowerCase();
+    if (correct) {
+      await q('update mini_games set score=score+1 where child_id=$1 and game=$2', [ctx.child, 'guess']);
+    }
+    return { correct, name: b.name };
+  },
   'POST /api/game/finish': async (b, ctx) => {
     const score = parseInt(b.score) || 0;
     const reward = parseInt(b.reward) || 3;
