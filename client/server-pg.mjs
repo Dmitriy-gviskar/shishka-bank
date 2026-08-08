@@ -484,6 +484,40 @@ const api = {
              collected: cards.filter((c) => c.owned && c.category !== 'special').length,
              total: cards.filter((c) => c.category !== 'special').length };
   },
+  // ── Мини-игры с питомцами ──
+  'POST /api/game/start': async (b, ctx) => {
+    const level = parseInt(b.level) || 1;
+    const tables = level === 1 ? [2,3,5] : level === 2 ? [4,6,7,8] : [2,3,4,5,6,7,8,9];
+    const reward = level === 1 ? 3 : level === 2 ? 5 : 8;
+    const questions = [];
+    for (let i = 0; i < 10; i++) {
+      const a = tables[Math.floor(Math.random() * tables.length)];
+      const b = Math.floor(Math.random() * 9) + 1;
+      questions.push({ a, b, answer: a * b });
+    }
+    // сохраняем сессию в mini_games (last_played = today)
+    await q(`insert into mini_games(child_id, game, level, last_played) values ($1,'multiply',$2,current_date)
+      on conflict (child_id, game) do update set level=$2, last_played=current_date`, [ctx.child, level]);
+    return { questions, reward, level };
+  },
+  'POST /api/game/answer': async (b, ctx) => {
+    const correct = parseInt(b.answer) === parseInt(b.expected);
+    if (correct) {
+      await q('update mini_games set score=score+1 where child_id=$1 and game=$2', [ctx.child, 'multiply']);
+    }
+    return { correct };
+  },
+  'POST /api/game/finish': async (b, ctx) => {
+    const score = parseInt(b.score) || 0;
+    const reward = parseInt(b.reward) || 3;
+    if (score > 0) {
+      await q("update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1", [ctx.child, reward]);
+      await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', 'Мини-игра: таблица умножения' from users where id=$1", [ctx.child, reward]);
+      await rpc('check_achievements', [ctx.child]).catch(() => {});
+    }
+    const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    return { ok: true, reward, balance: w.balance };
+  },
   'POST /api/familiar/talk': async (b, ctx) => {
     const f = await one('select t.category from familiars fm join card_types t on t.id=fm.type_id where fm.user_id=$1 and fm.type_id=$2 and fm.grade=$3',
       [ctx.child, b.type, b.grade]);

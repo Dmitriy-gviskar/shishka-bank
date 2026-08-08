@@ -1302,19 +1302,87 @@ if (page === 'forest.html') {
       ['👋 Привет!', 'greet'],
       ['💚 Как дела?', 'howareyou'],
       ['🤫 Расскажи секрет', 'secret'],
-      ['🎮 Давай играть!', 'play'],
+      ['🎮 Таблица умножения!', 'play'],
     ];
+    // последняя кнопка запускает игру
+    const playIdx = actions.length - 1;
     btns.innerHTML = actions.map(([label, trigger]) =>
       `<button class="btn btn-sm" style="background:#fff7e8;border:2px solid #d9c39a;color:var(--brown);font-weight:800">${label}</button>`
     ).join('');
     btns.querySelectorAll('button').forEach((btn, j) => {
-      btn.onclick = () => say(actions[j][1]);
+      btn.onclick = () => {
+        if (j === playIdx) { document.getElementById('talkOv').classList.remove('on'); startMultiplyGame(); }
+        else say(actions[j][1]);
+      };
     });
 
     await say('greet');
   }
   document.getElementById('talkClose').onclick = () => document.getElementById('talkOv').classList.remove('on');
   document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') e.target.classList.remove('on'); };
+
+  // ── Игра: таблица умножения ──
+  let gameQuestions = [], gameIdx = 0, gameCorrect = 0, gameReward = 0;
+
+  async function startMultiplyGame() {
+    const r = await api('/api/game/start', { level: 1 });
+    if (r.error) return;
+    gameQuestions = r.questions; gameIdx = 0; gameCorrect = 0; gameReward = r.reward;
+    document.getElementById('gameTitle').textContent = `Таблица умножения · ур. ${r.level}`;
+    document.getElementById('gameDone').style.display = 'none';
+    document.getElementById('gameBtn').style.display = '';
+    document.getElementById('gameA').style.display = '';
+    document.getElementById('gameA').value = '';
+    document.getElementById('gameMsg').textContent = '';
+    document.getElementById('gameOv').classList.add('on');
+    showQuestion();
+  }
+
+  function showQuestion() {
+    const q = gameQuestions[gameIdx];
+    document.getElementById('gameQ').textContent = `${q.a} × ${q.b} = ?`;
+    document.getElementById('gameProg').textContent = `${gameIdx} / 10`;
+    document.getElementById('gameA').value = '';
+    document.getElementById('gameMsg').textContent = '';
+    document.getElementById('gameA').focus();
+  }
+
+  document.getElementById('gameBtn').onclick = async () => {
+    const val = parseInt(document.getElementById('gameA').value, 10);
+    if (isNaN(val)) return;
+    const q = gameQuestions[gameIdx];
+    const r = await api('/api/game/answer', { answer: val, expected: q.answer });
+    if (r.correct) {
+      gameCorrect++;
+      document.getElementById('gameMsg').textContent = '✅ Верно!';
+      document.getElementById('gameMsg').style.color = '#5f8e37';
+    } else {
+      document.getElementById('gameMsg').textContent = `❌ Нет, ${q.a} × ${q.b} = ${q.answer}`;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+    }
+    gameIdx++;
+    if (gameIdx >= 10) {
+      document.getElementById('gameBtn').style.display = 'none';
+      document.getElementById('gameA').style.display = 'none';
+      document.getElementById('gameProg').textContent = '10 / 10';
+      document.getElementById('gameDone').style.display = 'block';
+      document.getElementById('gameResult').textContent = `Правильно: ${gameCorrect} из 10`;
+    } else {
+      setTimeout(showQuestion, 800);
+    }
+  };
+
+  document.getElementById('gameA').onkeydown = (e) => { if (e.key === 'Enter') document.getElementById('gameBtn').click(); };
+
+  document.getElementById('gameClaim').onclick = async () => {
+    if (gameCorrect === 0) { document.getElementById('gameOv').classList.remove('on'); return; }
+    const r = await api('/api/game/finish', { score: gameCorrect, reward: gameReward });
+    if (r.ok && r.balance != null) { const b = document.getElementById('topBal'); if (b) b.textContent = r.balance; }
+    document.getElementById('gameOv').classList.remove('on');
+  };
+
+  document.getElementById('gameClose').onclick = () => document.getElementById('gameOv').classList.remove('on');
+  document.getElementById('gameOv').onclick = (e) => { if (e.target.id === 'gameOv') e.target.classList.remove('on'); };
 }
 
 // ══════════════ Лесная коллекция (карточки) ══════════════
