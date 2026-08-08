@@ -1,8 +1,0 @@
-task=019f8500-3ab3-7a38-bcf0-4eb89b00e518 name=cards/sobol_4_epic
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/sobol_4_epic.png (credits=9)

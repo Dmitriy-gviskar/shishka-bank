@@ -1,8 +1,0 @@
-task=019f835a-1810-768c-99b9-5ea074c85d66 name=cards/oduvanchik_4_epic
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/oduvanchik_4_epic.png (credits=9)

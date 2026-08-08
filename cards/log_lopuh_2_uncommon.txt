@@ -1,7 +1,0 @@
-task=019f858f-2e58-75a7-8443-49c68380be1a name=cards/lopuh_2_uncommon
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: 
-poll 4: 
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/lopuh_2_uncommon.png (credits=9)

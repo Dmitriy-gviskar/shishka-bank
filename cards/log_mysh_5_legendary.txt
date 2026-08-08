@@ -1,8 +1,0 @@
-task=019f845d-c8aa-74b0-82a7-b2c93676a679 name=cards/mysh_5_legendary
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/mysh_5_legendary.png (credits=9)

@@ -1,9 +1,0 @@
-task=019f8452-a858-716b-81ea-061e7bf53adc name=cards/rys_2_uncommon
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: IN_PROGRESS
-poll 7: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/rys_2_uncommon.png (credits=9)

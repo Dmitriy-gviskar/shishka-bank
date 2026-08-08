@@ -1,7 +1,0 @@
-task=019f8437-e7b8-7b18-85f7-7628fe63a79b name=cards/kuznechik_4_epic
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/kuznechik_4_epic.png (credits=9)

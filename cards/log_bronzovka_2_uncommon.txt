@@ -1,8 +1,0 @@
-task=019f850f-3acc-7840-ab08-84237848223e name=cards/bronzovka_2_uncommon
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/bronzovka_2_uncommon.png (credits=9)

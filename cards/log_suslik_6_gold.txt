@@ -1,9 +1,0 @@
-task=019f858a-1218-7380-b0a8-4e5d7f3922b9 name=cards/suslik_6_gold
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: IN_PROGRESS
-poll 7: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/suslik_6_gold.png (credits=9)

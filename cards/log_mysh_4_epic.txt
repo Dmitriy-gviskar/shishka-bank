@@ -1,7 +1,0 @@
-task=019f845d-c8a9-7941-9bb1-e424c7e1ddc0 name=cards/mysh_4_epic
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/mysh_4_epic.png (credits=9)

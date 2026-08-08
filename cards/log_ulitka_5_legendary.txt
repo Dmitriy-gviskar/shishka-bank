@@ -1,7 +1,0 @@
-task=019f8449-7eb3-7f37-a218-7f3efec42f5e name=cards/ulitka_5_legendary
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/ulitka_5_legendary.png (credits=9)

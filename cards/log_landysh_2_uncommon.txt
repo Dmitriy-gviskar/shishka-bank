@@ -1,9 +1,0 @@
-task=019f8454-3c8c-71cf-9770-c654c53faf01 name=cards/landysh_2_uncommon
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: IN_PROGRESS
-poll 7: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/landysh_2_uncommon.png (credits=9)

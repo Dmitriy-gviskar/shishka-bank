@@ -1,8 +1,0 @@
-task=019f8431-21ff-78f5-a1b5-91cdf5136b72 name=cards/enot_6_gold
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/enot_6_gold.png (credits=9)

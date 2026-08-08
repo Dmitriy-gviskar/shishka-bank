@@ -1,8 +1,0 @@
-task=019f8435-485d-7df9-8af5-d2e0981f7d42 name=cards/pchela_3_rare
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/pchela_3_rare.png (credits=9)

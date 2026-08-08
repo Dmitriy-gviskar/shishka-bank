@@ -1,7 +1,0 @@
-task=019f8527-47e1-7915-95eb-9340ba1aaf34 name=cards/motylek_6_gold_v2
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/motylek_6_gold_v2.png (credits=9)

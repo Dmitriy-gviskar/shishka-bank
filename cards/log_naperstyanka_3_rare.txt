@@ -1,8 +1,0 @@
-task=019f848a-295a-7dd9-9f4f-5115e3f26017 name=cards/naperstyanka_3_rare
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/naperstyanka_3_rare.png (credits=9)

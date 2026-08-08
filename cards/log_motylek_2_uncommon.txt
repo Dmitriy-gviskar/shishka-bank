@@ -1,8 +1,0 @@
-task=019f8509-e233-7685-943b-76d9a2c090d3 name=cards/motylek_2_uncommon
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/motylek_2_uncommon.png (credits=9)

@@ -1,8 +1,0 @@
-task=019f8456-f814-7312-8dfc-b40a532cb4f4 name=cards/skarabey_1_common
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/skarabey_1_common.png (credits=9)

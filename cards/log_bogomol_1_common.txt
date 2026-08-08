@@ -1,8 +1,0 @@
-task=019f8448-f0d7-75bb-81f9-03871778f2c9 name=cards/bogomol_1_common
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/bogomol_1_common.png (credits=9)

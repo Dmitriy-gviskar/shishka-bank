@@ -1,8 +1,0 @@
-task=019f8455-ed36-76bd-8c13-4bec5c507e78 name=cards/dub_6_gold
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/dub_6_gold.png (credits=9)

@@ -1,9 +1,0 @@
-task=019f8445-24c3-7e10-9eac-4cc8845d7fa5 name=cards/shipovnik_1_common
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: IN_PROGRESS
-poll 7: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/shipovnik_1_common.png (credits=9)

@@ -1,8 +1,0 @@
-task=019f8535-0d7a-7e22-8e16-589dd4fb0ff8 name=cards/filin_4_epic
-poll 1: PENDING
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/filin_4_epic.png (credits=9)

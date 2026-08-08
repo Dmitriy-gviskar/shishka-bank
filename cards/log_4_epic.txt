@@ -1,7 +1,0 @@
-task=019f764d-e59b-7074-861f-20b1bd85e22b name=cards/burunduk_4_epic
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/burunduk_4_epic.png (credits=9)

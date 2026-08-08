@@ -1,9 +1,0 @@
-task=019f8433-8a5c-79d2-9286-96ceaee23622 name=cards/paporotnik_5_legendary
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: 
-poll 5: IN_PROGRESS
-poll 6: 
-poll 7: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/paporotnik_5_legendary.png (credits=9)

@@ -1,7 +1,0 @@
-task=019f8451-7d6f-7110-84b3-1417f0924749 name=cards/kaban_2_uncommon
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: 
-poll 4: 
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/kaban_2_uncommon.png (credits=9)

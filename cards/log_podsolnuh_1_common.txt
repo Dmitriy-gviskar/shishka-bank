@@ -1,8 +1,0 @@
-task=019f8432-8079-7925-94f5-eafc6d5ccc16 name=cards/podsolnuh_1_common
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/podsolnuh_1_common.png (credits=9)

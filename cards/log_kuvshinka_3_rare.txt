@@ -1,8 +1,0 @@
-task=019f8444-8339-71d1-8add-776f763d0ce1 name=cards/kuvshinka_3_rare
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/kuvshinka_3_rare.png (credits=9)

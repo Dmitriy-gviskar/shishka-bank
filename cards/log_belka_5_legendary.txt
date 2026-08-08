@@ -1,7 +1,0 @@
-task=019f843d-f9f9-7c90-b8e5-a7646120d9d0 name=cards/belka_5_legendary
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/belka_5_legendary.png (credits=9)

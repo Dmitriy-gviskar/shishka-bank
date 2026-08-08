@@ -1,8 +1,0 @@
-task=019f8445-24c3-7e3e-98cd-1be6d8a6e089 name=cards/shipovnik_5_legendary
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/shipovnik_5_legendary.png (credits=9)

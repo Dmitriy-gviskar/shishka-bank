@@ -1,7 +1,0 @@
-task=019f8454-f51a-7693-b815-43f6094d51ac name=cards/mak_1_common
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/mak_1_common.png (credits=9)

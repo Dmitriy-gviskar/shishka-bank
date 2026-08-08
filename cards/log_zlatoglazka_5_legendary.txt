@@ -1,8 +1,0 @@
-task=019f8592-3dec-7700-9c7e-4c9f2cb79ff4 name=cards/zlatoglazka_5_legendary
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/zlatoglazka_5_legendary.png (credits=9)

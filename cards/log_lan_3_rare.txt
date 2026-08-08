@@ -1,8 +1,0 @@
-task=019f8502-8aa5-7463-8b55-71e611508819 name=cards/lan_3_rare
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/lan_3_rare.png (credits=9)

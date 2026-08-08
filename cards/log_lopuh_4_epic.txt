@@ -1,7 +1,0 @@
-task=019f858f-2e58-7800-a207-e74cedf3209d name=cards/lopuh_4_epic
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: 
-poll 4: 
-poll 5: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/lopuh_4_epic.png (credits=9)

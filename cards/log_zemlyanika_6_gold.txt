@@ -1,8 +1,0 @@
-task=019f832d-2820-7d49-8316-294997c69b7c name=cards/zemlyanika_6_gold
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/zemlyanika_6_gold.png (credits=9)

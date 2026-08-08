@@ -1,9 +1,0 @@
-task=019f8503-714e-74ab-ae21-f49d2119a62a name=cards/rosomaha_6_gold
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: IN_PROGRESS
-poll 7: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/rosomaha_6_gold.png (credits=9)

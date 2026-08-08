@@ -1,8 +1,0 @@
-task=019f848e-3ac7-7f07-9bca-285d8ea91a2d name=cards/vinograd_6_gold
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/vinograd_6_gold.png (credits=9)

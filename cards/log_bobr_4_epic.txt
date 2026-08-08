@@ -1,8 +1,0 @@
-task=019f843f-f771-70ec-b6e7-68a5714cd81d name=cards/bobr_4_epic
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: IN_PROGRESS
-poll 5: IN_PROGRESS
-poll 6: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/bobr_4_epic.png (credits=9)

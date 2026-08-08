@@ -1,6 +1,0 @@
-task=019f8359-53ee-7b93-9777-95622cde014e name=cards/zayac_1_common
-poll 1: IN_PROGRESS
-poll 2: IN_PROGRESS
-poll 3: IN_PROGRESS
-poll 4: SUCCEEDED
-SAVED /Users/dmitri/Desktop/shishka-bank/cards/zayac_1_common.png (credits=9)
