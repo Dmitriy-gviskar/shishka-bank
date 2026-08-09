@@ -245,10 +245,10 @@ if (page === 'index.html' || page === '') {
 // ── Задания ──
 function questIcon(category) {
   const map = {
-    дом: 'ic_home.svg', забота: 'ic_care.svg', здоровье: 'ic_health.svg',
-    развитие: 'ic_learn.svg', самостоятельность: 'ic_self.svg', приключение: 'ic_adventure.svg',
+    дом: 'quest_ic_home.webp', забота: 'quest_ic_care.webp', здоровье: 'quest_ic_health.webp',
+    развитие: 'quest_ic_learn.webp', самостоятельность: 'quest_ic_self.webp', приключение: 'quest_ic_adventure.webp',
   };
-  return 'assets/quest/' + (map[category] || 'ic_home.svg');
+  return 'assets/quest/' + (map[category] || 'quest_ic_home.webp');
 }
 
 async function loadTasks() {
@@ -280,7 +280,7 @@ async function loadTasks() {
   };
   const statusHtml = (t) => {
     if (t.status === 'done') {
-      return `<div class="quest-done"><img src="assets/quest/done.svg" alt=""><span>Выполнено</span></div>`;
+      return `<div class="quest-done"><img src="assets/quest/quest_done.webp" alt=""><span>Выполнено</span></div>`;
     }
     if (t.status === 'submitted') {
       return `<div class="quest-wait"><b>…</b><span>На проверке</span></div>`;

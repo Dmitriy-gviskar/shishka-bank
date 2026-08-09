@@ -1,13 +1,13 @@
-const CACHE = 'shishka-v32';
+const CACHE = 'shishka-v33';
 const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'games.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
   'parent.html', 'surprises.html', 'link.html',
   'style.css', 'app.js', 'cards.js', 'deposit.js', 'horoscope.js', 'quest.js', 'news.js', 'guilds.js', 'nav.js',
   'assets/qrcode.js', 'assets/jsqr.js',
-  'assets/quest/done.svg', 'assets/quest/cam.svg',
-  'assets/quest/ic_home.svg', 'assets/quest/ic_care.svg', 'assets/quest/ic_health.svg',
-  'assets/quest/ic_learn.svg', 'assets/quest/ic_self.svg', 'assets/quest/ic_adventure.svg'];
+  'assets/quest/cam.svg', 'assets/quest/quest_done.webp',
+  'assets/quest/quest_ic_home.webp', 'assets/quest/quest_ic_care.webp', 'assets/quest/quest_ic_health.webp',
+  'assets/quest/quest_ic_learn.webp', 'assets/quest/quest_ic_self.webp', 'assets/quest/quest_ic_adventure.webp'];
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });  // клиент просит новый воркер встать немедленно
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PAGES)).catch(() => {}));  // все экраны в кэш сразу
