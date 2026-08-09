@@ -1314,6 +1314,7 @@ if (page === 'forest.html') {
   }
   if (document.getElementById('talkClose')) document.getElementById('talkClose').onclick = () => document.getElementById('talkOv').classList.remove('on');
   if (document.getElementById('talkOv')) document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') e.target.classList.remove('on'); };
+}
 
   // ── Игра: таблица умножения ──
   let gameQuestions = [], gameIdx = 0, gameCorrect = 0, gameReward = 0;
@@ -1539,7 +1540,6 @@ if (page === 'forest.html') {
     g.onclick = function(e){ e.preventDefault(); if(window._startGuess) window._startGuess(); };
     c.onclick = function(e){ e.preventDefault(); if(window._startCount) window._startCount(); };
   })();
-}
 
 // ══════════════ Лесная коллекция (карточки) ══════════════
 
