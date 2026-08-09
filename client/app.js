@@ -305,9 +305,11 @@ async function loadTasks() {
       return `<div class="quest-wait"><b>…</b><span>На проверке</span></div>`;
     }
     if (t.needs_photo) {
-      return `<button class="btn btn-sm quest-act" type="button">Отправить фото <img src="assets/quest/cam.svg" alt=""></button>`;
+      return `<button class="quest-act-img" type="button" aria-label="Отправить фото">
+        <img src="assets/quest/quest_btn_photo.webp" alt="Отправить фото"></button>`;
     }
-    return `<button class="btn btn-sm quest-act" type="button">Готово</button>`;
+    return `<button class="quest-act-img" type="button" aria-label="Готово">
+      <img src="assets/quest/quest_btn_done.webp" alt="Готово"></button>`;
   };
   for (const [label, list] of sections) {
     const h = document.createElement('div'); h.className = 'quest-sec'; h.textContent = label; cont.appendChild(h);
