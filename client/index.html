@@ -10,106 +10,103 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  /* пилот визуала дома — cozy forest по макетам */
+  /* дом ≈ vision-cozy / 01_wallet: Дух + кошелёк в первом экране */
   .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg_wallet.webp)}
   .phone::after{background:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.18), transparent 55%),
-    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.22))}
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.2), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.04),rgba(35,50,25,.28))}
 
-  .greet-row{position:relative;display:flex;align-items:flex-start;gap:8px;padding-right:108px}
+  .greet-row{position:relative;display:flex;align-items:flex-start;gap:6px;padding-right:96px;margin-bottom:2px}
   .greet-row .greet{flex:1;min-width:0}
-  .greet-row .greet img{width:118px;height:118px;
-    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 6px 10px rgba(60,40,15,.35))}
-  .greet-row .bubble{font-size:14px;padding:10px 12px;margin-top:10px;font-family:"Fredoka","Nunito",sans-serif}
+  .greet-row .greet img{width:112px;height:112px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 3px #fff) drop-shadow(0 6px 10px rgba(60,40,15,.35))}
+  .greet-row .bubble{font-size:15px;padding:11px 14px;margin-top:14px;line-height:1.25;
+    font-family:"Fredoka","Nunito",sans-serif}
 
-  /* уровень — деревянный медальон */
-  .lvlbadge{position:absolute;top:0;right:0;width:100px;height:100px;cursor:pointer;
+  .lvlbadge{position:absolute;top:2px;right:0;width:92px;height:92px;cursor:pointer;
     filter:drop-shadow(0 4px 6px rgba(60,40,15,.3))}
   .lvlbadge-ring{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-  .lvlbadge-tree{position:absolute;top:12%;left:50%;transform:translateX(-50%);width:34%;height:34%;object-fit:contain}
-  .lvlbadge .level{position:absolute;top:48%;left:50%;transform:translateX(-50%);width:74%;
+  .lvlbadge-tree{position:absolute;top:11%;left:50%;transform:translateX(-50%);width:36%;height:36%;object-fit:contain}
+  .lvlbadge .level{position:absolute;top:48%;left:50%;transform:translateX(-50%);width:78%;
     font-size:9px;font-weight:900;color:var(--brown);text-align:center;line-height:1.1;
-    text-shadow:0 1px 0 rgba(255,248,235,.7)}
+    text-shadow:0 1px 0 rgba(255,248,235,.75);font-family:"Fredoka","Nunito",sans-serif}
 
-  /* кошелёк — сцена + кожаная рамка поверх ассета */
-  .wallet-card{position:relative;margin-top:14px;aspect-ratio:1097/798;
+  /* кожаный кошелёк — герой экрана */
+  .wallet-card{position:relative;margin-top:10px;aspect-ratio:1097/798;
     background-image:url(assets/wallet_card.webp);background-size:100% 100%;
-    filter:drop-shadow(0 8px 14px rgba(50,35,15,.28))}
-  .wallet-card::before{content:"";position:absolute;inset:-3px;border-radius:18px;pointer-events:none;
-    box-shadow:inset 0 0 0 3px rgba(255,236,180,.25),0 0 0 2px rgba(90,55,25,.15)}
-  .wc-text{position:absolute;left:48%;right:9%;top:12%;bottom:22%;display:flex;flex-direction:column;
+    filter:drop-shadow(0 10px 16px rgba(50,35,15,.32))}
+  .wc-text{position:absolute;left:46%;right:8%;top:14%;bottom:28%;display:flex;flex-direction:column;
     justify-content:center;text-align:left}
-  .wc-label{font-size:14px;font-weight:800;color:#8a6a45;letter-spacing:.3px;
-    font-family:"Fredoka","Nunito",sans-serif}
-  .wc-num{font-size:52px;font-weight:900;line-height:1;letter-spacing:-1px;
-    background:linear-gradient(180deg,#fff3c9,#f0c14a 50%,#c9871f);
+  .wc-label{font-size:15px;font-weight:900;color:#fff8eb;letter-spacing:.2px;
+    font-family:"Fredoka","Nunito",sans-serif;text-shadow:0 1px 2px rgba(60,35,10,.55)}
+  .wc-num{font-size:54px;font-weight:900;line-height:1;letter-spacing:-1.5px;margin-top:2px;
+    background:linear-gradient(180deg,#fff6c8,#f0c14a 48%,#c9871f);
     -webkit-background-clip:text;background-clip:text;color:transparent;
-    -webkit-text-stroke:1.4px #5b3a1e;
-    filter:drop-shadow(0 2px 1px rgba(91,58,30,.35))}
-  .wc-unit{font-size:15px;font-weight:900;color:#8a5a20;text-transform:uppercase;
-    font-family:"Fredoka","Nunito",sans-serif}
-  .wc-sub{font-size:12px;font-weight:700;color:#8a6a45;margin-top:3px}
-  /* CTA внутри рамки — золотая плашка, как часть кошелька, не «апп-зелень» */
-  .wc-cta{position:absolute;left:46%;right:8%;bottom:9%;margin:0;width:auto;max-width:none;
-    font-size:15px;padding:9px 10px;border-radius:14px;
-    background:linear-gradient(180deg,#ffe7a8 0%,#f0c14a 42%,#c9871f 100%);
-    border:2.5px solid #fff8e0;color:#5b3a1e;
-    box-shadow:inset 0 1px 0 rgba(255,248,220,.7),0 0 0 2px #8a6238,0 4px 0 #6b4a22;
-    text-shadow:0 1px 0 rgba(255,248,220,.55);cursor:pointer;
-    font-family:"Fredoka","Nunito",sans-serif;font-weight:900}
-  .wc-cta:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,248,220,.5),0 0 0 2px #8a6238,0 2px 0 #6b4a22}
+    -webkit-text-stroke:1.5px #5b3a1e;
+    filter:drop-shadow(0 2px 1px rgba(91,58,30,.4))}
+  .wc-unit{font-size:16px;font-weight:900;color:#f0d7a4;text-transform:uppercase;letter-spacing:.8px;
+    font-family:"Fredoka","Nunito",sans-serif;text-shadow:0 1px 2px rgba(60,35,10,.45);margin-top:1px}
+  .wc-sub{font-size:12px;font-weight:700;color:#e8d4b0;margin-top:4px;
+    text-shadow:0 1px 1px rgba(60,35,10,.35)}
 
-  .wc-links{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .wc-cta{position:absolute;left:44%;right:7%;bottom:7%;margin:0;padding:0;border:none;background:none;
+    cursor:pointer;line-height:0;filter:drop-shadow(0 3px 0 rgba(40,60,20,.28));transition:transform .08s}
+  .wc-cta:active{transform:translateY(2px);filter:drop-shadow(0 1px 0 rgba(40,60,20,.28))}
+  .wc-cta img{display:block;width:100%;height:auto;max-height:48px;object-fit:contain;object-position:right center}
+
+  /* вторичное — ниже героя */
+  .home-below{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .home-spend{display:block;width:100%;max-width:280px;margin:0 auto;padding:11px 18px;
+    background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid #8a6238;border-radius:18px;
+    color:var(--brown);font-size:16px;font-weight:900;cursor:pointer;
+    box-shadow:0 0 0 2px #fff8eb,0 4px 0 #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .home-spend:active{transform:translateY(2px);box-shadow:0 0 0 2px #fff8eb,0 2px 0 #c9a86a}
+
+  .next-deed{background:rgba(255,248,235,.94);border:3px solid #fff;border-radius:18px;
+    padding:10px 12px;display:none;text-align:left;cursor:pointer;
+    box-shadow:0 0 0 3px #c9a86a,0 4px 0 rgba(107,79,58,.14)}
+  .next-deed .nd-label{font-weight:800;color:#a1876a;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+  .next-deed .nd-title{font-weight:900;color:var(--ink);font-size:15px;margin-top:2px;line-height:1.2;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .next-deed .nd-meta{font-weight:800;color:var(--brown);font-size:12px;margin-top:3px}
+
+  .daily{background:linear-gradient(135deg,#ffe9a8,#ffd062);border:3px solid #fff;border-radius:18px;
+    padding:10px 12px;box-shadow:0 0 0 3px #e0a52e,0 4px 0 rgba(160,110,20,.22);
+    display:none;align-items:center;gap:10px}
+  .daily .fire{font-size:30px;line-height:1}
+  .daily .txt{flex:1;text-align:left}
+  .daily .t1{font-weight:900;color:#6b4a12;font-size:15px;line-height:1.1;font-family:"Fredoka","Nunito",sans-serif}
+  .daily .t2{font-weight:800;color:#9a7420;font-size:12px;margin-top:2px}
+  .daily button{background:linear-gradient(180deg,#8bc75a,#6fad45);border:3px solid var(--green-d);color:#fff;
+    font-size:14px;font-weight:900;padding:9px 14px;border-radius:999px;
+    box-shadow:0 3px 0 var(--green-d);cursor:pointer;white-space:nowrap}
+  .daily button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--green-d)}
+  .daily.got{background:#eef3e6;border-color:#fff;box-shadow:0 0 0 3px #cdd9b8,0 4px 0 rgba(120,140,90,.12)}
+  .daily.got .t1{color:#5f7a38}
+
+  .wc-links{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
   .wc-links a{font-weight:800;font-size:12px;color:var(--brown);background:rgba(255,248,235,.92);
     border:2.5px solid #fff;border-radius:14px;padding:6px 12px;text-decoration:none;
-    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
-
-  .add{margin:14px auto 0;display:block;
-    background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid #8a6238;
-    color:var(--brown);font-size:18px;font-weight:900;padding:12px 28px;border-radius:18px;
-    box-shadow:0 0 0 2px #fff8eb,0 5px 0 #c9a86a;cursor:pointer;
-    font-family:"Fredoka","Nunito",sans-serif;text-shadow:none}
-  .add:active{transform:translateY(3px);box-shadow:0 0 0 2px #fff8eb,0 2px 0 #c9a86a}
-  .add.soft{background:linear-gradient(180deg,#fffaf0,#f5e6c8);color:var(--brown);
-    box-shadow:0 0 0 2px #fff,0 4px 0 #d4bc8a;border-color:#b8955e}
-
-  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;
-    color:var(--brown);font-weight:800;font-size:13px;text-align:center;
-    background:rgba(255,248,235,.9);border:2.5px solid #fff;border-radius:16px;padding:9px 14px;
     box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.12)}
-  .hint-forest img{width:26px;height:26px;object-fit:contain}
 
-  .next-deed{margin-top:12px;background:rgba(255,248,235,.94);border:3px solid #fff;
-    border-radius:20px;padding:12px 14px;display:none;text-align:left;cursor:pointer;
-    box-shadow:0 0 0 3px #c9a86a,0 5px 0 rgba(107,79,58,.16)}
-  .next-deed .nd-label{font-weight:800;color:#a1876a;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
-  .next-deed .nd-title{font-weight:900;color:var(--ink);font-size:17px;margin-top:3px;line-height:1.2;
-    font-family:"Fredoka","Nunito",sans-serif}
-  .next-deed .nd-meta{font-weight:800;color:var(--brown);font-size:13px;margin-top:4px}
-
-  .home-actions{margin-top:10px;display:flex;flex-direction:column;gap:8px}
-  .home-actions .add{margin:0 auto;width:100%;max-width:280px}
-
-  .wallet-more{margin-top:12px}
   .wallet-more > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
     background:rgba(255,248,235,.9);border:2.5px solid #fff;border-radius:16px;
-    padding:10px 12px;text-align:center;box-shadow:0 0 0 2px #c9a86a}
+    padding:9px 12px;text-align:center;box-shadow:0 0 0 2px #c9a86a;font-size:13px}
   .wallet-more > summary::-webkit-details-marker{display:none}
   .wallet-more[open] > summary{margin-bottom:8px}
+  .wallet-more .add{display:block;width:100%;margin:0;padding:11px 16px;
+    background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid #8a6238;border-radius:16px;
+    color:var(--brown);font-size:15px;font-weight:900;cursor:pointer;
+    box-shadow:0 0 0 2px #fff8eb,0 4px 0 #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .wallet-more .add + .add{margin-top:8px}
+  .wallet-more .add.soft{background:linear-gradient(180deg,#fffaf0,#f5e6c8);border-color:#b8955e;
+    box-shadow:0 0 0 2px #fff,0 3px 0 #d4bc8a}
 
-  .daily{margin-top:12px;background:linear-gradient(135deg,#ffe9a8,#ffd062);
-    border:3px solid #fff;border-radius:20px;padding:12px 14px;
-    box-shadow:0 0 0 3px #e0a52e,0 5px 0 rgba(160,110,20,.25);display:flex;align-items:center;gap:12px}
-  .daily .fire{font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(160,90,20,.4))}
-  .daily .txt{flex:1;text-align:left}
-  .daily .t1{font-weight:900;color:#6b4a12;font-size:16px;line-height:1.1;font-family:"Fredoka","Nunito",sans-serif}
-  .daily .t2{font-weight:800;color:#9a7420;font-size:12.5px;margin-top:2px}
-  .daily button{background:linear-gradient(180deg,#8bc75a,#6fad45);border:3px solid var(--green-d);color:#fff;
-    font-size:15px;font-weight:900;padding:10px 16px;border-radius:999px;
-    box-shadow:0 4px 0 var(--green-d);cursor:pointer;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.15)}
-  .daily button:active{transform:translateY(2px);box-shadow:0 2px 0 var(--green-d)}
-  .daily.got{background:#eef3e6;border-color:#fff;box-shadow:0 0 0 3px #cdd9b8,0 5px 0 rgba(120,140,90,.15)}
-  .daily.got .t1{color:#5f7a38}
+  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;
+    color:var(--brown);font-weight:800;font-size:12px;text-align:center;
+    background:rgba(255,248,235,.88);border:2.5px solid #fff;border-radius:14px;padding:8px 12px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .hint-forest img{width:22px;height:22px;object-fit:contain}
 
   .rain{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden}
   .rain span{position:absolute;top:-40px;font-size:26px;animation:fall linear forwards}
@@ -132,19 +129,6 @@
         </div>
       </div>
 
-      <div class="daily" id="daily" style="display:none">
-        <div class="fire" id="dailyFire">🎁</div>
-        <div class="txt"><div class="t1" id="dailyT1">Ежедневный подарок</div>
-          <div class="t2" id="dailyT2">Заходи каждый день — серия растёт</div></div>
-        <button id="dailyBtn">Забрать</button>
-      </div>
-
-      <div class="next-deed" id="nextDeed">
-        <div class="nd-label">Следующее дело</div>
-        <div class="nd-title" id="nextDeedTitle">…</div>
-        <div class="nd-meta" id="nextDeedMeta"></div>
-      </div>
-
       <div class="wallet-card">
         <div class="wc-text">
           <div class="wc-label">Кошелёк</div>
@@ -152,24 +136,41 @@
           <div class="wc-unit">шишки</div>
           <div class="wc-sub">Всего накоплено</div>
         </div>
-        <button class="wc-cta" id="earnBtn" type="button">Сделать дело</button>
+        <button class="wc-cta" id="earnBtn" type="button" aria-label="Сделать дело">
+          <img src="assets/home_btn_earn.webp" alt="Сделать дело">
+        </button>
       </div>
 
-      <div class="home-actions">
-        <button class="add soft" id="spendBtn">Потратить в магазине</button>
-      </div>
+      <div class="home-below">
+        <button class="home-spend" id="spendBtn" type="button">Потратить в магазине</button>
 
-      <div class="wc-links">
-        <a href="news.html">Новости леса →</a>
-        <a href="album.html">Лесной альбом →</a>
-        <a href="surprises.html" id="spLink" style="display:none">Шишки-сюрпризы →</a>
-      </div>
+        <div class="daily" id="daily">
+          <div class="fire" id="dailyFire">🎁</div>
+          <div class="txt"><div class="t1" id="dailyT1">Ежедневный подарок</div>
+            <div class="t2" id="dailyT2">Заходи каждый день — серия растёт</div></div>
+          <button id="dailyBtn">Забрать</button>
+        </div>
 
-      <details class="wallet-more">
-        <summary>Оплата по QR</summary>
-        <button class="add soft" id="qrBtn" style="width:100%;max-width:none;margin-top:0">Мой QR — принимать оплату</button>
-        <button class="add" id="scanBtn" style="width:100%;max-width:none;margin-top:8px">Оплатить по QR</button>
-      </details>
+        <div class="next-deed" id="nextDeed">
+          <div class="nd-label">Следующее дело</div>
+          <div class="nd-title" id="nextDeedTitle">…</div>
+          <div class="nd-meta" id="nextDeedMeta"></div>
+        </div>
+
+        <div class="wc-links">
+          <a href="news.html">Новости леса →</a>
+          <a href="album.html">Лесной альбом →</a>
+          <a href="surprises.html" id="spLink" style="display:none">Шишки-сюрпризы →</a>
+        </div>
+
+        <details class="wallet-more">
+          <summary>Оплата по QR</summary>
+          <button class="add soft" id="qrBtn">Мой QR — принимать оплату</button>
+          <button class="add" id="scanBtn">Оплатить по QR</button>
+        </details>
+
+        <div class="hint-forest">Лес и коллекция — на вкладке внизу <img src="assets/nav/n6.png" alt=""></div>
+      </div>
 
       <div id="scanBox" style="display:none;position:absolute;inset:0;z-index:20;background:#1d241a">
         <video id="scanVideo" playsinline style="width:100%;height:100%;object-fit:cover"></video>
@@ -189,7 +190,6 @@
           <div style="font-weight:700;color:#8a7358;font-size:12px;margin-top:6px;line-height:1.4">Покупатель жмёт «Оплатить по QR» и наводит камеру. Комиссия Банка — 1 шишка со сделки</div>
         </div>
       </div>
-      <div class="hint-forest">Лес и коллекция — на вкладке внизу <img src="assets/nav/n6.png" alt=""></div>
     </div>
   </div>
 <script src="assets/qrcode.js"></script>
