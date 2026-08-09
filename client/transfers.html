@@ -11,38 +11,45 @@
     background:linear-gradient(180deg,#a07840 0%,#8a6238 55%,#6b4a22 100%);
     color:#fff8eb;border:3px solid #5a3a18;text-shadow:0 2px 0 rgba(0,0,0,.25);
     box-shadow:0 4px 0 #4a3010, inset 0 1px 0 rgba(255,230,180,.35)}
-  .greet{margin:2px 0 6px}
-  .greet img{width:100px;height:100px;
+  .wrap{overflow-y:auto}
+  .greet{margin:2px 0 6px;flex:none}
+  .greet img{width:72px;height:72px;
     filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
   .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
-  .friends{margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
-    padding:8px 4px 4px;overflow:visible}
-  .friend{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:16px;
-    padding:8px 10px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);
-    min-width:88px;cursor:pointer;box-sizing:border-box}
+  /* сетка друзей скроллится сама — не выталкивает сумму к доку */
+  .friends{margin-top:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+    padding:6px 2px;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    flex:0 1 auto;min-height:96px;max-height:min(34vh,260px)}
+  .friends::-webkit-scrollbar{width:0}
+  .friend{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+    padding:6px 8px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);
+    width:96px;flex:0 0 96px;cursor:pointer;box-sizing:border-box}
   .friend.sel{border-color:#fff;box-shadow:0 0 0 3px #f0c14a,0 0 0 6px rgba(232,182,75,.35),0 3px 0 rgba(107,79,58,.15)}
-  .friend img{width:66px;height:66px;object-fit:contain}
-  .friend span{display:block;font-weight:800;color:var(--brown);font-size:13px;margin-top:2px;
-    font-family:"Fredoka","Nunito",sans-serif}
-  .apick{margin-top:12px;display:flex;gap:8px;justify-content:center}
+  .friend img{width:52px;height:52px;object-fit:contain}
+  .friend span{display:block;font-weight:800;color:var(--brown);font-size:12px;margin-top:2px;
+    font-family:"Fredoka","Nunito",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .gift-block{flex:none;margin-top:8px;padding:10px 8px 4px;text-align:center;
+    background:rgba(255,248,235,.92);border:3px solid #fff;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .apick{margin-top:8px;display:flex;gap:8px;justify-content:center}
   .apick .ap{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
     padding:9px 20px;font-weight:900;color:var(--brown);cursor:pointer;font-size:22px;
     box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);font-family:"Fredoka","Nunito",sans-serif}
   .apick .ap.sel{background:linear-gradient(180deg,#8bc75a,#6fad45);color:#fff;border-color:#fff;
     box-shadow:0 0 0 3px #5f9a38,0 3px 0 rgba(60,100,30,.25)}
-  .amt-big{text-align:center;margin-top:10px}
-  .amt-big .n{font-size:42px;font-weight:900;line-height:1;
+  .amt-big{text-align:center;margin:0}
+  .amt-big .n{font-size:40px;font-weight:900;line-height:1.05;
     background:linear-gradient(180deg,#8bc75a,#4f8a2e);-webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-stroke:1px #3a6a20;font-family:"Fredoka","Nunito",sans-serif}
   .amt-big .u{display:inline-block;margin-top:4px;background:linear-gradient(180deg,#fff6e4,#f0d7a4);
     border:2.5px solid #fff;border-radius:999px;padding:3px 12px;font-weight:900;color:var(--brown);font-size:12px;
     box-shadow:0 0 0 2px #c9a86a;letter-spacing:.4px}
-  #anonRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;
+  #anonRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;
     font-weight:800;color:var(--brown);cursor:pointer;
-    background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:14px;padding:9px 12px;
+    background:rgba(255,255,255,.7);border:2.5px solid #fff;border-radius:14px;padding:9px 12px;
     box-shadow:0 0 0 2px #c9a86a;font-size:13px}
   #anonRow input{width:20px;height:20px;accent-color:var(--green)}
-  .gift-send{display:block;margin:14px auto 0;background:none;border:none;padding:0;cursor:pointer;line-height:0;
+  .gift-send{display:block;margin:12px auto 4px;background:none;border:none;padding:0;cursor:pointer;line-height:0;
     filter:drop-shadow(0 4px 0 rgba(60,40,15,.22));transition:transform .08s}
   .gift-send:active{transform:translateY(2px);filter:drop-shadow(0 2px 0 rgba(60,40,15,.22))}
   .gift-send img{display:block;height:48px;width:auto;max-width:260px;margin:0 auto;object-fit:contain}
@@ -70,14 +77,16 @@
     <div class="bubble">Кому подаришь?</div>
   </div>
   <div class="friends" id="friendList"></div>
-  <div class="amt-big"><div class="n" id="giftAmtN">25</div><div class="u">ШИШЕК</div></div>
-  <div class="apick"><div class="ap" data-a="10">10</div><div class="ap sel" data-a="25">25</div><div class="ap" data-a="50">50</div></div>
-  <label id="anonRow">
-    <input type="checkbox" id="anon"> Отправить тайно (Шишка-сюрприз)
-  </label>
-  <button class="gift-send" id="giftSendBtn" type="button" aria-label="Отправить подарок">
-    <img src="assets/gift_btn_send.webp" alt="Отправить подарок">
-  </button>
+  <div class="gift-block">
+    <div class="amt-big"><div class="n" id="giftAmtN">25</div><div class="u">ШИШЕК</div></div>
+    <div class="apick"><div class="ap" data-a="10">10</div><div class="ap sel" data-a="25">25</div><div class="ap" data-a="50">50</div></div>
+    <label id="anonRow">
+      <input type="checkbox" id="anon"> Отправить тайно (Шишка-сюрприз)
+    </label>
+    <button class="gift-send" id="giftSendBtn" type="button" aria-label="Отправить подарок">
+      <img src="assets/gift_btn_send.webp" alt="Отправить подарок">
+    </button>
+  </div>
   <div class="gifts-title">Кто тебе подарил</div>
   <div id="giftsReceived"></div>
   <div id="note"></div>
