@@ -231,24 +231,32 @@ const api = {
       if (!(await one('select 1 from child_logins where code=$1', [code]))) break;
     }
     await q('insert into child_logins(code,child_id) values($1,$2)', [code, u.id]);
-    const raw = auth.newToken();
-    await q(
-      `insert into device_tokens(token_hash, child_id, circle_id, label) values($1,$2,$3,$4)`,
-      [auth.hash(raw), u.id, circle.id, 'signup']);
-    // витрина впечатлений: глобальные (circle_id is null) или копия из самого старого круга
-    const seeded = await q(
-      `insert into shop_items(circle_id,type,title,price)
-         select $1::uuid, type, title, price from shop_items
-          where type='impression' and is_active and circle_id is null
-       returning id`, [circle.id]);
-    if (!seeded.length) {
+    let raw = null;
+    try {
+      raw = auth.newToken();
       await q(
+        `insert into device_tokens(token_hash, child_id, circle_id, label) values($1,$2,$3,$4)`,
+        [auth.hash(raw), u.id, circle.id, 'signup']);
+    } catch (e) {
+      console.error('signup device_token', e.message);
+      raw = null;   // без миграции auth — вход по коду всё равно работает
+    }
+    // витрина впечатлений: глобальные (circle_id is null) или копия из самого старого круга
+    try {
+      const seeded = await q(
         `insert into shop_items(circle_id,type,title,price)
            select $1::uuid, type, title, price from shop_items
-            where type='impression' and is_active
-              and circle_id = (select id from circles where id <> $1::uuid order by created_at limit 1)
-            order by price limit 24`, [circle.id]).catch(() => {});
-    }
+            where type='impression' and is_active and circle_id is null
+         returning id`, [circle.id]);
+      if (!seeded.length) {
+        await q(
+          `insert into shop_items(circle_id,type,title,price)
+             select $1::uuid, type, title, price from shop_items
+              where type='impression' and is_active
+                and circle_id = (select id from circles where id <> $1::uuid order by created_at limit 1)
+              order by price limit 24`, [circle.id]);
+      }
+    } catch (e) { console.error('signup shop seed', e.message); }
     return { ok: true, name, code, token: raw };
   },
 
