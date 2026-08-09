@@ -33,12 +33,10 @@
     font-size:18px;margin-top:4px}
   .lot .price img{width:22px;height:22px}
   .lot .right{flex:none;display:flex;align-items:center;justify-content:center}
-  .shop-buy{flex:none;margin:0;padding:10px 16px;font-size:15px;line-height:1.1;
-    font-family:"Fredoka","Nunito",sans-serif;white-space:nowrap;
-    background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
-    color:#fff;font-weight:900;border-radius:999px;box-shadow:0 4px 0 var(--green-d);cursor:pointer;
-    text-shadow:0 1px 1px rgba(0,0,0,.15)}
-  .shop-buy:active{transform:translateY(2px);box-shadow:0 2px 0 var(--green-d)}
+  .shop-buy{background:none;border:none;padding:0;cursor:pointer;line-height:0;
+    filter:drop-shadow(0 3px 0 rgba(60,40,15,.22));transition:transform .08s}
+  .shop-buy:active{transform:translateY(2px);filter:drop-shadow(0 1px 0 rgba(60,40,15,.22))}
+  .shop-buy img{display:block;height:38px;width:auto;max-width:110px;object-fit:contain}
 
   #note{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,243,238,.95);
     border:2.5px solid #fff;border-radius:14px;padding:8px;box-shadow:0 0 0 2px #e0a99a;color:#b3452e}

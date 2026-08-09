@@ -46,12 +46,10 @@
   .lot-row .price{font-size:17px;flex:none;display:inline-flex;align-items:center;gap:3px;
     font-weight:900;color:#8a5a20}
   .lot-row .price img{width:20px;height:20px}
-  .lot-row .shop-buy{flex:none;margin:0;padding:8px 14px;font-size:14px;line-height:1.1;
-    font-family:"Fredoka","Nunito",sans-serif;white-space:nowrap;
-    background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
-    color:#fff;font-weight:900;border-radius:999px;box-shadow:0 3px 0 var(--green-d);cursor:pointer;
-    text-shadow:0 1px 1px rgba(0,0,0,.15)}
-  .lot-row .shop-buy:active{transform:translateY(2px);box-shadow:0 1px 0 var(--green-d)}
+  .lot-row .shop-buy{background:none;border:none;padding:0;cursor:pointer;line-height:0;flex:none;
+    filter:drop-shadow(0 3px 0 rgba(60,40,15,.22));transition:transform .08s}
+  .lot-row .shop-buy:active{transform:translateY(2px);filter:drop-shadow(0 1px 0 rgba(60,40,15,.22))}
+  .lot-row .shop-buy img{display:block;height:34px;width:auto;max-width:100px;object-fit:contain}
   .lot-empty{margin-top:10px;color:#a1876a;font-weight:700;font-size:13px;text-align:center}
 
   #createForm{margin-top:10px;padding:12px;display:none;
