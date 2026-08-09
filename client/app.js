@@ -24,15 +24,34 @@ window.cardUrl = function (code, grade, size) {
   if (size === 'md') return `assets/cards/md/${code}_${g}.webp`;
   return `assets/cards/${code}_${g}.webp`;
 };
-// Снять decoded bitmaps карт с DOM (SPA-уход / pagehide) — иначе Chrome копит сотни МБ.
+// Снять decoded bitmaps карт с DOM (SPA-уход / фон) — иначе Chrome копит сотни МБ.
+// Важно: сохраняем data-src и восстанавливаем на pageshow — иначе после Telegram/Safari
+// выбитые карты остаются пустыми (у locked есть «?», у owned — нет).
 window.releaseCardImages = function (root) {
-  (root || document).querySelectorAll('img[src*="assets/cards/"]').forEach((img) => {
-    try { img.removeAttribute('src'); } catch {}
+  (root || document).querySelectorAll('img[src*="assets/cards/"], img[data-card-src]').forEach((img) => {
+    try {
+      const cur = img.getAttribute('src');
+      if (cur && cur.includes('assets/cards/')) img.dataset.cardSrc = cur;
+      if (cur) img.removeAttribute('src');
+    } catch {}
+  });
+};
+window.restoreCardImages = function (root) {
+  (root || document).querySelectorAll('img[data-card-src]').forEach((img) => {
+    try {
+      if (!img.getAttribute('src') && img.dataset.cardSrc) img.src = img.dataset.cardSrc;
+    } catch {}
   });
 };
 if (!window.__cardMemHook) {
   window.__cardMemHook = true;
   window.addEventListener('pagehide', () => { try { window.releaseCardImages(); } catch {} });
+  window.addEventListener('pageshow', () => { try { window.restoreCardImages(); } catch {} });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      try { window.restoreCardImages(); } catch {}
+    }
+  });
 }
 
 function runApp() {

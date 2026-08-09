@@ -1,7 +1,7 @@
-const CACHE = 'shishka-v56';
-const CARDS_CACHE = 'shishka-cards-v1';
-const CARDS_MAX = 120;       // thumb/md + немного full
-const CARDS_FULL_MAX = 30;   // full-res отдельно жёстче
+const CACHE = 'shishka-v57';
+const CARDS_CACHE = 'shishka-cards-v2';
+const CARDS_MAX = 500;       // альбом тянет сотни thumb — 120 было мало, промахи ломали картинки
+const CARDS_FULL_MAX = 40;   // full-res отдельно жёстче
 const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'games.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
@@ -45,11 +45,18 @@ async function cardsFetch(request) {
     cache.put(request, hit.clone()).catch(() => {});
     return hit;
   }
-  const res = await fetch(request);
-  if (res && res.ok) {
-    cache.put(request, res.clone()).then(() => trimCardsCache(cache)).catch(() => {});
+  try {
+    const res = await fetch(request);
+    if (res && res.ok) {
+      cache.put(request, res.clone()).then(() => trimCardsCache(cache)).catch(() => {});
+    }
+    return res;
+  } catch {
+    // сеть упала — только реальный cache hit; undefined ломает <img>
+    const again = await cache.match(request);
+    if (again) return again;
+    return new Response('', { status: 504, statusText: 'card offline' });
   }
-  return res;
 }
 
 self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });
@@ -72,7 +79,7 @@ self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
   if (u.pathname.startsWith('/api/')) return;
   if (isCardUrl(u.pathname)) {
-    e.respondWith(cardsFetch(e.request).catch(() => caches.open(CARDS_CACHE).then((c) => c.match(e.request))));
+    e.respondWith(cardsFetch(e.request));
     return;
   }
   // разметка/код — NETWORK-FIRST
