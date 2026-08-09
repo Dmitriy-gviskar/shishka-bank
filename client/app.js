@@ -179,28 +179,24 @@ if (page === 'index.html' || page === '') {
     const t1 = document.getElementById('dailyT1'), t2 = document.getElementById('dailyT2');
     const fire = document.getElementById('dailyFire'), btn = document.getElementById('dailyBtn');
     el.style.display = 'flex';
-    if (!s.can_claim_daily) {   // уже забрал сегодня
-      el.classList.add('got'); fire.textContent = '🌙'; btn.style.display = 'none';
-      t1.textContent = 'Подарок получен';
-      t2.textContent = s.streak > 0 ? `Серия: ${s.streak} 🔥 · заходи завтра` : 'Заходи завтра';
+    if (!s.can_claim_daily) {   // уже забрал — тонкий чип, без второго этажа текста
+      el.classList.add('got'); fire.textContent = '🔥';
+      t1.textContent = s.streak > 0 ? `Серия ${s.streak} · завтра снова` : 'Заходи завтра за подарком';
+      t2.textContent = '';
       return;
     }
     fire.textContent = s.streak > 0 ? '🔥' : '🎁';
     t1.textContent = 'Подарок ждёт!';
-    t2.textContent = s.streak > 0 ? `Серия: ${s.streak} дн. — не потеряй!` : 'Начни свою серию';
+    t2.textContent = s.streak > 0 ? `Серия ${s.streak} дн.` : 'Начни серию';
     btn.onclick = async () => {
       btn.disabled = true;
       const r = await api('/api/daily', {});
       if (r.error) { btn.disabled = false; t2.textContent = r.error; return; }
       const total = (r.bonus || 0) + (r.milestone || 0) + (r.rain || 0);
       coneRain(12 + (r.milestone ? 18 : 0));
-      el.classList.add('got'); fire.textContent = '🔥'; btn.style.display = 'none';
-      t1.innerHTML = `+${total} 🌰 · серия ${r.streak}`;
-      let line = r.milestone ? `Веха ${r.streak} дней! +${r.milestone} бонус 🎉`
-               : r.freeze_used ? 'Защитник спас серию!'
-               : 'Возвращайся завтра за бо́льшим';
-      if (r.freeze_granted) line += ' · +1 защитник ❄️';
-      t2.textContent = line;
+      el.classList.add('got'); fire.textContent = '🔥';
+      t1.textContent = `+${total} 🌰 · серия ${r.streak}`;
+      t2.textContent = '';
       const bal = document.getElementById('bal');
       if (bal) bal.textContent = (parseInt(bal.textContent, 10) || 0) + total;
     };

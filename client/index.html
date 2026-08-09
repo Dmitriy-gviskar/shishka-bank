@@ -70,19 +70,24 @@
     font-family:"Fredoka","Nunito",sans-serif}
   .next-deed .nd-meta{font-weight:800;color:var(--brown);font-size:12px;margin-top:3px}
 
-  .daily{background:linear-gradient(135deg,#ffe9a8,#ffd062);border:3px solid #fff;border-radius:18px;
-    padding:10px 12px;box-shadow:0 0 0 3px #e0a52e,0 4px 0 rgba(160,110,20,.22);
-    display:none;align-items:center;gap:10px}
-  .daily .fire{font-size:30px;line-height:1}
-  .daily .txt{flex:1;text-align:left}
-  .daily .t1{font-weight:900;color:#6b4a12;font-size:15px;line-height:1.1;font-family:"Fredoka","Nunito",sans-serif}
-  .daily .t2{font-weight:800;color:#9a7420;font-size:12px;margin-top:2px}
-  .daily button{background:linear-gradient(180deg,#8bc75a,#6fad45);border:3px solid var(--green-d);color:#fff;
-    font-size:14px;font-weight:900;padding:9px 14px;border-radius:999px;
-    box-shadow:0 3px 0 var(--green-d);cursor:pointer;white-space:nowrap}
-  .daily button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--green-d)}
-  .daily.got{background:#eef3e6;border-color:#fff;box-shadow:0 0 0 3px #cdd9b8,0 4px 0 rgba(120,140,90,.12)}
-  .daily.got .t1{color:#5f7a38}
+  /* ежедневка: ждёт — компактный CTA; получена — тонкий чип под кошельком */
+  .daily{display:none;align-items:center;gap:8px;margin:0 auto;width:fit-content;max-width:100%;
+    background:linear-gradient(135deg,#ffe9a8,#ffd062);border:2.5px solid #fff;border-radius:999px;
+    padding:6px 8px 6px 10px;box-shadow:0 0 0 2px #e0a52e,0 3px 0 rgba(160,110,20,.2)}
+  .daily .fire{font-size:18px;line-height:1}
+  .daily .txt{flex:1;text-align:left;min-width:0}
+  .daily .t1{font-weight:900;color:#6b4a12;font-size:13px;line-height:1.15;font-family:"Fredoka","Nunito",sans-serif}
+  .daily .t2{font-weight:800;color:#9a7420;font-size:11px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .daily button{background:linear-gradient(180deg,#8bc75a,#6fad45);border:2.5px solid var(--green-d);color:#fff;
+    font-size:13px;font-weight:900;padding:7px 12px;border-radius:999px;
+    box-shadow:0 2px 0 var(--green-d);cursor:pointer;white-space:nowrap}
+  .daily button:active{transform:translateY(1px);box-shadow:0 1px 0 var(--green-d)}
+  .daily.got{background:rgba(255,248,235,.9);border-color:#fff;box-shadow:0 0 0 2px #c9a86a;
+    padding:5px 12px;gap:5px}
+  .daily.got .fire{font-size:14px}
+  .daily.got .t1{color:#6b4f3a;font-size:12px}
+  .daily.got .t2{display:none}
+  .daily.got button{display:none!important}
 
   .wc-links{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
   .wc-links a{font-weight:800;font-size:12px;color:var(--brown);background:rgba(255,248,235,.92);
@@ -142,14 +147,14 @@
       </div>
 
       <div class="home-below">
-        <button class="home-spend" id="spendBtn" type="button">Потратить в магазине</button>
-
         <div class="daily" id="daily">
           <div class="fire" id="dailyFire">🎁</div>
           <div class="txt"><div class="t1" id="dailyT1">Ежедневный подарок</div>
             <div class="t2" id="dailyT2">Заходи каждый день — серия растёт</div></div>
           <button id="dailyBtn">Забрать</button>
         </div>
+
+        <button class="home-spend" id="spendBtn" type="button">Потратить в магазине</button>
 
         <div class="next-deed" id="nextDeed">
           <div class="nd-label">Следующее дело</div>
