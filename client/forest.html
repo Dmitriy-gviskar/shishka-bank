@@ -4,15 +4,25 @@
 <title>Лесная поляна</title><link rel="stylesheet" href="style.css">
 <style>
   .phone{background-image:url(assets/bg.webp)}
-  #grid{flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);
-    gap:11px;padding:4px 2px 10px}
-  #grid::-webkit-scrollbar{width:0}
+  .doors,.more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;padding:4px 2px 6px}
   .tile{background:var(--card);border:3px solid #cbb083;border-radius:20px;padding:12px 6px 10px;
     text-align:center;text-decoration:none;box-shadow:0 4px 0 rgba(107,79,58,.22);
     display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .08s}
   .tile:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(107,79,58,.22)}
   .tile img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 3px 4px var(--shadow))}
   .tile span{font-weight:900;color:var(--ink);font-size:14px;line-height:1.05}
+  .tile small{font-weight:700;color:#a1876a;font-size:11px;line-height:1.2}
+  .doors .tile{padding:16px 8px 12px}
+  .doors .tile img{width:82px;height:82px}
+  .more-forest{margin:6px 2px 10px;flex:1 1 auto;min-height:0;overflow-y:auto}
+  .more-forest::-webkit-scrollbar{width:0}
+  .more-forest > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
+    background:rgba(255,250,240,.9);border:3px solid #d9c39a;border-radius:16px;
+    padding:12px 14px;text-align:center;box-shadow:0 3px 0 rgba(107,79,58,.18)}
+  .more-forest > summary::-webkit-details-marker{display:none}
+  .more-forest[open] > summary{margin-bottom:10px}
+  .more-forest > summary::after{content:" ▾";font-weight:900}
+  .more-forest[open] > summary::after{content:" ▴"}
   /* питомец: выбранная карта живёт на поляне и растёт вместе с грейдом */
   .fam{display:none;align-items:center;gap:10px;background:rgba(255,250,240,.94);
     border:3px solid var(--fc,#cbb083);border-radius:18px;padding:8px 12px 8px 8px;margin-bottom:10px;
@@ -22,7 +32,6 @@
   .fam .fn{font-weight:900;color:var(--ink);font-size:15px}
   .fam .ft{font-weight:700;color:#a1876a;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fam .fgo{font-weight:900;color:#a1876a;font-size:18px}
-  /* оверлеи */
   .ov{position:absolute;inset:0;z-index:30;background:rgba(20,26,18,.82);display:none;
     align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
   .ov.on{display:flex}
@@ -38,36 +47,31 @@
     <div id="talkBubble" style="background:#f6ecd6;border-radius:14px;padding:10px 14px;font-weight:700;color:var(--ink);font-size:14px;line-height:1.4;margin-bottom:10px;min-height:40px">...</div>
     <div id="talkBtns" style="display:flex;flex-direction:column;gap:6px"></div>
   </div></div>
-  <!-- игра: таблица умножения -->
-  <div class="ov" id="gameOv"><div class="sheet" id="gameSheet" style="max-width:320px;text-align:center">
-    <button class="x" id="gameClose">&times;</button>
-    <h3 id="gameTitle" style="margin:0 0 8px">Таблица умножения</h3>
-    <div id="gameProg" style="font-weight:800;color:var(--brown);font-size:13px;margin-bottom:6px">0 / 10</div>
-    <div id="gameQ" style="font-size:28px;font-weight:900;color:var(--ink);margin:10px 0">7 × 8 = ?</div>
-    <input id="gameA" type="number" inputmode="numeric" style="width:100px;font-size:24px;font-weight:900;text-align:center;background:#fffaf0;border:3px solid #d9c39a;border-radius:14px;padding:10px;outline:none;color:var(--ink)" autofocus>
-    <button class="btn btn-lg" id="gameBtn" style="margin-top:8px;width:100%">Ответить</button>
-    <div id="gameMsg" style="font-weight:800;margin-top:6px;font-size:14px;min-height:20px"></div>
-    <div id="gameDone" style="display:none;margin-top:10px">
-      <div id="gameResult" style="font-size:18px;font-weight:900;color:var(--ink);margin-bottom:8px"></div>
-      <button class="btn btn-lg" id="gameClaim" style="width:100%">Забрать шишки</button>
-    </div>
-  </div></div>
-   <div id="grid">
-     <a class="tile" href="games.html"><img src="assets/chest_closed.webp"><span>🎮 Игры</span></a>
-     <a class="tile" href="collection.html"><img src="assets/chest_closed.webp"><span>Коллекция</span></a>
-    <a class="tile" href="deposit.html"><img src="assets/tree.webp"><span>Дупло</span></a>
-    <a class="tile" href="pot.html"><img src="assets/pot.webp"><span>Котёл</span></a>
-    <a class="tile" href="horoscope.html"><img src="assets/oracle.webp"><span>Гороскоп</span></a>
-    <a class="tile" href="quest.html"><img src="assets/skin_gold.webp"><span>Квест</span></a>
-    <a class="tile" href="auction.html"><img src="assets/auction.webp"><span>Аукцион</span></a>
-    <a class="tile" href="mail.html"><img src="assets/mail.webp"><span>Почта</span></a>
-    <a class="tile" href="achievements.html"><img src="assets/badge1.webp"><span>Награды</span></a>
-    <a class="tile" href="skins.html"><img src="assets/skin_rainbow.webp"><span>Наряды</span></a>
-    <a class="tile" href="profile.html"><img src="assets/tree5.webp"><span>Моё дерево</span></a>
-    <a class="tile" href="council.html"><img src="assets/spirit_scroll.webp"><span>Совет</span></a>
-    <a class="tile" href="guilds.html"><img src="assets/tree4.webp"><span>Гильдия</span></a>
-    <a class="tile" href="insurance.html"><img src="assets/spirit.webp"><span>Страховка</span></a>
+
+  <!-- три двери north star — остальное под «Ещё» -->
+  <div class="doors">
+    <a class="tile" href="collection.html"><img src="assets/chest_closed.webp"><span>Коллекция</span><small>альбом существ</small></a>
+    <a class="tile" href="games.html"><img src="assets/spirit_scroll.webp"><span>Игры</span><small>с питомцем</small></a>
+    <a class="tile" href="profile.html"><img src="assets/tree5.webp"><span>Моё дерево</span><small>рост и профиль</small></a>
   </div>
+
+  <details class="more-forest">
+    <summary>Ещё в лесу</summary>
+    <div class="more-grid">
+      <a class="tile" href="market.html"><img src="assets/nav/n5.png"><span>Лавки</span></a>
+      <a class="tile" href="deposit.html"><img src="assets/tree.webp"><span>Дупло</span></a>
+      <a class="tile" href="pot.html"><img src="assets/pot.webp"><span>Котёл</span></a>
+      <a class="tile" href="horoscope.html"><img src="assets/oracle.webp"><span>Гороскоп</span></a>
+      <a class="tile" href="quest.html"><img src="assets/skin_gold.webp"><span>Квест</span></a>
+      <a class="tile" href="auction.html"><img src="assets/auction.webp"><span>Аукцион</span></a>
+      <a class="tile" href="mail.html"><img src="assets/mail.webp"><span>Почта</span></a>
+      <a class="tile" href="achievements.html"><img src="assets/badge1.webp"><span>Награды</span></a>
+      <a class="tile" href="skins.html"><img src="assets/skin_rainbow.webp"><span>Наряды</span></a>
+      <a class="tile" href="council.html"><img src="assets/spirit_scroll.webp"><span>Совет</span></a>
+      <a class="tile" href="guilds.html"><img src="assets/tree4.webp"><span>Гильдия</span></a>
+      <a class="tile" href="insurance.html"><img src="assets/spirit.webp"><span>Страховка</span></a>
+    </div>
+  </details>
 </div></div>
 <script src="app.js"></script>
 <script src="nav.js"></script>

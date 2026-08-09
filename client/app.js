@@ -102,15 +102,43 @@ if (page === 'link.html') {
 
 // ── Кошелёк ──
 if (page === 'index.html' || page === '') {
+  let homeName = '';
+  let nextOpen = null;
+  const paintBubble = () => {
+    const b = document.querySelector('.bubble'); if (!b) return;
+    if (nextOpen && nextOpen.status === 'open') {
+      const t = nextOpen.title;
+      b.innerHTML = `Есть дело:<br>«${esc(t.length > 28 ? t.slice(0, 28) + '…' : t)}»`;
+    } else if (homeName) {
+      b.innerHTML = `С возвращением,<br>${esc(homeName)}!`;
+    }
+  };
   api('/api/state').then((s) => {
+    homeName = s.name || '';
     const bal = document.getElementById('bal'); if (bal) bal.textContent = s.balance;
-    const b = document.querySelector('.bubble'); if (b) b.innerHTML = `С возвращением,<br>${esc(s.name)}!`;
+    paintBubble();
     const lvl = document.querySelector('.level'); if (lvl) lvl.innerHTML = `Дубок<br>Уровень ${s.tree_level}`;
     const av = document.querySelector('.lvlbadge-tree'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
     initDaily(s);   // ежедневный подарок
   });
-  const add = document.querySelector('.add');   // «Пополнить» → зарабатывай заданиями
-  if (add) add.onclick = () => navigate('quests.html');
+  // якорь петли: одно следующее открытое дело на доме
+  api('/api/tasks').then((tasks) => {
+    const box = document.getElementById('nextDeed');
+    if (!box || !Array.isArray(tasks)) return;
+    nextOpen = tasks.find((t) => t.status === 'open' || t.status === 'submitted') || null;
+    if (!nextOpen) return;
+    box.style.display = 'block';
+    document.getElementById('nextDeedTitle').textContent = nextOpen.title;
+    document.getElementById('nextDeedMeta').textContent = nextOpen.status === 'submitted'
+      ? 'На проверке у ведущего'
+      : `+${nextOpen.reward} шишек · нажми, чтобы сделать`;
+    box.onclick = () => navigate('quests.html');
+    paintBubble();
+  });
+  const earnBtn = document.getElementById('earnBtn');
+  if (earnBtn) earnBtn.onclick = () => navigate('quests.html');
+  const spendBtn = document.getElementById('spendBtn');
+  if (spendBtn) spendBtn.onclick = () => navigate('shop.html');
 
   // ── Ежедневный подарок + серия ──
   function coneRain(n) {   // дождик шишек поверх экрана

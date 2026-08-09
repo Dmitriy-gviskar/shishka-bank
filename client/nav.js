@@ -1,13 +1,13 @@
 // Единый нижний навбар + SPA-lite навигация без перезагрузки страницы.
 // Экран без навбара помечается <body data-no-nav>.
 (function () {
+  // 5 слотов: дом / круг / сток / дела / лес. Лавки живут в «Ещё в лесу», не в таббаре.
   const ITEMS = [
-    { i: 'n1', href: 'index.html' },   // Кошелёк
+    { i: 'n1', href: 'index.html' },     // Дом (кошелёк)
     { i: 'n2', href: 'transfers.html' }, // Подарки
-    { i: 'n3', href: 'shop.html' },    // Магазин
-    { i: 'n4', href: 'quests.html' },  // Задания
-    { i: 'n5', href: 'market.html' },  // Лавки
-    { i: 'n6', href: 'forest.html' },  // Лес (меню механик)
+    { i: 'n3', href: 'shop.html' },      // Магазин впечатлений
+    { i: 'n4', href: 'quests.html' },    // Дела
+    { i: 'n6', href: 'forest.html' },    // Лес
   ];
 
   window.mountNav = function () {

@@ -45,10 +45,27 @@
     box-shadow:0 5px 0 var(--green-d);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15)}
   .add:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
 
-  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:18px;
+  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;
     color:var(--brown);font-weight:800;font-size:14px;text-align:center;
     background:rgba(255,250,240,.85);border-radius:14px;padding:9px 14px}
   .hint-forest img{width:26px;height:26px;object-fit:contain}
+
+  /* следующее дело — якорь петли на доме */
+  .next-deed{margin-top:12px;background:rgba(255,250,240,.94);border:3px solid #cbb083;
+    border-radius:20px;padding:12px 14px;box-shadow:0 4px 0 rgba(107,79,58,.18);
+    display:none;text-align:left;cursor:pointer}
+  .next-deed .nd-label{font-weight:800;color:#a1876a;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  .next-deed .nd-title{font-weight:900;color:var(--ink);font-size:17px;margin-top:3px;line-height:1.2}
+  .next-deed .nd-meta{font-weight:800;color:var(--brown);font-size:13px;margin-top:4px}
+  .home-actions{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+  .home-actions .add{margin:0 auto;width:100%;max-width:280px}
+  .add.soft{background:#fff3d6;color:var(--brown);box-shadow:0 5px 0 #d9c39a;border-color:#d9c39a}
+  .wallet-more{margin-top:12px}
+  .wallet-more > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
+    background:rgba(255,250,240,.85);border:2px solid #d9c39a;border-radius:14px;
+    padding:10px 12px;text-align:center}
+  .wallet-more > summary::-webkit-details-marker{display:none}
+  .wallet-more[open] > summary{margin-bottom:8px}
 
   /* Ежедневный подарок */
   .daily{margin-top:12px;background:linear-gradient(135deg,#ffe9a8,#ffd062);
@@ -93,6 +110,12 @@
         <button id="dailyBtn">Забрать</button>
       </div>
 
+      <div class="next-deed" id="nextDeed">
+        <div class="nd-label">Следующее дело</div>
+        <div class="nd-title" id="nextDeedTitle">…</div>
+        <div class="nd-meta" id="nextDeedMeta"></div>
+      </div>
+
       <div class="wallet-card">
         <div class="wc-text">
           <div class="wc-label">Кошелёк</div>
@@ -101,16 +124,24 @@
           <div class="wc-sub">Всего накоплено</div>
         </div>
       </div>
-      <button class="add" style="margin-top:14px">Заработать шишки</button>
 
-      <div class="wc-links">
-        <a href="news.html">📰 Новости леса →</a>
-        <a href="album.html">📖 Лесной альбом →</a>
-        <a href="surprises.html" id="spLink" style="display:none">🎁 Шишки-сюрпризы →</a>
+      <div class="home-actions">
+        <button class="add" id="earnBtn">Сделать дело</button>
+        <button class="add soft" id="spendBtn">Потратить в магазине</button>
       </div>
 
-      <button class="add" id="qrBtn" style="background:#fff3d6;color:var(--brown);box-shadow:0 5px 0 #d9c39a;margin-top:14px">Мой QR — принимать оплату</button>
-      <button class="add" id="scanBtn" style="margin-top:10px">Оплатить по QR</button>
+      <div class="wc-links">
+        <a href="news.html">Новости леса →</a>
+        <a href="album.html">Лесной альбом →</a>
+        <a href="surprises.html" id="spLink" style="display:none">Шишки-сюрпризы →</a>
+      </div>
+
+      <details class="wallet-more">
+        <summary>Оплата по QR</summary>
+        <button class="add soft" id="qrBtn" style="width:100%;max-width:none;margin-top:0">Мой QR — принимать оплату</button>
+        <button class="add" id="scanBtn" style="width:100%;max-width:none;margin-top:8px">Оплатить по QR</button>
+      </details>
+
       <div id="scanBox" style="display:none;position:absolute;inset:0;z-index:20;background:#1d241a">
         <video id="scanVideo" playsinline style="width:100%;height:100%;object-fit:cover"></video>
         <div style="position:absolute;top:16px;left:0;right:0;text-align:center;pointer-events:none">
@@ -129,7 +160,7 @@
           <div style="font-weight:700;color:#8a7358;font-size:12px;margin-top:6px;line-height:1.4">Покупатель жмёт «Оплатить по QR» и наводит камеру. Комиссия Банка — 1 шишка со сделки</div>
         </div>
       </div>
-      <div class="hint-forest">Все занятия леса — на вкладке «Поляна» внизу <img src="assets/nav/n6.png" alt=""></div>
+      <div class="hint-forest">Лес и коллекция — на вкладке внизу <img src="assets/nav/n6.png" alt=""></div>
     </div>
   </div>
 <script src="assets/qrcode.js"></script>
