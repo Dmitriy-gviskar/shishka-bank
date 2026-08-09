@@ -3,58 +3,93 @@
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Моё дерево</title><link rel="stylesheet" href="style.css">
 <style>
-  .greet{margin:2px 0 4px}
-  .greet img{width:90px;height:90px;
-    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
-  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
-  .hero{text-align:center;margin-top:0}
-  .hero img{width:126px;height:142px;object-fit:contain;filter:drop-shadow(0 5px 6px var(--shadow))}
-  .lvl{display:inline-block;font-weight:900;color:var(--ink);font-size:16px;margin-top:2px;
-    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:4px 14px;
-    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
-  .progress{height:14px;background:#e4d3ad;border:2.5px solid #fff;border-radius:10px;margin:12px 40px 0;overflow:hidden;
-    box-shadow:0 0 0 2px #c9a86a}
-  .progress i{display:block;height:100%;width:65%;background:linear-gradient(90deg,#f1c65a,#e8a93b)}
-  .passport{margin-top:12px;padding:12px 14px}
-  .passport h3{text-align:center;color:var(--ink);font-weight:900;font-size:16px;margin-bottom:8px;
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+  .wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:12px;padding-bottom:8px}
+  .wrap::-webkit-scrollbar{width:0}
+
+  .head-card{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .head-card .ht{flex:1;min-width:0}
+  .head-card .h1{font-weight:900;color:var(--ink);font-size:20px;line-height:1.1;
     font-family:"Fredoka","Nunito",sans-serif}
-  .trait{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-  .trait .nm{width:96px;font-weight:800;color:var(--brown);font-size:13px}
-  .bar{flex:1;height:13px;background:#e4d3ad;border:2px solid #c9ad7c;border-radius:8px;overflow:hidden}
-  .bar i{display:block;height:100%;background:linear-gradient(90deg,#8ec44f,#5f8e37)}
-  .badges{display:flex;justify-content:space-around;margin-top:10px}
-  .badge{text-align:center}
-  .badge img{width:62px;height:62px;object-fit:contain}
-  .badge span{display:inline-block;font-weight:800;color:var(--brown);font-size:12px;margin-top:2px;
-    background:rgba(255,248,235,.94);border:2px solid #fff;border-radius:10px;padding:2px 8px;
+  .head-card .h2{font-weight:800;color:#8a5a20;font-size:13px;margin-top:3px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .head-card .av{width:56px;height:56px;flex:none;object-fit:contain;
+    filter:drop-shadow(0 3px 4px rgba(60,40,15,.25))}
+
+  .hero{text-align:center;margin-top:4px}
+  .hero img{width:148px;height:166px;object-fit:contain;
+    filter:drop-shadow(0 6px 10px rgba(60,40,15,.35))}
+  .progress{height:16px;background:#e4d3ad;border:3px solid #fff;border-radius:12px;margin:10px 36px 0;overflow:hidden;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.12)}
+  .progress i{display:block;height:100%;width:65%;background:linear-gradient(90deg,#f1c65a,#e8a93b);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+  .prog-cap{text-align:center;margin-top:6px;font-weight:800;color:#8a5a20;font-size:12px;
+    font-family:"Fredoka","Nunito",sans-serif}
+
+  .passport{margin-top:12px;padding:14px 14px 12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .passport h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 12px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .trait{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .trait .nm{width:98px;font-weight:800;color:#6b4f3a;font-size:13px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .bar{flex:1;height:14px;background:#e4d3ad;border:2.5px solid #fff;border-radius:10px;overflow:hidden;
     box-shadow:0 0 0 2px #c9a86a}
-  .profile-btn{margin-top:10px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#8ec44f,#5f8e37);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+  .bar i[data-trait="generosity"]{background:linear-gradient(90deg,#f0a35a,#e07a3a)}
+  .bar i[data-trait="reliability"]{background:linear-gradient(90deg,#f1c65a,#e0a52e)}
+  .bar i[data-trait="wisdom"]{background:linear-gradient(90deg,#7cbc5a,#4f8a2e)}
+
+  .badges{display:flex;justify-content:space-around;margin-top:12px;gap:6px}
+  .badge{text-align:center;flex:1;min-width:0}
+  .badge img{width:64px;height:64px;object-fit:contain;
+    filter:drop-shadow(0 3px 4px rgba(60,40,15,.22))}
+  .badge span{display:inline-block;font-weight:800;color:var(--brown);font-size:11px;margin-top:3px;
+    background:rgba(255,248,235,.96);border:2px solid #fff;border-radius:10px;padding:2px 8px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+
+  .profile-btn{margin-top:14px;width:100%;max-width:300px;font-size:18px;padding:13px 22px;
+    font-family:"Fredoka","Nunito",sans-serif}
   #pnote{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,248,235,.94);
     border:2.5px solid #fff;border-radius:14px;padding:9px;color:#5f8e37;box-shadow:0 0 0 2px #c9a86a}
-  .switch-user{display:inline-block;margin-top:10px;font-weight:800;font-size:13px;color:var(--brown);
+  .switch-user{display:inline-block;margin-top:12px;font-weight:800;font-size:13px;color:var(--brown);
     background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:7px 12px;
-    box-shadow:0 0 0 2px #c9a86a;text-decoration:none}
+    box-shadow:0 0 0 2px #c9a86a;text-decoration:none;font-family:"Fredoka","Nunito",sans-serif}
 </style></head><body>
 <div class="phone"><div class="wrap">
-  <div class="title">Моё дерево</div>
-  <div class="greet">
-    <img src="assets/spirit.webp" alt="Лесной Дух">
-    <div class="bubble">Смотри, как растёт твоё дерево!</div>
+  <div class="head-card">
+    <div class="ht">
+      <div class="h1">Моё дерево</div>
+      <div class="h2" id="levelLabel">Дубок · Уровень 5</div>
+    </div>
+    <img class="av" src="assets/spirit_bust.webp" alt="">
   </div>
-  <div class="hero"><img src="assets/tree5.webp" alt=""><div class="lvl" id="levelLabel">Дубок · Уровень 5</div></div>
+
+  <div class="hero"><img src="assets/tree5.webp" alt=""></div>
   <div class="progress"><i></i></div>
-  <div class="card passport"><h3>Лесной паспорт</h3>
+  <div class="prog-cap">До следующего уровня</div>
+
+  <div class="passport">
+    <h3>Лесной паспорт</h3>
     <div class="trait"><span class="nm">Честность</span><div class="bar"><i style="width:0%" data-trait="honesty"></i></div></div>
     <div class="trait"><span class="nm">Щедрость</span><div class="bar"><i style="width:0%" data-trait="generosity"></i></div></div>
     <div class="trait"><span class="nm">Надёжность</span><div class="bar"><i style="width:0%" data-trait="reliability"></i></div></div>
     <div class="trait"><span class="nm">Мудрость</span><div class="bar"><i style="width:0%" data-trait="wisdom"></i></div></div>
+    <div class="badges" onclick="navigate('achievements.html')" style="cursor:pointer">
+      <div class="badge"><img src="assets/badge1.webp" alt=""><span>Хранитель</span></div>
+      <div class="badge"><img src="assets/badge2.webp" alt=""><span>Меценат</span></div>
+      <div class="badge"><img src="assets/badge3.webp" alt=""><span>Спаситель</span></div>
+    </div>
   </div>
-  <div class="badges" onclick="navigate('achievements.html')" style="cursor:pointer">
-    <div class="badge"><img src="assets/badge1.webp" alt=""><span>Хранитель</span></div>
-    <div class="badge"><img src="assets/badge2.webp" alt=""><span>Меценат</span></div>
-    <div class="badge"><img src="assets/badge3.webp" alt=""><span>Спаситель</span></div>
-  </div>
-  <button class="btn btn-lg profile-btn">Сменить наряд</button>
+
+  <button class="btn btn-lg profile-btn" type="button">Сменить наряд</button>
   <div id="pnote"></div>
   <div style="text-align:center"><a href="#" id="switchUser" class="switch-user">Сменить пользователя</a></div>
 </div></div><script src="app.js"></script>

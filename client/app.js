@@ -447,35 +447,35 @@ async function loadMarket() {
   const shops = await api('/api/shops');
   const c = document.getElementById('marketList'); c.innerHTML = '';
   for (const s of shops) {
-    const el = document.createElement('div'); el.className = 'card shop-card';
+    const el = document.createElement('div'); el.className = 'shop-card';
     el.innerHTML = `${s.is_heir ? '<span class="heir">Наследник</span>' : ''}${s.mine ? '<span class="mine-tag">Моя</span>' : ''}
       <div class="shop-head">
-        <img class="av" src="${s.photo ? s.photo : 'assets/' + s.avatar}">
+        <img class="av" src="${s.photo ? s.photo : 'assets/' + s.avatar}" alt="">
         <div class="sn">${esc(s.name)}</div>
         ${s.mine ? `<div class="shop-mgmt">
-          <button class="mini rename" title="Переименовать">✏️</button>
-          <button class="mini logo" title="Логотип">🖼</button>
-          <button class="mini close" title="Закрыть лавку">🚫</button>
+          <button class="mini rename" type="button" title="Переименовать">✏️</button>
+          <button class="mini logo" type="button" title="Логотип">🖼</button>
+          <button class="mini close" type="button" title="Закрыть лавку">🚫</button>
         </div>` : ''}
       </div>
       <div class="lots"></div>
       ${s.mine ? `<div class="lotForm">
           <input class="lTitle" placeholder="Название товара" maxlength="24">
           <div class="row"><input class="lPrice" type="number" placeholder="Цена в шишках" min="1" style="flex:1">
-            <button class="btn btn-sm lPhoto">📷 Фото</button></div>
-          <button class="btn btn-lg lSave" style="margin-top:2px">Сохранить</button>
+            <button class="btn btn-sm lPhoto" type="button">📷 Фото</button></div>
+          <button class="btn btn-lg lSave" type="button" style="margin-top:2px">Сохранить</button>
         </div>
-        <div class="addLotBtn"><button class="btn btn-sm addLot">+ Добавить товар</button></div>` : ''}`;
+        <div class="addLotBtn"><button class="btn btn-sm addLot" type="button">+ Добавить товар</button></div>` : ''}`;
 
     const lots = el.querySelector('.lots');
     if (!s.lots.length) lots.innerHTML = s.mine ? '<div class="lot-empty">Пока нет товаров — добавь первый ниже</div>' : '<div class="lot-empty">Лавка пока пуста</div>';
     for (const l of s.lots) {
       const row = document.createElement('div'); row.className = 'lot-row';
-      row.innerHTML = `<img class="lot-thumb" src="${l.photo ? l.photo : 'assets/coin1.webp'}">
+      row.innerHTML = `<img class="lot-thumb" src="${l.photo ? l.photo : 'assets/coin1.webp'}" alt="">
         <div class="lt">${esc(l.title)}</div>
-        <div class="price"><img src="assets/coin1.webp">${l.price}</div>
-        ${s.mine ? `<button class="mini le" title="Изменить">✏️</button><button class="mini lr" title="Убрать">🗑</button>`
-                 : '<button class="btn btn-sm">Купить</button>'}`;
+        <div class="price"><img src="assets/coin1.webp" alt="">${l.price}</div>
+        ${s.mine ? `<button class="mini le" type="button" title="Изменить">✏️</button><button class="mini lr" type="button" title="Убрать">🗑</button>`
+                 : `<button class="shop-buy" type="button" aria-label="Купить"><img src="assets/shop_btn_buy.webp" alt="Купить"></button>`}`;
       if (s.mine) {
         row.querySelector('.le').onclick = () => openLotForm(el, l);
         row.querySelector('.lr').onclick = async () => {
