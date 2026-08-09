@@ -1,33 +1,67 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Переводы</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
-  .friends{margin-top:8px}
-  .friend{background:#fbf4e2;border:3px solid #d9c39a;border-radius:16px;padding:8px 4px;text-align:center}
-  .friend.sel{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,182,75,.35)}
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px}
+  .greet{margin:2px 0 6px}
+  .greet img{width:96px;height:96px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
+  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
+  .friends{margin-top:6px}
+  .friend{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:16px;
+    padding:8px 4px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
+  .friend.sel{border-color:#fff;box-shadow:0 0 0 3px #f0c14a,0 0 0 6px rgba(232,182,75,.35),0 3px 0 rgba(107,79,58,.15)}
   .friend img{width:66px;height:66px;object-fit:contain}
-  .friend span{display:block;font-weight:800;color:var(--brown);font-size:13px;margin-top:2px}
-  .amount{margin-top:12px;text-align:center;background:#fbf4e2;border:3px solid #d9c39a;border-radius:16px;padding:10px}
-  .amount .n{font-size:46px;font-weight:900;color:var(--brown);line-height:1}
-  .amount .l{font-weight:800;color:var(--brown);font-size:15px}
+  .friend span{display:block;font-weight:800;color:var(--brown);font-size:13px;margin-top:2px;
+    font-family:"Fredoka","Nunito",sans-serif}
   .apick{margin-top:12px;display:flex;gap:8px;justify-content:center}
-  .apick .ap{background:#fbf4e2;border:3px solid #d9c39a;border-radius:14px;padding:9px 20px;
-    font-weight:900;color:var(--brown);cursor:pointer;font-size:20px}
-  .apick .ap.sel{border-color:var(--gold);background:#fff3d6}
+  .apick .ap{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+    padding:9px 20px;font-weight:900;color:var(--brown);cursor:pointer;font-size:20px;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);font-family:"Fredoka","Nunito",sans-serif}
+  .apick .ap.sel{background:linear-gradient(180deg,#ffe9a8,#ffd062);box-shadow:0 0 0 3px #e0a52e,0 3px 0 rgba(160,110,20,.2)}
+  #anonRow{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;
+    font-weight:800;color:var(--brown);cursor:pointer;
+    background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:14px;padding:9px 12px;
+    box-shadow:0 0 0 2px #c9a86a}
+  #anonRow input{width:20px;height:20px;accent-color:var(--green)}
+  .btn-lg{font-family:"Fredoka","Nunito",sans-serif}
+  .gifts-title{margin-top:16px;text-align:center;font-weight:900;color:var(--ink);font-size:16px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  #giftsReceived{max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+  #giftsReceived::-webkit-scrollbar{width:0}
+  .gift-row{display:flex;align-items:center;padding:8px 12px;margin-bottom:6px;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;border-radius:14px;
+    gap:8px;box-shadow:0 0 0 2px #c9a86a}
+  .gift-row .who{font-weight:900;color:var(--ink);font-size:14px}
+  .gift-row .amt{margin-left:auto;font-weight:900;color:#5f8e37;display:inline-flex;align-items:center;gap:3px}
+  .gift-row .amt img{width:18px;height:18px}
+  .gift-row .when{font-size:11px;color:#a1876a;font-weight:700}
+  .gifts-empty{text-align:center;padding:10px;color:#a1876a;font-weight:700;font-size:13px;
+    background:rgba(255,248,235,.9);border:2.5px solid #fff;border-radius:14px;box-shadow:0 0 0 2px #c9a86a}
+  #note{display:none;text-align:center;font-weight:800;margin-top:10px;
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:9px;
+    box-shadow:0 0 0 2px #c9a86a}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Подарить шишки</div>
+  <div class="greet">
+    <img src="assets/spirit_bust.webp" alt="Лесной Дух">
+    <div class="bubble">Выбери друга и сумму!</div>
+  </div>
   <div class="friends" id="friendList"></div>
   <div class="apick"><div class="ap" data-a="10">10</div><div class="ap sel" data-a="25">25</div><div class="ap" data-a="50">50</div></div>
-  <label id="anonRow" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;font-weight:800;color:var(--brown);cursor:pointer">
-    <input type="checkbox" id="anon" style="width:20px;height:20px"> Отправить тайно (Шишка-сюрприз)
+  <label id="anonRow">
+    <input type="checkbox" id="anon"> Отправить тайно (Шишка-сюрприз)
   </label>
   <button class="btn btn-lg">Отправить подарок</button>
-  <h3 style="margin-top:16px">Кто тебе подарил</h3>
-  <div id="giftsReceived" style="max-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch"></div>
-  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:10px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+  <div class="gifts-title">Кто тебе подарил</div>
+  <div id="giftsReceived"></div>
+  <div id="note"></div>
 </div></div><script src="app.js"></script>
 <script src="nav.js"></script>
 </body></html>

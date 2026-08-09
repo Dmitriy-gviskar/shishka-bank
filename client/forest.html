@@ -1,35 +1,46 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Лесная поляна</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
-  .doors,.more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;padding:4px 2px 6px}
-  .tile{background:var(--card);border:3px solid #cbb083;border-radius:20px;padding:12px 6px 10px;
-    text-align:center;text-decoration:none;box-shadow:0 4px 0 rgba(107,79,58,.22);
-    display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .08s}
-  .tile:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(107,79,58,.22)}
-  .tile img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 3px 4px var(--shadow))}
-  .tile span{font-weight:900;color:var(--ink);font-size:14px;line-height:1.05}
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+  .wrap{overflow-y:hidden}
+  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px}
+  .greet{margin:2px 0 8px}
+  .greet img{width:100px;height:100px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
+  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
+  .doors,.more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:2px 2px 6px}
+  .tile{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:20px;
+    padding:12px 6px 10px;text-align:center;text-decoration:none;
+    box-shadow:0 0 0 3px #c9a86a,0 5px 0 rgba(107,79,58,.2);
+    display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .08s}
+  .tile:active{transform:translateY(3px);box-shadow:0 0 0 3px #c9a86a,0 2px 0 rgba(107,79,58,.2)}
+  .tile img{width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 3px 4px var(--shadow))}
+  .tile span{font-weight:900;color:var(--ink);font-size:14px;line-height:1.05;
+    font-family:"Fredoka","Nunito",sans-serif}
   .tile small{font-weight:700;color:#a1876a;font-size:11px;line-height:1.2}
-  .doors .tile{padding:16px 8px 12px}
-  .doors .tile img{width:82px;height:82px}
-  .more-forest{margin:6px 2px 10px;flex:1 1 auto;min-height:0;overflow-y:auto}
+  .doors .tile{padding:14px 8px 12px}
+  .doors .tile img{width:78px;height:78px}
+  .more-forest{margin:4px 2px 8px;flex:1 1 auto;min-height:0;overflow-y:auto}
   .more-forest::-webkit-scrollbar{width:0}
   .more-forest > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
-    background:rgba(255,250,240,.9);border:3px solid #d9c39a;border-radius:16px;
-    padding:12px 14px;text-align:center;box-shadow:0 3px 0 rgba(107,79,58,.18)}
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:16px;
+    padding:11px 14px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);
+    font-family:"Fredoka","Nunito",sans-serif}
   .more-forest > summary::-webkit-details-marker{display:none}
   .more-forest[open] > summary{margin-bottom:10px}
   .more-forest > summary::after{content:" ▾";font-weight:900}
   .more-forest[open] > summary::after{content:" ▴"}
-  /* питомец: выбранная карта живёт на поляне и растёт вместе с грейдом */
-  .fam{display:none;align-items:center;gap:10px;background:rgba(255,250,240,.94);
-    border:3px solid var(--fc,#cbb083);border-radius:18px;padding:8px 12px 8px 8px;margin-bottom:10px;
-    cursor:pointer;box-shadow:0 4px 0 rgba(107,79,58,.22),0 0 18px -8px var(--fc,#cbb083)}
-  .fam img{width:46px;height:61px;object-fit:cover;border-radius:9px;border:2px solid var(--fc,#cbb083)}
+  .fam{display:none;align-items:center;gap:10px;background:rgba(255,248,235,.94);
+    border:3px solid #fff;border-radius:18px;padding:8px 12px 8px 8px;margin-bottom:10px;
+    cursor:pointer;box-shadow:0 0 0 3px var(--fc,#c9a86a),0 4px 0 rgba(107,79,58,.18),0 0 18px -8px var(--fc,#c9a86a)}
+  .fam img{width:46px;height:61px;object-fit:cover;border-radius:9px;border:2px solid var(--fc,#c9a86a)}
   .fam .fi{flex:1;min-width:0}
-  .fam .fn{font-weight:900;color:var(--ink);font-size:15px}
+  .fam .fn{font-weight:900;color:var(--ink);font-size:15px;font-family:"Fredoka","Nunito",sans-serif}
   .fam .ft{font-weight:700;color:#a1876a;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fam .fgo{font-weight:900;color:#a1876a;font-size:18px}
   .ov{position:absolute;inset:0;z-index:30;background:rgba(20,26,18,.82);display:none;
@@ -38,8 +49,11 @@
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Лесная поляна</div>
+  <div class="greet">
+    <img src="assets/spirit.webp" alt="Лесной Дух">
+    <div class="bubble">Три двери в лес — загляни!</div>
+  </div>
   <div id="famList"></div>
-  <!-- диалог с питомцем -->
   <div class="ov" id="talkOv"><div class="sheet" id="talkSheet" style="max-width:320px;text-align:center">
     <button class="x" id="talkClose">&times;</button>
     <img id="talkImg" src="" style="width:90px;height:120px;object-fit:cover;border-radius:14px;margin-bottom:6px">
@@ -48,28 +62,27 @@
     <div id="talkBtns" style="display:flex;flex-direction:column;gap:6px"></div>
   </div></div>
 
-  <!-- три двери north star — остальное под «Ещё» -->
   <div class="doors">
-    <a class="tile" href="collection.html"><img src="assets/chest_closed.webp"><span>Коллекция</span><small>альбом существ</small></a>
-    <a class="tile" href="games.html"><img src="assets/spirit_scroll.webp"><span>Игры</span><small>с питомцем</small></a>
-    <a class="tile" href="profile.html"><img src="assets/tree5.webp"><span>Моё дерево</span><small>рост и профиль</small></a>
+    <a class="tile" href="collection.html"><img src="assets/chest_closed.webp" alt=""><span>Коллекция</span><small>альбом существ</small></a>
+    <a class="tile" href="games.html"><img src="assets/spirit_scroll.webp" alt=""><span>Игры</span><small>с питомцем</small></a>
+    <a class="tile" href="profile.html"><img src="assets/tree5.webp" alt=""><span>Моё дерево</span><small>рост и профиль</small></a>
   </div>
 
   <details class="more-forest">
     <summary>Ещё в лесу</summary>
     <div class="more-grid">
-      <a class="tile" href="market.html"><img src="assets/nav/n5.png"><span>Лавки</span></a>
-      <a class="tile" href="deposit.html"><img src="assets/tree.webp"><span>Дупло</span></a>
-      <a class="tile" href="pot.html"><img src="assets/pot.webp"><span>Котёл</span></a>
-      <a class="tile" href="horoscope.html"><img src="assets/oracle.webp"><span>Гороскоп</span></a>
-      <a class="tile" href="quest.html"><img src="assets/skin_gold.webp"><span>Квест</span></a>
-      <a class="tile" href="auction.html"><img src="assets/auction.webp"><span>Аукцион</span></a>
-      <a class="tile" href="mail.html"><img src="assets/mail.webp"><span>Почта</span></a>
-      <a class="tile" href="achievements.html"><img src="assets/badge1.webp"><span>Награды</span></a>
-      <a class="tile" href="skins.html"><img src="assets/skin_rainbow.webp"><span>Наряды</span></a>
-      <a class="tile" href="council.html"><img src="assets/spirit_scroll.webp"><span>Совет</span></a>
-      <a class="tile" href="guilds.html"><img src="assets/tree4.webp"><span>Гильдия</span></a>
-      <a class="tile" href="insurance.html"><img src="assets/spirit.webp"><span>Страховка</span></a>
+      <a class="tile" href="market.html"><img src="assets/nav/n5.png" alt=""><span>Лавки</span></a>
+      <a class="tile" href="deposit.html"><img src="assets/tree.webp" alt=""><span>Дупло</span></a>
+      <a class="tile" href="pot.html"><img src="assets/pot.webp" alt=""><span>Котёл</span></a>
+      <a class="tile" href="horoscope.html"><img src="assets/oracle.webp" alt=""><span>Гороскоп</span></a>
+      <a class="tile" href="quest.html"><img src="assets/skin_gold.webp" alt=""><span>Квест</span></a>
+      <a class="tile" href="auction.html"><img src="assets/auction.webp" alt=""><span>Аукцион</span></a>
+      <a class="tile" href="mail.html"><img src="assets/mail.webp" alt=""><span>Почта</span></a>
+      <a class="tile" href="achievements.html"><img src="assets/badge1.webp" alt=""><span>Награды</span></a>
+      <a class="tile" href="skins.html"><img src="assets/skin_rainbow.webp" alt=""><span>Наряды</span></a>
+      <a class="tile" href="council.html"><img src="assets/spirit_scroll.webp" alt=""><span>Совет</span></a>
+      <a class="tile" href="guilds.html"><img src="assets/tree4.webp" alt=""><span>Гильдия</span></a>
+      <a class="tile" href="insurance.html"><img src="assets/spirit.webp" alt=""><span>Страховка</span></a>
     </div>
   </details>
 </div></div>

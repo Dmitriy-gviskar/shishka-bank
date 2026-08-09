@@ -345,13 +345,13 @@ if (page === 'transfers.html') {
   api('/api/gifts/received').then((list) => {
     const c = document.getElementById('giftsReceived');
     if (!c || list.error) return;
-    if (!list.length) { c.innerHTML = '<div style="text-align:center;padding:8px;color:#a1876a;font-weight:700;font-size:13px">Подарков пока нет</div>'; return; }
+    if (!list.length) { c.innerHTML = '<div class="gifts-empty">Подарков пока нет</div>'; return; }
     c.innerHTML = list.map((g) => {
       const when = new Date(g.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-      return `<div style="display:flex;align-items:center;padding:6px 10px;margin-bottom:4px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;gap:8px">
-        <span style="font-weight:900;color:var(--ink);font-size:14px">${esc(g.sender)}</span>
-        <span style="margin-left:auto;font-weight:900;color:#5f8e37">+${g.amount} 🌰</span>
-        <span style="font-size:11px;color:#a1876a">${when}</span></div>`;
+      return `<div class="gift-row">
+        <span class="who">${esc(g.sender)}</span>
+        <span class="amt"><img src="assets/coin1.webp" alt="">+${g.amount}</span>
+        <span class="when">${when}</span></div>`;
     }).join('');
   });
   const btn = document.querySelector('.btn-lg');
