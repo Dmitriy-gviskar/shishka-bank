@@ -1319,16 +1319,21 @@ if (page === 'forest.html') {
   let gameQuestions = [], gameIdx = 0, gameCorrect = 0, gameReward = 0;
 
   async function startMultiplyGame() {
+    document.getElementById('gameTitle').textContent = 'Таблица умножения';
+    document.getElementById('gameQ').textContent = 'Загрузка...';
+    document.getElementById('gameBtn').style.display = 'none';
+    document.getElementById('gameA').style.display = 'none';
+    document.getElementById('gameMsg').textContent = '';
+    document.getElementById('gameDone').style.display = 'none';
+    document.getElementById('gameOv').classList.add('on');
     const r = await api('/api/game/start', { level: 1 });
-    if (r.error) return;
+    if (r.error) { document.getElementById('gameMsg').textContent = r.error; document.getElementById('gameMsg').style.color = '#b3452e'; return; }
     gameQuestions = r.questions; gameIdx = 0; gameCorrect = 0; gameReward = r.reward;
     document.getElementById('gameTitle').textContent = `Таблица умножения · ур. ${r.level}`;
-    document.getElementById('gameDone').style.display = 'none';
     document.getElementById('gameBtn').style.display = '';
     document.getElementById('gameA').style.display = '';
     document.getElementById('gameA').value = '';
     document.getElementById('gameMsg').textContent = '';
-    document.getElementById('gameOv').classList.add('on');
     showQuestion();
   }
 
@@ -1384,19 +1389,23 @@ if (page === 'forest.html') {
   let guessQuestions = [], guessIdx = 0, guessCorrect = 0, guessReward = 0;
 
   async function startGuessGame() {
-    const r = await api('/api/game/guess/start', {});
-    if (r.error) return;
-    guessQuestions = r.questions; guessIdx = 0; guessCorrect = 0; guessReward = r.reward;
     document.getElementById('gameTitle').textContent = 'Лесная угадайка';
-    document.getElementById('gameProg').textContent = '0 / 5';
+    document.getElementById('gameQ').textContent = '';
+    document.getElementById('gameMsg').textContent = 'Загрузка...';
+    document.getElementById('gameBtn').style.display = 'none';
+    document.getElementById('gameA').style.display = 'none';
     document.getElementById('gameDone').style.display = 'none';
+    document.getElementById('gameOv').classList.add('on');
+    const r = await api('/api/game/guess/start', {});
+    if (r.error) { document.getElementById('gameMsg').innerHTML = r.error; document.getElementById('gameMsg').style.color = '#b3452e'; return; }
+    guessQuestions = r.questions; guessIdx = 0; guessCorrect = 0; guessReward = r.reward;
+    document.getElementById('gameProg').textContent = '0 / 5';
     document.getElementById('gameBtn').style.display = '';
     document.getElementById('gameBtn').textContent = 'Угадать';
     document.getElementById('gameA').style.display = '';
     document.getElementById('gameA').value = '';
     document.getElementById('gameA').placeholder = 'Кто это?';
     document.getElementById('gameMsg').textContent = '';
-    document.getElementById('gameOv').classList.add('on');
     showGuessQ();
   }
 
@@ -1484,12 +1493,17 @@ if (page === 'forest.html') {
   let countQuestions = [], countIdx = 0, countScore = 0, countTimer = null, countLeft = 0;
 
   async function startCountGame() {
-    const r = await api('/api/game/count/start', {});
-    if (r.error) return;
-    countQuestions = r.questions; countIdx = 0; countScore = 0; countLeft = r.duration;
     document.getElementById('gameTitle').textContent = 'Блиц-счёт';
-    document.getElementById('gameProg').textContent = `⏱ ${countLeft}с · 0`;
+    document.getElementById('gameQ').textContent = 'Загрузка...';
+    document.getElementById('gameBtn').style.display = 'none';
+    document.getElementById('gameA').style.display = 'none';
+    document.getElementById('gameMsg').textContent = '';
     document.getElementById('gameDone').style.display = 'none';
+    document.getElementById('gameOv').classList.add('on');
+    const r = await api('/api/game/count/start', {});
+    if (r.error) { document.getElementById('gameMsg').textContent = r.error; document.getElementById('gameMsg').style.color = '#b3452e'; return; }
+    countQuestions = r.questions; countIdx = 0; countScore = 0; countLeft = r.duration;
+    document.getElementById('gameProg').textContent = `⏱ ${countLeft}с · 0`;
     document.getElementById('gameBtn').style.display = '';
     document.getElementById('gameBtn').textContent = 'Ответить';
     document.getElementById('gameA').style.display = '';
@@ -1497,7 +1511,6 @@ if (page === 'forest.html') {
     document.getElementById('gameA').placeholder = 'Ответ';
     document.getElementById('gameQ').textContent = `${countQuestions[0].a} ${countQuestions[0].op} ${countQuestions[0].b} = ?`;
     document.getElementById('gameMsg').textContent = '';
-    document.getElementById('gameOv').classList.add('on');
     document.getElementById('gameA').focus();
     clearInterval(countTimer);
     countTimer = setInterval(() => {
@@ -1515,6 +1528,17 @@ if (page === 'forest.html') {
     document.getElementById('gameDone').style.display = 'block';
     document.getElementById('gameResult').textContent = `Время вышло! Правильно: ${countScore}`;
   }
+
+  // привязка плиток на странице игр (SPA-навигация не выполняет inline-скрипты)
+  if ((location.pathname.split('/').pop() || '') === 'games.html') (function bind(){
+    var m = document.getElementById('gmMultiply');
+    var g = document.getElementById('gmGuess');
+    var c = document.getElementById('gmCount');
+    if (!m || !g || !c) return setTimeout(bind, 50);
+    m.onclick = function(e){ e.preventDefault(); if(window._startMultiply) window._startMultiply(); };
+    g.onclick = function(e){ e.preventDefault(); if(window._startGuess) window._startGuess(); };
+    c.onclick = function(e){ e.preventDefault(); if(window._startCount) window._startCount(); };
+  })();
 }
 
 // ══════════════ Лесная коллекция (карточки) ══════════════
