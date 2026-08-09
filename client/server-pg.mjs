@@ -484,38 +484,37 @@ const api = {
              collected: cards.filter((c) => c.owned && c.category !== 'special').length,
              total: cards.filter((c) => c.category !== 'special').length };
   },
-  // ── Мини-игры с питомцами ──
+  // ── Мини-игры ──
+  // Счёт в БД пишем только на finish (один раз). Награда считается на сервере; с клиента берём только score с потолком.
+  // За каждую игру — не больше одной награды в день (по message транзакции).
   'POST /api/game/start': async (b, ctx) => {
-    const level = parseInt(b.level) || 1;
-    const tables = level === 1 ? [2,3,5] : level === 2 ? [4,6,7,8] : [2,3,4,5,6,7,8,9];
+    const level = Math.min(Math.max(parseInt(b.level) || 1, 1), 3);
+    const tables = level === 1 ? [2, 3, 5] : level === 2 ? [4, 6, 7, 8] : [2, 3, 4, 5, 6, 7, 8, 9];
     const reward = level === 1 ? 3 : level === 2 ? 5 : 8;
     const questions = [];
     for (let i = 0; i < 10; i++) {
       const a = tables[Math.floor(Math.random() * tables.length)];
-      const b = Math.floor(Math.random() * 9) + 1;
-      questions.push({ a, b, answer: a * b });
+      const n = Math.floor(Math.random() * 9) + 1;
+      questions.push({ a, b: n, answer: a * n });
     }
-    // сохраняем сессию в mini_games (last_played = today)
     await q(`insert into mini_games(child_id, game, level, last_played) values ($1,'multiply',$2,current_date)
       on conflict (child_id, game) do update set level=$2, last_played=current_date`, [ctx.child, level]);
     return { questions, reward, level };
   },
   'POST /api/game/answer': async (b, ctx) => {
-    const correct = parseInt(b.answer) === parseInt(b.expected);
-    if (correct) {
-      await q('update mini_games set score=score+1 where child_id=$1 and game=$2', [ctx.child, 'multiply']);
-    }
-    return { correct };
+    // только проверка для UI — прогресс в БД не трогаем (иначе double-count с finish)
+    const expected = parseInt(b.expected, 10);
+    const correct = parseInt(b.answer, 10) === expected;
+    return { correct, expected };
   },
   'POST /api/game/count/start': async (b, ctx) => {
-    // генерируем 50 примеров на сложение/вычитание (a+b где 1-20)
     const questions = [];
     for (let i = 0; i < 50; i++) {
       const op = Math.random() < 0.5 ? '+' : '-';
       let a = Math.floor(Math.random() * 20) + 1;
-      let b = Math.floor(Math.random() * 20) + 1;
-      if (op === '-' && b > a) [a, b] = [b, a]; // без отрицательных
-      questions.push({ a, op, b, answer: op === '+' ? a + b : a - b });
+      let n = Math.floor(Math.random() * 20) + 1;
+      if (op === '-' && n > a) [a, n] = [n, a];
+      questions.push({ a, op, b: n, answer: op === '+' ? a + n : a - n });
     }
     await q(`insert into mini_games(child_id, game, last_played) values ($1,'count',current_date)
       on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
@@ -524,38 +523,61 @@ const api = {
   'POST /api/game/guess/start': async (b, ctx) => {
     const beings = await q(`select t.code, t.name, t.category, coalesce(f.fact,'') as fact
       from card_types t left join card_facts f on f.code=t.code order by random() limit 5`);
-    const questions = beings.map((b) => {
-      const hints = [`Это ${b.category === 'zver' ? 'зверь' : b.category === 'rastenie' ? 'растение' : b.category === 'nasekomoe' ? 'насекомое' : 'особое существо'}.`];
-      if (b.fact) hints.push(b.fact.slice(0, 80) + (b.fact.length > 80 ? '...' : ''));
-      const nameHint = b.name.length <= 5 ? `В имени ${b.name.length} букв.`
-        : `В имени первая буква «${b.name[0]}».`;
+    const questions = beings.map((row) => {
+      const hints = [`Это ${row.category === 'zver' ? 'зверь' : row.category === 'rastenie' ? 'растение' : row.category === 'nasekomoe' ? 'насекомое' : 'особое существо'}.`];
+      if (row.fact) hints.push(row.fact.slice(0, 80) + (row.fact.length > 80 ? '...' : ''));
+      const nameHint = row.name.length <= 5 ? `В имени ${row.name.length} букв.`
+        : `В имени первая буква «${row.name[0]}».`;
       hints.push(nameHint);
-      return { code: b.code, name: b.name, hints };
+      return { code: row.code, name: row.name, hints };
     });
     await q(`insert into mini_games(child_id, game, last_played) values ($1,'guess',current_date)
       on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
     return { questions, reward: 5 };
   },
   'POST /api/game/guess/answer': async (b, ctx) => {
-    const correct = String(b.answer || '').trim().toLowerCase() === String(b.name || '').toLowerCase();
-    if (correct) {
-      await q('update mini_games set score=score+1 where child_id=$1 and game=$2', [ctx.child, 'guess']);
-    }
-    return { correct, name: b.name };
+    const name = String(b.name || '');
+    const correct = String(b.answer || '').trim().toLowerCase() === name.trim().toLowerCase();
+    return { correct, name };
   },
   'POST /api/game/finish': async (b, ctx) => {
-    const score = parseInt(b.score) || 0;
-    const reward = parseInt(b.reward) || 3;
     const game = String(b.game || 'multiply');
-    if (score > 0) {
-      await q('update mini_games set score=score+$2 where child_id=$1 and game=$3', [ctx.child, score, game]);
-      const label = game === 'multiply' ? 'Мини-игра: таблица умножения'
-        : game === 'guess' ? 'Мини-игра: лесная угадайка'
-        : 'Мини-игра: блиц-счёт';
-      await q("update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1", [ctx.child, reward]);
-      await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', $3 from users where id=$1", [ctx.child, reward, label]);
-      await rpc('check_achievements', [ctx.child]).catch(() => {});
+    if (!['multiply', 'guess', 'count'].includes(game)) throw { code: 400, msg: 'неизвестная игра' };
+    const maxScore = game === 'multiply' ? 10 : game === 'guess' ? 5 : 30;
+    const score = Math.min(Math.max(parseInt(b.score, 10) || 0, 0), maxScore);
+    const label = game === 'multiply' ? 'Мини-игра: таблица умножения'
+      : game === 'guess' ? 'Мини-игра: лесная угадайка'
+      : 'Мини-игра: блиц-счёт';
+
+    const w0 = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    if (score <= 0) return { ok: true, reward: 0, balance: w0?.balance ?? 0 };
+
+    const already = await one(
+      `select 1 as x from transactions
+        where to_user=$1 and type='reward' and message=$2
+          and (created_at at time zone 'Europe/Moscow')::date = (now() at time zone 'Europe/Moscow')::date
+        limit 1`, [ctx.child, label]);
+    if (already) {
+      return { ok: true, reward: 0, balance: w0.balance, already: true };
     }
+
+    let reward = 0;
+    if (game === 'multiply') {
+      const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
+      const level = row?.level || 1;
+      reward = level === 1 ? 3 : level === 2 ? 5 : 8;
+    } else if (game === 'guess') {
+      reward = 5;
+    } else {
+      reward = score;
+    }
+
+    await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,current_date)
+      on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=current_date`,
+      [ctx.child, game, score]);
+    await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [ctx.child, reward]);
+    await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', $3 from users where id=$1", [ctx.child, reward, label]);
+    await rpc('check_achievements', [ctx.child]).catch(() => {});
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
     return { ok: true, reward, balance: w.balance };
   },
