@@ -107,12 +107,6 @@
   .wallet-more .add.soft{background:linear-gradient(180deg,#fffaf0,#f5e6c8);border-color:#b8955e;
     box-shadow:0 0 0 2px #fff,0 3px 0 #d4bc8a}
 
-  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;
-    color:var(--brown);font-weight:800;font-size:12px;text-align:center;
-    background:rgba(255,248,235,.88);border:2.5px solid #fff;border-radius:14px;padding:8px 12px;
-    box-shadow:0 0 0 2px #c9a86a}
-  .hint-forest img{width:22px;height:22px;object-fit:contain}
-
   .rain{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden}
   .rain span{position:absolute;top:-40px;font-size:26px;animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(900px) rotate(360deg);opacity:.2}}
@@ -173,8 +167,6 @@
           <button class="add soft" id="qrBtn">Мой QR — принимать оплату</button>
           <button class="add" id="scanBtn">Оплатить по QR</button>
         </details>
-
-        <div class="hint-forest">Лес и коллекция — на вкладке внизу <img src="assets/nav/n6.png" alt=""></div>
       </div>
 
       <div id="scanBox" style="display:none;position:absolute;inset:0;z-index:20;background:#1d241a">
