@@ -783,11 +783,21 @@ const api = {
     const pity = { opened, to_new: 10 - (opened % 10), to_top: 50 - (opened % 50) };
     const marketAllowed = await one('select market_allowed from users where id=$1', [ctx.child]);
     const familiars = (fam || []).filter((f) => f.type);
+    // Прогресс альбома = заполненные ячейки (грейд), не «хотя бы одна карта существа».
+    // Иначе 140/145 при пустых полках выглядит как сломанный счётчик.
+    const album = cards.filter((c) => c.category !== 'special');
+    const cells = album.reduce((n, c) => n + c.grades.filter((g) => g.qty > 0).length, 0);
+    const cellsTotal = album.length * 6;
+    const met = album.filter((c) => c.owned).length;
+    const complete = album.filter((c) => c.grades.filter((g) => g.qty > 0).length === 6).length;
     return { rarities: rar, cards, lore, facts, history, seasons, pity,
              market_allowed: marketAllowed ? marketAllowed.market_allowed : true,
              familiars,
-             collected: cards.filter((c) => c.owned && c.category !== 'special').length,
-             total: cards.filter((c) => c.category !== 'special').length };
+             collected: cells,
+             total: cellsTotal,
+             beings_met: met,
+             beings_complete: complete,
+             beings_total: album.length };
   },
   // ── Мини-игры ──
   // Счёт в БД пишем только на finish (один раз). Награда считается на сервере; с клиента берём только score с потолком.

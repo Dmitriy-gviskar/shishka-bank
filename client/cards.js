@@ -79,15 +79,20 @@ window.runCards = function () {
     HIST = {}; (d.history || []).forEach((h) => HIST[h.code + ':' + h.grade] = h);   // за сколько такие уходили в круге
     MARKET = d.market_allowed !== false;   // ведущий может закрыть торговлю ребёнку
     const isFull = (c) => c.grades.filter((x) => x.qty > 0).length === 6;
-    document.getElementById('progTxt').textContent = `Собрано: ${d.collected} / ${d.total}`;
-    document.getElementById('progBar').style.width = Math.round(d.collected / d.total * 100) + '%';
+    const cells = d.collected || 0;
+    const cellsTotal = d.total || 1;
+    const met = d.beings_met != null ? d.beings_met : 0;
+    const complete = d.beings_complete != null ? d.beings_complete : 0;
+    const beingsTotal = d.beings_total != null ? d.beings_total : cellsTotal;
+    document.getElementById('progTxt').textContent = `Ячеек: ${cells} / ${cellsTotal}`;
+    document.getElementById('progBar').style.width = Math.round(cells / cellsTotal * 100) + '%';
     // гарант новинки — видно, сколько паков осталось
     const pityEl = document.getElementById('pityTxt');
     if (pityEl) {
       const guar = !d.pity ? '' : d.pity.to_top <= d.pity.to_new
         ? ` · через ${d.pity.to_top} ${plural(d.pity.to_top, 'пак', 'пака', 'паков')} — Эпическая+, которой нет`
         : ` · через ${d.pity.to_new} ${plural(d.pity.to_new, 'пак', 'пака', 'паков')} — новая карта точно`;
-      pityEl.textContent = `Всего собрано ${d.collected} из ${d.total}${guar}`;
+      pityEl.textContent = `Встречено ${met} из ${beingsTotal} · полных ${complete}${guar}`;
     }
     const av = document.getElementById('albumView'); av.innerHTML = '';
     const allCards = d.cards.filter((c) => c.category !== 'special');
@@ -207,10 +212,11 @@ window.runCards = function () {
     const av = host;
     for (const cat of ['zver', 'rastenie', 'nasekomoe']) {
       if (!groups[cat]) continue;
+      const metN = groups[cat].filter((c) => c.grades.some((x) => x.qty > 0)).length;
       const fullN = groups[cat].filter((c) => c.grades.filter((x) => x.qty > 0).length === 6).length;
       const h = document.createElement('div'); h.className = 'cat';
       h.setAttribute('data-cat', cat);
-      h.innerHTML = `${CAT[cat]}<span class="cc-count">${fullN}/${groups[cat].length}</span>`;
+      h.innerHTML = `${CAT[cat]}<span class="cc-count" title="полных: ${fullN}">${metN}/${groups[cat].length}</span>`;
       av.appendChild(h);
       // каждое существо = полка из 6 ячеек-грейдов (Panini)
       for (const c of groups[cat]) {
@@ -227,8 +233,13 @@ window.runCards = function () {
             ${has && gr.unseen ? '<div class="gnew">NEW</div>' : ''}
             ${has && gr.qty > 1 ? `<div class="gdup">×${gr.qty}</div>` : ''}</div>`;
         }).join('');
-        // подсказка возврата: где-то осталась ровно одна карта до слияния
-        const almost = c.grades.some((g) => g.qty === 2 && g.grade < 6);
+        // «ещё 1 до эволюции» — есть 2 карты ранга (до слияния нужно 3) и следующий ранг ещё пустой.
+        // У полного 6/6 не показываем: коллекция уже собрана, дубли — не «дыра» в альбоме.
+        const almost = !full && c.grades.some((g) => {
+          if (g.qty !== 2 || g.grade >= 6) return false;
+          const next = c.grades.find((x) => x.grade === g.grade + 1);
+          return !next || next.qty <= 0;
+        });
         being.innerHTML = `<div class="being-head"><span class="bn">${esc(c.name)}</span>
           ${newN ? `<span class="bnew">${newN > 1 ? 'NEW ×' + newN : 'NEW'}</span>` : ''}
           ${almost ? '<span class="bnear">🔥 ещё 1 до эволюции</span>' : ''}
@@ -891,11 +902,17 @@ window.runCards = function () {
     // данные коллекции уже в DATA после reload() — без await, чтобы navigator.share не терял жест
     if (!DATA || DATA.error) return;
     const cats = { zver: '🦊', rastenie: '🌿', nasekomoe: '🐞' };
-    const lines = ['🌲 Моя лесная коллекция:', `Собрано ${DATA.collected} из ${DATA.total} существ`];
+    const met = DATA.beings_met != null ? DATA.beings_met : 0;
+    const complete = DATA.beings_complete != null ? DATA.beings_complete : 0;
+    const beingsTotal = DATA.beings_total != null ? DATA.beings_total : 0;
+    const lines = ['🌲 Моя лесная коллекция:',
+      `Ячеек ${DATA.collected} из ${DATA.total}`,
+      `Встречено ${met}/${beingsTotal} · полных ${complete}`];
     for (const [cat, emoji] of Object.entries(cats)) {
       const c = (DATA.cards || []).filter((x) => x.category === cat);
+      const metC = c.filter((x) => x.grades.some((g) => g.qty > 0)).length;
       const full = c.filter((x) => x.grades.filter((g) => g.qty > 0).length === 6).length;
-      if (c.length) lines.push(`${emoji} ${full}/${c.length} полностью`);
+      if (c.length) lines.push(`${emoji} ${metC}/${c.length} (полных ${full})`);
     }
     const specials = (DATA.cards || []).filter((x) => x.category === 'special' && x.grades.some((g) => g.qty > 0));
     if (specials.length) lines.push(`🎖 ${specials.length} особых карт`);
