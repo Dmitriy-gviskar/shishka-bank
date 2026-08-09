@@ -117,7 +117,8 @@ if (page === 'index.html' || page === '') {
     homeName = s.name || '';
     const bal = document.getElementById('bal'); if (bal) bal.textContent = s.balance;
     paintBubble();
-    const lvl = document.querySelector('.level'); if (lvl) lvl.innerHTML = `Дубок<br>Уровень ${s.tree_level}`;
+    const lvl = document.querySelector('.level');
+    if (lvl) lvl.innerHTML = `Уровень ${s.tree_level}<br>Дубок`;
     const av = document.querySelector('.lvlbadge-tree'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
     initDaily(s);   // ежедневный подарок
   });

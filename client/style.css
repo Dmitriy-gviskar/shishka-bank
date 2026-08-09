@@ -3,16 +3,18 @@
 .friends .friend{flex:0 0 88px}
 .on-art{display:inline-block;background:rgba(255,250,240,.92);border:2px solid #d9c39a;border-radius:12px;padding:7px 12px}
 :root{
-  --cream:#f6eede; --card:#efe4cc; --ink:#5b4636; --brown:#6b4f3a;
-  --green:#7bab4c; --green-d:#5f8e37; --gold:#e8b64b; --shadow:rgba(80,55,30,.25);
+  --cream:#f7efe0; --card:#f3e7cf; --ink:#5a4030; --brown:#6b4f3a;
+  --green:#6fad45; --green-d:#4f8a2e; --gold:#f0c14a; --gold-d:#d49a2a;
+  --wood:#8a6238; --parchment:#fff8eb; --shadow:rgba(70,45,20,.28);
+  --font:"Nunito","Fredoka","SF Pro Rounded",system-ui,sans-serif;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
-  font-family:"Nunito","Baloo 2","SF Pro Rounded",system-ui,Arial,sans-serif}
+body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
+  font-family:var(--font)}
 .phone{position:relative;width:min(390px,100vw);height:100vh;height:100dvh;max-height:844px;
   overflow:hidden;background:center/cover no-repeat}
 .phone::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(255,250,235,.10),rgba(60,80,45,.20));pointer-events:none}
+  background:linear-gradient(180deg,rgba(255,248,230,.08),rgba(40,55,30,.18));pointer-events:none}
 .wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:18px 16px 0;
   overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* длинные списки прокручиваются ВНУТРИ экрана, навбар остаётся внизу */
@@ -21,26 +23,29 @@ body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
 #taskList::-webkit-scrollbar,#shopList::-webkit-scrollbar,#marketList::-webkit-scrollbar{width:0}
 
 /* заголовок-плашка */
-.title{align-self:center;background:#fffaf0;border:3px solid var(--brown);border-radius:18px;
+.title{align-self:center;background:var(--parchment);border:3px solid var(--brown);border-radius:20px;
   padding:8px 22px;font-size:22px;font-weight:900;color:var(--ink);
   box-shadow:0 4px 0 rgba(107,79,58,.25);margin-bottom:4px}
 
-/* приветствие Духа */
+/* приветствие Духа — стикер поверх леса */
 .greet{display:flex;align-items:flex-start;gap:6px}
-.greet img{width:96px;height:96px;object-fit:contain;filter:drop-shadow(0 4px 5px var(--shadow))}
-.bubble{background:#fffaf0;border:3px solid var(--brown);border-radius:20px;padding:11px 13px;
+.greet img{width:96px;height:96px;object-fit:contain;
+  filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 1px #fff8eb) drop-shadow(0 5px 8px var(--shadow))}
+.bubble{background:var(--parchment);border:3px solid #fff;border-radius:22px;padding:11px 14px;
   margin-top:12px;font-weight:800;color:var(--ink);font-size:15px;line-height:1.25;
-  box-shadow:0 4px 0 rgba(107,79,58,.25);position:relative;flex:1}
-.bubble::before{content:"";position:absolute;left:-12px;top:18px;border:8px solid transparent;
+  box-shadow:0 0 0 3px var(--brown),0 5px 0 rgba(107,79,58,.22);position:relative;flex:1}
+.bubble::before{content:"";position:absolute;left:-14px;top:18px;border:9px solid transparent;
   border-right-color:var(--brown)}
+.bubble::after{content:"";position:absolute;left:-8px;top:21px;border:6px solid transparent;
+  border-right-color:var(--parchment)}
 
 /* карточки */
 .card{background:var(--card);border:4px solid var(--brown);border-radius:22px;
   box-shadow:0 6px 0 rgba(107,79,58,.28);padding:14px}
 
-/* кнопки */
-.btn{background:var(--green);border:3px solid var(--green-d);color:#fff;font-weight:900;
-  border-radius:18px;box-shadow:0 5px 0 var(--green-d);cursor:pointer;
+/* кнопки — «живые» зелёные пилюли */
+.btn{background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
+  color:#fff;font-weight:900;border-radius:999px;box-shadow:0 5px 0 var(--green-d);cursor:pointer;
   text-shadow:0 1px 1px rgba(0,0,0,.15)}
 .btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
 .btn-lg{display:block;margin:14px auto 0;font-size:20px;padding:12px 30px}
@@ -50,14 +55,21 @@ body{background:#2c3327;display:flex;justify-content:center;min-height:100vh;
 .price{display:inline-flex;align-items:center;gap:4px;font-weight:900;color:var(--brown);font-size:22px}
 .price img{width:30px;height:30px;object-fit:contain}
 
-/* нижняя навигация */
+/* нижняя навигация — cozy dock как в макетах */
 .nav{position:sticky;bottom:0;z-index:3;margin-top:auto;flex:0 0 auto;
-  display:flex;justify-content:space-around;align-items:center;
-  background:rgba(246,238,222,.985);border-top:3px solid #d9c39a;
-  padding:8px 6px calc(8px + env(safe-area-inset-bottom))}
-.nav button{background:none;border:none;padding:6px;border-radius:16px;cursor:pointer}
-.nav img{width:44px;height:44px;object-fit:contain;display:block}
-.nav .active{background:#fff3d6;box-shadow:0 0 0 3px var(--gold) inset}
+  display:flex;justify-content:space-around;align-items:center;gap:2px;
+  background:linear-gradient(180deg,#fbf3e4 0%,#efe2c8 100%);
+  border-top:3px solid #c9a86a;
+  border-radius:22px 22px 0 0;
+  box-shadow:0 -6px 18px rgba(60,40,15,.16);
+  padding:10px 8px calc(10px + env(safe-area-inset-bottom))}
+.nav button{background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid var(--brown);
+  width:52px;height:52px;border-radius:50%;padding:5px;cursor:pointer;
+  box-shadow:0 3px 0 rgba(107,79,58,.28);display:flex;align-items:center;justify-content:center}
+.nav button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(107,79,58,.28)}
+.nav img{width:34px;height:34px;object-fit:contain;display:block;filter:drop-shadow(0 1px 1px rgba(80,50,20,.2))}
+.nav .active{background:linear-gradient(180deg,#ffe7a0,#f0c14a);
+  box-shadow:0 0 0 3px #f6d56a,0 3px 0 rgba(107,79,58,.28)}
 
 /* баланс-шапка (правый верх) */
 #topbar{position:absolute;top:8px;right:8px;z-index:5;display:flex;align-items:center;gap:3px;

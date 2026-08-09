@@ -3,85 +3,107 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Шишка Банк — Кошелёк</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg_wallet.webp)}
+  /* пилот визуала дома — cozy forest по макетам */
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg_wallet.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.18), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.22))}
 
-  .greet-row{position:relative;display:flex;align-items:flex-start;gap:8px;padding-right:118px}
+  .greet-row{position:relative;display:flex;align-items:flex-start;gap:8px;padding-right:108px}
   .greet-row .greet{flex:1;min-width:0}
-  .greet-row .greet img{width:128px;height:128px;filter:drop-shadow(0 4px 6px var(--shadow))}
-  .greet-row .bubble{font-size:13px;padding:9px 11px;margin-top:8px}
+  .greet-row .greet img{width:118px;height:118px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 6px 10px rgba(60,40,15,.35))}
+  .greet-row .bubble{font-size:14px;padding:10px 12px;margin-top:10px;font-family:"Fredoka","Nunito",sans-serif}
 
-  /* уровень дерева — рамка-венок */
-  .lvlbadge{position:absolute;top:0;right:0;width:110px;height:110px;cursor:pointer}
+  /* уровень — деревянный медальон */
+  .lvlbadge{position:absolute;top:0;right:0;width:100px;height:100px;cursor:pointer;
+    filter:drop-shadow(0 4px 6px rgba(60,40,15,.3))}
   .lvlbadge-ring{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-  .lvlbadge-tree{position:absolute;top:13%;left:50%;transform:translateX(-50%);width:33%;height:33%;object-fit:contain}
-  .lvlbadge .level{position:absolute;top:48%;left:50%;transform:translateX(-50%);width:72%;
-    font-size:8.5px;font-weight:900;color:var(--brown);text-align:center;line-height:1.1}
+  .lvlbadge-tree{position:absolute;top:12%;left:50%;transform:translateX(-50%);width:34%;height:34%;object-fit:contain}
+  .lvlbadge .level{position:absolute;top:48%;left:50%;transform:translateX(-50%);width:74%;
+    font-size:9px;font-weight:900;color:var(--brown);text-align:center;line-height:1.1;
+    text-shadow:0 1px 0 rgba(255,248,235,.7)}
 
-  /* карточка кошелька — единая картинка (рамка+сцена написаны вместе) */
-  .wallet-card{position:relative;margin-top:18px;aspect-ratio:1097/798;
-    background-image:url(assets/wallet_card.webp);background-size:100% 100%}
-  .wc-text{position:absolute;left:49%;right:11%;top:10%;bottom:10%;display:flex;flex-direction:column;
+  /* кошелёк — сцена + кожаная рамка поверх ассета */
+  .wallet-card{position:relative;margin-top:14px;aspect-ratio:1097/798;
+    background-image:url(assets/wallet_card.webp);background-size:100% 100%;
+    filter:drop-shadow(0 8px 14px rgba(50,35,15,.28))}
+  .wallet-card::before{content:"";position:absolute;inset:-3px;border-radius:18px;pointer-events:none;
+    box-shadow:inset 0 0 0 3px rgba(255,236,180,.25),0 0 0 2px rgba(90,55,25,.15)}
+  .wc-text{position:absolute;left:48%;right:9%;top:12%;bottom:22%;display:flex;flex-direction:column;
     justify-content:center;text-align:left}
-  .wc-label{font-size:13px;font-weight:800;color:#8a6a45;text-transform:uppercase;letter-spacing:.5px}
-  .wc-num{font-size:56px;font-weight:900;line-height:1;letter-spacing:-1px;
-    background:linear-gradient(180deg,#fff3c9,#e8b64b 55%,#c9871f);
+  .wc-label{font-size:14px;font-weight:800;color:#8a6a45;letter-spacing:.3px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .wc-num{font-size:52px;font-weight:900;line-height:1;letter-spacing:-1px;
+    background:linear-gradient(180deg,#fff3c9,#f0c14a 50%,#c9871f);
     -webkit-background-clip:text;background-clip:text;color:transparent;
-    -webkit-text-stroke:1.5px #5b3a1e;
+    -webkit-text-stroke:1.4px #5b3a1e;
     filter:drop-shadow(0 2px 1px rgba(91,58,30,.35))}
-  .wc-unit{font-size:16px;font-weight:900;color:#8a5a20;text-transform:uppercase}
-  .wc-sub{font-size:12px;font-weight:700;color:#8a6a45;margin-top:4px}
+  .wc-unit{font-size:15px;font-weight:900;color:#8a5a20;text-transform:uppercase;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .wc-sub{font-size:12px;font-weight:700;color:#8a6a45;margin-top:3px}
+  .wc-cta{position:absolute;left:46%;right:8%;bottom:9%;margin:0;width:auto;max-width:none;
+    font-size:16px;padding:10px 12px;border-radius:999px}
 
   .wc-links{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-  .wc-links a{font-weight:800;font-size:12px;color:var(--brown);background:rgba(255,250,240,.85);
-    border:2px solid #d9c39a;border-radius:14px;padding:6px 12px;text-decoration:none}
+  .wc-links a{font-weight:800;font-size:12px;color:var(--brown);background:rgba(255,248,235,.92);
+    border:2.5px solid #fff;border-radius:14px;padding:6px 12px;text-decoration:none;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
 
-  /* кнопка */
-  .add{margin:14px auto 0;display:block;background:var(--green);border:3px solid var(--green-d);
-    color:#fff;font-size:20px;font-weight:900;padding:12px 34px;border-radius:20px;
-    box-shadow:0 5px 0 var(--green-d);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15)}
+  .add{margin:14px auto 0;display:block;
+    background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
+    color:#fff;font-size:18px;font-weight:900;padding:12px 28px;border-radius:999px;
+    box-shadow:0 5px 0 var(--green-d);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15);
+    font-family:"Fredoka","Nunito",sans-serif}
   .add:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
+  .add.soft{background:linear-gradient(180deg,#fff6e4,#f0d7a4);color:var(--brown);
+    box-shadow:0 5px 0 #c9a86a;border-color:#8a6238;text-shadow:none}
 
-  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;
-    color:var(--brown);font-weight:800;font-size:14px;text-align:center;
-    background:rgba(255,250,240,.85);border-radius:14px;padding:9px 14px}
+  .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;
+    color:var(--brown);font-weight:800;font-size:13px;text-align:center;
+    background:rgba(255,248,235,.9);border:2.5px solid #fff;border-radius:16px;padding:9px 14px;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.12)}
   .hint-forest img{width:26px;height:26px;object-fit:contain}
 
-  /* следующее дело — якорь петли на доме */
-  .next-deed{margin-top:12px;background:rgba(255,250,240,.94);border:3px solid #cbb083;
-    border-radius:20px;padding:12px 14px;box-shadow:0 4px 0 rgba(107,79,58,.18);
-    display:none;text-align:left;cursor:pointer}
-  .next-deed .nd-label{font-weight:800;color:#a1876a;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
-  .next-deed .nd-title{font-weight:900;color:var(--ink);font-size:17px;margin-top:3px;line-height:1.2}
+  .next-deed{margin-top:12px;background:rgba(255,248,235,.94);border:3px solid #fff;
+    border-radius:20px;padding:12px 14px;display:none;text-align:left;cursor:pointer;
+    box-shadow:0 0 0 3px #c9a86a,0 5px 0 rgba(107,79,58,.16)}
+  .next-deed .nd-label{font-weight:800;color:#a1876a;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+  .next-deed .nd-title{font-weight:900;color:var(--ink);font-size:17px;margin-top:3px;line-height:1.2;
+    font-family:"Fredoka","Nunito",sans-serif}
   .next-deed .nd-meta{font-weight:800;color:var(--brown);font-size:13px;margin-top:4px}
-  .home-actions{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+
+  .home-actions{margin-top:10px;display:flex;flex-direction:column;gap:8px}
   .home-actions .add{margin:0 auto;width:100%;max-width:280px}
-  .add.soft{background:#fff3d6;color:var(--brown);box-shadow:0 5px 0 #d9c39a;border-color:#d9c39a}
+
   .wallet-more{margin-top:12px}
   .wallet-more > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
-    background:rgba(255,250,240,.85);border:2px solid #d9c39a;border-radius:14px;
-    padding:10px 12px;text-align:center}
+    background:rgba(255,248,235,.9);border:2.5px solid #fff;border-radius:16px;
+    padding:10px 12px;text-align:center;box-shadow:0 0 0 2px #c9a86a}
   .wallet-more > summary::-webkit-details-marker{display:none}
   .wallet-more[open] > summary{margin-bottom:8px}
 
-  /* Ежедневный подарок */
   .daily{margin-top:12px;background:linear-gradient(135deg,#ffe9a8,#ffd062);
-    border:3px solid #e0a52e;border-radius:20px;padding:12px 14px;
-    box-shadow:0 5px 0 rgba(160,110,20,.30);display:flex;align-items:center;gap:12px}
+    border:3px solid #fff;border-radius:20px;padding:12px 14px;
+    box-shadow:0 0 0 3px #e0a52e,0 5px 0 rgba(160,110,20,.25);display:flex;align-items:center;gap:12px}
   .daily .fire{font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(160,90,20,.4))}
   .daily .txt{flex:1;text-align:left}
-  .daily .t1{font-weight:900;color:#6b4a12;font-size:16px;line-height:1.1}
+  .daily .t1{font-weight:900;color:#6b4a12;font-size:16px;line-height:1.1;font-family:"Fredoka","Nunito",sans-serif}
   .daily .t2{font-weight:800;color:#9a7420;font-size:12.5px;margin-top:2px}
-  .daily button{background:var(--green);border:3px solid var(--green-d);color:#fff;
-    font-size:16px;font-weight:900;padding:10px 18px;border-radius:16px;
+  .daily button{background:linear-gradient(180deg,#8bc75a,#6fad45);border:3px solid var(--green-d);color:#fff;
+    font-size:15px;font-weight:900;padding:10px 16px;border-radius:999px;
     box-shadow:0 4px 0 var(--green-d);cursor:pointer;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.15)}
   .daily button:active{transform:translateY(2px);box-shadow:0 2px 0 var(--green-d)}
-  .daily.got{background:#eef3e6;border-color:#cdd9b8;box-shadow:0 5px 0 rgba(120,140,90,.2)}
+  .daily.got{background:#eef3e6;border-color:#fff;box-shadow:0 0 0 3px #cdd9b8,0 5px 0 rgba(120,140,90,.15)}
   .daily.got .t1{color:#5f7a38}
-  /* дождь шишек при получении */
+
   .rain{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden}
   .rain span{position:absolute;top:-40px;font-size:26px;animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(900px) rotate(360deg);opacity:.2}}
@@ -120,13 +142,13 @@
         <div class="wc-text">
           <div class="wc-label">Кошелёк</div>
           <div class="wc-num" id="bal">…</div>
-          <div class="wc-unit">шишек</div>
+          <div class="wc-unit">шишки</div>
           <div class="wc-sub">Всего накоплено</div>
         </div>
+        <button class="add wc-cta" id="earnBtn">Сделать дело</button>
       </div>
 
       <div class="home-actions">
-        <button class="add" id="earnBtn">Сделать дело</button>
         <button class="add soft" id="spendBtn">Потратить в магазине</button>
       </div>
 
