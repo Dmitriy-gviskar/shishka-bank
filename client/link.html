@@ -15,29 +15,37 @@
   .lead{color:var(--brown);font-weight:700;margin-top:10px;font-size:15px;line-height:1.35;
     background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:16px;padding:10px 14px;
     box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
-  .code-in{margin-top:16px;width:100%;box-sizing:border-box;background:#fffaf0;border:3px solid #fff;
+  .plant-btn{width:100%;margin-top:16px;font-size:18px;padding:14px 22px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .code-toggle{display:inline-block;margin-top:14px;font-weight:800;font-size:14px;color:var(--brown);
+    text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+    font-family:"Fredoka","Nunito",sans-serif}
+  #codeBox{display:none;width:100%;margin-top:12px;text-align:center}
+  .code-in{width:100%;box-sizing:border-box;background:#fffaf0;border:3px solid #fff;
     border-radius:16px;padding:14px;font-size:22px;font-weight:900;color:var(--ink);text-align:center;
     outline:none;text-transform:uppercase;letter-spacing:1px;box-shadow:0 0 0 2px #c9a86a;
     font-family:"Fredoka","Nunito",sans-serif}
   .code-in::placeholder{color:#c3ab8c;font-weight:700;letter-spacing:0;text-transform:none}
   .code-in:focus{box-shadow:0 0 0 2px #e0a52e}
-  .enter-btn{width:100%;margin-top:14px;font-size:18px;padding:14px 22px;
+  .enter-btn{width:100%;margin-top:10px;font-size:17px;padding:12px 22px;
     font-family:"Fredoka","Nunito",sans-serif}
-  .hint{margin-top:12px;color:#8a7358;font-weight:700;font-size:13px;line-height:1.6}
   #note{width:100%;display:none;text-align:center;font-weight:800;margin-top:10px;
     background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:14px;padding:9px;
     box-shadow:0 0 0 2px #c9a86a}
-  .alt-link{display:inline-block;margin-top:12px;background:rgba(255,250,240,.94);border:2.5px solid #fff;
+  .alt-link{display:inline-block;margin-top:14px;background:rgba(255,250,240,.94);border:2.5px solid #fff;
     border-radius:14px;padding:8px 14px;font-weight:800;font-size:14px;text-decoration:none;
     box-shadow:0 0 0 2px #c9a86a;color:var(--green-d);font-family:"Fredoka","Nunito",sans-serif}
 </style></head><body data-no-nav>
 <div class="phone"><div class="wrap">
   <div class="spirit"><img src="assets/spirit.webp" alt="Лесной Дух"></div>
   <div class="brand">Шишка Банк</div>
-  <div class="lead">Привет! Введи код, который дал тебе родитель, и заходи в свой лес.</div>
-  <input class="code-in" id="codeInput" placeholder="Код от родителя" maxlength="10" autocapitalize="characters">
-  <button class="btn btn-lg enter-btn" id="linkBtn" type="button">Войти в лес</button>
-  <div class="hint" id="hint"></div>
+  <div class="lead">Посади своё дерево и копи шишки за реальные дела.</div>
+  <button class="btn btn-lg plant-btn" id="plantBtn" type="button">🍃 Посадить своё дерево</button>
+  <a href="#" class="code-toggle" id="codeToggle">У меня уже есть код</a>
+  <div id="codeBox">
+    <input class="code-in" id="codeInput" placeholder="Код входа" maxlength="10" autocapitalize="characters">
+    <button class="btn btn-lg enter-btn" id="linkBtn" type="button">Войти по коду</button>
+  </div>
   <div><a class="alt-link" href="parent.html">Я родитель — открыть кабинет →</a></div>
   <div id="note"></div>
 </div></div>

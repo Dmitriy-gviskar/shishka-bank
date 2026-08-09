@@ -56,7 +56,17 @@ async function saveAudio(dataUrl) {
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
-const PUBLIC = new Set(['POST /api/link', 'GET /api/ping']); // роуты без кода ребёнка
+const PUBLIC = new Set(['POST /api/link', 'POST /api/signup', 'GET /api/ping']); // роуты без кода ребёнка
+// Саморегистрация: не больше 5 новых лесов с одного IP за час (анти-спам витрин).
+const SIGNUPS = new Map(); // ip → { n, reset }
+const signupRateOk = (ip) => {
+  const now = Date.now();
+  let s = SIGNUPS.get(ip);
+  if (!s || now > s.reset) { s = { n: 0, reset: now + 3600e3 }; SIGNUPS.set(ip, s); }
+  if (s.n >= 5) return false;
+  s.n++;
+  return true;
+};
 const memo = new Map();   // серверный кэш редких данных: ключ → {v,t}
 const memoGet = async (key, ttl, load) => {
   const hit = memo.get(key);
@@ -194,6 +204,52 @@ const api = {
     const r = await one('select u.name from child_logins cl join users u on u.id=cl.child_id where cl.code=$1', [String(b.code || '').toUpperCase().trim()]);
     if (!r) throw { code: 400, msg: 'код не найден' };
     return { ok: true, name: r.name };
+  },
+
+  // Открытая регистрация: своё дерево → новый семейный круг + кошелёк + токен устройства.
+  // Код входа всё равно выдаём — запасной вход / смена телефона.
+  'POST /api/signup': async (b, ctx, req) => {
+    const name = String(b.name || '').replace(/[<>]/g, '').trim().slice(0, 16);
+    if (name.length < 2) throw { code: 400, msg: 'как назовём дерево?' };
+    const tree = ['pine', 'cedar', 'spruce'].includes(b.tree) ? b.tree : 'pine';
+    const ip = clientIp(req || { headers: {}, socket: {} });
+    if (!signupRateOk(ip)) throw { code: 429, msg: 'Слишком много новых лесов с этого устройства — загляни позже' };
+    let invite;
+    for (let i = 0; i < 8; i++) {
+      invite = genLoginCode();
+      if (!(await one('select 1 from circles where invite_code=$1', [invite]))) break;
+    }
+    const circle = await one(
+      `insert into circles(name, invite_code) values($1,$2) returning id`,
+      ['Лес ' + name, invite]);
+    if (!circle) throw { code: 500, msg: 'не удалось открыть лес' };
+    auth.dropCache();
+    const u = (await rpc('add_child', [circle.id, name, tree]))[0];
+    let code;
+    for (let i = 0; i < 8; i++) {
+      code = genLoginCode();
+      if (!(await one('select 1 from child_logins where code=$1', [code]))) break;
+    }
+    await q('insert into child_logins(code,child_id) values($1,$2)', [code, u.id]);
+    const raw = auth.newToken();
+    await q(
+      `insert into device_tokens(token_hash, child_id, circle_id, label) values($1,$2,$3,$4)`,
+      [auth.hash(raw), u.id, circle.id, 'signup']);
+    // витрина впечатлений: глобальные (circle_id is null) или копия из самого старого круга
+    const seeded = await q(
+      `insert into shop_items(circle_id,type,title,price)
+         select $1::uuid, type, title, price from shop_items
+          where type='impression' and is_active and circle_id is null
+       returning id`, [circle.id]);
+    if (!seeded.length) {
+      await q(
+        `insert into shop_items(circle_id,type,title,price)
+           select $1::uuid, type, title, price from shop_items
+            where type='impression' and is_active
+              and circle_id = (select id from circles where id <> $1::uuid order by created_at limit 1)
+            order by price limit 24`, [circle.id]).catch(() => {});
+    }
+    return { ok: true, name, code, token: raw };
   },
 
   'GET /api/state': async (b, ctx) => {
@@ -1215,7 +1271,7 @@ createServer(async (req, res) => {
         okTry(ip);
       }
       const ctx = await auth.resolve(req);
-      // детские endpoint'ы требуют валидный код (иначе 401, а не 500/пустота)
+      // детские endpoint'ы требуют валидный код/токен (иначе 401, а не 500/пустота)
       if (!ctx.child && !PUBLIC.has(route) && !isParent) throw { code: 401, msg: 'нужен код входа' };
       // статус «в лесу»: обновляем время последней активности (не на каждом пинге)
       if (ctx.child && route !== 'GET /api/ping') q(`update users set last_seen=now() where id=$1`, [ctx.child]).catch(() => {});
@@ -1223,6 +1279,8 @@ createServer(async (req, res) => {
       if (route === 'POST /api/link') {   // неверный код (throw 400) считаем промахом, верный — сбрасывает счётчик
         try { result = await handler(body, ctx); okTry(ip); }
         catch (e) { badTry(ip); throw e; }
+      } else if (route === 'POST /api/signup') {
+        result = await handler(body, ctx, req);
       } else result = await handler(body, ctx);
       const out = JSON.stringify(result);
       res.writeHead(200); res.end(out);

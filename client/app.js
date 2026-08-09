@@ -36,10 +36,23 @@ if (!window.__cardMemHook) {
 }
 
 function runApp() {
+function hasSession() {
+  return !!(localStorage.getItem('deviceToken') || localStorage.getItem('childCode'));
+}
+function clearSession() {
+  localStorage.removeItem('deviceToken');
+  localStorage.removeItem('childCode');
+}
+function saveSession({ token, code }) {
+  if (token) localStorage.setItem('deviceToken', token);
+  if (code) localStorage.setItem('childCode', String(code).toUpperCase());
+}
 async function api(path, body, method) {
   const headers = {};
+  const token = localStorage.getItem('deviceToken');
   const code = localStorage.getItem('childCode');
-  if (code) headers['x-child-code'] = encodeURIComponent(code);   // привязка устройства к профилю
+  if (token) headers['x-device-token'] = token;                    // основной вход после саморегистрации
+  else if (code) headers['x-child-code'] = encodeURIComponent(code); // legacy / запасной код
   const post = body !== undefined || method === 'POST';
   const opt = post ? { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }
                    : { headers };
@@ -47,7 +60,7 @@ async function api(path, body, method) {
     if (!post) {
       // GET — stale-while-revalidate: экран рисуется из кэша МГНОВЕННО, свежее подтягивается фоном.
       // Любое действие (POST) чистит кэш, поэтому свои изменения видны сразу; чужие — в пределах 3 минут.
-      const k = 'ac:' + (code || '') + ':' + path;
+      const k = 'ac:' + (token || code || '') + ':' + path;
       const hit = JSON.parse(sessionStorage.getItem(k) || 'null');
       const age = hit ? Date.now() - hit.t : Infinity;
       const load = async () => {
@@ -103,28 +116,44 @@ const page = location.pathname.split('/').pop() || 'index.html';
 // вход по ссылке ?code=РОСТ-01 (родитель может дать прямую ссылку)
 const urlCode = new URLSearchParams(location.search).get('code');
 if (urlCode) localStorage.setItem('childCode', urlCode.toUpperCase());
-// не привязан → на экран ввода кода (родителю код не нужен)
-if (page !== 'link.html' && page !== 'parent.html' && !localStorage.getItem('childCode'))
+// не привязан → экран старта (родителю и онбордингу сессия не нужна)
+if (page !== 'link.html' && page !== 'parent.html' && page !== 'onboard.html' && !hasSession())
   location.href = 'link.html';
 
-// ── Вход по коду (привязка ребёнка) → ритуал посадки дерева ──
+// ── Старт: новый лес или вход по коду ──
 if (page === 'link.html') {
-  // коды детям раздаёт ведущий лично — на экране входа их не показываем
-  document.getElementById('linkBtn').onclick = async () => {
+  if (hasSession()) location.href = 'index.html';
+  const plantBtn = document.getElementById('plantBtn');
+  if (plantBtn) plantBtn.onclick = () => { location.href = 'onboard.html'; };
+  const codeToggle = document.getElementById('codeToggle');
+  const codeBox = document.getElementById('codeBox');
+  if (codeToggle && codeBox) {
+    codeToggle.onclick = (e) => {
+      e.preventDefault();
+      const open = codeBox.style.display === 'block';
+      codeBox.style.display = open ? 'none' : 'block';
+      if (!open) document.getElementById('codeInput')?.focus();
+    };
+  }
+  const linkBtn = document.getElementById('linkBtn');
+  if (linkBtn) linkBtn.onclick = async () => {
     const code = document.getElementById('codeInput').value.trim();
     const r = await api('/api/link', { code });
     const n = document.getElementById('note'); n.style.display = 'block';
     if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { localStorage.setItem('childCode', code.toUpperCase()); location.href = 'onboard.html'; }
+    else { saveSession({ code }); location.href = 'onboard.html'; }
   };
 }
 
-// ── Онбординг: выбрать дерево и дать имя ──
+// ── Онбординг: новый лес (signup) или ритуал после кода ──
 if (page === 'onboard.html') {
   let selTree = 'pine';
+  const isNew = !hasSession();
   const pick = document.getElementById('treePick');
   const nameIn = document.getElementById('treeName');
   const note = document.getElementById('note');
+  const form = document.getElementById('onboardForm');
+  const done = document.getElementById('onboardDone');
   const paintSel = () => {
     pick.querySelectorAll('.tree-opt').forEach((b) => {
       const on = b.dataset.tree === selTree;
@@ -135,26 +164,45 @@ if (page === 'onboard.html') {
   pick.querySelectorAll('.tree-opt').forEach((b) => {
     b.onclick = () => { selTree = b.dataset.tree; paintSel(); };
   });
-  // подставляем уже известное имя/тип, если ребёнок возвращается на ритуал
-  api('/api/state').then((s) => {
-    if (s.error) return;
-    if (s.name) nameIn.value = s.name;
-    if (s.tree_type && ['pine', 'cedar', 'spruce'].includes(s.tree_type)) {
-      selTree = s.tree_type; paintSel();
-    }
-  }).catch(() => {});
+  if (!isNew) {
+    api('/api/state').then((s) => {
+      if (s.error) return;
+      if (s.name) nameIn.value = s.name;
+      if (s.tree_type && ['pine', 'cedar', 'spruce'].includes(s.tree_type)) {
+        selTree = s.tree_type; paintSel();
+      }
+    }).catch(() => {});
+  }
   document.getElementById('startBtn').onclick = async () => {
     const name = nameIn.value.trim();
     if (name.length < 2) {
       note.style.display = 'block'; note.style.color = '#b3452e';
       note.textContent = 'Напиши имя дерева — хотя бы 2 буквы'; return;
     }
-    const r = await api('/api/onboard', { name, tree: selTree });
+    const btn = document.getElementById('startBtn');
+    btn.disabled = true;
+    const r = isNew
+      ? await api('/api/signup', { name, tree: selTree })
+      : await api('/api/onboard', { name, tree: selTree });
+    btn.disabled = false;
     if (r.error) {
       note.style.display = 'block'; note.style.color = '#b3452e'; note.textContent = r.error; return;
     }
+    if (isNew) {
+      saveSession({ token: r.token, code: r.code });
+      if (form) form.style.display = 'none';
+      if (pick) pick.style.display = 'none';
+      if (done) {
+        done.style.display = 'block';
+        const codeEl = document.getElementById('recoverCode');
+        if (codeEl) codeEl.textContent = r.code;
+      } else location.href = 'index.html';
+      return;
+    }
     location.href = 'index.html';
   };
+  const goHome = document.getElementById('goHomeBtn');
+  if (goHome) goHome.onclick = () => { location.href = 'index.html'; };
 }
 
 // ── Кошелёк ──
@@ -593,7 +641,7 @@ if (page === 'market.html') {
 // ── Профиль ──
 if (page === 'profile.html') {
   const su = document.getElementById('switchUser');   // сменить пользователя → экран кода
-  if (su) su.onclick = (e) => { e.preventDefault(); localStorage.removeItem('childCode'); location.href = 'link.html'; };
+  if (su) su.onclick = (e) => { e.preventDefault(); clearSession(); location.href = 'link.html'; };
   const nar = document.querySelector('.profile-btn'); // «Сменить наряд» → экран нарядов
   if (nar) nar.onclick = () => navigate('skins.html');
   api('/api/state').then((s) => { const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset; });  // наряд перекрывает арт только если надет
@@ -700,8 +748,6 @@ if (page === 'pot.html') {
   };
   loadPots();
 }
-
-// Онбординг убран: дети входят по личному коду от ведущего (см. фикс захвата ТАЯ-01).
 
 // PWA: офлайн-кэш + БЕСШОВНОЕ авто-обновление (без «открой два раза»)
 if ('serviceWorker' in navigator) {

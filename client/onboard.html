@@ -72,11 +72,23 @@
         <img src="assets/tree3.webp" alt=""><span>Ель</span>
       </button>
     </div>
-    <input class="name-in" id="treeName" placeholder="Как назовём дерево?" maxlength="16" autocomplete="off">
-    <button class="btn btn-lg start-btn" id="startBtn" type="button">
-      <span class="leaf" aria-hidden="true">🍃</span> Начать приключение
-    </button>
-    <div id="note"></div>
+    <div id="onboardForm">
+      <input class="name-in" id="treeName" placeholder="Как назовём дерево?" maxlength="16" autocomplete="off">
+      <button class="btn btn-lg start-btn" id="startBtn" type="button">
+        <span class="leaf" aria-hidden="true">🍃</span> Начать приключение
+      </button>
+      <div id="note"></div>
+    </div>
+    <div id="onboardDone" style="display:none;text-align:center;margin-top:8px">
+      <div style="font-weight:900;color:var(--ink);font-size:18px;font-family:Fredoka,Nunito,sans-serif;margin-bottom:8px">Дерево посажено!</div>
+      <div style="font-weight:700;color:#6b4f3a;font-size:13px;line-height:1.4;margin-bottom:10px">
+        Сохрани запасной код — пригодится, если сменишь телефон:
+      </div>
+      <div id="recoverCode" style="font-weight:900;font-size:28px;letter-spacing:3px;color:#5f8e37;
+        background:#fffaf0;border:3px solid #fff;border-radius:14px;padding:12px;box-shadow:0 0 0 2px #c9a86a;
+        font-family:Fredoka,Nunito,sans-serif"></div>
+      <button class="btn btn-lg start-btn" id="goHomeBtn" type="button" style="margin-top:14px">В лес!</button>
+    </div>
   </div>
 </div></div>
 <script src="app.js"></script>
