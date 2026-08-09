@@ -238,12 +238,12 @@ const payAmts = document.getElementById('payAmts');
   b.onclick = () => { payAmt = a; [...payAmts.children].forEach((x) => x.classList.remove('sel')); b.classList.add('sel'); };
   payAmts.appendChild(b);
 });
-// Автообновление: чат — каждые 2с, список — каждые 5с
-let chatPoll = null, lastMsgCount = 0;
+// Автообновление: чат — каждые 2с (только открытый диалог), список — каждые 5с (только список, вкладка видима)
+let chatPoll = null, listPoll = null, lastMsgCount = 0;
 const startChatPoll = () => {
   if (chatPoll) clearInterval(chatPoll);
   chatPoll = setInterval(async () => {
-    if (!chatFriend) return;
+    if (document.hidden || !chatFriend) return;
     const msgs = await api('/api/chat', { with: chatFriend });
     if (msgs.error || !msgs.length) return;
     if (msgs.length === lastMsgCount) return;   // нет новых — не дёргаем DOM
@@ -289,8 +289,18 @@ const startChatPoll = () => {
     }
     if (wasAtBottom) c.scrollTop = c.scrollHeight;
   }, 2000);
+  (window.__timers || (window.__timers = [])).push(chatPoll);
 };
-(window.__timers || (window.__timers = [])).push(setInterval(loadChatList, 5000));
+listPoll = setInterval(() => {
+  if (document.hidden || chatFriend) return;   // фон / открытый диалог — список не крутим
+  loadChatList();
+}, 5000);
+(window.__timers || (window.__timers = [])).push(listPoll);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  if (chatFriend) lastMsgCount = 0;   // следующий тик чата подтянет свежее
+  else loadChatList();
+});
 const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; startChatPoll(); };
 const origClose = closeChat; closeChat = () => { if (chatPoll) clearInterval(chatPoll); chatPoll = null; origClose(); };
 };

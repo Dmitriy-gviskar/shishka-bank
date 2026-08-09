@@ -118,7 +118,10 @@ async function api(path, body, method) {
       return load();                                              // кэша нет или протух — ждём сеть
     }
     const r = await (await fetch(path, opt)).json();  // действие — сбросить кэш, данные изменились
-    if (path !== '/api/guild/chat') for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k);
+    if (path !== '/api/guild/chat') {
+      for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k);
+      window.__balAt = 0;   // следующий refreshBalance обязан сходить в сеть
+    }
     return r;
   }
   catch { return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' }; }
@@ -543,9 +546,16 @@ function mountTopbar() {
   const wrap = phone.querySelector('.wrap, .cwrap');
   if (wrap) wrap.classList.add('has-topbar');
 }
-async function refreshBalance() {
+async function refreshBalance(force) {
   const el = document.getElementById('topBal'); if (!el) return;
-  const s = await api('/api/state'); el.textContent = s.balance;
+  // SPA: не дёргать /api/state на каждом экране, если шапка уже свежая (api сам кэширует GET ≤20с)
+  const age = Date.now() - (window.__balAt || 0);
+  if (!force && el.textContent && el.textContent !== '…' && age < 15e3) return;
+  const s = await api('/api/state');
+  if (s && s.balance != null) {
+    el.textContent = s.balance;
+    window.__balAt = Date.now();
+  }
 }
 mountTopbar(); refreshBalance();
 
