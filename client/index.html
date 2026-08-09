@@ -49,8 +49,15 @@
   .wc-unit{font-size:15px;font-weight:900;color:#8a5a20;text-transform:uppercase;
     font-family:"Fredoka","Nunito",sans-serif}
   .wc-sub{font-size:12px;font-weight:700;color:#8a6a45;margin-top:3px}
+  /* CTA внутри рамки — золотая плашка, как часть кошелька, не «апп-зелень» */
   .wc-cta{position:absolute;left:46%;right:8%;bottom:9%;margin:0;width:auto;max-width:none;
-    font-size:16px;padding:10px 12px;border-radius:999px}
+    font-size:15px;padding:9px 10px;border-radius:14px;
+    background:linear-gradient(180deg,#ffe7a8 0%,#f0c14a 42%,#c9871f 100%);
+    border:2.5px solid #fff8e0;color:#5b3a1e;
+    box-shadow:inset 0 1px 0 rgba(255,248,220,.7),0 0 0 2px #8a6238,0 4px 0 #6b4a22;
+    text-shadow:0 1px 0 rgba(255,248,220,.55);cursor:pointer;
+    font-family:"Fredoka","Nunito",sans-serif;font-weight:900}
+  .wc-cta:active{transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,248,220,.5),0 0 0 2px #8a6238,0 2px 0 #6b4a22}
 
   .wc-links{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
   .wc-links a{font-weight:800;font-size:12px;color:var(--brown);background:rgba(255,248,235,.92);
@@ -58,13 +65,13 @@
     box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
 
   .add{margin:14px auto 0;display:block;
-    background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
-    color:#fff;font-size:18px;font-weight:900;padding:12px 28px;border-radius:999px;
-    box-shadow:0 5px 0 var(--green-d);cursor:pointer;text-shadow:0 1px 1px rgba(0,0,0,.15);
-    font-family:"Fredoka","Nunito",sans-serif}
-  .add:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
-  .add.soft{background:linear-gradient(180deg,#fff6e4,#f0d7a4);color:var(--brown);
-    box-shadow:0 5px 0 #c9a86a;border-color:#8a6238;text-shadow:none}
+    background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid #8a6238;
+    color:var(--brown);font-size:18px;font-weight:900;padding:12px 28px;border-radius:18px;
+    box-shadow:0 0 0 2px #fff8eb,0 5px 0 #c9a86a;cursor:pointer;
+    font-family:"Fredoka","Nunito",sans-serif;text-shadow:none}
+  .add:active{transform:translateY(3px);box-shadow:0 0 0 2px #fff8eb,0 2px 0 #c9a86a}
+  .add.soft{background:linear-gradient(180deg,#fffaf0,#f5e6c8);color:var(--brown);
+    box-shadow:0 0 0 2px #fff,0 4px 0 #d4bc8a;border-color:#b8955e}
 
   .hint-forest{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:12px;
     color:var(--brown);font-weight:800;font-size:13px;text-align:center;
@@ -145,7 +152,7 @@
           <div class="wc-unit">шишки</div>
           <div class="wc-sub">Всего накоплено</div>
         </div>
-        <button class="add wc-cta" id="earnBtn">Сделать дело</button>
+        <button class="wc-cta" id="earnBtn" type="button">Сделать дело</button>
       </div>
 
       <div class="home-actions">
