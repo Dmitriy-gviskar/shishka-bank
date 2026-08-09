@@ -10,17 +10,37 @@
     filter:brightness(.48) saturate(1.15)}
   .cbg::after{content:"";position:absolute;inset:0;
     background:radial-gradient(120% 80% at 50% 12%,rgba(30,44,22,.12),rgba(8,12,6,.86))}
-  .cwrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:16px 12px 0;overflow:hidden}
-  /* слева место под «←», справа — под #topbar с монетками */
-  .chead{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-left:52px;padding-right:88px}
-  .chead .prog{min-width:0}
-  .chead .h1{font-weight:900;color:var(--ink);font-size:18px;background:linear-gradient(180deg,#fff8eb,#f3e7cf);
-    border:3px solid #fff;border-radius:16px;padding:6px 12px;flex:none;
+  .cwrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:14px 12px 0;overflow:hidden}
+  /* единый ряд чипов: ← / Коллекция / Ячеек / баланс — одна высота 42px */
+  .cwrap > button[aria-label="Назад"]{
+    top:14px !important;left:12px !important;z-index:6 !important;
+    width:42px !important;height:42px !important;padding:0 !important;
+    display:flex !important;align-items:center;justify-content:center;
+    border:3px solid #fff !important;border-radius:14px !important;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf) !important;
+    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22) !important;
+    font-size:20px !important;line-height:1 !important;color:#6b4f3a !important;font-weight:900 !important}
+  #topbar{
+    top:14px !important;right:12px !important;height:42px;box-sizing:border-box;
+    border:3px solid #fff;border-radius:14px;padding:0 10px 0 6px;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);
+    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);
+    font-size:14px;gap:4px}
+  #topbar img{width:20px;height:20px}
+  .chead{display:flex;align-items:center;gap:8px;margin-bottom:10px;
+    padding-left:50px;padding-right:96px;min-height:42px}
+  .chead .h1{box-sizing:border-box;height:42px;flex:none;display:flex;align-items:center;
+    padding:0 12px;font-weight:900;color:var(--ink);font-size:16px;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
     box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);font-family:"Fredoka","Nunito",sans-serif}
-  .prog{flex:1;background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:14px;padding:6px 10px;
-    font-weight:800;color:var(--brown);font-size:12.5px;box-shadow:0 0 0 2px #c9a86a}
-  .prog .bar{height:6px;border-radius:6px;background:#e4d6b8;margin-top:4px;overflow:hidden}
-  .prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:6px}
+  .chead .prog,.prog{box-sizing:border-box;height:42px;flex:1;min-width:0;
+    display:flex;flex-direction:column;justify-content:center;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+    padding:3px 10px;font-weight:800;color:var(--brown);font-size:12px;
+    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);font-family:"Fredoka","Nunito",sans-serif;
+    line-height:1.15}
+  .prog .bar{height:5px;border-radius:5px;background:#e4d6b8;margin-top:3px;overflow:hidden;flex:none}
+  .prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:5px}
   .packbtn{background:linear-gradient(180deg,#ffe9a8,#ffd062);border:3px solid #fff;border-radius:18px;
     padding:11px;font-weight:900;color:#6b4a12;font-size:17px;
     box-shadow:0 0 0 3px #e0a52e,0 4px 0 rgba(160,110,20,.3);cursor:pointer;
