@@ -269,6 +269,8 @@ if (page === 'index.html' || page === '') {
   if (earnBtn) earnBtn.onclick = () => navigate('quests.html');
   const spendBtn = document.getElementById('spendBtn');
   if (spendBtn) spendBtn.onclick = () => navigate('shop.html');
+  const inviteBtn = document.getElementById('inviteBtn');
+  if (inviteBtn) inviteBtn.onclick = () => navigate('profile.html#grove');
 
   // ── Ежедневный подарок + серия ──
   function coneRain(n) {   // дождик шишек поверх экрана
@@ -667,6 +669,11 @@ if (page === 'profile.html') {
   if (su) su.onclick = (e) => { e.preventDefault(); clearSession(); location.href = 'link.html'; };
   const nar = document.querySelector('.profile-btn'); // «Сменить наряд» → экран нарядов
   if (nar) nar.onclick = () => navigate('skins.html');
+  // с дома / реф-кнопки: сразу к поляне дружбы
+  if (location.hash === '#grove') {
+    const g = document.getElementById('grove');
+    if (g) setTimeout(() => g.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+  }
   api('/api/state').then((s) => { const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset; });  // наряд перекрывает арт только если надет
   api('/api/profile').then((p) => {
     const ll = document.getElementById('levelLabel'); if (ll) ll.textContent = `Дубок · Уровень ${p.tree_level}`;

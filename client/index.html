@@ -63,6 +63,13 @@
     color:var(--brown);font-size:16px;font-weight:900;cursor:pointer;
     box-shadow:0 0 0 2px #fff8eb,0 4px 0 #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
   .home-spend:active{transform:translateY(2px);box-shadow:0 0 0 2px #fff8eb,0 2px 0 #c9a86a}
+  .home-invite{display:block;width:100%;max-width:280px;margin:0 auto;padding:11px 18px;
+    background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
+    border-radius:18px;color:#fff;font-size:15px;font-weight:900;cursor:pointer;
+    box-shadow:0 4px 0 var(--green-d);font-family:"Fredoka","Nunito",sans-serif;
+    text-shadow:0 1px 1px rgba(0,0,0,.15)}
+  .home-invite:active{transform:translateY(2px);box-shadow:0 2px 0 var(--green-d)}
+  .home-invite small{display:block;font-size:11px;font-weight:800;opacity:.9;margin-top:2px}
 
   .next-deed{background:rgba(255,248,235,.94);border:3px solid #fff;border-radius:18px;
     padding:10px 12px;display:none;text-align:left;cursor:pointer;
@@ -149,6 +156,10 @@
         </div>
 
         <button class="home-spend" id="spendBtn" type="button">Потратить в магазине</button>
+        <button class="home-invite" id="inviteBtn" type="button">
+          Позвать друга в лес
+          <small>+100 шишек · ссылка в браузере</small>
+        </button>
 
         <div class="next-deed" id="nextDeed">
           <div class="nd-label">Следующее дело</div>
