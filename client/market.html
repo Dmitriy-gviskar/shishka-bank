@@ -6,87 +6,115 @@
   .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
   .phone::after{background:
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
-    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
-  .wrap{overflow-y:hidden;padding-top:12px}
-  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px;font-size:18px;padding:8px 16px;
-    background:linear-gradient(180deg,#a07840 0%,#8a6238 55%,#6b4a22 100%);
-    color:#fff8eb;border:3px solid #5a3a18;text-shadow:0 2px 0 rgba(0,0,0,.25);
-    box-shadow:0 4px 0 #4a3010, inset 0 1px 0 rgba(255,230,180,.35)}
-  .greet{margin:2px 0 4px}
-  .greet img{width:90px;height:90px;
-    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
-  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
+    linear-gradient(180deg,rgba(255,248,230,.05),rgba(35,50,25,.22))}
+  .wrap{overflow-y:hidden;padding:10px 14px 0}
 
-  #marketList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 2px 6px}
+  .mkt-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex:none}
+  .mkt-top img{width:56px;height:56px;object-fit:contain;flex:none;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 4px 6px rgba(60,40,15,.3))}
+  .mkt-title{flex:1;font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:26px;
+    line-height:1;color:#6b3e14;letter-spacing:-.02em;
+    text-shadow:
+      -2px -2px 0 #ffe7a0, 2px -2px 0 #ffe7a0, -2px 2px 0 #ffe7a0, 2px 2px 0 #ffe7a0,
+      0 3px 0 rgba(90,50,15,.35)}
+
+  #marketList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:2px 2px 8px}
   #marketList::-webkit-scrollbar{width:0}
 
-  .shop-card{margin-top:12px;padding:12px 12px 10px;position:relative;
-    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
-    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
-  .shop-head{display:flex;align-items:center;gap:10px}
-  .shop-head img.av{width:56px;height:56px;object-fit:contain;flex:none;border-radius:14px;
-    border:3px solid #fff;box-shadow:0 0 0 2px #c9a86a;background:linear-gradient(180deg,#fff8eb,#f0d7a4)}
-  .shop-head .sn{flex:1;font-weight:900;color:var(--ink);font-size:16px;min-width:0;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;font-family:"Fredoka","Nunito",sans-serif}
-  .shop-mgmt{display:flex;gap:4px;flex:none}
-  .mini{border-radius:10px;padding:6px 8px;font-weight:900;cursor:pointer;font-size:13px;
-    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;box-shadow:0 0 0 2px #c9a86a}
-  .heir{position:absolute;top:-10px;right:10px;background:linear-gradient(180deg,#ffe9a8,#ffd062);color:#5b4636;
-    font-weight:900;font-size:11px;padding:3px 10px;border-radius:10px;border:2px solid #fff;
-    box-shadow:0 0 0 2px #e0a52e;z-index:1;font-family:"Fredoka","Nunito",sans-serif}
-  .mine-tag{position:absolute;top:-10px;left:10px;background:linear-gradient(180deg,#8bc75a,#6fad45);color:#fff;
-    font-weight:900;font-size:11px;padding:3px 10px;border-radius:10px;border:2px solid #fff;
-    box-shadow:0 0 0 2px var(--green-d);z-index:1;font-family:"Fredoka","Nunito",sans-serif}
+  .shop-card{margin-top:14px;padding:0 0 12px;position:relative;overflow:visible;
+    background:linear-gradient(180deg,#f8e7c4 0%,#ecd4a4 55%,#e2c48e 100%);
+    border:4px solid #8a6238;border-radius:22px;
+    box-shadow:0 0 0 2px #c9a86a,0 6px 0 rgba(90,55,20,.3)}
+  .shop-card:first-child{margin-top:6px}
 
-  .lot-row{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:2px solid #efe4cc}
-  .lot-row img.lot-thumb{width:44px;height:44px;object-fit:cover;border-radius:10px;flex:none;
-    background:#fbf4e2;border:2.5px solid #fff;box-shadow:0 0 0 2px #c9a86a}
-  .lot-row .lt{flex:1;font-weight:800;color:var(--ink);font-size:14px;min-width:0;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;font-family:"Fredoka","Nunito",sans-serif}
-  .lot-row .price{font-size:17px;flex:none;display:inline-flex;align-items:center;gap:3px;
-    font-weight:900;color:#8a5a20}
-  .lot-row .price img{width:20px;height:20px}
-  .lot-row .shop-buy{flex:none;margin:0;padding:9px 14px;min-width:88px;font-size:14px;line-height:1.1;
+  .stall{margin:10px 10px 0;border-radius:16px;overflow:hidden;
+    background:linear-gradient(180deg,#fff8eb,#f0d7a4);
+    border:3px solid #fff;box-shadow:0 0 0 2px #c9a86a, inset 0 -8px 16px rgba(120,80,30,.08);
+    aspect-ratio:16/9;display:flex;align-items:center;justify-content:center}
+  .stall img{width:100%;height:100%;object-fit:cover;display:block}
+  .stall img.avatar-fallback{width:72%;height:72%;object-fit:contain;padding:8px}
+
+  .shop-name{margin:10px 14px 0;font-family:"Fredoka","Nunito",sans-serif;font-weight:900;
+    font-size:20px;color:var(--ink);line-height:1.15;text-align:center}
+  .shop-mgmt{display:flex;justify-content:center;gap:6px;margin-top:8px;padding:0 10px}
+  .mini{border-radius:12px;padding:7px 10px;font-weight:900;cursor:pointer;font-size:13px;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif;color:var(--brown)}
+  .mini:active{transform:translateY(1px)}
+
+  .heir{position:absolute;top:-12px;right:12px;z-index:2;display:inline-flex;align-items:center;gap:4px;
+    background:linear-gradient(180deg,#ffe9a8,#ffd062);color:#5b4636;
+    font-weight:900;font-size:12px;padding:4px 10px 4px 8px;border-radius:14px;border:2.5px solid #fff;
+    box-shadow:0 0 0 2px #e0a52e,0 3px 0 rgba(160,110,20,.25);font-family:"Fredoka","Nunito",sans-serif}
+  .heir::before{content:"👑";font-size:12px;line-height:1}
+  .mine-tag{position:absolute;top:-12px;left:12px;z-index:2;
+    background:linear-gradient(180deg,#8bc75a,#6fad45);color:#fff;
+    font-weight:900;font-size:12px;padding:4px 10px;border-radius:14px;border:2.5px solid #fff;
+    box-shadow:0 0 0 2px var(--green-d),0 3px 0 rgba(60,100,30,.25);font-family:"Fredoka","Nunito",sans-serif}
+
+  .lots{padding:0 10px}
+  .lot-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px;
+    background:rgba(255,250,240,.72);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 2px #d9c39a}
+  .lot-row img.lot-thumb{width:52px;height:52px;object-fit:cover;border-radius:12px;flex:none;
+    background:#fff8eb;border:2.5px solid #fff;box-shadow:0 0 0 2px #c9a86a}
+  .lot-row .lt{flex:1;font-weight:800;color:var(--ink);font-size:15px;min-width:0;
+    font-family:"Fredoka","Nunito",sans-serif;line-height:1.2}
+  .lot-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .lot-row .price{font-size:18px;display:inline-flex;align-items:center;gap:3px;
+    font-weight:900;color:#8a5a20;font-family:"Fredoka","Nunito",sans-serif}
+  .lot-row .price img{width:22px;height:22px}
+  .lot-row .shop-buy{margin:0;padding:9px 16px;min-width:92px;font-size:15px;line-height:1.1;
     font-family:"Fredoka","Nunito",sans-serif;white-space:nowrap;cursor:pointer;
     background:linear-gradient(180deg,#9ad65f 0%,#6fad45 48%,#5a9635 100%);
-    border:3px solid #3f6b2e;color:#fff;font-weight:900;border-radius:999px;
-    box-shadow:0 3px 0 #3f6b2e, inset 0 2px 0 rgba(255,255,255,.28);
+    border:3px solid #fff;color:#fff;font-weight:900;border-radius:999px;
+    box-shadow:0 0 0 2px #3f6b2e,0 3px 0 #3f6b2e, inset 0 2px 0 rgba(255,255,255,.28);
     text-shadow:0 1px 1px rgba(0,0,0,.2)}
-  .lot-row .shop-buy:active{transform:translateY(2px);box-shadow:0 1px 0 #3f6b2e, inset 0 2px 0 rgba(255,255,255,.28)}
-  .lot-empty{margin-top:10px;color:#a1876a;font-weight:700;font-size:13px;text-align:center}
+  .lot-row .shop-buy:active{transform:translateY(2px);box-shadow:0 0 0 2px #3f6b2e,0 1px 0 #3f6b2e, inset 0 2px 0 rgba(255,255,255,.28)}
+  .lot-mgmt{display:flex;gap:4px}
+  .lot-empty{margin-top:10px;padding:10px;color:#8a7358;font-weight:700;font-size:13px;text-align:center;
+    font-family:"Fredoka","Nunito",sans-serif}
 
-  #createForm{margin-top:10px;padding:12px;display:none;
-    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
-    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
-  #createForm input, .lotForm input{width:100%;background:#fffaf0;border:3px solid #fff;border-radius:12px;
+  .lotForm{margin:10px 10px 0;padding:10px;display:none;
+    background:rgba(255,250,240,.85);border:2.5px solid #fff;border-radius:16px;box-shadow:0 0 0 2px #d9c39a}
+  .lotForm input,#createForm input{width:100%;background:#fffaf0;border:3px solid #fff;border-radius:12px;
     padding:10px;font-size:15px;font-weight:800;color:var(--ink);outline:none;margin-bottom:8px;
     box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
-  #createForm input:focus, .lotForm input:focus{box-shadow:0 0 0 2px #e0a52e}
-  .lotForm{margin-top:9px;padding-top:9px;border-top:2px solid #efe4cc;display:none}
+  .lotForm input:focus,#createForm input:focus{box-shadow:0 0 0 2px #e0a52e}
   .lotForm .row{display:flex;gap:8px}
-  .lotForm .row .btn{flex:none}
-  .addLotBtn{margin-top:9px;padding-top:9px;border-top:2px solid #efe4cc;text-align:center}
+  .addLotBtn{margin:10px 10px 0;text-align:center}
 
-  .open-stall{display:block;margin:12px auto 0;width:100%;max-width:320px;font-size:18px;padding:13px 22px;
+  .mkt-foot{flex:none;padding:8px 2px 4px}
+  .open-stall{display:block;width:100%;font-size:18px;padding:14px 18px;
     font-family:"Fredoka","Nunito",sans-serif}
-  #note{display:none;text-align:center;font-weight:800;margin-top:10px;background:rgba(255,248,235,.94);
-    border:2.5px solid #fff;border-radius:14px;padding:9px;box-shadow:0 0 0 2px #c9a86a}
+  .open-stall[hidden]{display:none}
+  #createForm{display:none;margin-top:8px;padding:12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  #createForm.on{display:block}
+  #note{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,248,235,.94);
+    border:2.5px solid #fff;border-radius:14px;padding:9px;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .mkt-empty{margin:24px 8px;text-align:center;font-weight:800;color:#8a7358;font-size:15px;
+    line-height:1.35;font-family:"Fredoka","Nunito",sans-serif}
 </style></head><body>
 <div class="phone"><div class="wrap">
-  <div class="title">Лесные лавки</div>
-  <div class="greet">
-    <img src="assets/spirit_bust.webp" alt="Лесной Дух">
-    <div class="bubble">Торгуй с друзьями в лесу!</div>
+  <div class="mkt-top">
+    <img src="assets/spirit_bust.webp" alt="">
+    <div class="mkt-title">Лесные лавки</div>
   </div>
   <div id="marketList"></div>
-  <button class="btn btn-lg open-stall" id="openShopBtn" type="button">Открыть свою лавку</button>
-  <div id="createForm">
-    <input id="shopName" placeholder="Название лавки" maxlength="24">
-    <input id="shopLot" placeholder="Что продаёшь" maxlength="24">
-    <input id="shopPrice" type="number" placeholder="Цена в шишках" min="1">
-    <button class="btn btn-lg" id="createShopBtn" style="margin-top:2px" type="button">Создать лавку</button>
+  <div class="mkt-foot">
+    <button class="btn btn-lg open-stall" id="openShopBtn" type="button">Открыть свою лавку</button>
+    <div id="createForm">
+      <input id="shopName" placeholder="Название лавки" maxlength="24">
+      <input id="shopLot" placeholder="Что продаёшь" maxlength="24">
+      <input id="shopPrice" type="number" placeholder="Цена в шишках" min="1">
+      <button class="btn btn-lg" id="createShopBtn" style="margin-top:2px" type="button">Создать лавку</button>
+    </div>
+    <div id="note"></div>
   </div>
-  <div id="note"></div>
 </div></div><script src="app.js"></script>
 <script src="nav.js"></script>
 </body></html>

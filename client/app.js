@@ -695,36 +695,56 @@ function marketNote(text, ok) {
 async function loadMarket() {
   const shops = await api('/api/shops');
   const c = document.getElementById('marketList'); c.innerHTML = '';
+  const openBtn = document.getElementById('openShopBtn');
+  const hasMine = Array.isArray(shops) && shops.some((s) => s.mine);
+  if (openBtn) openBtn.hidden = !!hasMine;
+  if (!Array.isArray(shops) || shops.error) {
+    c.innerHTML = `<div class="mkt-empty">${esc(shops?.error || 'Не удалось загрузить лавки')}</div>`;
+    return;
+  }
+  if (!shops.length) {
+    c.innerHTML = '<div class="mkt-empty">Пока никого на ярмарке.<br>Открой первую лавку!</div>';
+    return;
+  }
   for (const s of shops) {
+    const art = s.photo ? s.photo : ('assets/' + (s.avatar || 'friend1.webp'));
+    const artClass = s.photo ? '' : ' avatar-fallback';
     const el = document.createElement('div'); el.className = 'shop-card';
     el.innerHTML = `${s.is_heir ? '<span class="heir">Наследник</span>' : ''}${s.mine ? '<span class="mine-tag">Моя</span>' : ''}
-      <div class="shop-head">
-        <img class="av" src="${s.photo ? s.photo : 'assets/' + s.avatar}" alt="">
-        <div class="sn">${esc(s.name)}</div>
-        ${s.mine ? `<div class="shop-mgmt">
-          <button class="mini rename" type="button" title="Переименовать">✏️</button>
-          <button class="mini logo" type="button" title="Логотип">🖼</button>
-          <button class="mini close" type="button" title="Закрыть лавку">🚫</button>
+      <div class="stall"><img class="${artClass.trim()}" src="${art}" alt=""></div>
+      <div class="shop-name">${esc(s.name)}</div>
+      ${s.mine ? `<div class="shop-mgmt">
+          <button class="mini rename" type="button">✏️ Имя</button>
+          <button class="mini logo" type="button">🖼 Фото</button>
+          <button class="mini close" type="button">Закрыть</button>
         </div>` : ''}
-      </div>
       <div class="lots"></div>
       ${s.mine ? `<div class="lotForm">
           <input class="lTitle" placeholder="Название товара" maxlength="24">
-          <div class="row"><input class="lPrice" type="number" placeholder="Цена в шишках" min="1" style="flex:1">
-            <button class="btn btn-sm lPhoto" type="button">📷 Фото</button></div>
+          <div class="row"><input class="lPrice" type="number" placeholder="Цена" min="1" style="flex:1">
+            <button class="btn btn-sm lPhoto" type="button">📷</button></div>
           <button class="btn btn-lg lSave" type="button" style="margin-top:2px">Сохранить</button>
         </div>
         <div class="addLotBtn"><button class="btn btn-sm addLot" type="button">+ Добавить товар</button></div>` : ''}`;
 
     const lots = el.querySelector('.lots');
-    if (!s.lots.length) lots.innerHTML = s.mine ? '<div class="lot-empty">Пока нет товаров — добавь первый ниже</div>' : '<div class="lot-empty">Лавка пока пуста</div>';
+    if (!s.lots.length) {
+      lots.innerHTML = s.mine
+        ? '<div class="lot-empty">Пока пусто — добавь первый товар</div>'
+        : '<div class="lot-empty">Лавка пока пуста</div>';
+    }
     for (const l of s.lots) {
       const row = document.createElement('div'); row.className = 'lot-row';
-      row.innerHTML = `<img class="lot-thumb" src="${l.photo ? l.photo : 'assets/coin1.webp'}" alt="">
+      const thumb = l.photo ? l.photo : 'assets/shop/shop_ic_gift.webp';
+      row.innerHTML = `<img class="lot-thumb" src="${thumb}" alt="">
         <div class="lt">${esc(l.title)}</div>
-        <div class="price"><img src="assets/coin1.webp" alt="">${l.price}</div>
-        ${s.mine ? `<button class="mini le" type="button" title="Изменить">✏️</button><button class="mini lr" type="button" title="Убрать">🗑</button>`
-                 : `<button class="shop-buy" type="button">Купить</button>`}`;
+        <div class="lot-side">
+          <div class="price"><img src="assets/coin1.webp" alt="">${l.price}</div>
+          ${s.mine
+            ? `<div class="lot-mgmt"><button class="mini le" type="button" title="Изменить">✏️</button>
+                 <button class="mini lr" type="button" title="Убрать">🗑</button></div>`
+            : `<button class="shop-buy" type="button">Купить</button>`}
+        </div>`;
       if (s.mine) {
         row.querySelector('.le').onclick = () => openLotForm(el, l);
         row.querySelector('.lr').onclick = async () => {
@@ -733,10 +753,10 @@ async function loadMarket() {
           if (r.error) marketNote(r.error, false); else loadMarket();
         };
       } else {
-        row.querySelector('button').onclick = async () => {
+        row.querySelector('.shop-buy').onclick = async () => {
           const r = await api('/api/lot/buy', { id: l.id });
           if (r.error) marketNote(r.error, false);
-          else { marketNote('Куплено у ' + s.name + '! Осталось ' + r.balance, true); refreshBalance(); }
+          else { marketNote('Куплено у ' + s.name + '! Осталось ' + r.balance, true); refreshBalance(); loadMarket(); }
         };
       }
       lots.appendChild(row);
@@ -765,13 +785,13 @@ async function loadMarket() {
         editId = lot ? lot.id : null; photoBuf = null;
         card.querySelector('.lTitle').value = lot ? lot.title : '';
         card.querySelector('.lPrice').value = lot ? lot.price : '';
-        card.querySelector('.lPhoto').textContent = '📷 Фото';
+        card.querySelector('.lPhoto').textContent = '📷';
         card.querySelector('.lotForm').style.display = 'block';
         card.querySelector('.lTitle').focus();
       }
       form.querySelector('.lPhoto').onclick = async () => {
         const p = await capturePhoto(); if (!p) return;
-        photoBuf = p; form.querySelector('.lPhoto').textContent = '📷 Фото ✓';
+        photoBuf = p; form.querySelector('.lPhoto').textContent = '📷 ✓';
       };
       form.querySelector('.lSave').onclick = async () => {
         const title = form.querySelector('.lTitle').value.trim(), price = form.querySelector('.lPrice').value;
@@ -790,14 +810,19 @@ async function loadMarket() {
 if (page === 'market.html') {
   loadMarket();
   document.getElementById('openShopBtn').onclick = () => {
-    const f = document.getElementById('createForm'); f.style.display = f.style.display === 'block' ? 'none' : 'block';
+    const f = document.getElementById('createForm');
+    f.classList.toggle('on');
+    if (f.classList.contains('on')) document.getElementById('shopName')?.focus();
   };
   document.getElementById('createShopBtn').onclick = async () => {
     const name = document.getElementById('shopName').value, lot = document.getElementById('shopLot').value, price = document.getElementById('shopPrice').value;
     const r = await api('/api/shop/create', { name, lot, price });
     if (r.error) marketNote(r.error, false);
-    else { marketNote('Твоя лавка открыта!', true);
-      document.getElementById('createForm').style.display = 'none'; loadMarket(); }
+    else {
+      marketNote('Твоя лавка открыта!', true);
+      document.getElementById('createForm').classList.remove('on');
+      loadMarket();
+    }
   };
 }
 
