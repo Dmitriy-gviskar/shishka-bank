@@ -149,7 +149,9 @@ async function saveAudio(dataUrl) {
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
-const PUBLIC = new Set(['POST /api/link', 'POST /api/signup', 'GET /api/signup/hint', 'GET /api/ping']); // роуты без кода ребёнка
+const PUBLIC = new Set([
+  'POST /api/link', 'POST /api/signup', 'GET /api/signup/hint', 'POST /api/recover', 'GET /api/ping',
+]); // роуты без кода ребёнка
 // Саморегистрация: не больше 5 новых лесов с одного IP за час (анти-спам витрин).
 const SIGNUPS = new Map(); // ip → { n, reset }
 const signupRateOk = (ip) => {
@@ -161,15 +163,23 @@ const signupRateOk = (ip) => {
   return true;
 };
 // Мягкий анти-дубль: Telegram WebView и Safari — разные localStorage, но один IP.
-// Если с IP уже сажали ≤48ч — просим войти по коду, а не плодить второй лес.
+// Память + БД (users.signup_ip), чтобы переживало рестарт сервера.
 const SIGNUP_LAST = new Map(); // ip → { name, at }
-const SIGNUP_RECENT_MS = 48 * 3600e3;
-const signupRecent = (ip) => {
-  const s = SIGNUP_LAST.get(ip);
-  if (!s || Date.now() - s.at > SIGNUP_RECENT_MS) return null;
-  return s;
-};
 const noteSignup = (ip, name) => { SIGNUP_LAST.set(ip, { name, at: Date.now() }); };
+async function signupRecent(ip) {
+  const mem = SIGNUP_LAST.get(ip);
+  if (mem && Date.now() - mem.at < 48 * 3600e3) return mem;
+  if (!ip || ip === 'x') return null;
+  try {
+    const row = await one(
+      `select name from users
+        where role='child' and signup_ip=$1
+          and created_at > now() - interval '48 hours'
+        order by created_at desc limit 1`, [ip]);
+    if (row) { noteSignup(ip, row.name); return { name: row.name, at: Date.now() }; }
+  } catch { /* колонки signup_ip ещё нет — только память */ }
+  return null;
+}
 const memo = new Map();   // серверный кэш редких данных: ключ → {v,t}
 const memoGet = async (key, ttl, load) => {
   const hit = memo.get(key);
@@ -327,8 +337,35 @@ const api = {
   // Подсказка на экране входа: с этого IP недавно сажали — скорее всего тот же человек в другом браузере.
   'GET /api/signup/hint': async (b, ctx, req) => {
     const ip = clientIp(req || { headers: {}, socket: {} });
-    const recent = signupRecent(ip);
+    const recent = await signupRecent(ip);
     return recent ? { recent: true, name: recent.name } : { recent: false };
+  },
+
+  // Забыл код: то же имя дерева + тот же IP за 7 дней → вернуть код и токен.
+  'POST /api/recover': async (b, ctx, req) => {
+    const name = String(b.name || '').replace(/[<>]/g, '').trim().slice(0, 16);
+    if (name.length < 2) throw { code: 400, msg: 'напиши имя дерева' };
+    const ip = clientIp(req || { headers: {}, socket: {} });
+    if (!ip || ip === 'x') throw { code: 400, msg: 'не удалось проверить устройство' };
+    const row = await one(
+      `select u.id, u.name, u.circle_id, cl.code
+         from users u
+         join child_logins cl on cl.child_id=u.id
+        where u.role='child' and lower(u.name)=lower($1)
+          and u.signup_ip=$2
+          and u.created_at > now() - interval '7 days'
+        order by u.created_at desc limit 1`, [name, ip]);
+    if (!row) throw { code: 404, msg: 'Не нашли такое дерево с этого телефона. Проверь имя или зайди по коду.' };
+    let raw = null;
+    try {
+      raw = auth.newToken();
+      await q(
+        `insert into device_tokens(token_hash, child_id, circle_id, label) values($1,$2,$3,$4)`,
+        [auth.hash(raw), row.id, row.circle_id, 'recover']);
+    } catch (e) {
+      console.error('recover device_token', e.message);
+    }
+    return { ok: true, name: row.name, code: row.code, token: raw };
   },
 
   // Открытая регистрация: своё дерево → новый семейный круг + кошелёк + токен устройства.
@@ -338,7 +375,7 @@ const api = {
     if (name.length < 2) throw { code: 400, msg: 'как назовём дерево?' };
     const tree = ['pine', 'cedar', 'spruce'].includes(b.tree) ? b.tree : 'pine';
     const ip = clientIp(req || { headers: {}, socket: {} });
-    const recent = signupRecent(ip);
+    const recent = await signupRecent(ip);
     if (recent && !b.force) {
       return { need_confirm: true, recent_name: recent.name };
     }
@@ -386,6 +423,8 @@ const api = {
               order by price limit 24`, [circle.id]);
       }
     } catch (e) { console.error('signup shop seed', e.message); }
+    try { await q('update users set signup_ip=$1 where id=$2', [ip, u.id]); }
+    catch (e) { console.error('signup_ip', e.message); }
     await ensureReferralCode(u.id).catch(() => {});
     let referral = null;
     try { referral = await applyReferral(b.ref, u.id, name); }
@@ -1451,7 +1490,7 @@ createServer(async (req, res) => {
     const handler = api[route];
     if (!handler) { res.writeHead(404); return res.end('{}'); }
     const isParent = url.pathname.startsWith('/api/parent/');
-    const guarded = isParent || route === 'POST /api/link';   // роуты, где перебирают короткий секрет
+    const guarded = isParent || route === 'POST /api/link' || route === 'POST /api/recover';
     const ip = clientIp(req);
     try {
       if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
@@ -1469,6 +1508,9 @@ createServer(async (req, res) => {
       let result;
       if (route === 'POST /api/link') {   // неверный код (throw 400) считаем промахом, верный — сбрасывает счётчик
         try { result = await handler(body, ctx); okTry(ip); }
+        catch (e) { badTry(ip); throw e; }
+      } else if (route === 'POST /api/recover') {
+        try { result = await handler(body, ctx, req); okTry(ip); }
         catch (e) { badTry(ip); throw e; }
       } else if (route === 'POST /api/signup' || route === 'GET /api/signup/hint') {
         result = await handler(body, ctx, req);

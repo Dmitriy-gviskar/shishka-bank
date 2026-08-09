@@ -160,10 +160,21 @@ const urlParams = new URLSearchParams(location.search);
 // вход по ссылке ?code=РОСТ-01 (родитель может дать прямую ссылку)
 const urlCode = urlParams.get('code');
 if (urlCode) localStorage.setItem('childCode', urlCode.toUpperCase());
-// реферал ?ref=XXXX — помним до посадки дерева
+// реферал ?ref=XXXX — в localStorage тоже: sessionStorage в Telegram иногда теряется
 const urlRef = (urlParams.get('ref') || '').toUpperCase().trim();
-if (urlRef) sessionStorage.setItem('refCode', urlRef);
-function pendingRef() { return (sessionStorage.getItem('refCode') || '').toUpperCase().trim(); }
+if (urlRef) {
+  try { sessionStorage.setItem('refCode', urlRef); } catch {}
+  try { localStorage.setItem('refCode', urlRef); } catch {}
+}
+function pendingRef() {
+  try {
+    return (sessionStorage.getItem('refCode') || localStorage.getItem('refCode') || '').toUpperCase().trim();
+  } catch { return ''; }
+}
+function clearPendingRef() {
+  try { sessionStorage.removeItem('refCode'); } catch {}
+  try { localStorage.removeItem('refCode'); } catch {}
+}
 // не привязан → экран старта (родителю и онбордингу сессия не нужна)
 if (page !== 'link.html' && page !== 'parent.html' && page !== 'onboard.html' && !hasSession())
   location.href = 'link.html';
@@ -201,19 +212,42 @@ if (page === 'link.html') {
       if (!open) document.getElementById('codeInput')?.focus();
     };
   }
-  // тот же телефон уже сажал (часто: Telegram → потом Safari) — сразу предложить код
+  // тот же телефон уже сажал (часто: Telegram → потом Safari) — сразу предложить код / имя
   api('/api/signup/hint').then((h) => {
     if (!h || !h.recent) return;
     const lead = document.querySelector('.lead');
     if (lead) {
       lead.textContent = h.name
-        ? `С этого телефона уже сажали дерево «${h.name}». Войди по коду — не сажай второе.`
-        : 'С этого телефона уже сажали дерево. Войди по коду — не сажай второе.';
+        ? `С этого телефона уже сажали дерево «${h.name}». Войди по коду или имени — не сажай второе.`
+        : 'С этого телефона уже сажали дерево. Войди по коду или имени — не сажай второе.';
     }
     const tip = document.getElementById('webTip');
-    if (tip) tip.textContent = 'Код показывали после посадки (в Telegram или другом окне). Без него — новый лес.';
+    if (tip) tip.textContent = 'Код показывали после посадки. Не помнишь — жми «войти по имени дерева».';
     openCodeBox();
+    const rn = document.getElementById('recoverName');
+    if (rn && h.name) rn.value = h.name;
   }).catch(() => {});
+  const recoverToggle = document.getElementById('recoverToggle');
+  const recoverBox = document.getElementById('recoverBox');
+  if (recoverToggle && recoverBox) {
+    recoverToggle.onclick = (e) => {
+      e.preventDefault();
+      const open = recoverBox.style.display === 'block';
+      recoverBox.style.display = open ? 'none' : 'block';
+      if (!open) document.getElementById('recoverName')?.focus();
+    };
+  }
+  const recoverBtn = document.getElementById('recoverBtn');
+  if (recoverBtn) recoverBtn.onclick = async () => {
+    const name = document.getElementById('recoverName')?.value.trim() || '';
+    const r = await api('/api/recover', { name });
+    const n = document.getElementById('note'); n.style.display = 'block';
+    if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; return; }
+    saveSession({ token: r.token, code: r.code });
+    n.style.color = '#5f8e37';
+    n.textContent = `Нашли «${r.name}»! Код: ${r.code}`;
+    location.href = 'index.html';
+  };
   const linkBtn = document.getElementById('linkBtn');
   if (linkBtn) linkBtn.onclick = async () => {
     const code = document.getElementById('codeInput').value.trim();
@@ -289,7 +323,7 @@ if (page === 'onboard.html') {
     }
     if (isNew) {
       saveSession({ token: r.token, code: r.code });
-      sessionStorage.removeItem('refCode');
+      clearPendingRef();
       if (form) form.style.display = 'none';
       if (pick) pick.style.display = 'none';
       if (done) {

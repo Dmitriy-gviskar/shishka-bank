@@ -49,6 +49,14 @@
   <div id="codeBox">
     <input class="code-in" id="codeInput" placeholder="Код входа" maxlength="10" autocapitalize="characters">
     <button class="btn btn-lg enter-btn" id="linkBtn" type="button">Войти по коду</button>
+    <a href="#" class="code-toggle" id="recoverToggle" style="margin-top:12px;display:inline-block">Не помню код — войти по имени дерева</a>
+    <div id="recoverBox" style="display:none;margin-top:10px">
+      <input class="code-in" id="recoverName" placeholder="Имя дерева" maxlength="16" style="text-transform:none;letter-spacing:0;font-size:17px" autocomplete="off">
+      <button class="btn btn-lg enter-btn" id="recoverBtn" type="button">Найти мой лес</button>
+      <div style="margin-top:8px;font-weight:700;color:#8a5a20;font-size:12px;line-height:1.35">
+        Сработает, если сажал с этого же телефона за последние 7 дней (в т.ч. из Telegram).
+      </div>
+    </div>
   </div>
   <div><a class="alt-link" href="parent.html">Я родитель — открыть кабинет →</a></div>
   <div id="note"></div>
