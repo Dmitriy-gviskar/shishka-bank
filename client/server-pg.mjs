@@ -76,8 +76,37 @@ const GAME_LABELS = {
   memory: 'Мини-игра: найди пару',
   word: 'Мини-игра: собери слово',
   odd: 'Мини-игра: что лишнее',
+  number: 'Мини-игра: диктант чисел',
+  compare: 'Мини-игра: тропинка сравнения',
+  story: 'Мини-игра: лесные задачи',
 };
-const GAME_MAX = { multiply: 10, guess: 5, count: 30, memory: 6, word: 5, odd: 6 };
+const GAME_MAX = {
+  multiply: 10, guess: 5, count: 30, memory: 6, word: 5, odd: 6,
+  number: 8, compare: 8, story: 5,
+};
+const RU_ONES = ['ноль', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+const RU_TEENS = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать',
+  'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+const RU_TENS = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят',
+  'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+function numToRu(n) {
+  n = Math.max(0, Math.min(100, Math.floor(Number(n) || 0)));
+  if (n === 100) return 'сто';
+  if (n < 10) return RU_ONES[n];
+  if (n < 20) return RU_TEENS[n - 10];
+  const t = Math.floor(n / 10), o = n % 10;
+  return o === 0 ? RU_TENS[t] : `${RU_TENS[t]} ${RU_ONES[o]}`;
+}
+const STORY_TEMPLATES = [
+  { t: 'У {name} было {a} шишек, нашлось ещё {b}. Сколько стало?', op: '+' },
+  { t: '{name} спрятала {a} орехов, а потом ещё {b}. Сколько всего?', op: '+' },
+  { t: 'В корзине лежало {a} ягод, положили ещё {b}. Сколько ягод?', op: '+' },
+  { t: 'У {name} было {a} шишек, отдала {b}. Сколько осталось?', op: '-' },
+  { t: '{name} нашла {a} грибов, {b} оказались червивыми. Сколько хороших?', op: '-' },
+  { t: 'На ветке сидело {a} птиц, улетело {b}. Сколько осталось?', op: '-' },
+  { t: 'Белка спрятала {a} орехов и потеряла {b}. Сколько осталось?', op: '-' },
+  { t: 'В дупле было {a} шишек, принесли ещё {b}. Сколько теперь?', op: '+' },
+];
 
 async function creditCones(userId, amount, message) {
   await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [userId, amount]);
@@ -1107,6 +1136,63 @@ const api = {
       on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
     return { rounds, reward: 4 };
   },
+  'POST /api/game/number/start': async (b, ctx) => {
+    const level = Math.min(Math.max(parseInt(b.level, 10) || 1, 1), 2);
+    const questions = [];
+    const used = new Set();
+    while (questions.length < 8) {
+      const n = level === 1
+        ? Math.floor(Math.random() * 20) + 1
+        : Math.floor(Math.random() * 90) + 10;
+      if (used.has(n)) continue;
+      used.add(n);
+      questions.push({ n, text: numToRu(n), answer: n });
+    }
+    await q(`insert into mini_games(child_id, game, level, last_played) values ($1,'number',$2,current_date)
+      on conflict (child_id, game) do update set level=$2, last_played=current_date`, [ctx.child, level]);
+    return { questions, level, reward: 3 };
+  },
+  'POST /api/game/compare/start': async (b, ctx) => {
+    const rounds = [];
+    for (let i = 0; i < 8; i++) {
+      if (i % 2 === 0) {
+        let a = Math.floor(Math.random() * 30) + 1;
+        let c = Math.floor(Math.random() * 30) + 1;
+        if (Math.random() < 0.15) c = a;
+        const rel = a > c ? 'gt' : a < c ? 'lt' : 'eq';
+        rounds.push({ type: 'cmp', a, b: c, answer: rel,
+          prompt: `Что больше: ${a} или ${c}?` });
+      } else {
+        let a = Math.floor(Math.random() * 30) + 1;
+        let c = Math.floor(Math.random() * 30) + 1;
+        if (a === c) c = a === 30 ? 29 : a + 1;
+        const hi = Math.max(a, c), lo = Math.min(a, c);
+        rounds.push({ type: 'diff', a: hi, b: lo, answer: hi - lo,
+          prompt: `На сколько ${hi} больше ${lo}?` });
+      }
+    }
+    await q(`insert into mini_games(child_id, game, last_played) values ($1,'compare',current_date)
+      on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+    return { rounds, reward: 3 };
+  },
+  'POST /api/game/story/start': async (b, ctx) => {
+    const names = await q(
+      `select name from card_types where code = any($1::text[]) order by random() limit 8`, [GAME_EASY]);
+    const namePool = names.map((r) => r.name).filter((n) => !/[\s-]/.test(n));
+    const tpls = shuffleArr(STORY_TEMPLATES).slice(0, 5);
+    const questions = tpls.map((tpl, i) => {
+      let a = Math.floor(Math.random() * 10) + 2;
+      let n = Math.floor(Math.random() * 8) + 1;
+      if (tpl.op === '-' && n >= a) n = Math.max(1, a - 1);
+      const name = namePool[i % namePool.length] || 'Белка';
+      const text = tpl.t.replace('{name}', name).replace('{a}', String(a)).replace('{b}', String(n));
+      const answer = tpl.op === '+' ? a + n : a - n;
+      return { text, answer };
+    });
+    await q(`insert into mini_games(child_id, game, last_played) values ($1,'story',current_date)
+      on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+    return { questions, reward: 5 };
+  },
   'POST /api/game/finish': async (b, ctx) => {
     const game = String(b.game || 'multiply');
     if (!GAME_LABELS[game]) throw { code: 400, msg: 'неизвестная игра' };
@@ -1139,6 +1225,10 @@ const api = {
       reward = score >= 6 ? 4 : 0; // награда только за полный забег
     } else if (game === 'word' || game === 'odd') {
       reward = score > 0 ? 4 : 0;
+    } else if (game === 'number' || game === 'compare') {
+      reward = score > 0 ? 3 : 0;
+    } else if (game === 'story') {
+      reward = score > 0 ? 5 : 0;
     }
 
     if (reward <= 0 && game === 'memory') {

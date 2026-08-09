@@ -638,6 +638,9 @@ returns int language sql stable security definer set search_path = public as $$
     when 'memory_score'     then (select coalesce(score,0) from mini_games where child_id=p_child and game='memory')
     when 'word_score'       then (select coalesce(score,0) from mini_games where child_id=p_child and game='word')
     when 'odd_score'        then (select coalesce(score,0) from mini_games where child_id=p_child and game='odd')
+    when 'number_score'     then (select coalesce(score,0) from mini_games where child_id=p_child and game='number')
+    when 'compare_score'    then (select coalesce(score,0) from mini_games where child_id=p_child and game='compare')
+    when 'story_score'      then (select coalesce(score,0) from mini_games where child_id=p_child and game='story')
     else 0 end::int
 $$;
 

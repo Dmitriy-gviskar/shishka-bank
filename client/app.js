@@ -1999,6 +1999,9 @@ if (page === 'forest.html') {
   let memoryTimer = null, memoryLeft = 0, memoryMatched = 0, memoryMoves = 0, memoryLock = false, memoryOpen = [];
   let wordQuestions = [], wordIdx = 0, wordCorrect = 0, wordBuilt = '';
   let oddRounds = [], oddIdx = 0, oddCorrect = 0;
+  let numberQuestions = [], numberIdx = 0, numberCorrect = 0;
+  let compareRounds = [], compareIdx = 0, compareCorrect = 0;
+  let storyQuestions = [], storyIdx = 0, storyCorrect = 0;
 
   function setGameInputMode(mode) {
     const a = document.getElementById('gameA');
@@ -2584,6 +2587,156 @@ if (page === 'forest.html') {
     document.getElementById('gameMsg').style.color = '#5a3a18';
   }
 
+  async function startNumberGame() {
+    currentGame = 'number';
+    resetGameSheet('Диктант чисел');
+    showGamePlay(false);
+    document.getElementById('gameQ').textContent = 'Выбери уровень';
+    setGameProg(0, 8, 'уровень');
+    const lv = document.getElementById('gameLevels');
+    lv.style.display = '';
+    lv.innerHTML = '';
+    [[1, 'Лёгкий', 'числа от 1 до 20'], [2, 'Сложнее', 'числа от 10 до 99']].forEach(([n, name, sub]) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.innerHTML = `${name}<small>${sub}</small>`;
+      b.onclick = () => beginNumber(n);
+      lv.appendChild(b);
+    });
+  }
+
+  async function beginNumber(level) {
+    const lv = document.getElementById('gameLevels');
+    if (lv) { lv.style.display = 'none'; lv.innerHTML = ''; }
+    document.getElementById('gameQ').textContent = 'Загрузка…';
+    const r = await api('/api/game/number/start', { level });
+    if (r.error) {
+      document.getElementById('gameMsg').textContent = r.error;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+      return;
+    }
+    numberQuestions = r.questions; numberIdx = 0; numberCorrect = 0;
+    document.getElementById('gameTitle').textContent = `Диктант чисел · ур. ${r.level}`;
+    document.getElementById('gameBtn').textContent = 'Ответить';
+    showGamePlay(true);
+    setGameInputMode('number');
+    showNumberQ();
+  }
+
+  function showNumberQ() {
+    const q = numberQuestions[numberIdx];
+    document.getElementById('gameQ').textContent = q.text;
+    document.getElementById('gameA').value = '';
+    document.getElementById('gameMsg').textContent = 'Набери это число цифрами';
+    document.getElementById('gameMsg').style.color = '#5a3a18';
+    setGameProg(numberIdx, 8);
+    document.getElementById('gameA').focus();
+  }
+
+  async function startCompareGame() {
+    currentGame = 'compare';
+    resetGameSheet('Тропинка сравнения');
+    showGamePlay(false);
+    document.getElementById('gameQ').textContent = 'Загрузка…';
+    const r = await api('/api/game/compare/start', {});
+    if (r.error) {
+      document.getElementById('gameMsg').textContent = r.error;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+      return;
+    }
+    compareRounds = r.rounds; compareIdx = 0; compareCorrect = 0;
+    showCompareQ();
+  }
+
+  function showCompareQ() {
+    const r = compareRounds[compareIdx];
+    const box = document.getElementById('gameQ');
+    document.getElementById('gameMsg').textContent = '';
+    setGameProg(compareIdx, 8);
+    if (r.type === 'cmp') {
+      showGamePlay(false);
+      box.innerHTML = `<div class="story-text">${esc(r.prompt)}</div>
+        <div class="cmp-row">
+          <button type="button" data-v="gt">${r.a} больше</button>
+          <button type="button" data-v="lt">${r.b} больше</button>
+          <button type="button" data-v="eq">Равны</button>
+        </div>`;
+      // если числа равны — подписи «a больше / b больше» путают; для eq ок
+      if (r.a === r.b) {
+        box.querySelector('[data-v="gt"]').textContent = `${r.a} > ${r.b}`;
+        box.querySelector('[data-v="lt"]').textContent = `${r.a} < ${r.b}`;
+      }
+      box.querySelectorAll('button').forEach((btn) => {
+        btn.onclick = () => answerCompare(btn.dataset.v);
+      });
+    } else {
+      box.textContent = r.prompt;
+      showGamePlay(true);
+      setGameInputMode('number');
+      document.getElementById('gameBtn').textContent = 'Ответить';
+      document.getElementById('gameA').value = '';
+      document.getElementById('gameA').placeholder = 'На сколько?';
+      document.getElementById('gameA').focus();
+      document.getElementById('gameMsg').textContent = 'Введи разницу';
+      document.getElementById('gameMsg').style.color = '#5a3a18';
+    }
+  }
+
+  function answerCompare(val) {
+    const r = compareRounds[compareIdx];
+    let ok = false;
+    if (r.type === 'cmp') ok = val === r.answer;
+    else ok = parseInt(val, 10) === r.answer;
+    flashStage(ok);
+    if (ok) {
+      compareCorrect++;
+      document.getElementById('gameMsg').textContent = 'Верно!';
+      document.getElementById('gameMsg').style.color = '#5f8e37';
+    } else {
+      const right = r.type === 'cmp'
+        ? (r.answer === 'eq' ? 'они равны' : r.answer === 'gt' ? `${r.a} больше` : `${r.b} больше`)
+        : String(r.answer);
+      document.getElementById('gameMsg').textContent = `Почти! Правильно: ${right}`;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+    }
+    compareIdx++;
+    if (compareIdx >= 8) {
+      showGamePlay(false);
+      setTimeout(() => showGameDone(`Верно: ${compareCorrect} из 8`, compareCorrect >= 6 ? '⚖️' : '📏'), 700);
+    } else {
+      setTimeout(showCompareQ, 800);
+    }
+  }
+
+  async function startStoryGame() {
+    currentGame = 'story';
+    resetGameSheet('Лесные задачи');
+    showGamePlay(false);
+    document.getElementById('gameQ').textContent = 'Загрузка…';
+    const r = await api('/api/game/story/start', {});
+    if (r.error) {
+      document.getElementById('gameMsg').textContent = r.error;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+      return;
+    }
+    storyQuestions = r.questions; storyIdx = 0; storyCorrect = 0;
+    document.getElementById('gameBtn').textContent = 'Ответить';
+    showGamePlay(true);
+    setGameInputMode('number');
+    showStoryQ();
+  }
+
+  function showStoryQ() {
+    const q = storyQuestions[storyIdx];
+    document.getElementById('gameQ').innerHTML = `<div class="story-text">${esc(q.text)}</div>`;
+    document.getElementById('gameA').value = '';
+    document.getElementById('gameA').placeholder = 'Ответ';
+    document.getElementById('gameMsg').textContent = 'Реши и введи число';
+    document.getElementById('gameMsg').style.color = '#5a3a18';
+    setGameProg(storyIdx, 5);
+    document.getElementById('gameA').focus();
+  }
+
   if (document.getElementById('gameClaim')) {
     document.getElementById('gameClaim').onclick = async () => {
       const score = currentGame === 'count' ? countScore
@@ -2591,6 +2744,9 @@ if (page === 'forest.html') {
         : currentGame === 'memory' ? memoryMatched
         : currentGame === 'word' ? wordCorrect
         : currentGame === 'odd' ? oddCorrect
+        : currentGame === 'number' ? numberCorrect
+        : currentGame === 'compare' ? compareCorrect
+        : currentGame === 'story' ? storyCorrect
         : gameCorrect;
       await claimGameReward(score);
     };
@@ -2600,12 +2756,77 @@ if (page === 'forest.html') {
     if (e.target.id === 'gameOv') closeGameOv();
   };
 
+  // общий обработчик Ответить — расширяем для number / compare-diff / story
+  if (document.getElementById('gameBtn')) {
+    const baseHandler = document.getElementById('gameBtn').onclick;
+    document.getElementById('gameBtn').onclick = async () => {
+      if (currentGame === 'number') {
+        const val = parseInt(document.getElementById('gameA').value, 10);
+        if (isNaN(val)) return;
+        const q = numberQuestions[numberIdx];
+        const ok = val === q.answer;
+        flashStage(ok);
+        if (ok) {
+          numberCorrect++;
+          document.getElementById('gameMsg').textContent = 'Верно!';
+          document.getElementById('gameMsg').style.color = '#5f8e37';
+        } else {
+          document.getElementById('gameMsg').textContent = `Почти! Это ${q.answer}`;
+          document.getElementById('gameMsg').style.color = '#b3452e';
+        }
+        numberIdx++;
+        if (numberIdx >= 8) {
+          showGamePlay(false);
+          setTimeout(() => showGameDone(`Верно: ${numberCorrect} из 8`, numberCorrect >= 6 ? '🔢' : '✏️'), 700);
+        } else {
+          setTimeout(showNumberQ, 700);
+        }
+        return;
+      }
+      if (currentGame === 'compare') {
+        const r = compareRounds[compareIdx];
+        if (r?.type !== 'diff') return;
+        const val = parseInt(document.getElementById('gameA').value, 10);
+        if (isNaN(val)) return;
+        answerCompare(val);
+        return;
+      }
+      if (currentGame === 'story') {
+        const val = parseInt(document.getElementById('gameA').value, 10);
+        if (isNaN(val)) return;
+        const q = storyQuestions[storyIdx];
+        const ok = val === q.answer;
+        flashStage(ok);
+        if (ok) {
+          storyCorrect++;
+          document.getElementById('gameMsg').textContent = 'Верно!';
+          document.getElementById('gameMsg').style.color = '#5f8e37';
+        } else {
+          document.getElementById('gameMsg').textContent = `Почти! Ответ: ${q.answer}`;
+          document.getElementById('gameMsg').style.color = '#b3452e';
+        }
+        storyIdx++;
+        if (storyIdx >= 5) {
+          showGamePlay(false);
+          setTimeout(() => showGameDone(`Верно: ${storyCorrect} из 5`, storyCorrect >= 4 ? '📚' : '🌲'), 700);
+        } else {
+          setTimeout(showStoryQ, 800);
+        }
+        return;
+      }
+      if (typeof baseHandler === 'function') return baseHandler.call(document.getElementById('gameBtn'));
+    };
+  }
+
   window._startMultiply = startMultiplyGame;
   window._startGuess = startGuessGame;
   window._startCount = startCountGame;
   window._startMemory = startMemoryGame;
   window._startWord = startWordGame;
   window._startOdd = startOddGame;
+  window._startNumber = startNumberGame;
+  window._startCompare = startCompareGame;
+  window._startStory = startStoryGame;
 
   // привязка плиток на странице игр (SPA-навигация не выполняет inline-скрипты)
   if ((location.pathname.split('/').pop() || '') === 'games.html') (function bind() {
@@ -2615,13 +2836,19 @@ if (page === 'forest.html') {
     const mem = document.getElementById('gmMemory');
     const w = document.getElementById('gmWord');
     const o = document.getElementById('gmOdd');
-    if (!m || !g || !c || !mem || !w || !o) return setTimeout(bind, 50);
+    const num = document.getElementById('gmNumber');
+    const cmp = document.getElementById('gmCompare');
+    const st = document.getElementById('gmStory');
+    if (!m || !g || !c || !mem || !w || !o || !num || !cmp || !st) return setTimeout(bind, 50);
     m.onclick = (e) => { e.preventDefault(); window._startMultiply(); };
     g.onclick = (e) => { e.preventDefault(); window._startGuess(); };
     c.onclick = (e) => { e.preventDefault(); window._startCount(); };
     mem.onclick = (e) => { e.preventDefault(); window._startMemory(); };
     w.onclick = (e) => { e.preventDefault(); window._startWord(); };
     o.onclick = (e) => { e.preventDefault(); window._startOdd(); };
+    num.onclick = (e) => { e.preventDefault(); window._startNumber(); };
+    cmp.onclick = (e) => { e.preventDefault(); window._startCompare(); };
+    st.onclick = (e) => { e.preventDefault(); window._startStory(); };
   })();
 
 // ══════════════ Лесная коллекция (карточки) ══════════════
