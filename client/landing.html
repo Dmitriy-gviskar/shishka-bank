@@ -247,28 +247,38 @@
 
 <script>
 (function () {
-  const q = location.search || '';
-  const hasSession = !!(localStorage.getItem('deviceToken') || localStorage.getItem('childCode'));
-  // уже в лесу — сразу в приложение, лендинг не нужен
-  if (hasSession && !/^[?#]/.test(location.hash)) {
-    location.replace('index.html' + q);
-    return;
-  }
+  // лендинг всегда витрина — в приложение только по кнопке (не редиректим, даже если сессия есть)
   const withQ = (path, extra) => {
     const params = new URLSearchParams(location.search);
     if (extra) Object.entries(extra).forEach(([k, v]) => params.set(k, v));
     const s = params.toString();
     return path + (s ? '?' + s : '');
   };
+  const hasSession = !!(localStorage.getItem('deviceToken') || localStorage.getItem('childCode'));
   const play = document.getElementById('ctaPlay');
   const top = document.getElementById('topEnter');
   const foot = document.getElementById('footPlay');
   const codeL = document.getElementById('ctaCode');
-  if (play) play.href = withQ('link.html');
-  if (top) top.href = withQ('link.html');
-  if (foot) foot.href = withQ('link.html');
-  if (codeL) codeL.href = withQ('link.html', { open: 'code' });
-  // проброс ref/code в storage на случай прямого захода
+  // уже в лесу — кнопки ведут сразу в кабинет; новым — на посадку/код
+  const appHome = withQ('index.html');
+  const plant = withQ('link.html');
+  if (play) {
+    play.href = hasSession ? appHome : plant;
+    if (hasSession) play.textContent = 'В мой лес';
+  }
+  if (top) {
+    top.href = hasSession ? appHome : plant;
+    if (hasSession) top.textContent = 'Мой лес';
+  }
+  if (foot) {
+    foot.href = hasSession ? appHome : plant;
+    if (hasSession) foot.textContent = 'Открыть мой лес';
+  }
+  if (codeL) {
+    if (hasSession) codeL.style.display = 'none';
+    else codeL.href = withQ('link.html', { open: 'code' });
+  }
+  // проброс ref/code в storage на случай прямого захода с рекламы/рефки
   const p = new URLSearchParams(location.search);
   const ref = (p.get('ref') || '').toUpperCase().trim();
   const code = (p.get('code') || '').toUpperCase().trim();
