@@ -464,7 +464,7 @@ const api = {
     const [types, rar, owned, lore, seasons, packs, fam, history, facts] = await Promise.all([
       q('select id, code, name, category, sort, season, occasion from card_types order by sort'),
       q('select grade, code, name, color, price, quicksell, weight from rarities order by grade'),
-      q('select type_id, grade, qty, merged from user_cards where user_id=$1', [ctx.child]),
+      q('select type_id, grade, qty, merged, seen_at from user_cards where user_id=$1', [ctx.child]),
       q('select category, grade, title, lore from card_lore'),
       q('select code, name, sort, status from card_seasons order by sort'),
       one('select packs_opened from users where id=$1', [ctx.child]),
@@ -477,11 +477,16 @@ const api = {
          where (select count(distinct uc.grade) from user_cards uc
                 where uc.user_id=$1 and uc.type_id=t.id and uc.qty>0) = 6`, [ctx.child]),
     ]);
-    const own = {};   // type_id → {grade: {qty, merged}}
-    for (const r of owned) { (own[r.type_id] ||= {})[r.grade] = { qty: r.qty, merged: r.merged }; }
+    const own = {};   // type_id → {grade: {qty, merged, unseen}}
+    for (const r of owned) {
+      (own[r.type_id] ||= {})[r.grade] = { qty: r.qty, merged: r.merged, unseen: !r.seen_at };
+    }
     const cards = types.map((t) => {
       const have = own[t.id] || {};
-      const grades = rar.map((g) => ({ grade: g.grade, qty: (have[g.grade] || {}).qty || 0, merged: (have[g.grade] || {}).merged || 0 }));
+      const grades = rar.map((g) => {
+        const h = have[g.grade] || {};
+        return { grade: g.grade, qty: h.qty || 0, merged: h.merged || 0, unseen: !!h.unseen };
+      });
       const best = grades.filter((g) => g.qty > 0).reduce((m, g) => Math.max(m, g.grade), 0);
       return { id: t.id, code: t.code, name: t.name, category: t.category, season: t.season,
                occasion: t.occasion, grades, best, owned: best > 0 };
@@ -609,6 +614,18 @@ const api = {
     }
     catch (e) { throw { code: 400, msg: /no card/.test(e.message) ? 'этой карты у тебя нет'
       : /already/.test(e.message) ? 'уже твой питомец' : /max 5/.test(e.message) ? 'максимум 5 питомцев' : 'нельзя' }; }
+  },
+  // Отметить карту просмотренной (плашка NEW в альбоме)
+  'POST /api/cards/seen': async (b, ctx) => {
+    if (b.all) {
+      await q('update user_cards set seen_at=now() where user_id=$1 and seen_at is null', [ctx.child]);
+      return { ok: true };
+    }
+    if (!b.type || !b.grade) throw { code: 400, msg: 'нужны type и grade' };
+    await q(`update user_cards set seen_at=now()
+             where user_id=$1 and type_id=$2 and grade=$3 and seen_at is null`,
+      [ctx.child, b.type, b.grade]);
+    return { ok: true };
   },
   'POST /api/pack/open': async (b, ctx) => {
     let r;

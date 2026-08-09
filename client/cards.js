@@ -91,6 +91,7 @@ window.runCards = function () {
     }
     const av = document.getElementById('albumView'); av.innerHTML = '';
     const allCards = d.cards.filter((c) => c.category !== 'special');
+    renderNewShelf(d.cards);
     renderGroups(allCards, av);
     // Категорийные табы: показать + скролл по клику
     const catTabs = document.getElementById('catTabs');
@@ -117,11 +118,13 @@ window.runCards = function () {
       for (const c of specials) {
         const g6 = c.grades.find((g) => g.grade === 6) || { qty: 0 };
         const owned = g6.qty > 0;
-        const el = document.createElement('div'); el.className = 'being spone' + (owned ? ' full' : '');
+        const el = document.createElement('div');
+        el.className = 'being spone' + (owned ? ' full' : '') + (owned && g6.unseen ? ' has-new' : '');
         el.innerHTML = `<div class="spcell ${owned ? 'has' : 'locked'}">
             <img src="${thumb(c.code, 6)}" alt="" loading="lazy">
+            ${owned && g6.unseen ? '<div class="gnew">NEW</div>' : ''}
             ${g6.qty > 1 ? `<div class="gdup">×${g6.qty}</div>` : ''}</div>
-          <div class="spinfo"><div class="bn">${c.name}</div>
+          <div class="spinfo"><div class="bn">${c.name}${owned && g6.unseen ? ' <span class="bnew">NEW</span>' : ''}</div>
             <div class="spwhy">${owned ? 'у тебя есть' : (c.occasion || 'особый случай')}</div></div>`;
         el.onclick = () => openDetail(c, 6);
         box.appendChild(el);
@@ -135,6 +138,67 @@ window.runCards = function () {
     if (m10 === 1 && m100 !== 11) return one;
     if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return few;
     return many;
+  }
+
+  function listUnseen(cards) {
+    const out = [];
+    for (const c of cards || []) {
+      for (const gr of c.grades || []) {
+        if (gr.qty > 0 && gr.unseen) out.push({ c, gr });
+      }
+    }
+    // свежие / редкие сверху
+    out.sort((a, b) => b.gr.grade - a.gr.grade || a.c.name.localeCompare(b.c.name, 'ru'));
+    return out;
+  }
+
+  function markSeenLocal(typeId, grade) {
+    const c = (DATA && DATA.cards || []).find((x) => x.id === typeId);
+    const gr = c && c.grades.find((g) => g.grade === grade);
+    if (gr) gr.unseen = false;
+  }
+
+  async function markSeen(typeId, grade) {
+    markSeenLocal(typeId, grade);
+    try { await api('/api/cards/seen', { type: typeId, grade }); } catch {}
+  }
+
+  async function markSeenAll() {
+    for (const c of (DATA && DATA.cards) || []) {
+      for (const gr of c.grades || []) if (gr.unseen) gr.unseen = false;
+    }
+    try { await api('/api/cards/seen', { all: true }); } catch {}
+    if (DATA) render(DATA);
+  }
+
+  function renderNewShelf(cards) {
+    const host = document.getElementById('newShelf');
+    if (!host) return;
+    const items = listUnseen(cards);
+    if (!items.length) { host.style.display = 'none'; host.innerHTML = ''; return; }
+    host.style.display = '';
+    host.className = 'newshelf';
+    const n = items.length;
+    host.innerHTML = `<div class="newshelf-h">
+        <span class="nt">✨ Новинки · ${n}</span>
+        <button type="button" class="nok" id="newShelfOk">Скрыть все</button>
+      </div>
+      <div class="newshelf-row">${items.map(({ c, gr }) => {
+        const rc = (RAR[gr.grade] || {}).color || '#ff5a4d';
+        const rn = (RAR[gr.grade] || {}).name || '';
+        return `<div class="ncard" data-type="${c.id}" data-grade="${gr.grade}" style="--gc:${rc}">
+          <div class="nf"><img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy"><div class="gnew">NEW</div></div>
+          <div class="nl">${esc(c.name)}</div>
+          <div class="ng">${esc(rn)}</div>
+        </div>`;
+      }).join('')}</div>`;
+    host.querySelector('#newShelfOk').onclick = (e) => { e.stopPropagation(); markSeenAll(); };
+    host.querySelectorAll('.ncard').forEach((el) => {
+      el.onclick = () => {
+        const c = (DATA.cards || []).find((x) => x.id === el.dataset.type);
+        if (c) openDetail(c, +el.dataset.grade);
+      };
+    });
   }
 
   function renderGroups(cards, host) {
@@ -152,17 +216,21 @@ window.runCards = function () {
       for (const c of groups[cat]) {
         const have6 = c.grades.filter((x) => x.qty > 0).length;
         const full = have6 === 6;
-        const being = document.createElement('div'); being.className = 'being' + (full ? ' full' : '');
+        const newN = c.grades.filter((g) => g.qty > 0 && g.unseen).length;
+        const being = document.createElement('div');
+        being.className = 'being' + (full ? ' full' : '') + (newN ? ' has-new' : '');
         const cells = c.grades.map((gr) => {
           const rc = (RAR[gr.grade] || {}).color || '#9aa4b2';
           const has = gr.qty > 0;
           return `<div class="gcell ${has ? 'has g' + gr.grade : 'locked'}" style="--gc:${rc}">
             <img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy">
+            ${has && gr.unseen ? '<div class="gnew">NEW</div>' : ''}
             ${has && gr.qty > 1 ? `<div class="gdup">×${gr.qty}</div>` : ''}</div>`;
         }).join('');
         // подсказка возврата: где-то осталась ровно одна карта до слияния
         const almost = c.grades.some((g) => g.qty === 2 && g.grade < 6);
         being.innerHTML = `<div class="being-head"><span class="bn">${esc(c.name)}</span>
+          ${newN ? `<span class="bnew">${newN > 1 ? 'NEW ×' + newN : 'NEW'}</span>` : ''}
           ${almost ? '<span class="bnear">🔥 ещё 1 до эволюции</span>' : ''}
           <span class="bp ${full ? 'done' : ''}">${have6}/6${full ? ' ✓' : ''}</span></div>
           <div class="grades6">${cells}</div>`;
@@ -188,12 +256,14 @@ window.runCards = function () {
         const r = RAR[gr.grade];
         const active = gr.grade === sel ? ' active' : '';
         return `<div class="gr ${gr.qty > 0 ? 'has' : 'no'}${active}" data-g="${gr.grade}" style="--gc:${r.color}">
-          <span class="dot"></span><span class="gn">${r.name}</span>
+          <span class="dot"></span><span class="gn">${r.name}${gr.unseen ? ' · NEW' : ''}</span>
           <span class="gq">${gr.qty > 0 ? '×' + gr.qty : '—'}</span></div>`;
       }).join('');
       const isSpecial = c.category === 'special';
       const gr = c.grades.find((g) => g.grade === sel) || { qty: 0 };
       const r = RAR[sel] || RAR[1];
+      // открыл карту — плашка NEW снимается
+      if (gr.qty > 0 && gr.unseen) markSeen(c.id, sel);
       // топливо для слияния: карты того же ранга у ДРУГИХ существ (излишки дублей — отдельно)
       const fuelQty = (DATA.cards || []).filter((x) => x.id !== c.id)
         .map((x) => (x.grades.find((g) => g.grade === sel) || {}).qty || 0);
@@ -389,6 +459,7 @@ window.runCards = function () {
     const d = document.getElementById('detail');
     d.classList.remove('on');
     d.querySelectorAll('img[src*="assets/cards/"]').forEach((img) => img.removeAttribute('src'));
+    if (DATA) render(DATA);   // обновить полку новинок и бейджи NEW
   }
   document.getElementById('detail').onclick = (e) => { if (e.target.id === 'detail') closeDetail(); };
 
