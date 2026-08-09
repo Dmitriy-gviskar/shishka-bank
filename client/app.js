@@ -299,7 +299,7 @@ async function loadTasks() {
   };
   const statusHtml = (t) => {
     if (t.status === 'done') {
-      return `<div class="quest-done"><img src="assets/quest/quest_done.webp" alt=""><span>Выполнено</span></div>`;
+      return `<div class="quest-done"><img src="assets/quest/done.svg" alt=""><span>Выполнено</span></div>`;
     }
     if (t.status === 'submitted') {
       return `<div class="quest-wait"><b>…</b><span>На проверке</span></div>`;
