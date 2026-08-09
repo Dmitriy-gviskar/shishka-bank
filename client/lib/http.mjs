@@ -18,7 +18,7 @@ export const MAX_BODY = 10 * 1024 * 1024;
 
 // ── Статика: возвращает [status, body, headers?] ──
 export async function serveStatic(pathname, dir) {
-  let p = pathname === '/' ? '/index.html' : pathname;
+  let p = pathname === '/' ? '/landing.html' : pathname;  // корень — витрина; приложение: index.html / link.html
   if (p.includes('..')) return [403, 'forbidden'];
   const ext = extname(p);
   if (!MIME[ext] || /server|\.env|\.sql|package/.test(p)) return [404, 'not found'];

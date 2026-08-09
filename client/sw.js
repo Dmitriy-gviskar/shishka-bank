@@ -1,8 +1,8 @@
-const CACHE = 'shishka-v59';
+const CACHE = 'shishka-v60';
 const CARDS_CACHE = 'shishka-cards-v2';
 const CARDS_MAX = 500;       // альбом тянет сотни thumb — 120 было мало, промахи ломали картинки
 const CARDS_FULL_MAX = 40;   // full-res отдельно жёстче
-const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
+const PAGES = ['/', 'landing.html', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'games.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
   'parent.html', 'surprises.html', 'link.html', 'onboard.html',

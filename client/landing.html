@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Шишка Банк — лесная экономика для детей</title>
+<meta name="description" content="Шишка Банк — детский лес, где шишки зарабатывают за реальные дела. Сайт открывается в браузере, без установки.">
+<meta name="theme-color" content="#1e2a18">
+<link rel="icon" href="assets/app-icon-192.png">
+<link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --moss:#3f6b2e;
+    --moss-d:#2a4a1e;
+    --pine:#1e2a18;
+    --needle:#6fad45;
+    --amber:#e8b84a;
+    --bark:#6b4a28;
+    --mist:#eef4e6;
+    --ink:#24301c;
+    --soft:rgba(238,244,230,.9);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Manrope",system-ui,sans-serif;
+    color:var(--mist);
+    background:var(--pine);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+  a{color:inherit}
+
+  /* ── Hero: один кадр, бренд главный ── */
+  .hero{
+    position:relative;
+    min-height:100vh;min-height:100dvh;
+    display:flex;flex-direction:column;
+    justify-content:flex-end;
+    padding:28px 22px 36px;
+    isolation:isolate;
+  }
+  .hero-bg{
+    position:absolute;inset:0;z-index:-2;
+    background:
+      linear-gradient(180deg, rgba(18,28,14,.35) 0%, rgba(18,28,14,.55) 45%, rgba(14,22,12,.88) 100%),
+      url(assets/bg_wallet_pilot.webp) center/cover no-repeat;
+    transform:scale(1.04);
+    animation:bgDrift 18s ease-in-out infinite alternate;
+  }
+  .hero-glow{
+    position:absolute;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(ellipse 70% 45% at 70% 20%, rgba(232,184,74,.18), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 80%, rgba(111,173,69,.16), transparent 55%);
+  }
+  @keyframes bgDrift{
+    from{transform:scale(1.04) translate3d(0,0,0)}
+    to{transform:scale(1.08) translate3d(-1.5%,1%,0)}
+  }
+
+  .hero-top{
+    position:absolute;top:18px;left:22px;right:22px;
+    display:flex;align-items:center;justify-content:space-between;
+    opacity:0;animation:rise .7s ease .1s forwards;
+  }
+  .hero-top .enter{
+    font-weight:800;font-size:14px;text-decoration:none;
+    color:var(--mist);padding:8px 14px;border-radius:999px;
+    border:1.5px solid rgba(238,244,230,.35);
+    background:rgba(20,30,16,.35);backdrop-filter:blur(6px);
+  }
+  .hero-top .enter:hover{border-color:rgba(238,244,230,.7)}
+
+  .hero-main{max-width:560px;width:100%}
+  .brand{
+    font-family:"Fredoka","Manrope",sans-serif;
+    font-weight:700;font-size:clamp(42px,10vw,72px);
+    line-height:.95;letter-spacing:-.02em;
+    color:#fff8eb;
+    text-shadow:0 2px 0 rgba(0,0,0,.25),0 18px 40px rgba(0,0,0,.35);
+    opacity:0;animation:rise .8s ease .15s forwards;
+  }
+  .brand span{color:var(--amber)}
+  .tagline{
+    margin-top:14px;max-width:28ch;
+    font-size:clamp(17px,3.6vw,21px);font-weight:700;line-height:1.35;
+    color:rgba(238,244,230,.92);
+    opacity:0;animation:rise .8s ease .28s forwards;
+  }
+  .cta-row{
+    margin-top:22px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+    opacity:0;animation:rise .8s ease .4s forwards;
+  }
+  .cta{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-height:52px;padding:12px 22px;border-radius:999px;
+    font-family:"Fredoka","Manrope",sans-serif;
+    font-weight:700;font-size:18px;text-decoration:none;
+    border:3px solid var(--moss-d);
+    background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);
+    color:#fff;box-shadow:0 5px 0 var(--moss-d);
+    transition:transform .12s ease, box-shadow .12s ease;
+  }
+  .cta:active{transform:translateY(3px);box-shadow:0 2px 0 var(--moss-d)}
+  .cta-ghost{
+    display:inline-flex;align-items:center;min-height:48px;padding:10px 16px;
+    font-weight:800;font-size:15px;text-decoration:underline;
+    text-underline-offset:3px;color:rgba(238,244,230,.9);
+  }
+  .hero-art{
+    position:absolute;right:-4%;bottom:12%;width:min(42vw,280px);pointer-events:none;
+    filter:drop-shadow(0 16px 28px rgba(0,0,0,.4));
+    opacity:0;animation:floatIn 1s ease .35s forwards;
+  }
+  .hero-art img{width:100%;height:auto;display:block;animation:float 4.5s ease-in-out infinite}
+  @keyframes float{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-10px)}
+  }
+  @keyframes floatIn{
+    from{opacity:0;transform:translateY(24px) scale(.96)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  @keyframes rise{
+    from{opacity:0;transform:translateY(18px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @media (max-width:720px){
+    .hero-art{width:min(46vw,170px);bottom:38%;right:2%;opacity:.85}
+    .hero{padding-bottom:28px}
+  }
+
+  /* ── Sections ── */
+  .section{
+    padding:72px 22px;
+    max-width:920px;margin:0 auto;
+  }
+  .section h2{
+    font-family:"Fredoka","Manrope",sans-serif;
+    font-size:clamp(28px,5vw,40px);font-weight:700;color:#fff8eb;
+    line-height:1.1;margin-bottom:12px;
+  }
+  .section .lead{
+    font-size:17px;font-weight:700;line-height:1.45;
+    color:rgba(238,244,230,.82);max-width:40ch;margin-bottom:28px;
+  }
+
+  .how{
+    background:
+      radial-gradient(ellipse 80% 60% at 10% 0%, rgba(111,173,69,.12), transparent 50%),
+      linear-gradient(180deg,#24331c,#1a2414);
+  }
+  .steps{display:grid;gap:18px}
+  @media (min-width:720px){.steps{grid-template-columns:repeat(3,1fr);gap:28px}}
+  .step{padding-top:4px}
+  .step .n{
+    font-family:"Fredoka","Manrope",sans-serif;
+    font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--amber);margin-bottom:8px;
+  }
+  .step h3{
+    font-family:"Fredoka","Manrope",sans-serif;
+    font-size:22px;font-weight:700;color:#fff8eb;margin-bottom:6px;
+  }
+  .step p{font-size:15px;font-weight:700;line-height:1.4;color:rgba(238,244,230,.75)}
+
+  .parents{
+    background:
+      linear-gradient(180deg,rgba(30,42,24,.92),rgba(20,28,16,.96)),
+      url(assets/bg.webp) center/cover no-repeat;
+  }
+  .parents-inner{max-width:920px;margin:0 auto;padding:72px 22px}
+  .parents .cta{margin-top:8px}
+
+  .foot{
+    padding:28px 22px 40px;text-align:center;
+    background:#141c10;color:rgba(238,244,230,.55);
+    font-size:13px;font-weight:700;line-height:1.5;
+  }
+  .foot a{color:rgba(238,244,230,.8)}
+  .foot .name{
+    font-family:"Fredoka","Manrope",sans-serif;
+    font-size:18px;font-weight:700;color:#fff8eb;margin-bottom:6px;
+  }
+</style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="hero-glow" aria-hidden="true"></div>
+    <div class="hero-top">
+      <span aria-hidden="true"></span>
+      <a class="enter" id="topEnter" href="link.html">Войти</a>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <img src="assets/spirit.webp" alt="">
+    </div>
+    <div class="hero-main">
+      <h1 class="brand">Шишка<br><span>Банк</span></h1>
+      <p class="tagline">Лесная экономика для детей: шишки за реальные дела, своё дерево и приключения в браузере.</p>
+      <div class="cta-row">
+        <a class="cta" id="ctaPlay" href="link.html">Посадить дерево</a>
+        <a class="cta-ghost" id="ctaCode" href="link.html#code">У меня уже есть код</a>
+      </div>
+    </div>
+  </header>
+
+  <section class="how section">
+    <h2>Как устроен лес</h2>
+    <p class="lead">Без магазина приложений: открыл сайт — и уже в игре.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="n">Шаг 1</div>
+        <h3>Посади дерево</h3>
+        <p>Выбери сосну, кедр или ель и назови своё дерево.</p>
+      </div>
+      <div class="step">
+        <div class="n">Шаг 2</div>
+        <h3>Делай дела</h3>
+        <p>Зарядка, помощь дома, учёба — за это капают шишки.</p>
+      </div>
+      <div class="step">
+        <div class="n">Шаг 3</div>
+        <h3>Трать и зови друзей</h3>
+        <p>Магазин впечатлений, карты и поляна дружбы.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="parents">
+    <div class="parents-inner">
+      <h2>Для ведущих и родителей</h2>
+      <p class="lead">Кабинет: задания на проверку, начисления, рынок карт и удаление лишних аккаунтов.</p>
+      <a class="cta" href="parent.html">Открыть кабинет →</a>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div class="name">Шишка Банк</div>
+    <div>Детский лес · elka-kvest-2026.ru</div>
+    <div style="margin-top:8px"><a href="link.html" id="footPlay">Войти в игру</a></div>
+  </footer>
+
+<script>
+(function () {
+  const q = location.search || '';
+  const hasSession = !!(localStorage.getItem('deviceToken') || localStorage.getItem('childCode'));
+  // уже в лесу — сразу в приложение, лендинг не нужен
+  if (hasSession && !/^[?#]/.test(location.hash)) {
+    location.replace('index.html' + q);
+    return;
+  }
+  const withQ = (path, extra) => {
+    const params = new URLSearchParams(location.search);
+    if (extra) Object.entries(extra).forEach(([k, v]) => params.set(k, v));
+    const s = params.toString();
+    return path + (s ? '?' + s : '');
+  };
+  const play = document.getElementById('ctaPlay');
+  const top = document.getElementById('topEnter');
+  const foot = document.getElementById('footPlay');
+  const codeL = document.getElementById('ctaCode');
+  if (play) play.href = withQ('link.html');
+  if (top) top.href = withQ('link.html');
+  if (foot) foot.href = withQ('link.html');
+  if (codeL) codeL.href = withQ('link.html', { open: 'code' });
+  // проброс ref/code в storage на случай прямого захода
+  const p = new URLSearchParams(location.search);
+  const ref = (p.get('ref') || '').toUpperCase().trim();
+  const code = (p.get('code') || '').toUpperCase().trim();
+  if (ref) {
+    try { sessionStorage.setItem('refCode', ref); localStorage.setItem('refCode', ref); } catch {}
+  }
+  if (code) {
+    try { localStorage.setItem('childCode', code); } catch {}
+  }
+})();
+</script>
+</body>
+</html>

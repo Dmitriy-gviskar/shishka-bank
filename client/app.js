@@ -175,9 +175,11 @@ function clearPendingRef() {
   try { sessionStorage.removeItem('refCode'); } catch {}
   try { localStorage.removeItem('refCode'); } catch {}
 }
-// не привязан → экран старта (родителю и онбордингу сессия не нужна)
-if (page !== 'link.html' && page !== 'parent.html' && page !== 'onboard.html' && !hasSession())
-  location.href = 'link.html';
+// не привязан → экран старта (родителю, лендингу и онбордингу сессия не нужна)
+if (page !== 'link.html' && page !== 'parent.html' && page !== 'onboard.html' && page !== 'landing.html' && !hasSession()) {
+  const keep = location.search || '';
+  location.href = 'link.html' + keep;
+}
 
 // ── Старт: новый лес или вход по коду ──
 if (page === 'link.html') {
@@ -212,6 +214,8 @@ if (page === 'link.html') {
       if (!open) document.getElementById('codeInput')?.focus();
     };
   }
+  // с лендинга: link.html?open=code
+  if (urlParams.get('open') === 'code') openCodeBox();
   // тот же телефон уже сажал (часто: Telegram → потом Safari) — сразу предложить код / имя
   api('/api/signup/hint').then((h) => {
     if (!h || !h.recent) return;
@@ -834,7 +838,8 @@ if (page === 'profile.html') {
     const rw = document.getElementById('refReward'); if (rw) rw.textContent = d.reward;
     const rw2 = document.getElementById('refRewardL2'); if (rw2) rw2.textContent = d.rewardL2 || 50;
     const rw3 = document.getElementById('refRewardL3'); if (rw3) rw3.textContent = d.rewardL3 || 25;
-    refLink = location.origin + '/link.html?ref=' + encodeURIComponent(d.code);
+    // корень = лендинг для интернета; ref пробрасывается в link.html
+    refLink = location.origin + '/?ref=' + encodeURIComponent(d.code);
     const box = document.getElementById('refFriends');
     if (box) {
       box.innerHTML = d.friends.length
