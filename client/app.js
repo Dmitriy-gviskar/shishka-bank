@@ -1211,13 +1211,14 @@ function openChat() {
   document.getElementById('chatList').style.display = 'none';
   document.getElementById('chatDetail').classList.add('open');
   document.getElementById('chName').textContent = chatFriendName;
-  document.querySelector('.title').textContent = '↩ ' + chatFriendName;
+  document.querySelector('.wrap')?.classList.add('chat-open');
   loadChat();
 }
 function closeChat() {
   document.getElementById('chatDetail').classList.remove('open');
   document.getElementById('chatList').style.display = '';
-  document.querySelector('.title').textContent = 'Лесная почта';
+  document.querySelector('.wrap')?.classList.remove('chat-open');
+  const t = document.querySelector('.title'); if (t) t.textContent = 'Лесная почта';
   chatFriend = null; chatFriendName = '';
   loadChatList();
 }
