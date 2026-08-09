@@ -1,22 +1,39 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Магазин впечатлений</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
   .wrap{overflow-y:hidden;padding-top:12px}
-  .title{font-size:18px;padding:6px 16px;margin-bottom:6px;white-space:nowrap}
-  #shopList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 2px 6px}
-  .lot{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px}
-  .lot .nm{flex:1;min-width:0;font-weight:900;color:var(--ink);font-size:15px;line-height:1.2}
+  .title{font-size:17px;padding:7px 14px;margin-bottom:6px;white-space:nowrap;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .greet{margin:2px 0 4px}
+  .greet img{width:96px;height:96px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
+  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px;margin-top:8px}
+  #shopList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 2px 8px}
+  #shopList::-webkit-scrollbar{width:0}
+  .lot{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px}
+  .lot .nm{flex:1;min-width:0;font-weight:900;color:var(--ink);font-size:16px;line-height:1.25;
+    font-family:"Fredoka","Nunito",sans-serif}
   .lot .right{text-align:center;flex:none}
-  .lot .price{font-size:20px}
-  .lot .btn{margin-top:4px}
+  .lot .price{font-size:20px;justify-content:center}
+  .lot .btn{margin-top:6px;min-width:88px}
+  #note{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,243,238,.95);
+    border:2.5px solid #fff;border-radius:14px;padding:8px;box-shadow:0 0 0 2px #e0a99a;color:#b3452e}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Магазин впечатлений</div>
+  <div class="greet">
+    <img src="assets/spirit_bust.webp" alt="Лесной Дух">
+    <div class="bubble">Трать шишки на впечатления!</div>
+  </div>
   <div id="shopList"></div>
-<div id="note" style="display:none;text-align:center;color:#b3452e;font-weight:800;margin-top:8px;background:#fff3ee;border:2px solid #e0a99a;border-radius:12px;padding:8px"></div>
-</div></div><script src="app.js"></script>
+  <div id="note"></div>
+</div></div>
+<script src="app.js"></script>
 <script src="nav.js"></script>
 </body></html>

@@ -250,12 +250,12 @@ async function loadTasks() {
     const done = t.status === 'done';
     const submitted = t.status === 'submitted';
     const el = document.createElement('div'); el.className = 'card quest';
-    el.innerHTML = `<div class="ic"><img src="assets/coin1.webp"></div>
+    el.innerHTML = `<div class="ic"><img src="assets/coin1.webp" alt=""></div>
       <div class="mid"><div class="nm">${esc(t.title)}</div>
-        <div class="rw"><img src="assets/coin1.webp">+${t.reward}</div></div>
+        <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}</div></div>
       ${done ? '<span class="done">Выполнено</span>'
-             : submitted ? '<span class="done" style="background:#e8b64b">На проверке</span>'
-             : `<button class="btn btn-sm">${t.needs_photo ? 'Фото' : 'Готово'}</button>`}`;
+             : submitted ? '<span class="done wait">На проверке</span>'
+             : `<button class="btn btn-sm">${t.needs_photo ? 'Отправить фото' : 'Готово'}</button>`}`;
     if (!done && !submitted) el.querySelector('button').onclick = async () => {
       const say = (t2, ok) => { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t2; n.style.color = ok ? '#5f8e37' : '#b3452e'; } };
       let photo;

@@ -1,30 +1,45 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
-<title>Задания</title><link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесные задания</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
-  .wrap{overflow-y:hidden}   /* тут свой скролл — #taskList (flex:1+overflow-y), двойной скролл ломал вёрстку */
-  #taskList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
-  .quest{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px}
-  .quest .ic{width:52px;height:52px;flex:none;background:#fbf4e2;border:3px solid #d9c39a;overflow:hidden;
-    border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px}
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+  .wrap{overflow-y:hidden}
+  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:8px}
+  .greet{margin:4px 0 6px}
+  .greet img{width:108px;height:108px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
+  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
+  #taskList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 8px}
+  #taskList::-webkit-scrollbar{width:0}
+  .quest{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 12px 12px 10px}
+  .quest .ic{width:54px;height:54px;flex:none;background:linear-gradient(180deg,#fff6e4,#f0d7a4);
+    border:3px solid #fff;overflow:hidden;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);font-size:26px}
   .quest .ic img{width:34px;height:34px;object-fit:contain}
-  .quest .mid{flex:1}
-  .quest .nm{font-weight:900;color:var(--ink);font-size:16px}
-  .quest .rw{display:inline-flex;align-items:center;gap:3px;font-weight:800;color:var(--green-d);font-size:15px;margin-top:2px}
+  .quest .mid{flex:1;min-width:0}
+  .quest .nm{font-weight:900;color:var(--ink);font-size:16px;font-family:"Fredoka","Nunito",sans-serif;line-height:1.2}
+  .quest .rw{display:inline-flex;align-items:center;gap:3px;font-weight:900;color:var(--green-d);font-size:15px;margin-top:3px}
   .quest .rw img{width:20px;height:20px}
-  .done{background:#eaf4dd;border:3px solid var(--green);color:var(--green-d);font-weight:900;
-    border-radius:14px;padding:7px 12px;font-size:14px}
+  .quest .btn{font-size:14px;padding:8px 14px;white-space:nowrap}
+  .done{background:linear-gradient(180deg,#eaf4dd,#d7ebc0);border:3px solid var(--green);color:var(--green-d);
+    font-weight:900;border-radius:14px;padding:8px 12px;font-size:13px;text-align:center;line-height:1.15}
+  .done.wait{background:linear-gradient(180deg,#ffe9a8,#ffd062);border-color:#e0a52e;color:#6b4a12}
+  #note{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,248,235,.94);
+    border:2.5px solid #fff;border-radius:14px;padding:9px;box-shadow:0 0 0 2px #c9a86a}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Лесные задания</div>
   <div class="greet">
-    <img src="assets/spirit_scroll.webp">
+    <img src="assets/spirit_scroll.webp" alt="Лесной Дух">
     <div class="bubble">Помоги лесу и получи шишки!</div>
   </div>
   <div id="taskList"></div>
-  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
-</div></div><script src="app.js"></script>
+  <div id="note"></div>
+</div></div>
+<script src="app.js"></script>
 <script src="nav.js"></script>
 </body></html>
