@@ -136,6 +136,8 @@ if (page === 'link.html') {
   if (pendingRef()) {
     const lead = document.querySelector('.lead');
     if (lead) lead.textContent = 'Тебя зовут в лес! Посади дерево — другу начислят шишки.';
+    const tip = document.getElementById('webTip');
+    if (tip) tip.textContent = 'Всё в браузере: жми «Посадить дерево». Приложение ставить не нужно.';
   }
   const codeToggle = document.getElementById('codeToggle');
   const codeBox = document.getElementById('codeBox');
@@ -166,6 +168,8 @@ if (page === 'onboard.html') {
   const note = document.getElementById('note');
   const form = document.getElementById('onboardForm');
   const done = document.getElementById('onboardDone');
+  const webTip = document.getElementById('webTip');
+  if (webTip && (isNew || pendingRef())) webTip.classList.add('on');
   const paintSel = () => {
     pick.querySelectorAll('.tree-opt').forEach((b) => {
       const on = b.dataset.tree === selTree;
@@ -712,7 +716,10 @@ if (page === 'profile.html') {
     try {
       await navigator.clipboard.writeText(refLink);
       const n = document.getElementById('pnote');
-      if (n) { n.style.display = 'block'; n.textContent = 'Ссылка скопирована — шли другу!'; n.style.color = '#5f8e37'; }
+      if (n) {
+        n.style.display = 'block'; n.style.color = '#5f8e37';
+        n.textContent = 'Ссылка скопирована! Друг откроет сайт в браузере — ставить приложение не надо.';
+      }
     } catch {
       prompt('Скопируй ссылку:', refLink);
     }

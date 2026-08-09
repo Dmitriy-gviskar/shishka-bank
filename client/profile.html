@@ -91,6 +91,9 @@
   .ref-row .rw{font-weight:900;color:#5f8e37;font-size:13px;display:inline-flex;align-items:center;gap:2px}
   .ref-row .rw img{width:16px;height:16px}
   .ref-empty{text-align:center;font-weight:700;color:#a1876a;font-size:12px;padding:6px}
+  .grove-tip{margin-top:8px;text-align:center;font-weight:700;color:#6b4f3a;font-size:12px;line-height:1.4;
+    background:rgba(255,255,255,.55);border:2px dashed #c9a86a;border-radius:12px;padding:8px 10px;
+    font-family:"Fredoka","Nunito",sans-serif}
   #refQrBox{display:none;position:absolute;inset:0;z-index:40;background:rgba(20,26,18,.82);
     align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
   #refQrBox.on{display:flex}
@@ -129,6 +132,7 @@
       <button class="btn btn-sm" id="refCopyBtn" type="button">Скопировать ссылку</button>
       <button class="btn btn-sm" id="refQrBtn" type="button">QR другу</button>
     </div>
+    <div class="grove-tip">Ссылка ведёт на сайт и открывается в браузере — ставить приложение не нужно. Друг сразу жмёт «Посадить дерево».</div>
     <div class="ref-sec">Твои друзья</div>
     <div id="refFriends"><div class="ref-empty">Пока никого — позови первого!</div></div>
     <div class="ref-sec">Глубже в поляне</div>
@@ -155,7 +159,10 @@
   <div id="refQrBox"><div class="sheet">
     <h3>Покажи другу</h3>
     <div id="refQrSvg"></div>
-    <div style="font-weight:700;color:#8a5a20;font-size:12px;margin-bottom:10px">Пусть наведёт камеру — и посадит дерево рядом</div>
+    <div style="font-weight:700;color:#8a5a20;font-size:12px;line-height:1.4;margin-bottom:10px">
+      Пусть наведёт камеру телефона.<br>
+      Откроется сайт в браузере — приложение ставить не надо.
+    </div>
     <button class="btn btn-sm" id="refQrClose" type="button">Закрыть</button>
   </div></div>
 </div></div>

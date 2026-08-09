@@ -53,10 +53,15 @@
   #note{display:none;text-align:center;font-weight:800;margin-top:10px;
     background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:14px;padding:9px;
     box-shadow:0 0 0 2px #c9a86a}
+  .web-tip{display:none;margin:0 0 10px;text-align:center;font-weight:700;color:#8a5a20;font-size:12px;line-height:1.35;
+    background:rgba(255,255,255,.55);border:2px dashed #c9a86a;border-radius:12px;padding:8px 10px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .web-tip.on{display:block}
 </style></head><body data-no-nav>
 <div class="phone"><div class="wrap">
   <div class="welcome">Добро пожаловать в лес!</div>
   <div class="panel">
+    <div class="web-tip" id="webTip">Ты уже на сайте — всё в браузере. Приложение ставить не нужно.</div>
     <div class="greet">
       <img src="assets/spirit.webp" alt="Лесной Дух">
       <div class="bubble">Привет! Я Лесной Дух. Давай посадим твоё дерево</div>
