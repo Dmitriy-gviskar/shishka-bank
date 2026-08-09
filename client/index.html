@@ -16,15 +16,17 @@
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.2), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.04),rgba(35,50,25,.28))}
 
-  .greet-row{position:relative;display:flex;align-items:flex-start;gap:6px;padding-right:96px;margin-bottom:2px}
-  .greet-row .greet{flex:1;min-width:0}
-  .greet-row .greet img{width:112px;height:112px;
-    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 3px #fff) drop-shadow(0 6px 10px rgba(60,40,15,.35))}
-  .greet-row .bubble{font-size:15px;padding:11px 14px;margin-top:14px;line-height:1.25;
+  /* Дух · пузырь · бейдж — в одном ряду, без наложений */
+  .greet-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+  .greet-row .spirit{width:72px;height:72px;flex:none;object-fit:contain;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 4px 8px rgba(60,40,15,.3))}
+  .greet-row .bubble{flex:1;min-width:0;margin-top:0;font-size:14px;padding:10px 12px;line-height:1.25;
     font-family:"Fredoka","Nunito",sans-serif}
+  .greet-row .bubble::before{top:50%;margin-top:-9px;left:-13px}
+  .greet-row .bubble::after{top:50%;margin-top:-6px;left:-7px}
 
-  .lvlbadge{position:absolute;top:2px;right:0;width:92px;height:92px;cursor:pointer;
-    filter:drop-shadow(0 4px 6px rgba(60,40,15,.3))}
+  .lvlbadge{position:relative;flex:none;width:76px;height:76px;cursor:pointer;
+    filter:drop-shadow(0 3px 5px rgba(60,40,15,.28))}
   .lvlbadge-ring{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
   .lvlbadge-tree{position:absolute;top:11%;left:50%;transform:translateX(-50%);width:36%;height:36%;object-fit:contain}
   .lvlbadge .level{position:absolute;top:48%;left:50%;transform:translateX(-50%);width:78%;
@@ -117,11 +119,9 @@
   <div class="phone">
     <div class="wrap">
       <div class="greet-row">
-        <div class="greet">
-          <img src="assets/spirit_bust.webp" alt="Лесной Дух">
-          <div class="bubble">С возвращением!</div>
-        </div>
-        <div class="lvlbadge" onclick="navigate('profile.html')">
+        <img class="spirit" src="assets/spirit_bust.webp" alt="Лесной Дух">
+        <div class="bubble">С возвращением!</div>
+        <div class="lvlbadge" onclick="navigate('profile.html')" title="Моё дерево">
           <img class="lvlbadge-ring" src="assets/badge_level.webp" alt="">
           <img class="lvlbadge-tree" src="assets/tree.webp" alt="Дерево">
           <div class="level">Дубок<br>Уровень 1</div>

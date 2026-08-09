@@ -237,7 +237,7 @@ if (page === 'index.html' || page === '') {
     const b = document.querySelector('.bubble'); if (!b) return;
     if (nextOpen && nextOpen.status === 'open') {
       const t = nextOpen.title;
-      b.innerHTML = `Есть дело:<br>«${esc(t.length > 28 ? t.slice(0, 28) + '…' : t)}»`;
+      b.innerHTML = `Есть дело:<br>«${esc(t.length > 22 ? t.slice(0, 22) + '…' : t)}»`;
     } else if (homeName) {
       b.innerHTML = `С возвращением,<br>${esc(homeName)}!`;
     }
