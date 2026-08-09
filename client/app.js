@@ -47,6 +47,30 @@ function saveSession({ token, code }) {
   if (token) localStorage.setItem('deviceToken', token);
   if (code) localStorage.setItem('childCode', String(code).toUpperCase());
 }
+// Telegram / Instagram in-app browser — другой localStorage, чем у Safari/Chrome
+function isInAppBrowser() {
+  const ua = navigator.userAgent || '';
+  return /\bTelegram\b/i.test(ua) || /\bFBAN\b|\bFBAV\b/i.test(ua)
+    || /\bInstagram\b/i.test(ua) || /\bLine\//i.test(ua) || /\bVKApp\b|\bVKAndroidApp\b/i.test(ua);
+}
+function recoverLink(code) {
+  return location.origin + '/link.html?code=' + encodeURIComponent(String(code || '').toUpperCase());
+}
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text); return true;
+    }
+  } catch {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;left:-9999px';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch { return false; }
+}
 async function api(path, body, method) {
   const headers = {};
   const token = localStorage.getItem('deviceToken');
@@ -139,8 +163,17 @@ if (page === 'link.html') {
     const tip = document.getElementById('webTip');
     if (tip) tip.textContent = 'Всё в браузере: жми «Посадить дерево». Приложение ставить не нужно.';
   }
+  if (isInAppBrowser()) {
+    const tip = document.getElementById('webTip');
+    if (tip) tip.textContent = 'Ты в браузере Telegram. После посадки сохрани код — в Safari/Chrome зайдёшь по нему, без второй регистрации.';
+  }
   const codeToggle = document.getElementById('codeToggle');
   const codeBox = document.getElementById('codeBox');
+  const openCodeBox = () => {
+    if (!codeBox) return;
+    codeBox.style.display = 'block';
+    document.getElementById('codeInput')?.focus();
+  };
   if (codeToggle && codeBox) {
     codeToggle.onclick = (e) => {
       e.preventDefault();
@@ -149,13 +182,26 @@ if (page === 'link.html') {
       if (!open) document.getElementById('codeInput')?.focus();
     };
   }
+  // тот же телефон уже сажал (часто: Telegram → потом Safari) — сразу предложить код
+  api('/api/signup/hint').then((h) => {
+    if (!h || !h.recent) return;
+    const lead = document.querySelector('.lead');
+    if (lead) {
+      lead.textContent = h.name
+        ? `С этого телефона уже сажали дерево «${h.name}». Войди по коду — не сажай второе.`
+        : 'С этого телефона уже сажали дерево. Войди по коду — не сажай второе.';
+    }
+    const tip = document.getElementById('webTip');
+    if (tip) tip.textContent = 'Код показывали после посадки (в Telegram или другом окне). Без него — новый лес.';
+    openCodeBox();
+  }).catch(() => {});
   const linkBtn = document.getElementById('linkBtn');
   if (linkBtn) linkBtn.onclick = async () => {
     const code = document.getElementById('codeInput').value.trim();
     const r = await api('/api/link', { code });
     const n = document.getElementById('note'); n.style.display = 'block';
     if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { saveSession({ code }); location.href = 'onboard.html'; }
+    else { saveSession({ token: r.token, code: r.code || code }); location.href = 'onboard.html'; }
   };
 }
 
@@ -198,9 +244,26 @@ if (page === 'onboard.html') {
     const btn = document.getElementById('startBtn');
     btn.disabled = true;
     const ref = pendingRef();
-    const r = isNew
-      ? await api('/api/signup', { name, tree: selTree, ref: ref || undefined })
-      : await api('/api/onboard', { name, tree: selTree });
+    let r;
+    if (isNew) {
+      r = await api('/api/signup', { name, tree: selTree, ref: ref || undefined });
+      if (r.need_confirm) {
+        const ok = confirm(
+          (r.recent_name
+            ? `С этого телефона уже сажали дерево «${r.recent_name}».\n\n`
+            : 'С этого телефона уже сажали дерево.\n\n')
+          + 'Если это ты (например, заходил из Telegram) — нажми «Отмена» и войди по коду.\n\n'
+          + 'Создать ещё один новый лес?');
+        if (!ok) {
+          btn.disabled = false;
+          location.href = 'link.html';
+          return;
+        }
+        r = await api('/api/signup', { name, tree: selTree, ref: ref || undefined, force: true });
+      }
+    } else {
+      r = await api('/api/onboard', { name, tree: selTree });
+    }
     btn.disabled = false;
     if (r.error) {
       note.style.display = 'block'; note.style.color = '#b3452e'; note.textContent = r.error; return;
@@ -214,6 +277,10 @@ if (page === 'onboard.html') {
         done.style.display = 'block';
         const codeEl = document.getElementById('recoverCode');
         if (codeEl) codeEl.textContent = r.code;
+        const linkEl = document.getElementById('recoverLink');
+        if (linkEl) linkEl.textContent = recoverLink(r.code);
+        const tgTip = document.getElementById('tgRecoverTip');
+        if (tgTip && isInAppBrowser()) tgTip.style.display = 'block';
         if (r.referral) {
           const tip = document.createElement('div');
           tip.style.cssText = 'margin-top:10px;font-weight:800;color:#5f8e37;font-size:13px;line-height:1.35';
@@ -227,6 +294,20 @@ if (page === 'onboard.html') {
   };
   const goHome = document.getElementById('goHomeBtn');
   if (goHome) goHome.onclick = () => { location.href = 'index.html'; };
+  const copyCodeBtn = document.getElementById('copyCodeBtn');
+  if (copyCodeBtn) copyCodeBtn.onclick = async () => {
+    const code = document.getElementById('recoverCode')?.textContent?.trim();
+    if (!code) return;
+    const ok = await copyText(code);
+    copyCodeBtn.textContent = ok ? 'Код скопирован' : 'Не удалось скопировать';
+  };
+  const copyLinkBtn = document.getElementById('copyLinkBtn');
+  if (copyLinkBtn) copyLinkBtn.onclick = async () => {
+    const code = document.getElementById('recoverCode')?.textContent?.trim();
+    if (!code) return;
+    const ok = await copyText(recoverLink(code));
+    copyLinkBtn.textContent = ok ? 'Ссылка скопирована — вставь в Safari' : 'Не удалось скопировать';
+  };
 }
 
 // ── Кошелёк ──

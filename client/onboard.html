@@ -86,12 +86,20 @@
     </div>
     <div id="onboardDone" style="display:none;text-align:center;margin-top:8px">
       <div style="font-weight:900;color:var(--ink);font-size:18px;font-family:Fredoka,Nunito,sans-serif;margin-bottom:8px">Дерево посажено!</div>
+      <div id="tgRecoverTip" style="display:none;font-weight:800;color:#8a5a20;font-size:13px;line-height:1.4;
+        background:rgba(255,243,200,.95);border:2.5px solid #e0a52e;border-radius:14px;padding:10px;margin-bottom:10px">
+        Ты в Telegram. Чтобы не создать второй аккаунт — скопируй ссылку ниже и открой её в Safari или Chrome.
+      </div>
       <div style="font-weight:700;color:#6b4f3a;font-size:13px;line-height:1.4;margin-bottom:10px">
-        Сохрани запасной код — пригодится, если сменишь телефон:
+        Сохрани код входа — им зайдёшь с другого браузера или телефона:
       </div>
       <div id="recoverCode" style="font-weight:900;font-size:28px;letter-spacing:3px;color:#5f8e37;
         background:#fffaf0;border:3px solid #fff;border-radius:14px;padding:12px;box-shadow:0 0 0 2px #c9a86a;
         font-family:Fredoka,Nunito,sans-serif"></div>
+      <button class="btn btn-sm" id="copyCodeBtn" type="button" style="margin-top:8px;width:100%;font-family:Fredoka,Nunito,sans-serif">Скопировать код</button>
+      <div id="recoverLink" style="margin-top:10px;font-weight:700;font-size:11px;line-height:1.35;color:#6b4f3a;
+        word-break:break-all;background:rgba(255,255,255,.55);border:2px dashed #c9a86a;border-radius:12px;padding:8px"></div>
+      <button class="btn btn-sm" id="copyLinkBtn" type="button" style="margin-top:8px;width:100%;font-family:Fredoka,Nunito,sans-serif">Скопировать ссылку для Safari</button>
       <button class="btn btn-lg start-btn" id="goHomeBtn" type="button" style="margin-top:14px">В лес!</button>
     </div>
   </div>

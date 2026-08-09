@@ -149,7 +149,7 @@ async function saveAudio(dataUrl) {
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
-const PUBLIC = new Set(['POST /api/link', 'POST /api/signup', 'GET /api/ping']); // роуты без кода ребёнка
+const PUBLIC = new Set(['POST /api/link', 'POST /api/signup', 'GET /api/signup/hint', 'GET /api/ping']); // роуты без кода ребёнка
 // Саморегистрация: не больше 5 новых лесов с одного IP за час (анти-спам витрин).
 const SIGNUPS = new Map(); // ip → { n, reset }
 const signupRateOk = (ip) => {
@@ -160,6 +160,16 @@ const signupRateOk = (ip) => {
   s.n++;
   return true;
 };
+// Мягкий анти-дубль: Telegram WebView и Safari — разные localStorage, но один IP.
+// Если с IP уже сажали ≤48ч — просим войти по коду, а не плодить второй лес.
+const SIGNUP_LAST = new Map(); // ip → { name, at }
+const SIGNUP_RECENT_MS = 48 * 3600e3;
+const signupRecent = (ip) => {
+  const s = SIGNUP_LAST.get(ip);
+  if (!s || Date.now() - s.at > SIGNUP_RECENT_MS) return null;
+  return s;
+};
+const noteSignup = (ip, name) => { SIGNUP_LAST.set(ip, { name, at: Date.now() }); };
 const memo = new Map();   // серверный кэш редких данных: ключ → {v,t}
 const memoGet = async (key, ttl, load) => {
   const hit = memo.get(key);
@@ -294,9 +304,31 @@ const api = {
     return { ok: true, ts: Date.now(), db, dberr, uptime: Math.floor(process.uptime()) };
   },
   'POST /api/link': async (b) => {
-    const r = await one('select u.name from child_logins cl join users u on u.id=cl.child_id where cl.code=$1', [String(b.code || '').toUpperCase().trim()]);
+    const code = String(b.code || '').toUpperCase().trim();
+    const r = await one(
+      `select u.id, u.name, u.circle_id
+         from child_logins cl join users u on u.id=cl.child_id
+        where cl.code=$1`, [code]);
     if (!r) throw { code: 400, msg: 'код не найден' };
-    return { ok: true, name: r.name };
+    // новый device_token — чтобы Safari после Telegram получил свою сессию, а не только код
+    let raw = null;
+    try {
+      raw = auth.newToken();
+      await q(
+        `insert into device_tokens(token_hash, child_id, circle_id, label) values($1,$2,$3,$4)`,
+        [auth.hash(raw), r.id, r.circle_id, 'link']);
+    } catch (e) {
+      console.error('link device_token', e.message);
+      raw = null;
+    }
+    return { ok: true, name: r.name, token: raw, code };
+  },
+
+  // Подсказка на экране входа: с этого IP недавно сажали — скорее всего тот же человек в другом браузере.
+  'GET /api/signup/hint': async (b, ctx, req) => {
+    const ip = clientIp(req || { headers: {}, socket: {} });
+    const recent = signupRecent(ip);
+    return recent ? { recent: true, name: recent.name } : { recent: false };
   },
 
   // Открытая регистрация: своё дерево → новый семейный круг + кошелёк + токен устройства.
@@ -306,6 +338,10 @@ const api = {
     if (name.length < 2) throw { code: 400, msg: 'как назовём дерево?' };
     const tree = ['pine', 'cedar', 'spruce'].includes(b.tree) ? b.tree : 'pine';
     const ip = clientIp(req || { headers: {}, socket: {} });
+    const recent = signupRecent(ip);
+    if (recent && !b.force) {
+      return { need_confirm: true, recent_name: recent.name };
+    }
     if (!signupRateOk(ip)) throw { code: 429, msg: 'Слишком много новых лесов с этого устройства — загляни позже' };
     let invite;
     for (let i = 0; i < 8; i++) {
@@ -354,6 +390,7 @@ const api = {
     let referral = null;
     try { referral = await applyReferral(b.ref, u.id, name); }
     catch (e) { console.error('signup referral', e.message); }
+    noteSignup(ip, name);
     return { ok: true, name, code, token: raw, referral };
   },
 
@@ -1433,7 +1470,7 @@ createServer(async (req, res) => {
       if (route === 'POST /api/link') {   // неверный код (throw 400) считаем промахом, верный — сбрасывает счётчик
         try { result = await handler(body, ctx); okTry(ip); }
         catch (e) { badTry(ip); throw e; }
-      } else if (route === 'POST /api/signup') {
+      } else if (route === 'POST /api/signup' || route === 'GET /api/signup/hint') {
         result = await handler(body, ctx, req);
       } else result = await handler(body, ctx);
       const out = JSON.stringify(result);
