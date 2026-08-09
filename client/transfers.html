@@ -12,23 +12,26 @@
     color:#fff8eb;border:3px solid #5a3a18;text-shadow:0 2px 0 rgba(0,0,0,.25);
     box-shadow:0 4px 0 #4a3010, inset 0 1px 0 rgba(255,230,180,.35)}
   .wrap{overflow-y:auto}
-  .greet{margin:2px 0 6px;flex:none}
-  .greet img{width:72px;height:72px;
-    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
-  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
-  /* сетка друзей скроллится сама — не выталкивает сумму к доку */
-  .friends{margin-top:4px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
-    padding:6px 2px;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    flex:0 1 auto;min-height:96px;max-height:min(34vh,260px)}
+  .greet{margin:0 0 4px;flex:none}
+  .greet img{width:56px;height:56px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 4px 6px rgba(60,40,15,.3))}
+  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:13px;padding:8px 12px}
+  /* ровно 2 полных ряда плашек (+ скролл дальше), без обрезания посередине */
+  .friends{margin-top:2px;display:flex;gap:8px;justify-content:center;align-content:flex-start;flex-wrap:wrap;
+    padding:8px 4px 12px;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    flex:none;height:216px;box-sizing:border-box;
+    background:rgba(255,248,235,.55);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 2px #c9a86a}
   .friends::-webkit-scrollbar{width:0}
   .friend{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
-    padding:6px 8px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);
-    width:96px;flex:0 0 96px;cursor:pointer;box-sizing:border-box}
-  .friend.sel{border-color:#fff;box-shadow:0 0 0 3px #f0c14a,0 0 0 6px rgba(232,182,75,.35),0 3px 0 rgba(107,79,58,.15)}
-  .friend img{width:52px;height:52px;object-fit:contain}
-  .friend span{display:block;font-weight:800;color:var(--brown);font-size:12px;margin-top:2px;
+    padding:5px 6px 6px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 2px 0 rgba(107,79,58,.15);
+    width:100px;height:90px;flex:0 0 100px;cursor:pointer;box-sizing:border-box;
+    display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .friend.sel{border-color:#fff;box-shadow:0 0 0 3px #f0c14a,0 2px 0 rgba(107,79,58,.15)}
+  .friend img{width:48px;height:48px;object-fit:contain;flex:none}
+  .friend span{display:block;font-weight:800;color:var(--brown);font-size:11px;margin-top:2px;max-width:100%;
     font-family:"Fredoka","Nunito",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .gift-block{flex:none;margin-top:8px;padding:10px 8px 4px;text-align:center;
+  .gift-block{flex:none;margin-top:10px;padding:10px 8px 4px;text-align:center;
     background:rgba(255,248,235,.92);border:3px solid #fff;border-radius:18px;
     box-shadow:0 0 0 2px #c9a86a}
   .apick{margin-top:8px;display:flex;gap:8px;justify-content:center}
