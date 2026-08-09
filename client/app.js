@@ -683,10 +683,12 @@ if (page === 'profile.html') {
     if (!d || d.error) return;
     const codeEl = document.getElementById('refCode'); if (codeEl) codeEl.textContent = d.code;
     const c = document.getElementById('refCount'); if (c) c.textContent = d.count;
-    const c2 = document.getElementById('refCountL2'); if (c2) c2.textContent = d.countL2 || 0;
+    const deep = document.getElementById('refCountDeep');
+    if (deep) deep.textContent = (d.countL2 || 0) + (d.countL3 || 0);
     const e = document.getElementById('refEarned'); if (e) e.textContent = d.earned;
     const rw = document.getElementById('refReward'); if (rw) rw.textContent = d.reward;
     const rw2 = document.getElementById('refRewardL2'); if (rw2) rw2.textContent = d.rewardL2 || 50;
+    const rw3 = document.getElementById('refRewardL3'); if (rw3) rw3.textContent = d.rewardL3 || 25;
     refLink = location.origin + '/link.html?ref=' + encodeURIComponent(d.code);
     const box = document.getElementById('refFriends');
     if (box) {
@@ -699,9 +701,9 @@ if (page === 'profile.html') {
     if (cas) {
       const list = d.cascade || [];
       cas.innerHTML = list.length
-        ? list.map((f) => `<div class="ref-row"><div class="nm">${esc(f.name)}${f.via ? ` <span style="color:#a1876a;font-weight:700">через ${esc(f.via)}</span>` : ''}</div>
+        ? list.map((f) => `<div class="ref-row"><div class="nm">${esc(f.name)}${f.via ? ` <span style="color:#a1876a;font-weight:700">через ${esc(f.via)}</span>` : ''} <span style="color:#a1876a;font-weight:700">· L${f.level}</span></div>
             <div class="rw">+${f.reward}<img src="assets/coin1.webp" alt=""></div></div>`).join('')
-        : '<div class="ref-empty">Когда твой друг позовёт кого-то — здесь +50</div>';
+        : '<div class="ref-empty">Друг друга / 3-й круг — здесь +50 и +25</div>';
     }
   });
   const copyBtn = document.getElementById('refCopyBtn');

@@ -1,4 +1,4 @@
-const CACHE = 'shishka-v48';
+const CACHE = 'shishka-v49';
 const CARDS_CACHE = 'shishka-cards-v1';
 const CARDS_MAX = 120;       // thumb/md + немного full
 const CARDS_FULL_MAX = 30;   // full-res отдельно жёстче

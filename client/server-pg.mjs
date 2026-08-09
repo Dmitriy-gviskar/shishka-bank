@@ -18,7 +18,9 @@ import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const genLoginCode = () => Array.from({ length: 6 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
 const REF_L1 = 100;  // ты позвал друга → он посадил дерево
-const REF_L2 = 50;   // твой друг позвал своего друга → тебе тоже капает
+const REF_L2 = 50;   // твой друг позвал своего → тебе +50
+const REF_L3 = 25;   // друг друга позвал ещё кого-то → тебе +25
+const REF_PAY = { 1: REF_L1, 2: REF_L2, 3: REF_L3 };
 
 async function creditCones(userId, amount, message) {
   await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [userId, amount]);
@@ -72,26 +74,41 @@ async function applyReferral(referrerCode, newChildId, newName) {
   if (!ins) return null;
   await q('update users set referred_by=$1 where id=$2 and referred_by is null', [referrer.id, newChildId]);
 
-  // L1: прямой зовущий
-  await payReferralLevel(referrer.id, newChildId, 1, REF_L1, `Друг ${newName} посадил дерево!`);
-  await q('update referrals set rewarded_at=now() where id=$1', [ins.id]);
-  try { await rpc('bump_reputation', [referrer.id, 'generosity', 3]); } catch {}
+  // Цепочка вверх: L1 = прямой зовущий, L2/L3 = кто привёл его / того
+  const chain = [referrer];
+  let cursor = referrer.referred_by;
+  const seen = new Set([referrer.id, newChildId]);
+  while (cursor && chain.length < 3 && !seen.has(cursor)) {
+    seen.add(cursor);
+    const up = await one(`select id, name, referred_by from users where id=$1 and role='child'`, [cursor]);
+    if (!up) break;
+    chain.push(up);
+    cursor = up.referred_by;
+  }
 
-  // L2: кто привёл зовущего — «друг друга»
-  let l2 = null;
-  if (referrer.referred_by && referrer.referred_by !== newChildId && referrer.referred_by !== referrer.id) {
-    const upline = await one(`select id, name from users where id=$1 and role='child'`, [referrer.referred_by]);
-    if (upline) {
-      const ok = await payReferralLevel(
-        upline.id, newChildId, 2, REF_L2,
-        `Друг ${referrer.name} привёл ${newName}!`);
-      if (ok) {
-        l2 = { name: upline.name, reward: REF_L2 };
-        try { await rpc('bump_reputation', [upline.id, 'generosity', 1]); } catch {}
-      }
+  const msgs = {
+    1: `Друг ${newName} посадил дерево!`,
+    2: `Друг ${referrer.name} привёл ${newName}!`,
+    3: `В твоей поляне новый росток: ${newName}!`,
+  };
+  const paid = {};
+  for (let i = 0; i < chain.length; i++) {
+    const level = i + 1;
+    const amount = REF_PAY[level];
+    if (!amount) continue;
+    const ok = await payReferralLevel(chain[i].id, newChildId, level, amount, msgs[level]);
+    if (ok) {
+      paid[level] = { name: chain[i].name, reward: amount };
+      try { await rpc('bump_reputation', [chain[i].id, 'generosity', level === 1 ? 3 : 1]); } catch {}
     }
   }
-  return { referrer: referrer.name, reward: REF_L1, upline: l2 };
+  await q('update referrals set rewarded_at=now() where id=$1', [ins.id]);
+  return {
+    referrer: referrer.name,
+    reward: REF_L1,
+    upline: paid[2] || null,
+    upline2: paid[3] || null,
+  };
 }
 
 const DIR = dirname(fileURLToPath(import.meta.url));
@@ -357,16 +374,21 @@ const api = {
     const earned = rewards.reduce((s, r) => s + r.amount, 0);
     const earnedL1 = rewards.filter((r) => r.level === 1).reduce((s, r) => s + r.amount, 0);
     const earnedL2 = rewards.filter((r) => r.level === 2).reduce((s, r) => s + r.amount, 0);
+    const earnedL3 = rewards.filter((r) => r.level === 3).reduce((s, r) => s + r.amount, 0);
     const countL2 = rewards.filter((r) => r.level === 2).length;
+    const countL3 = rewards.filter((r) => r.level === 3).length;
     return {
       code,
       reward: REF_L1,
       rewardL2: REF_L2,
+      rewardL3: REF_L3,
       count: friends.length,
       countL2,
+      countL3,
       earned,
       earnedL1,
       earnedL2,
+      earnedL3,
       friends: friends.map((r) => ({
         name: r.name,
         reward: r.reward,
@@ -374,11 +396,11 @@ const api = {
         at: r.created_at,
         paid: !!r.rewarded_at,
       })),
-      cascade: rewards.filter((r) => r.level === 2).slice(0, 30).map((r) => ({
+      cascade: rewards.filter((r) => r.level >= 2).slice(0, 40).map((r) => ({
         name: r.source_name,
         via: r.via_name,
         reward: r.amount,
-        level: 2,
+        level: r.level,
         at: r.created_at,
       })),
     };
