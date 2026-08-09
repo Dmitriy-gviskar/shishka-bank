@@ -243,6 +243,14 @@ if (page === 'index.html' || page === '') {
 }
 
 // ── Задания ──
+function questIcon(category) {
+  const map = {
+    дом: 'ic_home.svg', забота: 'ic_care.svg', здоровье: 'ic_health.svg',
+    развитие: 'ic_learn.svg', самостоятельность: 'ic_self.svg', приключение: 'ic_adventure.svg',
+  };
+  return 'assets/quest/' + (map[category] || 'ic_home.svg');
+}
+
 async function loadTasks() {
   const tasks = await api('/api/tasks');
   const cont = document.getElementById('taskList'); cont.innerHTML = '';
@@ -256,8 +264,8 @@ async function loadTasks() {
   if (daily.length) sections.push(['Сегодня', daily]);
   if (other.length) sections.push(['От ведущего', other]);
   const bind = (el, t) => {
-    if (t.status === 'done' || t.status === 'submitted') return;
-    el.querySelector('button').onclick = async () => {
+    const btn = el.querySelector('button'); if (!btn) return;
+    btn.onclick = async () => {
       const say = (t2, ok) => { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t2; n.style.color = ok ? '#5f8e37' : '#b3452e'; } };
       let photo;
       if (t.needs_photo) {
@@ -270,18 +278,26 @@ async function loadTasks() {
       else say(r.error || 'не получилось');
     };
   };
+  const statusHtml = (t) => {
+    if (t.status === 'done') {
+      return `<div class="quest-done"><img src="assets/quest/done.svg" alt=""><span>Выполнено</span></div>`;
+    }
+    if (t.status === 'submitted') {
+      return `<div class="quest-wait"><b>…</b><span>На проверке</span></div>`;
+    }
+    if (t.needs_photo) {
+      return `<button class="btn btn-sm quest-act" type="button">Отправить фото <img src="assets/quest/cam.svg" alt=""></button>`;
+    }
+    return `<button class="btn btn-sm quest-act" type="button">Готово</button>`;
+  };
   for (const [label, list] of sections) {
     const h = document.createElement('div'); h.className = 'quest-sec'; h.textContent = label; cont.appendChild(h);
     for (const t of list) {
-      const done = t.status === 'done';
-      const submitted = t.status === 'submitted';
-      const el = document.createElement('div'); el.className = 'card quest' + (t.is_daily ? ' daily' : '');
-      el.innerHTML = `<div class="ic"><img src="assets/coin1.webp" alt=""></div>
+      const el = document.createElement('div'); el.className = 'quest' + (t.is_daily ? ' daily' : '');
+      el.innerHTML = `<div class="ic"><img src="${questIcon(t.category)}" alt=""></div>
         <div class="mid"><div class="nm">${esc(t.title)}</div>
-          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}${t.category ? ` · ${esc(t.category)}` : ''}</div></div>
-        ${done ? '<span class="done">Выполнено</span>'
-               : submitted ? '<span class="done wait">На проверке</span>'
-               : `<button class="btn btn-sm">${t.needs_photo ? 'Отправить фото' : 'Готово'}</button>`}`;
+          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}<img class="cone" src="assets/coin1.webp" alt=""></div></div>
+        ${statusHtml(t)}`;
       bind(el, t);
       cont.appendChild(el);
     }
