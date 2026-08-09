@@ -2171,7 +2171,6 @@ if (page === 'forest.html') {
   async function startGuessGame() {
     currentGame = 'guess';
     resetGameSheet('Лесная угадайка');
-    setGameInputMode('text');
     const r = await api('/api/game/guess/start', {});
     if (r.error) {
       document.getElementById('gameMsg').textContent = r.error;
@@ -2179,22 +2178,36 @@ if (page === 'forest.html') {
       return;
     }
     guessQuestions = r.questions; guessIdx = 0; guessCorrect = 0;
-    document.getElementById('gameBtn').textContent = 'Угадать';
-    document.getElementById('gameA').placeholder = 'Кто это?';
-    showGamePlay(true);
-    setGameInputMode('text');
+    // выбор из вариантов — поле ввода и клавиатура не нужны
+    showGamePlay(false);
+    document.getElementById('gameDone').classList.remove('on');
     showGuessQ();
   }
 
   function showGuessQ() {
     const q = guessQuestions[guessIdx];
     document.getElementById('gameQ').innerHTML =
-      `<img src="${cardUrl(q.code, 1, 'md')}" alt="" style="filter:blur(14px) brightness(.75) saturate(.8)">`;
+      `<img src="${cardUrl(q.code, 1, 'md')}" alt="" style="filter:blur(5px) brightness(.92) saturate(.95)">`;
     document.getElementById('gameMsg').innerHTML =
-      q.hints.map((h) => `<div class="hint">🌿 ${esc(h)}</div>`).join('');
+      (q.hints || []).map((h) => `<div class="hint">🌿 ${esc(h)}</div>`).join('');
     setGameProg(guessIdx, 5);
-    document.getElementById('gameA').value = '';
-    document.getElementById('gameA').focus();
+    const box = document.getElementById('gameLevels');
+    box.style.display = '';
+    box.innerHTML = '';
+    const opts = Array.isArray(q.options) && q.options.length
+      ? q.options
+      : [q.name];
+    opts.forEach((opt) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = opt;
+      b.onclick = async () => {
+        [...box.querySelectorAll('button')].forEach((x) => { x.disabled = true; });
+        document.getElementById('gameA').value = opt;
+        document.getElementById('gameBtn').click();
+      };
+      box.appendChild(b);
+    });
   }
 
   async function startCountGame() {
@@ -2265,10 +2278,17 @@ if (page === 'forest.html') {
       const val = document.getElementById('gameA').value.trim();
       if (!val) return;
       const q = guessQuestions[guessIdx];
+      const box = document.getElementById('gameLevels');
       const r = await api('/api/game/guess/answer', { answer: val, name: q.name });
       document.getElementById('gameQ').innerHTML =
         `<img src="${cardUrl(q.code, 1, 'md')}" alt="">`;
       flashStage(!!r.correct);
+      if (box) {
+        [...box.querySelectorAll('button')].forEach((btn) => {
+          if (btn.textContent === q.name) btn.style.outline = '3px solid #6fad45';
+          else if (btn.textContent === val && !r.correct) btn.style.outline = '3px solid #c45c4a';
+        });
+      }
       if (r.correct) {
         guessCorrect++;
         document.getElementById('gameMsg').innerHTML =
@@ -2280,6 +2300,7 @@ if (page === 'forest.html') {
       guessIdx++;
       if (guessIdx >= 5) {
         setGameProg(5, 5);
+        if (box) { box.style.display = 'none'; box.innerHTML = ''; }
         showGameDone(`Угадано: ${guessCorrect} из 5`, guessCorrect >= 4 ? '🦉' : '🌿');
       } else {
         setTimeout(showGuessQ, 1100);

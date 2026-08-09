@@ -966,40 +966,77 @@ const api = {
     return { questions, duration: 30 };
   },
   'POST /api/game/guess/start': async (b, ctx) => {
-    const beings = await q(`select t.code, t.name, t.category, coalesce(f.fact,'') as fact
-      from card_types t left join card_facts f on f.code=t.code order by random() limit 5`);
-    const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    // вырезаем имя и формы («комар» → «комаров»), чтобы факт не спойлерил ответ
-    const redactName = (text, name) => {
-      let t = String(text || '');
-      const n = String(name || '').trim();
-      if (!t || !n) return t;
-      const stems = new Set([n]);
-      if (n.length >= 4) stems.add(n.slice(0, -1));
-      if (n.length >= 5) stems.add(n.slice(0, -2));
-      for (const stem of [...stems].sort((a, b) => b.length - a.length)) {
-        const re = new RegExp(`(^|[^А-Яа-яЁёA-Za-z])(${escapeRe(stem)}[А-Яа-яЁё]*)`, 'gi');
-        t = t.replace(re, (_, pre) => `${pre}•••`);
-      }
-      return t.replace(/\s{2,}/g, ' ').trim();
+    // только знакомые детям существа — без выхухоли, златоглазки и т.п.
+    const EASY = [
+      'lisa', 'volk', 'medved', 'zayac', 'belka', 'ezh', 'sova', 'enot', 'olen', 'kaban',
+      'bobr', 'krot', 'mysh', 'barsuk', 'los', 'filin', 'burunduk', 'lyagushka', 'yashcherica',
+      'dyatel', 'sinica', 'soroka', 'snegir', 'voron', 'solovey',
+      'babochka', 'korovka', 'pchela', 'muravey', 'komar', 'strekoza', 'kuznechik', 'ulitka',
+      'pauk', 'shmel', 'osa', 'gusenica', 'svetlyachok',
+      'romashka', 'oduvanchik', 'podsolnuh', 'muhomor', 'dub', 'bereza', 'el', 'sosna',
+      'malina', 'chernika', 'zemlyanika', 'klever', 'mak', 'ryabina', 'landysh', 'kolokolchik',
+    ];
+    // короткие детские подсказки (без спойлера имени)
+    const CLUES = {
+      lisa: 'Рыжая, с пушистым хвостом', volk: 'Серый, воет по ночам', medved: 'Большой, любит мёд',
+      zayac: 'Длинные уши, прыгает', belka: 'Прыгает по деревьям, грызёт орехи', ezh: 'Колючий шарик',
+      sova: 'Ночная птица, говорит «ух»', enot: 'Полосатый хвостик и чёрная маска на мордочке',
+      olen: 'Ветвистые рога', kaban: 'Клыкастый лесной кабанчик', bobr: 'Строит плотины из веток',
+      krot: 'Роет норы под землёй', mysh: 'Маленькая, пищит', barsuk: 'Полосатая мордочка',
+      los: 'Очень большие рога и длинные ноги', filin: 'Крупная сова с кисточками на ушах',
+      burunduk: 'Полосатый спиной, как маленький бурундучок', lyagushka: 'Зелёная, квакает',
+      yashcherica: 'Быстрая, хвостик может отбросить', dyatel: 'Стучит клювом по дереву',
+      sinica: 'Маленькая жёлтогрудая птичка', soroka: 'Чёрно-белая, любит блестящее',
+      snegir: 'Зимой красная грудка', voron: 'Большая чёрная птица', solovey: 'Красиво поёт по ночам',
+      babochka: 'Красивые крылья, порхает', korovka: 'Красная в чёрный горошек',
+      pchela: 'Собирает мёд, жужжит', muravey: 'Маленький, живёт в муравейнике',
+      komar: 'Пищит и кусается летом', strekoza: 'Длинные крылья, летает у воды',
+      kuznechik: 'Зелёный, прыгает и стрекочет', ulitka: 'Ползает с домиком на спине',
+      pauk: 'Плетёт паутину', shmel: 'Мохнатый и громко жужжит', osa: 'Полосатая, может ужалить',
+      gusenica: 'Ползёт и потом станет бабочкой', svetlyachok: 'Светится в темноте',
+      romashka: 'Белые лепестки, жёлтая серединка', oduvanchik: 'Жёлтый, потом белый пух',
+      podsolnuh: 'Большой жёлтый цветок к солнцу', muhomor: 'Красная шляпка в белый горошек',
+      dub: 'Большое дерево с желудями', bereza: 'Белый ствол с чёрными пятнами',
+      el: 'Зелёная колючая, как на Новый год', sosna: 'Хвоя длинными иголками, шишки',
+      malina: 'Красные ягоды на кусте', chernika: 'Синие лесные ягоды',
+      zemlyanika: 'Маленькая красная ягодка', klever: 'Листочки по три', mak: 'Ярко-красный цветок',
+      ryabina: 'Гроздья красных ягод на дереве', landysh: 'Белые колокольчики и сильный запах',
+      kolokolchik: 'Цветок похож на колокольчик',
     };
-    const catLabel = (c) => (c === 'zver' ? 'зверь' : c === 'rastenie' ? 'растение'
-      : c === 'nasekomoe' ? 'насекомое' : c === 'ptica' ? 'птица' : 'особое существо');
-    const questions = beings.map((row) => {
-      const hints = [`Это ${catLabel(row.category)}.`];
-      if (row.fact) {
-        let fact = redactName(row.fact, row.name);
-        if (fact.length > 90) fact = fact.slice(0, 90).replace(/\s+\S*$/, '') + '…';
-        // если после маскировки почти ничего не осталось — подсказку не даём
-        const meaningful = fact.replace(/[•.\s…,;:!?«»"'-]/g, '');
-        if (meaningful.length >= 12 && !new RegExp(escapeRe(row.name), 'i').test(fact)) {
-          hints.push(fact);
-        }
+    const shuffle = (arr) => {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
       }
-      const nameHint = row.name.length <= 5 ? `В имени ${row.name.length} букв.`
-        : `В имени первая буква «${row.name[0]}».`;
-      hints.push(nameHint);
-      return { code: row.code, name: row.name, hints };
+      return a;
+    };
+    const beings = await q(
+      `select t.code, t.name, t.category
+         from card_types t
+        where t.code = any($1::text[])
+        order by random() limit 5`, [EASY]);
+    const pool = await q(
+      `select code, name, category from card_types where code = any($1::text[])`, [EASY]);
+    const catLabel = (c) => (c === 'zver' ? 'зверь или птица' : c === 'rastenie' ? 'растение или гриб'
+      : c === 'nasekomoe' ? 'насекомое' : 'лесной житель');
+    const lettersOf = (name) => String(name || '').replace(/[^А-Яа-яЁёA-Za-z]/g, '').length;
+    const questions = beings.map((row) => {
+      const same = shuffle(pool.filter((p) => p.code !== row.code && p.category === row.category));
+      const any = shuffle(pool.filter((p) => p.code !== row.code));
+      const wrong = [];
+      for (const p of same) { if (wrong.length >= 3) break; wrong.push(p); }
+      for (const p of any) {
+        if (wrong.length >= 3) break;
+        if (!wrong.some((w) => w.code === p.code)) wrong.push(p);
+      }
+      const options = shuffle([row.name, ...wrong.map((w) => w.name)]).slice(0, 4);
+      const hints = [
+        `Это ${catLabel(row.category)}.`,
+        CLUES[row.code] || 'Посмотри на картинку — она чуть размыта.',
+        `Имя начинается на «${row.name[0]}», всего ${lettersOf(row.name)} букв.`,
+      ];
+      return { code: row.code, name: row.name, hints, options };
     });
     await q(`insert into mini_games(child_id, game, last_played) values ($1,'guess',current_date)
       on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
