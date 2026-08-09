@@ -113,9 +113,14 @@ function capturePhoto() {
   });
 }
 const page = location.pathname.split('/').pop() || 'index.html';
+const urlParams = new URLSearchParams(location.search);
 // вход по ссылке ?code=РОСТ-01 (родитель может дать прямую ссылку)
-const urlCode = new URLSearchParams(location.search).get('code');
+const urlCode = urlParams.get('code');
 if (urlCode) localStorage.setItem('childCode', urlCode.toUpperCase());
+// реферал ?ref=XXXX — помним до посадки дерева
+const urlRef = (urlParams.get('ref') || '').toUpperCase().trim();
+if (urlRef) sessionStorage.setItem('refCode', urlRef);
+function pendingRef() { return (sessionStorage.getItem('refCode') || '').toUpperCase().trim(); }
 // не привязан → экран старта (родителю и онбордингу сессия не нужна)
 if (page !== 'link.html' && page !== 'parent.html' && page !== 'onboard.html' && !hasSession())
   location.href = 'link.html';
@@ -124,7 +129,14 @@ if (page !== 'link.html' && page !== 'parent.html' && page !== 'onboard.html' &&
 if (page === 'link.html') {
   if (hasSession()) location.href = 'index.html';
   const plantBtn = document.getElementById('plantBtn');
-  if (plantBtn) plantBtn.onclick = () => { location.href = 'onboard.html'; };
+  if (plantBtn) plantBtn.onclick = () => {
+    const r = pendingRef();
+    location.href = r ? 'onboard.html?ref=' + encodeURIComponent(r) : 'onboard.html';
+  };
+  if (pendingRef()) {
+    const lead = document.querySelector('.lead');
+    if (lead) lead.textContent = 'Тебя зовут в лес! Посади дерево — другу начислят шишки.';
+  }
   const codeToggle = document.getElementById('codeToggle');
   const codeBox = document.getElementById('codeBox');
   if (codeToggle && codeBox) {
@@ -181,8 +193,9 @@ if (page === 'onboard.html') {
     }
     const btn = document.getElementById('startBtn');
     btn.disabled = true;
+    const ref = pendingRef();
     const r = isNew
-      ? await api('/api/signup', { name, tree: selTree })
+      ? await api('/api/signup', { name, tree: selTree, ref: ref || undefined })
       : await api('/api/onboard', { name, tree: selTree });
     btn.disabled = false;
     if (r.error) {
@@ -190,12 +203,19 @@ if (page === 'onboard.html') {
     }
     if (isNew) {
       saveSession({ token: r.token, code: r.code });
+      sessionStorage.removeItem('refCode');
       if (form) form.style.display = 'none';
       if (pick) pick.style.display = 'none';
       if (done) {
         done.style.display = 'block';
         const codeEl = document.getElementById('recoverCode');
         if (codeEl) codeEl.textContent = r.code;
+        if (r.referral) {
+          const tip = document.createElement('div');
+          tip.style.cssText = 'margin-top:10px;font-weight:800;color:#5f8e37;font-size:13px;line-height:1.35';
+          tip.textContent = `Ты пришёл от ${r.referral.referrer} — другу уже капнуло ${r.referral.reward} шишек!`;
+          done.appendChild(tip);
+        }
       } else location.href = 'index.html';
       return;
     }
@@ -657,6 +677,45 @@ if (page === 'profile.html') {
         : '<div style="width:100%;text-align:center;padding:6px"><span class="on-art" style="color:#8a7358;font-weight:700;font-size:13px">Пока нет наград — выполняй задания!</span></div>';
     }
   });
+  // Поляна дружбы: код / ссылка / QR / список приведённых
+  let refLink = '';
+  api('/api/referral').then((d) => {
+    if (!d || d.error) return;
+    const codeEl = document.getElementById('refCode'); if (codeEl) codeEl.textContent = d.code;
+    const c = document.getElementById('refCount'); if (c) c.textContent = d.count;
+    const e = document.getElementById('refEarned'); if (e) e.textContent = d.earned;
+    const rw = document.getElementById('refReward'); if (rw) rw.textContent = d.reward;
+    refLink = location.origin + '/link.html?ref=' + encodeURIComponent(d.code);
+    const box = document.getElementById('refFriends');
+    if (box) {
+      box.innerHTML = d.friends.length
+        ? d.friends.map((f) => `<div class="ref-row"><div class="nm">${esc(f.name)}</div>
+            <div class="rw">+${f.reward}<img src="assets/coin1.webp" alt=""></div></div>`).join('')
+        : '<div class="ref-empty">Пока никого — позови первого!</div>';
+    }
+  });
+  const copyBtn = document.getElementById('refCopyBtn');
+  if (copyBtn) copyBtn.onclick = async () => {
+    if (!refLink) return;
+    try {
+      await navigator.clipboard.writeText(refLink);
+      const n = document.getElementById('pnote');
+      if (n) { n.style.display = 'block'; n.textContent = 'Ссылка скопирована — шли другу!'; n.style.color = '#5f8e37'; }
+    } catch {
+      prompt('Скопируй ссылку:', refLink);
+    }
+  };
+  const qrBtn = document.getElementById('refQrBtn');
+  const qrBox = document.getElementById('refQrBox');
+  if (qrBtn && qrBox) qrBtn.onclick = () => {
+    if (!refLink || typeof qrcode !== 'function') return;
+    const qr = qrcode(0, 'M'); qr.addData(refLink); qr.make();
+    const svg = qr.createSvgTag({ cellSize: 5, margin: 2 });
+    document.getElementById('refQrSvg').innerHTML = svg.replace('<svg ', '<svg style="width:200px;height:200px" ');
+    qrBox.classList.add('on');
+  };
+  const qrClose = document.getElementById('refQrClose');
+  if (qrClose && qrBox) qrClose.onclick = () => qrBox.classList.remove('on');
 }
 
 // ── Достижения (витрина) ──

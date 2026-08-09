@@ -62,6 +62,40 @@
   .switch-user{display:inline-block;margin-top:12px;font-weight:800;font-size:13px;color:var(--brown);
     background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:7px 12px;
     box-shadow:0 0 0 2px #c9a86a;text-decoration:none;font-family:"Fredoka","Nunito",sans-serif}
+
+  .grove{margin-top:12px;padding:14px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .grove h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 4px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .grove .hook{text-align:center;font-weight:800;color:#8a5a20;font-size:13px;line-height:1.35;margin-bottom:10px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .grove .hook img{width:18px;height:18px;vertical-align:-3px}
+  .grove-stats{display:flex;gap:8px;margin-bottom:10px}
+  .grove-stat{flex:1;text-align:center;background:rgba(255,255,255,.55);border:2.5px solid #fff;border-radius:14px;
+    padding:8px 6px;box-shadow:0 0 0 2px #c9a86a}
+  .grove-stat .n{font-weight:900;font-size:22px;color:#5f8e37;font-family:"Fredoka","Nunito",sans-serif;line-height:1}
+  .grove-stat .l{font-weight:800;font-size:11px;color:#8a5a20;margin-top:3px}
+  .grove-code{text-align:center;font-weight:900;font-size:22px;letter-spacing:2px;color:var(--ink);
+    background:#fffaf0;border:3px solid #fff;border-radius:14px;padding:10px;margin-bottom:8px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .grove-actions{display:flex;gap:8px}
+  .grove-actions button{flex:1;font-size:14px;padding:10px 8px;font-family:"Fredoka","Nunito",sans-serif}
+  #refFriends{margin-top:10px;max-height:140px;overflow-y:auto}
+  #refFriends::-webkit-scrollbar{width:0}
+  .ref-row{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;
+    background:rgba(255,255,255,.5);border:2px solid #fff;border-radius:12px;box-shadow:0 0 0 1.5px #c9a86a}
+  .ref-row .nm{font-weight:900;color:var(--ink);font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ref-row .rw{font-weight:900;color:#5f8e37;font-size:13px;display:inline-flex;align-items:center;gap:2px}
+  .ref-row .rw img{width:16px;height:16px}
+  .ref-empty{text-align:center;font-weight:700;color:#a1876a;font-size:12px;padding:6px}
+  #refQrBox{display:none;position:absolute;inset:0;z-index:40;background:rgba(20,26,18,.82);
+    align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+  #refQrBox.on{display:flex}
+  #refQrBox .sheet{background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:22px;
+    padding:16px;text-align:center;max-width:300px;width:100%;box-shadow:0 0 0 2px #c9a86a}
+  #refQrBox .sheet h3{margin:0 0 8px;font-family:"Fredoka","Nunito",sans-serif}
+  #refQrSvg{display:flex;justify-content:center;margin:8px 0}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="head-card">
@@ -75,6 +109,21 @@
   <div class="hero"><img src="assets/tree5.webp" alt=""></div>
   <div class="progress"><i></i></div>
   <div class="prog-cap">До следующего уровня</div>
+
+  <div class="grove" id="grove">
+    <h3>Поляна дружбы</h3>
+    <div class="hook">Позови друга посадить дерево — получишь <img src="assets/coin1.webp" alt=""> <b id="refReward">100</b></div>
+    <div class="grove-stats">
+      <div class="grove-stat"><div class="n" id="refCount">0</div><div class="l">друзей в лесу</div></div>
+      <div class="grove-stat"><div class="n" id="refEarned">0</div><div class="l">шишек за друзей</div></div>
+    </div>
+    <div class="grove-code" id="refCode">······</div>
+    <div class="grove-actions">
+      <button class="btn btn-sm" id="refCopyBtn" type="button">Скопировать ссылку</button>
+      <button class="btn btn-sm" id="refQrBtn" type="button">QR другу</button>
+    </div>
+    <div id="refFriends"><div class="ref-empty">Пока никого — позови первого!</div></div>
+  </div>
 
   <div class="passport">
     <h3>Лесной паспорт</h3>
@@ -92,6 +141,15 @@
   <button class="btn btn-lg profile-btn" type="button">Сменить наряд</button>
   <div id="pnote"></div>
   <div style="text-align:center"><a href="#" id="switchUser" class="switch-user">Сменить пользователя</a></div>
-</div></div><script src="app.js"></script>
+
+  <div id="refQrBox"><div class="sheet">
+    <h3>Покажи другу</h3>
+    <div id="refQrSvg"></div>
+    <div style="font-weight:700;color:#8a5a20;font-size:12px;margin-bottom:10px">Пусть наведёт камеру — и посадит дерево рядом</div>
+    <button class="btn btn-sm" id="refQrClose" type="button">Закрыть</button>
+  </div></div>
+</div></div>
+<script src="assets/qrcode.js"></script>
+<script src="app.js"></script>
 <script src="nav.js"></script>
 </body></html>

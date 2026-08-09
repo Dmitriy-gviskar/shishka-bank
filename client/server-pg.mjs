@@ -17,6 +17,55 @@ import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 // Раньше был предсказуемым (ИМЯ+порядковый номер) и ломался на букве Ё — теперь развязан от имени.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const genLoginCode = () => Array.from({ length: 6 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
+const REF_REWARD = 100;       // шишки зовущему, когда друг посадил дерево
+const REF_MAX = 50;           // потолок приглашений на одного ребёнка
+
+async function creditCones(userId, amount, message) {
+  await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [userId, amount]);
+  await q(
+    `insert into transactions(circle_id, to_user, amount, type, message)
+       select circle_id, $1, $2, 'reward', $3 from users where id=$1`,
+    [userId, amount, message]);
+}
+
+async function ensureReferralCode(childId) {
+  const cur = await one('select referral_code from users where id=$1', [childId]);
+  if (cur?.referral_code) return cur.referral_code;
+  for (let i = 0; i < 10; i++) {
+    const code = genLoginCode();
+    try {
+      const row = await one(
+        `update users set referral_code=$1 where id=$2 and referral_code is null returning referral_code`,
+        [code, childId]);
+      if (row?.referral_code) return row.referral_code;
+      const again = await one('select referral_code from users where id=$1', [childId]);
+      if (again?.referral_code) return again.referral_code;
+    } catch { /* unique collision — ещё раз */ }
+  }
+  throw { code: 500, msg: 'не удалось выдать код приглашения' };
+}
+
+async function applyReferral(referrerCode, newChildId, newName) {
+  const ref = String(referrerCode || '').toUpperCase().trim();
+  if (!ref || ref.length < 4) return null;
+  const referrer = await one(
+    `select id, name from users where referral_code=$1 and role='child'`, [ref]);
+  if (!referrer || referrer.id === newChildId) return null;
+  const cnt = await one('select count(*)::int as c from referrals where referrer_id=$1', [referrer.id]);
+  if ((cnt?.c || 0) >= REF_MAX) return null;
+  const ins = await one(
+    `insert into referrals(referrer_id, referred_id, reward)
+       values ($1,$2,$3)
+       on conflict (referred_id) do nothing
+       returning id`,
+    [referrer.id, newChildId, REF_REWARD]);
+  if (!ins) return null;
+  await q('update users set referred_by=$1 where id=$2 and referred_by is null', [referrer.id, newChildId]);
+  await creditCones(referrer.id, REF_REWARD, `Друг ${newName} посадил дерево!`);
+  await q('update referrals set rewarded_at=now() where id=$1', [ins.id]);
+  try { await rpc('bump_reputation', [referrer.id, 'generosity', 3]); } catch {}
+  return { referrer: referrer.name, reward: REF_REWARD };
+}
 
 const DIR = dirname(fileURLToPath(import.meta.url));
 await mkdir(join(DIR, 'uploads'), { recursive: true });
@@ -257,7 +306,34 @@ const api = {
               order by price limit 24`, [circle.id]);
       }
     } catch (e) { console.error('signup shop seed', e.message); }
-    return { ok: true, name, code, token: raw };
+    await ensureReferralCode(u.id).catch(() => {});
+    let referral = null;
+    try { referral = await applyReferral(b.ref, u.id, name); }
+    catch (e) { console.error('signup referral', e.message); }
+    return { ok: true, name, code, token: raw, referral };
+  },
+
+  'GET /api/referral': async (b, ctx) => {
+    const code = await ensureReferralCode(ctx.child);
+    const rows = await q(
+      `select u.name, r.reward, r.created_at, r.rewarded_at
+         from referrals r join users u on u.id=r.referred_id
+        where r.referrer_id=$1
+        order by r.created_at desc limit 30`, [ctx.child]);
+    const earned = rows.reduce((s, r) => s + (r.rewarded_at ? r.reward : 0), 0);
+    return {
+      code,
+      reward: REF_REWARD,
+      max: REF_MAX,
+      count: rows.length,
+      earned,
+      friends: rows.map((r) => ({
+        name: r.name,
+        reward: r.reward,
+        at: r.created_at,
+        paid: !!r.rewarded_at,
+      })),
+    };
   },
 
   'GET /api/state': async (b, ctx) => {
