@@ -1,15 +1,17 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Достижения</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
-  .count{align-self:center;background:#fffaf0;border:2px solid #d9c39a;border-radius:14px;
-    padding:5px 16px;font-weight:800;color:var(--brown);font-size:14px;margin:2px 0 8px}
+  /* bg: global cozy */
+  .count{align-self:center;background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;
+    padding:5px 16px;font-weight:800;color:var(--brown);font-size:14px;margin:2px 0 8px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
   #achList{flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;
     grid-template-columns:repeat(3,1fr);gap:9px;padding-bottom:8px}
   #achList::-webkit-scrollbar{width:0}
-  .ach{background:var(--card);border:3px solid #cbb083;border-radius:16px;padding:9px 6px;text-align:center}
+  .ach{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:16px;
+    padding:9px 6px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
   .ach.lock{opacity:.5;filter:grayscale(.75)}
   .ach img{width:54px;height:54px;object-fit:contain}
   .ach .d{font-size:9px;font-weight:700;color:#a1876a;margin-top:2px;line-height:1.15}

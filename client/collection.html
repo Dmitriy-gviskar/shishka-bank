@@ -1,25 +1,30 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Лесная коллекция</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background:#141a10}
+  .phone{background:#141a10;background-image:none}
+  .phone::after{display:none}
   /* атмосферный лесной фон, приглушённый под виньеткой — карты в фокусе */
-  .cbg{position:absolute;inset:0;z-index:1;background:url(assets/bg.webp) center/cover;
-    filter:brightness(.5) saturate(1.1)}
+  .cbg{position:absolute;inset:0;z-index:1;background:url(assets/bg_wallet_pilot.webp) center/cover;
+    filter:brightness(.48) saturate(1.15)}
   .cbg::after{content:"";position:absolute;inset:0;
-    background:radial-gradient(120% 80% at 50% 12%,rgba(30,44,22,.15),rgba(8,12,6,.88))}
+    background:radial-gradient(120% 80% at 50% 12%,rgba(30,44,22,.12),rgba(8,12,6,.86))}
   .cwrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:16px 12px 0;overflow:hidden}
   .chead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-  .chead .h1{font-weight:900;color:var(--ink);font-size:20px;background:#fffaf0;border:3px solid var(--brown);
-    border-radius:14px;padding:6px 12px;box-shadow:0 3px 0 rgba(107,79,58,.25)}
-  .prog{flex:1;background:rgba(255,250,240,.9);border-radius:12px;padding:6px 10px;font-weight:800;color:var(--brown);font-size:12.5px}
+  .chead .h1{font-weight:900;color:var(--ink);font-size:18px;background:linear-gradient(180deg,#fff8eb,#f3e7cf);
+    border:3px solid #fff;border-radius:16px;padding:6px 12px;
+    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);font-family:"Fredoka","Nunito",sans-serif}
+  .prog{flex:1;background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:14px;padding:6px 10px;
+    font-weight:800;color:var(--brown);font-size:12.5px;box-shadow:0 0 0 2px #c9a86a}
   .prog .bar{height:6px;border-radius:6px;background:#e4d6b8;margin-top:4px;overflow:hidden}
   .prog .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--gold));border-radius:6px}
-  .packbtn{background:linear-gradient(135deg,#ffe9a8,#ffd062);border:3px solid #e0a52e;border-radius:16px;
-    padding:11px;font-weight:900;color:#6b4a12;font-size:17px;box-shadow:0 4px 0 rgba(160,110,20,.3);cursor:pointer;
-    display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px}
-  .packbtn:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(160,110,20,.3)}
+  .packbtn{background:linear-gradient(180deg,#ffe9a8,#ffd062);border:3px solid #fff;border-radius:18px;
+    padding:11px;font-weight:900;color:#6b4a12;font-size:17px;
+    box-shadow:0 0 0 3px #e0a52e,0 4px 0 rgba(160,110,20,.3);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .packbtn:active{transform:translateY(2px);box-shadow:0 0 0 3px #e0a52e,0 2px 0 rgba(160,110,20,.3)}
   /* подсказка гаранта: сколько паков до карты, которой точно нет */
   .pity{text-align:center;color:#ffe9b8;font-weight:800;font-size:11.5px;margin:-4px 0 6px;
     text-shadow:0 1px 3px rgba(0,0,0,.7)}

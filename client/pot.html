@@ -1,9 +1,9 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Котлы</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
+  /* bg: global cozy */
   .pot-img{text-align:center;margin-top:2px}
   .pot-img img{width:120px;height:120px;object-fit:contain;filter:drop-shadow(0 6px 7px var(--shadow))}
   #potList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-top:6px}
@@ -18,15 +18,14 @@
   .scale span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     font-weight:900;color:var(--brown);font-size:12px;text-shadow:0 1px 0 rgba(255,250,240,.6)}
   .give{margin-top:8px;display:flex;gap:6px;align-items:center}
-  .give .s{background:#fff7e8;border:2px solid #d9c39a;border-radius:12px;padding:5px 13px;
-    font-weight:900;color:var(--brown);cursor:pointer;font-size:15px}
-  .give .s.sel{border-color:var(--gold);background:#fff3d6}
+  .give .s{padding:5px 13px;font-size:15px;border-radius:12px}
   .give .btn{margin-left:auto}
   .newp{margin-top:6px}
   .newp input,.newp select{width:100%;background:#fffaf0;border:3px solid #d9c39a;border-radius:14px;padding:9px;
     font-size:15px;font-weight:800;color:var(--ink);outline:none;box-sizing:border-box;margin-bottom:6px}
   summary{font-weight:900;color:var(--brown);cursor:pointer;text-align:center;list-style:none;
-    background:rgba(255,250,240,.92);border-radius:14px;padding:6px 14px;width:fit-content;margin:0 auto}
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:6px 14px;
+    width:fit-content;margin:0 auto;box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
   summary::-webkit-details-marker{display:none}
 </style></head><body>
 <div class="phone"><div class="wrap">
@@ -39,7 +38,7 @@
     <select id="potGuild"><option value="">Для всех друзей</option></select>
     <button class="btn btn-lg" id="createPot" style="width:100%">Поставить котёл</button>
   </details>
-  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+  <div id="note" class="page-note"></div>
 </div></div>
 <script src="app.js"></script>
 <script src="nav.js"></script>

@@ -1,9 +1,9 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Лесные гильдии</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
+  /* bg: global cozy */
   .glist{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
   .gcard{padding:12px 14px;margin-bottom:8px}
   .gcard .gn{font-weight:900;color:var(--ink);font-size:17px}
@@ -19,14 +19,16 @@
   .msg .txt{font-weight:700;color:var(--ink);font-size:14px}
   .msg.bank{border-color:var(--gold);background:#fff3d6;margin-left:auto}
   .phrases{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:8px 0 6px}
-  .phrases button{background:#fff7e8;border:3px solid #d9c39a;border-radius:14px;padding:6px 11px;
-    font-weight:800;color:var(--brown);cursor:pointer;font-size:13px}
+  .phrases button{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;border-radius:14px;
+    padding:6px 11px;font-weight:800;color:var(--brown);cursor:pointer;font-size:13px;
+    box-shadow:0 0 0 2px #c9a86a}
   .newg{margin-top:8px}
   .newg input{width:100%;background:#fffaf0;border:3px solid #d9c39a;border-radius:14px;padding:10px;
     font-size:16px;font-weight:800;color:var(--ink);outline:none;box-sizing:border-box}
   h3{text-align:center;color:var(--ink);font-weight:900;margin:12px 0 4px;font-size:16px;
-    background:rgba(255,250,240,.92);border-radius:14px;padding:5px 14px;align-self:center;
-    margin-left:auto;margin-right:auto;width:fit-content}
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:5px 14px;
+    align-self:center;margin-left:auto;margin-right:auto;width:fit-content;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Лесные гильдии</div>
@@ -50,7 +52,7 @@
     <button class="btn btn-sm" id="backToList" style="align-self:center;background:#fff3d6;color:var(--brown);box-shadow:0 4px 0 #d9c39a">К списку гильдий</button>
   </div>
 
-  <div id="note" style="display:none;text-align:center;font-weight:800;margin:8px 0;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+  <div id="note" class="page-note"></div>
 </div></div>
 <script src="app.js"></script>
 <script src="guilds.js"></script>

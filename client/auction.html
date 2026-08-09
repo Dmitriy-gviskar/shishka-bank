@@ -1,23 +1,21 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Лесной аукцион</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
+  /* bg: global cozy */
   .lot-img{text-align:center;margin-top:4px}
   .lot-img img{width:170px;height:170px;object-fit:contain;filter:drop-shadow(0 6px 7px var(--shadow))}
-  .lot-name{text-align:center;font-weight:900;color:var(--ink);font-size:20px}
+  .lot-name{text-align:center;font-weight:900;color:var(--ink);font-size:20px;font-family:"Fredoka","Nunito",sans-serif}
   .bid{margin-top:8px;padding:14px;text-align:center}
   .bid .cur{font-size:36px;font-weight:900;color:var(--brown)}
   .bid .lead{color:#a1876a;font-weight:700;margin-top:2px}
   .bids{display:flex;gap:8px;justify-content:center;margin-top:14px}
-  .bids .s{background:#fff7e8;border:3px solid #d9c39a;border-radius:14px;padding:8px 16px;
-    font-weight:900;color:var(--brown);cursor:pointer;font-size:18px}
-  .bids .s.sel{border-color:var(--gold);background:#fff3d6}
+  .bids .s{padding:8px 16px;font-size:18px;font-family:"Fredoka","Nunito",sans-serif}
   .timer{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:8px;
-    font-weight:900;color:var(--brown);font-size:16px;background:#fff7e8;border:3px solid #d9c39a;
-    border-radius:14px;padding:8px 12px}
-  .timer.soon{border-color:#e0864b;color:#c0562a}
+    font-weight:900;color:var(--brown);font-size:16px;background:rgba(255,248,235,.94);
+    border:2.5px solid #fff;border-radius:14px;padding:8px 12px;box-shadow:0 0 0 2px #c9a86a}
+  .timer.soon{box-shadow:0 0 0 2px #e0864b;color:#c0562a}
   .timer b{font-size:19px}
   .winner{text-align:center;margin-top:16px;background:#fff3d6;border:3px solid var(--gold);
     border-radius:18px;padding:18px 14px;font-weight:900;color:var(--ink)}
@@ -31,12 +29,12 @@
   <div class="lot-name" id="lotName">…</div>
   <div id="liveBox">
     <div class="card bid"><div class="cur" id="curBid">—</div><div class="lead" id="lead"></div></div>
-    <div class="timer" id="timer" style="display:none">⏳ До конца: <b id="timerVal">…</b></div>
+    <div class="timer" id="timer" style="display:none">До конца: <b id="timerVal">…</b></div>
     <div class="bids"><div class="s sel" data-a="5">+5</div><div class="s" data-a="10">+10</div><div class="s" data-a="25">+25</div></div>
     <div style="text-align:center;margin-top:8px"><input id="bidCustom" type="number" min="1" placeholder="или своя ставка" inputmode="numeric"
       style="width:65%;background:#fffaf0;border:3px solid #d9c39a;border-radius:14px;padding:9px;font-size:16px;font-weight:800;color:var(--ink);text-align:center;outline:none"></div>
     <button class="btn btn-lg" id="doBid">Сделать ставку</button>
-    <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+    <div id="note" class="page-note"></div>
   </div>
   <div class="winner" id="winnerBox" style="display:none"></div>
 </div></div>

@@ -1,23 +1,24 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Лесная почта</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
+  /* bg: global cozy */
   .wrap{display:flex;flex-direction:column;height:100%;padding:0;position:relative}
   .title{flex:none;margin:8px 0 4px}
   /* Список чатов */
   #chatList{flex:1;overflow-y:auto;min-height:0;padding:6px 8px;display:flex;flex-direction:column;gap:6px}
   #chatList::-webkit-scrollbar{width:0}
   .chatRow{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;
-    background:#fffef9;border:2px solid #e0d3b8;border-radius:14px;transition:all .12s}
-  .chatRow:active{background:#f2ebd8;border-color:#c9b88a}
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #c9a86a;transition:all .12s}
+  .chatRow:active{transform:translateY(1px)}
   .chatRow .ava{position:relative;flex:none}
   .chatRow img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;display:block}
   .chatRow .ava .dot{position:absolute;bottom:1px;right:1px;width:13px;height:13px;
     background:#6db83a;border:2px solid #fffef9;border-radius:50%}
   .chatRow .info{flex:1;min-width:0}
-  .chatRow .name{font-weight:900;color:#4a3520;font-size:15px}
+  .chatRow .name{font-weight:900;color:#4a3520;font-size:15px;font-family:"Fredoka","Nunito",sans-serif}
   .chatRow .preview{font-size:13px;color:#6b5a44;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}
   .chatRow .meta{text-align:right;flex:none}
   .chatRow .time{font-size:11px;color:#8a7a65;font-weight:700}

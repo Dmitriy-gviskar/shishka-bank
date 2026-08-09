@@ -1,15 +1,16 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Наряды дерева</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
+  /* bg: global cozy */
   #skinList{flex:1 1 auto;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(2,1fr);gap:11px;padding-bottom:8px}
   #skinList::-webkit-scrollbar{width:0}
-  .skin{background:var(--card);border:3px solid #cbb083;border-radius:18px;padding:11px 8px;text-align:center}
-  .skin.on{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,182,75,.35)}
+  .skin{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:18px;
+    padding:11px 8px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
+  .skin.on{box-shadow:0 0 0 3px #f0c14a,0 0 0 6px rgba(232,182,75,.35),0 3px 0 rgba(107,79,58,.15)}
   .skin img{width:88px;height:100px;object-fit:contain;filter:drop-shadow(0 4px 5px var(--shadow))}
-  .skin .t{font-weight:900;color:var(--ink);font-size:14px;margin:4px 0 7px}
+  .skin .t{font-weight:900;color:var(--ink);font-size:14px;margin:4px 0 7px;font-family:"Fredoka","Nunito",sans-serif}
   .skin .btn-sm{width:100%}
   .skin .st{display:inline-block;font-weight:900;font-size:13px;padding:6px 0;width:100%;border-radius:12px}
   .skin .st.on{background:var(--gold);color:#5b4636}
@@ -20,7 +21,7 @@
 <div class="phone"><div class="wrap">
   <div class="title">Наряды дерева</div>
   <div id="skinList"></div>
-  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+  <div id="note" class="page-note"></div>
 </div></div>
 <script src="app.js"></script>
 <script src="nav.js"></script>

@@ -1,9 +1,9 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Шишки-сюрпризы</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg.webp)}
+  /* bg: global cozy */
   #surpriseList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;margin-top:10px}
   .sp{display:flex;align-items:center;gap:12px;padding:14px 14px;margin-bottom:8px}
   .sp img{width:46px;height:46px;object-fit:contain}
@@ -13,13 +13,14 @@
   .sp .amt{font-weight:900;color:#5f8e37;font-size:20px}
   .sp .btn-sm{white-space:nowrap}
   .lead{text-align:center;color:var(--brown);font-weight:700;font-size:14px;margin-top:4px;
-    background:rgba(255,250,240,.92);border-radius:14px;padding:8px 14px;align-self:center;width:fit-content}
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:8px 14px;
+    align-self:center;width:fit-content;box-shadow:0 0 0 2px #c9a86a}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Шишки-сюрпризы</div>
   <div class="lead">Кто-то подарил тебе шишки тайно. Хочешь узнать кто? Расследуй за 1 шишку.</div>
   <div id="surpriseList"></div>
-  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+  <div id="note" class="page-note"></div>
 </div></div>
 <script src="app.js"></script>
 <script src="nav.js"></script>

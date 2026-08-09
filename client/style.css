@@ -9,9 +9,12 @@
 body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
   font-family:var(--font)}
 .phone{position:relative;width:min(390px,100vw);height:100vh;height:100dvh;max-height:844px;
-  overflow:hidden;background:center/cover no-repeat}
-.phone::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(255,248,230,.08),rgba(40,55,30,.18));pointer-events:none}
+  overflow:hidden;background:center/cover no-repeat;
+  background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+.phone::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
 .wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:18px 16px 0;
   overflow-y:auto;-webkit-overflow-scrolling:touch}
 /* длинные списки прокручиваются ВНУТРИ экрана, навбар остаётся внизу */
@@ -20,9 +23,33 @@ body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
 #taskList::-webkit-scrollbar,#shopList::-webkit-scrollbar,#marketList::-webkit-scrollbar{width:0}
 
 /* заголовок-плашка */
-.title{align-self:center;background:var(--parchment);border:3px solid var(--brown);border-radius:20px;
+.title{align-self:center;background:var(--parchment);border:3px solid #fff;border-radius:20px;
   padding:8px 22px;font-size:22px;font-weight:900;color:var(--ink);
-  box-shadow:0 4px 0 rgba(107,79,58,.25);margin-bottom:4px}
+  box-shadow:0 0 0 3px #c9a86a,0 4px 0 rgba(107,79,58,.22);margin-bottom:4px;
+  font-family:"Fredoka","Nunito",sans-serif}
+
+/* стикер-плитки (игры, поляна, вторичные сетки) */
+.tile{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:20px;
+  padding:14px 8px 12px;text-align:center;text-decoration:none;
+  box-shadow:0 0 0 3px #c9a86a,0 5px 0 rgba(107,79,58,.2);
+  display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .08s}
+.tile:active{transform:translateY(3px);box-shadow:0 0 0 3px #c9a86a,0 2px 0 rgba(107,79,58,.2)}
+.tile img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 3px 4px var(--shadow))}
+.tile span{font-weight:900;color:var(--ink);font-size:15px;line-height:1.05;
+  font-family:"Fredoka","Nunito",sans-serif}
+.tile small{font-weight:700;color:#a1876a;font-size:12px;line-height:1.25}
+
+/* заметка / статус */
+.note,.page-note{display:none;text-align:center;font-weight:800;margin-top:8px;
+  background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:9px;
+  box-shadow:0 0 0 2px #c9a86a}
+
+/* пергамент-чипы выбора */
+.chip,.term,.ap,.sum .s,.bids .s,.give .s{background:linear-gradient(180deg,#fff8eb,#f3e7cf);
+  border:3px solid #fff;border-radius:14px;font-weight:900;color:var(--brown);cursor:pointer;
+  box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
+.chip.sel,.term.sel,.ap.sel,.sum .s.sel,.bids .s.sel,.give .s.sel{
+  background:linear-gradient(180deg,#ffe9a8,#ffd062);box-shadow:0 0 0 3px #e0a52e,0 3px 0 rgba(160,110,20,.2)}
 
 /* приветствие Духа — стикер поверх леса */
 .greet{display:flex;align-items:flex-start;gap:6px}

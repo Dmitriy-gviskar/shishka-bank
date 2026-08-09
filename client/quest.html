@@ -1,9 +1,9 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#7bab4c"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Нарративный квест</title><link rel="stylesheet" href="style.css">
 <style>
-  .phone{background-image:url(assets/bg_spring.webp)}
+  /* bg: global cozy */
   .oracle{text-align:center;margin-top:6px}
   .oracle img{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 6px 7px var(--shadow))}
   .story{padding:16px;text-align:center;font-size:17px;font-weight:800;color:var(--ink);line-height:1.35;margin-top:4px}
@@ -21,7 +21,7 @@
   <div class="card story" id="story">…</div>
   <div class="qprog" id="qprog"><i id="qfill" style="width:0%"></i><span id="qtext"></span></div>
   <button class="btn btn-lg" id="qact"></button>
-  <div id="note" style="display:none;text-align:center;font-weight:800;margin-top:8px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+  <div id="note" class="page-note"></div>
 </div></div>
 <script src="app.js"></script>
 <script src="quest.js"></script>
