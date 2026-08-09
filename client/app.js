@@ -449,8 +449,7 @@ async function loadShop() {
     el.innerHTML = `<div class="pic"><img src="${shopIcon(it.title)}" alt="" loading="lazy"></div>
       <div class="mid"><div class="nm">${esc(it.title)}</div>
         <div class="price"><img src="assets/coin1.webp" alt="">${it.price}</div></div>
-      <div class="right"><button class="shop-buy" type="button" aria-label="Купить">
-        <img src="assets/shop_btn_buy.webp" alt="Купить"></button></div>`;
+      <div class="right"><button class="shop-buy" type="button">Купить</button></div>`;
     el.querySelector('button').onclick = async () => {
       const r = await api('/api/shop/buy', { id: it.id });
       if (r.error) { const n = document.getElementById('note'); if (n) { n.textContent = r.error; n.style.display = 'block'; } }
@@ -585,7 +584,7 @@ async function loadMarket() {
         <div class="lt">${esc(l.title)}</div>
         <div class="price"><img src="assets/coin1.webp" alt="">${l.price}</div>
         ${s.mine ? `<button class="mini le" type="button" title="Изменить">✏️</button><button class="mini lr" type="button" title="Убрать">🗑</button>`
-                 : `<button class="shop-buy" type="button" aria-label="Купить"><img src="assets/shop_btn_buy.webp" alt="Купить"></button>`}`;
+                 : `<button class="shop-buy" type="button">Купить</button>`}`;
       if (s.mine) {
         row.querySelector('.le').onclick = () => openLotForm(el, l);
         row.querySelector('.lr').onclick = async () => {
