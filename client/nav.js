@@ -49,10 +49,11 @@
   }
 
   async function navigate(href, push = true) {
-    href = href.split('#')[0];
-    if (!href) return;
+    const hash = (href.includes('#') ? href.split('#').slice(1).join('#') : '') || '';
+    const path = href.split('#')[0] || href;
+    if (!path) return;
     try {
-      const res = await fetch(href);
+      const res = await fetch(path);
       if (!res.ok) throw 0;
       const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
       const newPhone = doc.querySelector('.phone');
@@ -73,7 +74,9 @@
       // 5) подменяем весь .phone (у collection контейнер .cwrap, у прочих .wrap — заменяем общий .phone)
       document.querySelector('.phone').replaceWith(newPhone);
       document.title = doc.title;
-      if (push) history.pushState({ spa: 1 }, '', href);
+      const url = hash ? path + '#' + hash : path;
+      if (push) history.pushState({ spa: 1 }, '', url);
+      else if (hash) history.replaceState({ spa: 1 }, '', url);
       window.scrollTo(0, 0);
       // 6) догружаем скрипты нового экрана
       for (const sc of doc.querySelectorAll('script[src]')) {
@@ -83,7 +86,12 @@
       }
       // 7) переинициализируем экран
       window.runApp();
-    } catch (e) { location.href = href; }                     // любой сбой → надёжная обычная навигация
+      // 8) якорь (например profile.html#grove → поляна дружбы)
+      if (hash) {
+        const el = document.getElementById(hash);
+        if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+      }
+    } catch (e) { location.href = hash ? path + '#' + hash : path; }  // любой сбой → надёжная обычная навигация
   }
   window.navigate = navigate;
 
