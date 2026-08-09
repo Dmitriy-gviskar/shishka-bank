@@ -11,22 +11,8 @@
   .cbg::after{content:"";position:absolute;inset:0;
     background:radial-gradient(120% 80% at 50% 12%,rgba(30,44,22,.12),rgba(8,12,6,.86))}
   .cwrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:14px 12px 0;overflow:hidden}
-  /* единый ряд чипов: ← / Коллекция / Ячеек / баланс — одна высота 42px */
-  .cwrap > button[aria-label="Назад"]{
-    top:14px !important;left:12px !important;z-index:6 !important;
-    width:42px !important;height:42px !important;padding:0 !important;
-    display:flex !important;align-items:center;justify-content:center;
-    border:3px solid #fff !important;border-radius:14px !important;
-    background:linear-gradient(180deg,#fff8eb,#f3e7cf) !important;
-    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22) !important;
-    font-size:20px !important;line-height:1 !important;color:#6b4f3a !important;font-weight:900 !important}
-  #topbar{
-    top:14px !important;right:12px !important;height:42px;box-sizing:border-box;
-    border:3px solid #fff;border-radius:14px;padding:0 10px 0 6px;
-    background:linear-gradient(180deg,#fff8eb,#f3e7cf);
-    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);
-    font-size:14px;gap:4px}
-  #topbar img{width:20px;height:20px}
+  /* коллекция: чипы в одном ряду с .chead — без лишнего padding-top от .has-topbar */
+  .cwrap.has-topbar{padding-top:14px !important}
   .chead{display:flex;align-items:center;gap:8px;margin-bottom:10px;
     padding-left:50px;padding-right:96px;min-height:42px}
   .chead .h1{box-sizing:border-box;height:42px;flex:none;display:flex;align-items:center;

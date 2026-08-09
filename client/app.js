@@ -933,7 +933,10 @@ function mountTopbar() {
   if (document.getElementById('topbar')) return;
   const t = document.createElement('div'); t.id = 'topbar';
   t.innerHTML = `<img src="assets/coin1.webp"><span id="topBal">…</span>`;
-  document.querySelector('.phone').appendChild(t);
+  const phone = document.querySelector('.phone');
+  phone.appendChild(t);
+  const wrap = phone.querySelector('.wrap, .cwrap');
+  if (wrap) wrap.classList.add('has-topbar');
 }
 async function refreshBalance() {
   const el = document.getElementById('topBal'); if (!el) return;

@@ -26,10 +26,10 @@
     wrap.appendChild(nav);
     // подэкраны (не из навбара) получают кнопку «Назад»
     if (!ITEMS.some((it) => it.href === file)) {
+      wrap.classList.add('has-back');
       const back = document.createElement('button');
+      back.className = 'nav-back';
       back.setAttribute('aria-label', 'Назад');
-      back.style.cssText = 'position:absolute;top:14px;left:12px;z-index:5;background:rgba(255,250,240,.94);' +
-        'border:3px solid #d9c39a;border-radius:14px;padding:6px 13px;font-size:19px;font-weight:900;color:#6b4f3a;cursor:pointer';
       back.textContent = '←';
       back.onclick = () => { if (history.length > 1) history.back(); else navigate('forest.html'); };
       wrap.appendChild(back);

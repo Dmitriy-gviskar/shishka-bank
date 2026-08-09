@@ -7,7 +7,7 @@
   .phone::after{background:
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
-  .wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-top:12px;padding-bottom:8px}
+  .wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
   .wrap::-webkit-scrollbar{width:0}
 
   .head-card{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 12px;
@@ -71,11 +71,13 @@
   .grove .hook{text-align:center;font-weight:800;color:#8a5a20;font-size:12.5px;line-height:1.4;margin-bottom:10px;
     font-family:"Fredoka","Nunito",sans-serif}
   .grove .hook img{width:16px;height:16px;vertical-align:-3px}
-  .grove-stats{display:flex;gap:8px;margin-bottom:10px}
-  .grove-stat{flex:1;text-align:center;background:rgba(255,255,255,.55);border:2.5px solid #fff;border-radius:14px;
+  .grove-stats{display:flex;gap:8px;margin-bottom:10px;align-items:stretch}
+  .grove-stat{flex:1;min-width:0;min-height:68px;box-sizing:border-box;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.55);border:2.5px solid #fff;border-radius:14px;
     padding:8px 6px;box-shadow:0 0 0 2px #c9a86a}
   .grove-stat .n{font-weight:900;font-size:22px;color:#5f8e37;font-family:"Fredoka","Nunito",sans-serif;line-height:1}
-  .grove-stat .l{font-weight:800;font-size:11px;color:#8a5a20;margin-top:3px}
+  .grove-stat .l{font-weight:800;font-size:11px;color:#8a5a20;margin-top:3px;line-height:1.15}
   .ref-sec{font-weight:900;color:var(--ink);font-size:13px;margin:10px 2px 6px;
     font-family:"Fredoka","Nunito",sans-serif}
   .grove-code{text-align:center;font-weight:900;font-size:22px;letter-spacing:2px;color:var(--ink);

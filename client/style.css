@@ -95,11 +95,21 @@ body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
 .nav .active{background:linear-gradient(180deg,#ffe7a0,#f0c14a);
   box-shadow:0 0 0 3px #f6d56a,0 3px 0 rgba(107,79,58,.28)}
 
-/* баланс-шапка (правый верх) */
-#topbar{position:absolute;top:8px;right:8px;z-index:5;display:flex;align-items:center;gap:3px;
-  background:rgba(255,250,240,.92);border:2px solid var(--brown);border-radius:12px;
-  padding:2px 8px 2px 4px;box-shadow:0 2px 0 rgba(107,79,58,.2);font-weight:900;color:var(--brown);font-size:14px}
-#topbar img{width:18px;height:18px;object-fit:contain}
+/* баланс-шапка + «←» — единые чипы 42px */
+#topbar{position:absolute;top:14px;right:12px;z-index:5;display:flex;align-items:center;gap:4px;
+  height:42px;box-sizing:border-box;
+  background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+  padding:0 10px 0 6px;box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);
+  font-weight:900;color:var(--brown);font-size:14px;font-family:"Fredoka","Nunito",sans-serif}
+#topbar img{width:20px;height:20px;object-fit:contain}
+.nav-back{position:absolute;top:14px;left:12px;z-index:6;width:42px;height:42px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+  box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);
+  font-size:20px;font-weight:900;line-height:1;color:#6b4f3a;cursor:pointer;
+  font-family:"Fredoka","Nunito",sans-serif}
+/* контент под рядом чипов (не коллекция — там свой .chead в одном ряду) */
+.wrap.has-topbar{padding-top:62px !important}
 
 .friends{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
 .friends::-webkit-scrollbar{display:none}
