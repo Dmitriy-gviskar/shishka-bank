@@ -327,14 +327,24 @@ async function loadTasks() {
 if (page === 'quests.html') loadTasks();
 
 // ── Магазин впечатлений ──
+function shopIcon(title) {
+  const t = (title || '').toLowerCase();
+  if (/мультик|тв|кино|фильм/.test(t)) return 'assets/shop/shop_ic_cartoon.webp';
+  if (/телефон|планшет|гаджет|экран/.test(t)) return 'assets/shop/shop_ic_phone.webp';
+  if (/ужин|еда|обед|завтрак|слад/.test(t)) return 'assets/shop/shop_ic_dinner.webp';
+  if (/шалаш|поход|лес|прогулк|папа|прогулка/.test(t)) return 'assets/shop/shop_ic_hut.webp';
+  return 'assets/shop/shop_ic_gift.webp';
+}
 async function loadShop() {
   const items = await api('/api/shop');
   const cont = document.getElementById('shopList'); cont.innerHTML = '';
   for (const it of items) {
-    const el = document.createElement('div'); el.className = 'card lot';
-    el.innerHTML = `<div class="nm">${esc(it.title)}</div>
-      <div class="right"><div class="price"><img src="assets/coin1.webp">${it.price}</div>
-      <button class="btn btn-sm">Купить</button></div>`;
+    const el = document.createElement('div'); el.className = 'lot';
+    el.innerHTML = `<div class="pic"><img src="${shopIcon(it.title)}" alt="" loading="lazy"></div>
+      <div class="mid"><div class="nm">${esc(it.title)}</div>
+        <div class="price"><img src="assets/coin1.webp" alt="">${it.price}</div></div>
+      <div class="right"><button class="shop-buy" type="button" aria-label="Купить">
+        <img src="assets/shop_btn_buy.webp" alt="Купить"></button></div>`;
     el.querySelector('button').onclick = async () => {
       const r = await api('/api/shop/buy', { id: it.id });
       if (r.error) { const n = document.getElementById('note'); if (n) { n.textContent = r.error; n.style.display = 'block'; } }
@@ -372,28 +382,35 @@ if (page === 'transfers.html') {
       const cards = document.querySelector('.cards'); if (cards) cards.style.display = 'none';   // открытки — только для подарков
       const anonRow = document.getElementById('anonRow'); if (anonRow) anonRow.style.display = 'none';   // тайно — только для подарков
       const fixedAmt = parseInt(new URLSearchParams(location.search).get('amt'), 10);
+      const paintPayBtn = (label) => {
+        const b = document.getElementById('giftSendBtn'); if (!b) return;
+        b.className = 'btn btn-lg'; b.innerHTML = ''; b.textContent = label;
+        b.style.cssText = 'display:block;margin:14px auto 0;max-width:280px;width:100%';
+      };
+      const amtBig = document.querySelector('.amt-big'); if (amtBig) amtBig.style.display = 'none';
       if (fixedAmt > 1) {   // продавец назначил цену — это счёт, сумма зафиксирована
         qrFixedAmt = fixedAmt;
         document.querySelector('.apick').style.display = 'none';
         document.querySelector('.apick').insertAdjacentHTML('afterend',
           `<div class="on-art" style="text-align:center;font-weight:900;color:var(--ink);font-size:22px;margin:10px auto 0;display:block;width:fit-content">К оплате: ${fixedAmt} шишек</div>
            <div class="on-art" style="color:#8a7358;font-weight:700;font-size:12px;margin:6px auto 0;display:block;width:fit-content">Комиссия Банка — 1 шишка со сделки</div>`);
-        const btn0 = document.querySelector('.btn-lg'); if (btn0) btn0.textContent = 'Оплатить ' + fixedAmt;
+        paintPayBtn('Оплатить ' + fixedAmt);
         return;
       }
       document.querySelector('.apick').insertAdjacentHTML('afterend',
         `<div style="text-align:center;margin-top:8px"><input id="payAmt" type="number" min="2" placeholder="или своя сумма" inputmode="numeric"
            style="width:70%;background:#fffaf0;border:3px solid #d9c39a;border-radius:14px;padding:10px;font-size:18px;font-weight:900;color:var(--ink);text-align:center;outline:none">
          <div class="on-art" style="color:#8a7358;font-weight:700;font-size:12px;margin-top:6px">Комиссия Банка — 1 шишка со сделки</div></div>`);
-      const btn = document.querySelector('.btn-lg'); if (btn) btn.textContent = 'Оплатить';
+      paintPayBtn('Оплатить');
     });
   } else loadFriends();
-  document.querySelectorAll('.apick .ap').forEach((a) => a.onclick = () => {
-    document.querySelectorAll('.apick .ap').forEach((x) => x.classList.remove('sel')); a.classList.add('sel'); giftAmount = +a.dataset.a; });
-  const anon = document.getElementById('anon');
-  if (anon) anon.onchange = () => {
-    const btn2 = document.querySelector('.btn-lg'); if (btn2 && !qrRecipient) btn2.textContent = anon.checked ? 'Отправить тайно' : 'Отправить подарок';
+  const paintAmt = () => {
+    const n = document.getElementById('giftAmtN'); if (n) n.textContent = giftAmount;
   };
+  document.querySelectorAll('.apick .ap').forEach((a) => a.onclick = () => {
+    document.querySelectorAll('.apick .ap').forEach((x) => x.classList.remove('sel')); a.classList.add('sel');
+    giftAmount = +a.dataset.a; paintAmt();
+  });
   // входящие подарки — кто и сколько подарил
   api('/api/gifts/received').then((list) => {
     const c = document.getElementById('giftsReceived');
@@ -407,7 +424,7 @@ if (page === 'transfers.html') {
         <span class="when">${when}</span></div>`;
     }).join('');
   });
-  const btn = document.querySelector('.btn-lg');
+  const btn = document.getElementById('giftSendBtn') || document.querySelector('.btn-lg');
   if (btn) btn.onclick = async () => {
     const custom = parseInt(document.getElementById('payAmt')?.value, 10);
     const isAnon = document.getElementById('anon')?.checked;

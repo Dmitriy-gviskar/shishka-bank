@@ -8,20 +8,36 @@
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
   .wrap{overflow-y:hidden;padding-top:12px}
-  .title{font-size:17px;padding:7px 14px;margin-bottom:6px;white-space:nowrap;
-    font-family:"Fredoka","Nunito",sans-serif}
+  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px;font-size:18px;padding:8px 16px;
+    background:linear-gradient(180deg,#a07840 0%,#8a6238 55%,#6b4a22 100%);
+    color:#fff8eb;border:3px solid #5a3a18;text-shadow:0 2px 0 rgba(0,0,0,.25);
+    box-shadow:0 4px 0 #4a3010, inset 0 1px 0 rgba(255,230,180,.35)}
   .greet{margin:2px 0 4px}
-  .greet img{width:96px;height:96px;
+  .greet img{width:100px;height:100px;
     filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
   .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px;margin-top:8px}
   #shopList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 2px 8px}
   #shopList::-webkit-scrollbar{width:0}
-  .lot{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px}
-  .lot .nm{flex:1;min-width:0;font-weight:900;color:var(--ink);font-size:16px;line-height:1.25;
+
+  .lot{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px 10px 10px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .lot .pic{width:72px;height:72px;flex:none;border-radius:14px;overflow:hidden;
+    background:linear-gradient(180deg,#fff8eb,#f0d7a4);border:3px solid #fff;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
+  .lot .pic img{width:100%;height:100%;object-fit:cover;display:block}
+  .lot .mid{flex:1;min-width:0}
+  .lot .nm{font-weight:900;color:var(--ink);font-size:16px;line-height:1.2;
     font-family:"Fredoka","Nunito",sans-serif}
-  .lot .right{text-align:center;flex:none}
-  .lot .price{font-size:20px;justify-content:center}
-  .lot .btn{margin-top:6px;min-width:88px}
+  .lot .price{display:inline-flex;align-items:center;gap:3px;font-weight:900;color:#8a5a20;
+    font-size:18px;margin-top:4px}
+  .lot .price img{width:22px;height:22px}
+  .lot .right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+  .shop-buy{background:none;border:none;padding:0;cursor:pointer;line-height:0;
+    filter:drop-shadow(0 3px 0 rgba(60,40,15,.22));transition:transform .08s}
+  .shop-buy:active{transform:translateY(2px);filter:drop-shadow(0 1px 0 rgba(60,40,15,.22))}
+  .shop-buy img{display:block;height:34px;width:auto;max-width:100px;object-fit:contain}
+
   #note{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,243,238,.95);
     border:2.5px solid #fff;border-radius:14px;padding:8px;box-shadow:0 0 0 2px #e0a99a;color:#b3452e}
 </style></head><body>
