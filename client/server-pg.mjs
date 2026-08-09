@@ -567,11 +567,49 @@ const api = {
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'нет такого приза' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
     const me = await one('select name from users where id=$1', [ctx.child]);
-    const parents = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
-    for (const p of parents) {
+    // ведущий круга + личные опекуны ребёнка (родители)
+    const notify = await q(`
+      select id from users where circle_id=$1 and role='parent'
+      union
+      select guardian_id as id from child_guardians where child_id=$2`, [ctx.circle, ctx.child]);
+    for (const p of notify) {
       sendPush(p.id, '🎁 Обещание!', `${me.name} купил «${it?.title || 'приз'}»`).catch(() => {});
     }
     return { ok: true, balance: w.balance };
+  },
+  // очередь обещаний для опекуна (родитель, вошедший своим детским кодом)
+  'GET /api/guardian/purchases': (b, ctx) => q(`
+      select p.id, p.price, p.created_at, u.name as "childName", i.title
+        from purchases p
+        join child_guardians g on g.child_id = p.child_id and g.guardian_id = $1
+        join users u on u.id = p.child_id
+        join shop_items i on i.id = p.item_id
+       where p.status = 'promised'
+       order by p.created_at`, [ctx.child]),
+  'POST /api/guardian/purchase/fulfill': async (b, ctx) => {
+    const ok = await one(`
+      select p.id from purchases p
+        join child_guardians g on g.child_id = p.child_id and g.guardian_id = $1
+       where p.id = $2 and p.status = 'promised'`, [ctx.child, b.id]);
+    if (!ok) throw { code: 400, msg: 'нет такого обещания' };
+    let pu;
+    try { [pu] = await rpc('fulfill_purchase', [b.id]); }
+    catch { throw { code: 400, msg: 'нет такого обещания' }; }
+    const g = await one('select name from users where id=$1', [ctx.child]);
+    sendPush(pu.child_id, '🎁 Получено!', `${g?.name || 'Родитель'} исполнил твоё впечатление`).catch(() => {});
+    return { ok: true };
+  },
+  'POST /api/guardian/purchase/cancel': async (b, ctx) => {
+    const ok = await one(`
+      select p.id from purchases p
+        join child_guardians g on g.child_id = p.child_id and g.guardian_id = $1
+       where p.id = $2 and p.status = 'promised'`, [ctx.child, b.id]);
+    if (!ok) throw { code: 400, msg: 'нет такого обещания' };
+    let pu;
+    try { [pu] = await rpc('cancel_purchase', [b.id]); }
+    catch { throw { code: 400, msg: 'нет такого обещания' }; }
+    sendPush(pu.child_id, '↩️ Возврат', 'Обещание отменили — шишки вернулись').catch(() => {});
+    return { ok: true };
   },
 
   'GET /api/friends': (b, ctx) => q("select id,name from users where circle_id=$1 and role='child' and id<>$2 order by created_at", [ctx.circle, ctx.child])
@@ -1390,15 +1428,41 @@ const api = {
   },
 
   // ── Кабинет родителя ──
-  'GET /api/parent/children': () => q(
-    `select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance,
-            u.created_at, c.name as circle_name
-       from child_logins cl
-       join users u on u.id=cl.child_id
-       join wallets w on w.user_id=u.id
-       join circles c on c.id=u.circle_id
-      where u.role='child'
-      order by u.created_at desc`),
+  'GET /api/parent/children': async () => {
+    const kids = await q(
+      `select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance,
+              u.created_at, c.name as circle_name
+         from child_logins cl
+         join users u on u.id=cl.child_id
+         join wallets w on w.user_id=u.id
+         join circles c on c.id=u.circle_id
+        where u.role='child'
+        order by u.created_at desc`);
+    for (const k of kids) {
+      k.guardians = (await q(
+        `select g.guardian_id as id, u.name
+           from child_guardians g join users u on u.id = g.guardian_id
+          where g.child_id = $1 order by u.name`, [k.id])).map((x) => x.name);
+    }
+    return kids;
+  },
+  'POST /api/parent/link-guardian': async (b) => {
+    const child = await one("select id, name, circle_id from users where id=$1 and role='child'", [b.childId]);
+    if (!child) throw { code: 400, msg: 'нет такого ребёнка' };
+    const g = await one(
+      "select id, name from users where id=$1 and role='child' and circle_id=$2",
+      [b.guardianId, child.circle_id]);
+    if (!g) throw { code: 400, msg: 'опекун должен быть в том же кругу' };
+    if (g.id === child.id) throw { code: 400, msg: 'нельзя привязать к себе' };
+    await q(
+      'insert into child_guardians(child_id, guardian_id) values($1,$2) on conflict do nothing',
+      [child.id, g.id]);
+    return { ok: true, child: child.name, guardian: g.name };
+  },
+  'POST /api/parent/unlink-guardian': async (b) => {
+    await q('delete from child_guardians where child_id=$1 and guardian_id=$2', [b.childId, b.guardianId]);
+    return { ok: true };
+  },
   'POST /api/parent/remove-child': async (b) => {
     const u = await one(
       `select id, name, circle_id, role from users where id=$1`, [b.childId]);
@@ -1465,13 +1529,22 @@ const api = {
   'GET /api/parent/templates': () => memoGet('templates', 6e5, () =>
     q('select id,title,reward,category,needs_photo from task_templates order by category nulls last, reward, title')),
   'GET /api/parent/pending': () => q("select t.id, t.title, t.reward, t.proof_url as photo, u.name as \"childName\" from tasks t join users u on u.id=t.child_id where t.status='pending_review' order by t.created_at"),
-  'GET /api/parent/purchases': () => q(`
-      select p.id, p.price, p.created_at, u.name as "childName", i.title
+  'GET /api/parent/purchases': async () => {
+    const list = await q(`
+      select p.id, p.price, p.created_at, u.name as "childName", i.title, p.child_id
         from purchases p
         join users u on u.id = p.child_id
         join shop_items i on i.id = p.item_id
        where p.status = 'promised'
-       order by p.created_at`),
+       order by p.created_at`);
+    for (const p of list) {
+      p.guardians = (await q(
+        `select u.name from child_guardians g join users u on u.id = g.guardian_id
+          where g.child_id = $1 order by u.name`, [p.child_id])).map((x) => x.name);
+      delete p.child_id;
+    }
+    return list;
+  },
   'POST /api/parent/purchase/fulfill': async (b) => {
     let pu;
     try { [pu] = await rpc('fulfill_purchase', [b.id]); }

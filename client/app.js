@@ -623,13 +623,38 @@ async function loadShop() {
     const n = document.getElementById('note'); if (!n) return;
     n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e';
   };
-  const [items, mine] = await Promise.all([api('/api/shop'), api('/api/shop/purchases')]);
+  const [items, mine, wards] = await Promise.all([
+    api('/api/shop'), api('/api/shop/purchases'), api('/api/guardian/purchases')]);
   const cont = document.getElementById('shopList'); cont.innerHTML = '';
+  if (Array.isArray(wards) && wards.length) {
+    const box = document.createElement('div'); box.className = 'ward-box';
+    box.innerHTML = '<div class="mp-h">Обещания моих детей</div>';
+    for (const p of wards) {
+      const row = document.createElement('div'); row.className = 'ward-row';
+      row.innerHTML = `<div class="t">${esc(p.title)}</div>
+        <div class="who">${esc(p.childName)} · ${p.price} шишек</div>
+        <div class="acts"><button class="ok" type="button">Исполнено</button>
+          <button class="no" type="button">Отменить</button></div>`;
+      row.querySelector('.ok').onclick = async () => {
+        const r = await api('/api/guardian/purchase/fulfill', { id: p.id });
+        if (r.error) return say(r.error, false);
+        say('Обещание исполнено', true); loadShop();
+      };
+      row.querySelector('.no').onclick = async () => {
+        if (!confirm('Отменить и вернуть шишки ребёнку?')) return;
+        const r = await api('/api/guardian/purchase/cancel', { id: p.id });
+        if (r.error) return say(r.error, false);
+        say('Отменено, шишки возвращены', true); loadShop();
+      };
+      box.appendChild(row);
+    }
+    cont.appendChild(box);
+  }
   if (Array.isArray(mine) && mine.length) {
     const box = document.createElement('div'); box.className = 'my-purchases';
     box.innerHTML = '<div class="mp-h">Мои впечатления</div>' + mine.map((p) =>
       `<div class="mp-row ${p.status}"><span class="mp-t">${esc(p.title)}</span>
-        <span class="mp-s">${p.status === 'promised' ? 'ждёт ведущего' : 'получено'} · ${p.price} 🌰</span></div>`
+        <span class="mp-s">${p.status === 'promised' ? 'ждёт родителей' : 'получено'} · ${p.price} 🌰</span></div>`
     ).join('');
     cont.appendChild(box);
   }
@@ -640,10 +665,10 @@ async function loadShop() {
         <div class="price"><img src="assets/coin1.webp" alt="">${it.price}</div></div>
       <div class="right"><button class="shop-buy" type="button">Купить</button></div>`;
     el.querySelector('button').onclick = async () => {
-      if (!confirm(`Купить «${it.title}» за ${it.price} 🌰?\nВедущий получит обещание исполнить.`)) return;
+      if (!confirm(`Купить «${it.title}» за ${it.price} 🌰?\nРодители получат обещание исполнить.`)) return;
       const r = await api('/api/shop/buy', { id: it.id });
       if (r.error) say(r.error, false);
-      else { say('Куплено! Жди, когда ведущий исполнит обещание.', true); loadShop(); refreshBalance(); }
+      else { say('Куплено! Жди, когда родители исполнят обещание.', true); loadShop(); refreshBalance(); }
     };
     cont.appendChild(el);
   }
@@ -1668,10 +1693,13 @@ if (page === 'parent.html') {
     for (const k of kids) {
       const when = k.created_at ? new Date(k.created_at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       const el = document.createElement('div'); el.className = 'card kid-row';
+      const gLine = Array.isArray(k.guardians) && k.guardians.length
+        ? `<div class="meta">Родители: ${k.guardians.map(esc).join(', ')}</div>` : '';
       el.innerHTML = `
         <div class="kid-head">
           <div class="info"><div class="nm">${esc(k.name)}</div>
             <div class="meta">Ур. ${k.level}${when ? ' · ' + when : ''}${k.circle_name ? ' · ' + esc(k.circle_name) : ''}</div>
+            ${gLine}
             <span class="code" title="нажми, чтобы скопировать">${esc(k.code)}</span></div>
           <div class="bal">${k.balance}<small>шишек</small></div>
         </div>
@@ -1734,9 +1762,11 @@ if (page === 'parent.html') {
       return;
     }
     for (const p of list) {
+      const g = Array.isArray(p.guardians) && p.guardians.length
+        ? ` · родители: ${p.guardians.map(esc).join(', ')}` : '';
       const el = document.createElement('div'); el.className = 'card pend';
       el.innerHTML = `<div class="t">${esc(p.title)}</div>
-        <div class="row"><span class="who">${esc(p.childName)} · ${p.price} шишек</span>
+        <div class="row"><span class="who">${esc(p.childName)} · ${p.price} шишек${g}</span>
           <button class="mini g ok">Исполнено</button>
           <button class="mini r no">Отменить</button></div>`;
       el.querySelector('.ok').onclick = async () => {
