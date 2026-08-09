@@ -103,11 +103,11 @@ const page = location.pathname.split('/').pop() || 'index.html';
 // вход по ссылке ?code=РОСТ-01 (родитель может дать прямую ссылку)
 const urlCode = new URLSearchParams(location.search).get('code');
 if (urlCode) localStorage.setItem('childCode', urlCode.toUpperCase());
-// не привязан → на экран ввода кода (родителю и онбордингу код не нужен)
+// не привязан → на экран ввода кода (родителю код не нужен)
 if (page !== 'link.html' && page !== 'parent.html' && !localStorage.getItem('childCode'))
   location.href = 'link.html';
 
-// ── Вход по коду (привязка ребёнка) ──
+// ── Вход по коду (привязка ребёнка) → ритуал посадки дерева ──
 if (page === 'link.html') {
   // коды детям раздаёт ведущий лично — на экране входа их не показываем
   document.getElementById('linkBtn').onclick = async () => {
@@ -115,7 +115,45 @@ if (page === 'link.html') {
     const r = await api('/api/link', { code });
     const n = document.getElementById('note'); n.style.display = 'block';
     if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { localStorage.setItem('childCode', code.toUpperCase()); location.href = 'index.html'; }
+    else { localStorage.setItem('childCode', code.toUpperCase()); location.href = 'onboard.html'; }
+  };
+}
+
+// ── Онбординг: выбрать дерево и дать имя ──
+if (page === 'onboard.html') {
+  let selTree = 'pine';
+  const pick = document.getElementById('treePick');
+  const nameIn = document.getElementById('treeName');
+  const note = document.getElementById('note');
+  const paintSel = () => {
+    pick.querySelectorAll('.tree-opt').forEach((b) => {
+      const on = b.dataset.tree === selTree;
+      b.classList.toggle('sel', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  };
+  pick.querySelectorAll('.tree-opt').forEach((b) => {
+    b.onclick = () => { selTree = b.dataset.tree; paintSel(); };
+  });
+  // подставляем уже известное имя/тип, если ребёнок возвращается на ритуал
+  api('/api/state').then((s) => {
+    if (s.error) return;
+    if (s.name) nameIn.value = s.name;
+    if (s.tree_type && ['pine', 'cedar', 'spruce'].includes(s.tree_type)) {
+      selTree = s.tree_type; paintSel();
+    }
+  }).catch(() => {});
+  document.getElementById('startBtn').onclick = async () => {
+    const name = nameIn.value.trim();
+    if (name.length < 2) {
+      note.style.display = 'block'; note.style.color = '#b3452e';
+      note.textContent = 'Напиши имя дерева — хотя бы 2 буквы'; return;
+    }
+    const r = await api('/api/onboard', { name, tree: selTree });
+    if (r.error) {
+      note.style.display = 'block'; note.style.color = '#b3452e'; note.textContent = r.error; return;
+    }
+    location.href = 'index.html';
   };
 }
 

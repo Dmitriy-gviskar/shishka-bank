@@ -1,11 +1,11 @@
-const CACHE = 'shishka-v44';
+const CACHE = 'shishka-v45';
 const CARDS_CACHE = 'shishka-cards-v1';
 const CARDS_MAX = 120;       // thumb/md + немного full
 const CARDS_FULL_MAX = 30;   // full-res отдельно жёстче
 const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'games.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
-  'parent.html', 'surprises.html', 'link.html',
+  'parent.html', 'surprises.html', 'link.html', 'onboard.html',
   'style.css', 'app.js', 'cards.js', 'deposit.js', 'horoscope.js', 'quest.js', 'news.js', 'guilds.js', 'nav.js',
   'assets/qrcode.js', 'assets/jsqr.js',
   'assets/home_btn_earn.webp', 'assets/shop_btn_buy.webp', 'assets/gift_btn_send.webp',

@@ -1,0 +1,83 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Добро пожаловать в лес!</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.18), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.08),rgba(35,50,25,.22))}
+  .wrap{justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 20px}
+  .wrap::-webkit-scrollbar{width:0}
+
+  .welcome{align-self:center;text-align:center;font-family:"Fredoka","Nunito",sans-serif;
+    font-size:22px;font-weight:900;color:#fff8eb;line-height:1.15;padding:10px 18px;margin-bottom:10px;
+    background:linear-gradient(180deg,#a07840 0%,#8a6238 55%,#6b4a22 100%);
+    border:3px solid #5a3a18;border-radius:20px;text-shadow:0 2px 0 rgba(0,0,0,.25);
+    box-shadow:0 4px 0 #4a3010, inset 0 1px 0 rgba(255,230,180,.35)}
+
+  .panel{width:100%;padding:14px 14px 16px;
+    background:linear-gradient(180deg,rgba(255,250,240,.96),rgba(246,234,208,.94));
+    border:4px solid #8a6238;border-radius:24px;
+    box-shadow:0 0 0 2px #c9a86a,0 8px 0 rgba(90,55,20,.28)}
+
+  .greet{margin:0 0 12px}
+  .greet img{width:110px;height:110px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
+  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px;margin-top:14px}
+
+  .trees{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+  .tree-opt{appearance:none;cursor:pointer;text-align:center;padding:10px 6px 8px;
+    background:linear-gradient(180deg,#fffaf0,#f3e7cf);border:3px solid #fff;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);transition:transform .08s,box-shadow .12s}
+  .tree-opt img{width:64px;height:72px;object-fit:contain;display:block;margin:0 auto;
+    filter:drop-shadow(0 3px 3px rgba(60,40,15,.2))}
+  .tree-opt span{display:block;margin-top:4px;font-weight:900;color:var(--ink);font-size:13px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .tree-opt.sel{border-color:#fff;
+    box-shadow:0 0 0 3px #f0c14a,0 0 0 6px rgba(232,182,75,.4),0 3px 0 rgba(107,79,58,.15);
+    background:linear-gradient(180deg,#fff6e0,#ffe9b0)}
+  .tree-opt:active{transform:translateY(2px)}
+
+  .name-in{display:block;width:100%;margin-top:12px;box-sizing:border-box;
+    background:#fffaf0;border:3px solid #fff;border-radius:16px;padding:13px 14px;
+    font-size:16px;font-weight:800;color:var(--ink);text-align:center;outline:none;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .name-in::placeholder{color:#c3ab8c;font-weight:700}
+  .name-in:focus{box-shadow:0 0 0 2px #e0a52e}
+
+  .start-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    margin-top:14px;font-size:18px;padding:14px 18px;font-family:"Fredoka","Nunito",sans-serif}
+  .start-btn .leaf{font-size:20px;line-height:1}
+
+  #note{display:none;text-align:center;font-weight:800;margin-top:10px;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:14px;padding:9px;
+    box-shadow:0 0 0 2px #c9a86a}
+</style></head><body data-no-nav>
+<div class="phone"><div class="wrap">
+  <div class="welcome">Добро пожаловать в лес!</div>
+  <div class="panel">
+    <div class="greet">
+      <img src="assets/spirit.webp" alt="Лесной Дух">
+      <div class="bubble">Привет! Я Лесной Дух. Давай посадим твоё дерево</div>
+    </div>
+    <div class="trees" id="treePick" role="listbox" aria-label="Выбери дерево">
+      <button type="button" class="tree-opt sel" data-tree="pine" aria-selected="true">
+        <img src="assets/tree.webp" alt=""><span>Сосна</span>
+      </button>
+      <button type="button" class="tree-opt" data-tree="cedar" aria-selected="false">
+        <img src="assets/tree4.webp" alt=""><span>Кедр</span>
+      </button>
+      <button type="button" class="tree-opt" data-tree="spruce" aria-selected="false">
+        <img src="assets/tree3.webp" alt=""><span>Ель</span>
+      </button>
+    </div>
+    <input class="name-in" id="treeName" placeholder="Как назовём дерево?" maxlength="16" autocomplete="off">
+    <button class="btn btn-lg start-btn" id="startBtn" type="button">
+      <span class="leaf" aria-hidden="true">🍃</span> Начать приключение
+    </button>
+    <div id="note"></div>
+  </div>
+</div></div>
+<script src="app.js"></script>
+</body></html>

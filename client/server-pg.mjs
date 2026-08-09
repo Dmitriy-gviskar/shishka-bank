@@ -214,7 +214,8 @@ const api = {
       const sk = await one('select title from shop_items where id=$1', [u.avatar_skin]);
       if (sk && SKIN_ASSET[sk.title] && SKIN_ASSET[sk.title] !== 'base') { tree_asset = SKIN_ASSET[sk.title] + '.png'; skin_on = true; }
     }
-    return { name: u.name, tree_level: u.tree_level, balance: w.balance, total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
+    return { name: u.name, tree_level: u.tree_level, tree_type: u.tree_type, balance: w.balance,
+             total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
              streak: u.current_streak, can_claim_daily: u.can_claim_daily, familiars };
   },
 
@@ -1109,7 +1110,14 @@ const api = {
   },
 
   // ── прочее ──
-  'POST /api/onboard': async (b, ctx) => { if (ctx.child) await q('update users set name=$1, tree_type=$2 where id=$3', [String(b.name || "Росточек").replace(/[<>]/g, "").slice(0, 16), b.tree || 'pine', ctx.child]); return { ok: true }; },
+  'POST /api/onboard': async (b, ctx) => {
+    if (!ctx.child) throw { code: 401, msg: 'нужен код' };
+    const name = String(b.name || '').replace(/[<>]/g, '').trim().slice(0, 16);
+    if (name.length < 2) throw { code: 400, msg: 'как назовём дерево?' };
+    const tree = ['pine', 'cedar', 'spruce'].includes(b.tree) ? b.tree : 'pine';
+    await q('update users set name=$1, tree_type=$2 where id=$3', [name, tree, ctx.child]);
+    return { ok: true };
+  },
   'POST /api/shop/create': async (b, ctx) => {
     const name = String(b.name || '').trim(), lot = String(b.lot || '').trim(), price = parseInt(b.price, 10);
     if (!name || !lot) throw { code: 400, msg: 'заполни название лавки и товар' };
