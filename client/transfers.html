@@ -15,10 +15,11 @@
   .greet img{width:100px;height:100px;
     filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
   .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
-  .friends{margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .friends{margin-top:6px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+    padding:8px 4px 4px;overflow:visible}
   .friend{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:16px;
     padding:8px 10px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);
-    min-width:88px;cursor:pointer}
+    min-width:88px;cursor:pointer;box-sizing:border-box}
   .friend.sel{border-color:#fff;box-shadow:0 0 0 3px #f0c14a,0 0 0 6px rgba(232,182,75,.35),0 3px 0 rgba(107,79,58,.15)}
   .friend img{width:66px;height:66px;object-fit:contain}
   .friend span{display:block;font-weight:800;color:var(--brown);font-size:13px;margin-top:2px;

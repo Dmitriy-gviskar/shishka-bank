@@ -93,10 +93,15 @@
       }
       // 7) переинициализируем экран
       window.runApp();
-      // 8) якорь (например profile.html#grove → поляна дружбы)
+      // 8) якорь (например profile.html#grove → поляна; друзей центрируем, чтобы не резал док)
       if (hash) {
-        const el = document.getElementById(hash);
-        if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+        const el = hash === 'grove'
+          ? (document.getElementById('refFriends') || document.getElementById('grove'))
+          : document.getElementById(hash);
+        if (el) setTimeout(() => el.scrollIntoView({
+          behavior: 'smooth',
+          block: hash === 'grove' ? 'center' : 'start',
+        }), 60);
       }
     } catch (e) { location.href = hash ? path + '#' + hash : path; }  // любой сбой → надёжная обычная навигация
   }

@@ -923,10 +923,14 @@ if (page === 'profile.html') {
   if (su) su.onclick = (e) => { e.preventDefault(); clearSession(); location.href = 'link.html'; };
   const nar = document.querySelector('.profile-btn'); // «Сменить наряд» → экран нарядов
   if (nar) nar.onclick = () => navigate('skins.html');
-  // с дома / реф-кнопки: сразу к поляне дружбы
+  // с дома / реф-кнопки: поляна, но так чтобы плашки друзей не уезжали под док
   if (location.hash === '#grove') {
     const g = document.getElementById('grove');
-    if (g) setTimeout(() => g.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+    if (g) setTimeout(() => {
+      const friends = document.getElementById('refFriends');
+      const target = friends || g;
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 80);
   }
   api('/api/state').then((s) => {
     const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset;

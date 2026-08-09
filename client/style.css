@@ -79,16 +79,15 @@ body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
 .price{display:inline-flex;align-items:center;gap:4px;font-weight:900;color:var(--brown);font-size:22px}
 .price img{width:30px;height:30px;object-fit:contain}
 
-/* нижняя навигация — cozy dock как в макетах */
-.nav{position:sticky;bottom:0;z-index:3;margin-top:auto;flex:0 0 auto;
+/* нижняя навигация — поверх контента; место под неё даёт .nav-spacer */
+.nav{position:absolute;left:0;right:0;bottom:0;z-index:12;flex:none;
   display:flex;justify-content:space-around;align-items:center;gap:2px;
   background:linear-gradient(180deg,#fbf3e4 0%,#efe2c8 100%);
   border-top:3px solid #c9a86a;
   border-radius:22px 22px 0 0;
   box-shadow:0 -6px 18px rgba(60,40,15,.16);
-  padding:10px 8px calc(10px + env(safe-area-inset-bottom))}
-/* высокий «воздух» перед доком: sticky-nav перекрывает spacer, а не плашки */
-.nav-spacer{flex:none;height:76px;pointer-events:none}
+  padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px))}
+.nav-spacer{flex:none;height:calc(88px + env(safe-area-inset-bottom,0px));pointer-events:none}
 .nav button{background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid var(--brown);
   width:52px;height:52px;border-radius:50%;padding:5px;cursor:pointer;
   box-shadow:0 3px 0 rgba(107,79,58,.28);display:flex;align-items:center;justify-content:center}
