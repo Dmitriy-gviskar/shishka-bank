@@ -437,18 +437,24 @@ if (page === 'index.html' || page === '') {
     }
     fire.textContent = s.streak > 0 ? '🔥' : '🎁';
     t1.textContent = 'Подарок ждёт!';
-    t2.textContent = s.streak > 0 ? `Серия ${s.streak} дн.` : 'Начни серию';
+    t2.textContent = s.streak > 0 ? `Серия ${s.streak} дн. · растит дерево` : 'Серия дней растит дерево';
     btn.onclick = async () => {
       btn.disabled = true;
+      const prevLvl = s.tree_level || 1;
       const r = await api('/api/daily', {});
       if (r.error) { btn.disabled = false; t2.textContent = r.error; return; }
       const total = (r.bonus || 0) + (r.milestone || 0) + (r.rain || 0);
       coneRain(12 + (r.milestone ? 18 : 0));
       el.classList.add('got'); fire.textContent = '🔥';
-      t1.textContent = `+${total} 🌰 · серия ${r.streak}`;
-      t2.textContent = '';
+      const grew = (r.tree_level || prevLvl) > prevLvl;
+      t1.textContent = grew
+        ? `+${total} 🌰 · дерево → ур. ${r.tree_level}!`
+        : `+${total} 🌰 · серия ${r.streak}`;
+      t2.textContent = grew ? `Серия ${r.streak} дн.` : '';
       const bal = document.getElementById('bal');
       if (bal) bal.textContent = (parseInt(bal.textContent, 10) || 0) + total;
+      const lvl = document.querySelector('.level');
+      if (lvl && r.tree_level) lvl.innerHTML = `Уровень ${r.tree_level}<br>${esc(s.tree_title || 'Дубок')}`;
     };
   }
   api('/api/surprises').then((sp) => {   // есть тайные подарки → подсветить ссылку
@@ -839,9 +845,24 @@ if (page === 'profile.html') {
   }
   api('/api/state').then((s) => { const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset; });  // наряд перекрывает арт только если надет
   api('/api/profile').then((p) => {
-    const ll = document.getElementById('levelLabel'); if (ll) ll.textContent = `Дубок · Уровень ${p.tree_level}`;
-    const prog = document.querySelector('.progress i'); if (prog) prog.style.width = Math.min(100, p.tree_level * 18) + '%';  // прогресс из уровня
-    for (const [k, v] of Object.entries(p.reputation)) {
+    const title = p.tree_title || 'Саженец';
+    const ll = document.getElementById('levelLabel');
+    if (ll) ll.textContent = `${title} · Уровень ${p.tree_level}`;
+    const prog = document.getElementById('treeProg') || document.querySelector('.progress i');
+    if (prog) prog.style.width = Math.min(100, p.progress ?? 0) + '%';
+    const cap = document.getElementById('treeProgCap');
+    if (cap) {
+      if (!p.next_level_at) cap.textContent = 'Максимум — могучее дерево!';
+      else if (p.days_to_next <= 0) cap.textContent = `Уровень ${p.tree_level + 1} почти тут — забери подарок на главной`;
+      else cap.textContent = `До ур. ${p.tree_level + 1}: ещё ${p.days_to_next} дн. лучшей серии (сейчас ${p.best_streak || 0})`;
+    }
+    const tip = document.getElementById('treeTip');
+    if (tip) {
+      tip.textContent = p.next_level_at
+        ? `Как качать: каждый день заходи на главную и жми «Забрать» у подарка. Серия дней растит дерево (3→7→14→30 дн.). Сейчас серия ${p.streak || 0}, лучшая ${p.best_streak || 0}.`
+        : `Ты на максимуме! Лучшая серия — ${p.best_streak || 0} дн. Паспорт ниже растёт от дел и подарков.`;
+    }
+    for (const [k, v] of Object.entries(p.reputation || {})) {
       const bar = document.querySelector(`[data-trait="${k}"]`); if (bar) bar.style.width = v + '%';
     }
     const bc = document.querySelector('.badges'); if (bc) {   // бейджи из данных ребёнка, а не хардкод

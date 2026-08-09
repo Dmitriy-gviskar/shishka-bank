@@ -625,11 +625,28 @@ const api = {
   },
 
   'GET /api/profile': async (b, ctx) => {
-    const u = await one('select name,tree_level,reputation from users where id=$1', [ctx.child]);
+    const u = await one(
+      'select name,tree_level,reputation,current_streak,longest_streak from users where id=$1',
+      [ctx.child]);
     const badges = await q('select badge_type as code from badges where user_id=$1', [ctx.child]);
     const titles = { guardian: 'Хранитель', philanthropist: 'Меценат', saver: 'Спаситель' };
-    return { name: u.name, tree_level: u.tree_level, reputation: u.reputation,
-      badges: badges.map((x) => ({ code: x.code, title: titles[x.code] || x.code })) };
+    // дерево растёт от максимальной серии ежедневных заходов (см. daily_visit)
+    const NEED = [0, 3, 7, 14, 30]; // дней longest_streak до уровней 2..5
+    const TREE_NAME = { 1: 'Саженец', 2: 'Дубок', 3: 'Деревце', 4: 'Крепкое', 5: 'Могучее' };
+    const lvl = Math.min(5, Math.max(1, u.tree_level || 1));
+    const best = u.longest_streak || 0;
+    const nextNeed = lvl >= 5 ? null : NEED[lvl];
+    const prevNeed = lvl <= 1 ? 0 : NEED[lvl - 1];
+    const span = nextNeed == null ? 1 : Math.max(1, nextNeed - prevNeed);
+    const into = nextNeed == null ? span : Math.max(0, Math.min(span, best - prevNeed));
+    const progress = nextNeed == null ? 100 : Math.round((into / span) * 100);
+    return {
+      name: u.name, tree_level: lvl, tree_title: TREE_NAME[lvl] || 'Саженец',
+      streak: u.current_streak || 0, best_streak: best,
+      next_level_at: nextNeed, days_to_next: nextNeed == null ? 0 : Math.max(0, nextNeed - best),
+      progress, reputation: u.reputation,
+      badges: badges.map((x) => ({ code: x.code, title: titles[x.code] || x.code })),
+    };
   },
   'GET /api/news': async (b, ctx) => {
     const rows = await q(`

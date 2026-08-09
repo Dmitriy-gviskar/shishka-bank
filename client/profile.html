@@ -30,6 +30,9 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
   .prog-cap{text-align:center;margin-top:6px;font-weight:800;color:#8a5a20;font-size:12px;
     font-family:"Fredoka","Nunito",sans-serif}
+  .tree-tip{margin:8px 8px 0;text-align:center;font-weight:700;color:#6b4f3a;font-size:12.5px;line-height:1.35;
+    background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:14px;padding:8px 12px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
 
   .passport{margin-top:12px;padding:14px 14px 12px;
     background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
@@ -114,8 +117,9 @@
   </div>
 
   <div class="hero"><img src="assets/tree5.webp" alt=""></div>
-  <div class="progress"><i></i></div>
-  <div class="prog-cap">До следующего уровня</div>
+  <div class="progress"><i id="treeProg"></i></div>
+  <div class="prog-cap" id="treeProgCap">До следующего уровня</div>
+  <div class="tree-tip" id="treeTip">Заходи каждый день на главную и забирай подарок — от серии дней дерево растёт.</div>
 
   <div class="grove" id="grove">
     <h3>Поляна дружбы</h3>
