@@ -317,7 +317,7 @@ async function loadTasks() {
       const el = document.createElement('div'); el.className = 'quest' + (t.is_daily ? ' daily' : '');
       el.innerHTML = `<div class="ic"><img src="${questIcon(t.category)}" alt=""></div>
         <div class="mid"><div class="nm">${esc(t.title)}</div>
-          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}<img class="cone" src="assets/coin1.webp" alt=""></div></div>
+          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}</div></div>
         ${statusHtml(t)}`;
       bind(el, t);
       cont.appendChild(el);
