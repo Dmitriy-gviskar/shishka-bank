@@ -11,8 +11,9 @@
   .cbg::after{content:"";position:absolute;inset:0;
     background:radial-gradient(120% 80% at 50% 12%,rgba(30,44,22,.12),rgba(8,12,6,.86))}
   .cwrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:16px 12px 0;overflow:hidden}
-  /* слева место под абсолютную «←» из nav.js (~48px) */
-  .chead{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-left:52px}
+  /* слева место под «←», справа — под #topbar с монетками */
+  .chead{display:flex;align-items:center;gap:8px;margin-bottom:8px;padding-left:52px;padding-right:88px}
+  .chead .prog{min-width:0}
   .chead .h1{font-weight:900;color:var(--ink);font-size:18px;background:linear-gradient(180deg,#fff8eb,#f3e7cf);
     border:3px solid #fff;border-radius:16px;padding:6px 12px;flex:none;
     box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);font-family:"Fredoka","Nunito",sans-serif}
