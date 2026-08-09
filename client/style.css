@@ -87,6 +87,8 @@ body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
   border-radius:22px 22px 0 0;
   box-shadow:0 -6px 18px rgba(60,40,15,.16);
   padding:10px 8px calc(10px + env(safe-area-inset-bottom))}
+/* высокий «воздух» перед доком: sticky-nav перекрывает spacer, а не плашки */
+.nav-spacer{flex:none;height:76px;pointer-events:none}
 .nav button{background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid var(--brown);
   width:52px;height:52px;border-radius:50%;padding:5px;cursor:pointer;
   box-shadow:0 3px 0 rgba(107,79,58,.28);display:flex;align-items:center;justify-content:center}

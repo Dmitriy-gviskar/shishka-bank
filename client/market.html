@@ -98,12 +98,30 @@
     font-family:"Fredoka","Nunito",sans-serif}
   .mkt-empty{margin:24px 8px;text-align:center;font-weight:800;color:#8a7358;font-size:15px;
     line-height:1.35;font-family:"Fredoka","Nunito",sans-serif}
+  .orders-box{flex:none;margin:0 0 10px;padding:10px 12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 4px 0 rgba(90,55,20,.22)}
+  .orders-box h3{margin:0 0 8px;font-size:15px;font-weight:900;color:var(--ink);
+    font-family:"Fredoka","Nunito",sans-serif;text-align:center}
+  .ord-row{display:flex;align-items:center;gap:8px;padding:8px;margin-bottom:6px;
+    background:rgba(255,255,255,.55);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #d9c39a}
+  .ord-row:last-child{margin-bottom:0}
+  .ord-row .info{flex:1;min-width:0}
+  .ord-row .t{font-weight:900;color:var(--ink);font-size:14px;font-family:"Fredoka","Nunito",sans-serif;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ord-row .m{font-weight:700;color:#8a5a20;font-size:12px;margin-top:2px}
+  .ord-row .acts{flex:none;display:flex;flex-direction:column;gap:4px}
+  .ord-row .acts button{font-size:12px;padding:7px 10px;font-family:"Fredoka","Nunito",sans-serif;white-space:nowrap}
+  .ord-row .acts .cancel{background:linear-gradient(180deg,#fff8eb,#f3e7cf);color:var(--brown);
+    border:2.5px solid #fff;border-radius:12px;box-shadow:0 0 0 2px #c9a86a;font-weight:900;cursor:pointer}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="mkt-top">
     <img src="assets/spirit_bust.webp" alt="">
     <div class="mkt-title">Лесные лавки</div>
   </div>
+  <div id="ordersBox" class="orders-box" hidden></div>
   <div id="marketList"></div>
   <div class="mkt-foot">
     <button class="btn btn-lg open-stall" id="openShopBtn" type="button">Открыть свою лавку</button>

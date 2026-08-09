@@ -483,8 +483,11 @@ const api = {
   },
 
   'GET /api/state': async (b, ctx) => {
+    const TREE_NAME = { 1: 'Саженец', 2: 'Дубок', 3: 'Деревце', 4: 'Крепкое', 5: 'Могучее' };
     const [u, w] = await Promise.all([
-      one("select name,tree_level,tree_type,avatar_skin,current_streak, (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily from users where id=$1", [ctx.child]),
+      one(`select name,tree_level,tree_type,avatar_skin,current_streak,coalesce(streak_freezes,0) as streak_freezes,
+            (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily
+           from users where id=$1`, [ctx.child]),
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
     ]);
     // питомцы на поляне: массив (до 5), каждый с фразой
@@ -500,9 +503,19 @@ const api = {
       const sk = await one('select title from shop_items where id=$1', [u.avatar_skin]);
       if (sk && SKIN_ASSET[sk.title] && SKIN_ASSET[sk.title] !== 'base') { tree_asset = SKIN_ASSET[sk.title] + '.png'; skin_on = true; }
     }
-    return { name: u.name, tree_level: u.tree_level, tree_type: u.tree_type, balance: w.balance,
+    const lvl = Math.min(5, Math.max(1, u.tree_level || 1));
+    return { name: u.name, tree_level: lvl, tree_title: TREE_NAME[lvl] || 'Саженец',
+             tree_type: u.tree_type, balance: w.balance,
              total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
-             streak: u.current_streak, can_claim_daily: u.can_claim_daily, familiars };
+             streak: u.current_streak, streak_freezes: u.streak_freezes || 0,
+             can_claim_daily: u.can_claim_daily, familiars };
+  },
+  'POST /api/freeze/buy': async (b, ctx) => {
+    try { await rpc('buy_streak_freeze', [ctx.child]); }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'нужно 20 шишек' : 'не вышло' }; }
+    const u = await one('select coalesce(streak_freezes,0) as streak_freezes from users where id=$1', [ctx.child]);
+    const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    return { ok: true, streak_freezes: u.streak_freezes, balance: w.balance };
   },
 
   // Ежедневный подарок: серия + растущий бонус + вехи + авто-защитник (всё в daily_visit)
@@ -514,14 +527,14 @@ const api = {
   'GET /api/tasks': async (b, ctx) => {
     try { await rpc('ensure_daily_tasks', [ctx.child]); }
     catch (e) { console.error('ensure_daily_tasks', e.message); }
-    // open/pending/done сегодняшних daily + open/pending от ведущего; rejected и старый bulk скрыты
+    // open / на проверке / вернули на доработку; done только у сегодняшних daily
     return (await q(`select id,title,reward,needs_photo,status,is_daily,category,created_at
-      from tasks where child_id=$1 and status <> 'rejected'
+      from tasks where child_id=$1
       and (
-        status in ('open','pending_review')
-        or (is_daily and created_at::date = (now() at time zone 'Europe/Moscow')::date)
+        status in ('open','pending_review','rejected')
+        or (status = 'done' and is_daily and created_at::date = (now() at time zone 'Europe/Moscow')::date)
       )
-      order by case status when 'open' then 0 when 'pending_review' then 1 else 2 end,
+      order by case status when 'rejected' then 0 when 'open' then 1 when 'pending_review' then 2 else 3 end,
                is_daily desc, created_at`, [ctx.child]))
       .map((t) => ({
         id: t.id, title: t.title, reward: t.reward, needs_photo: t.needs_photo,
@@ -541,11 +554,23 @@ const api = {
 
   'GET /api/shop': (b, ctx) => memoGet('shop:' + ctx.circle, 6e4, () =>
     q("select id,title,price from shop_items where type='impression' and is_active and (circle_id=$1 or circle_id is null) order by price", [ctx.circle])),
+  'GET /api/shop/purchases': (b, ctx) => q(`
+      select p.id, p.price, p.status, p.created_at, i.title
+        from purchases p join shop_items i on i.id = p.item_id
+       where p.child_id = $1 and p.status in ('promised','fulfilled')
+       order by case p.status when 'promised' then 0 else 1 end, p.created_at desc
+       limit 20`, [ctx.child]),
   'POST /api/shop/buy': async (b, ctx) => {
     await assertOwn('select 1 from shop_items where id=$1 and is_active and (circle_id=$2 or circle_id is null)', [b.id, ctx.circle], 'нет такого приза');
+    const it = await one('select title from shop_items where id=$1', [b.id]);
     try { await rpc('purchase_item', [ctx.child, b.id]); }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'нет такого приза' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    const me = await one('select name from users where id=$1', [ctx.child]);
+    const parents = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
+    for (const p of parents) {
+      sendPush(p.id, '🎁 Обещание!', `${me.name} купил «${it?.title || 'приз'}»`).catch(() => {});
+    }
     return { ok: true, balance: w.balance };
   },
 
@@ -618,8 +643,45 @@ const api = {
   },
   'POST /api/lot/buy': async (b, ctx) => {
     await assertOwn('select 1 from shop_lots l join shops s on s.id=l.shop_id where l.id=$1 and s.circle_id=$2', [b.id, ctx.circle], 'нет такого лота');
-    try { await rpc('reserve_lot', [ctx.child, b.id]); }
-    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /own shop/.test(e.message) ? 'это твоя лавка' : 'нет такого лота' }; }
+    let o;
+    try { [o] = await rpc('reserve_lot', [ctx.child, b.id]); }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /own shop|cannot buy/.test(e.message) ? 'это твоя лавка' : 'нет такого лота' }; }
+    const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    sendPush(o.seller_id, '🛒 Заказ в лавке!', 'Кто-то купил твой товар — отдай его и жди подтверждения').catch(() => {});
+    return { ok: true, balance: w.balance, order_id: o.id };
+  },
+  // Активные сделки лавок (эскроу): покупатель подтверждает получение → продавец получает шишки
+  'GET /api/orders': async (b, ctx) => q(`
+      select o.id, o.price, o.status, o.created_at,
+             l.title, l.photo,
+             buyer.name as buyer_name, seller.name as seller_name,
+             case when o.buyer_id = $1 then 'buy' else 'sell' end as role
+        from orders o
+        join shop_lots l on l.id = o.lot_id
+        join users buyer on buyer.id = o.buyer_id
+        join users seller on seller.id = o.seller_id
+       where o.status = 'reserved' and (o.buyer_id = $1 or o.seller_id = $1)
+       order by o.created_at desc`, [ctx.child]),
+  'POST /api/order/confirm': async (b, ctx) => {
+    const o = await one(
+      `select o.id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
+        where o.id=$1 and o.buyer_id=$2 and o.status='reserved'`, [b.id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'нет такого заказа' };
+    try { await rpc('confirm_order', [b.id]); }
+    catch (e) { throw { code: 400, msg: 'не удалось подтвердить' }; }
+    sendPush(o.seller_id, '✅ Получено!', `Покупатель подтвердил «${o.title}» — шишки у тебя`).catch(() => {});
+    const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    return { ok: true, balance: w.balance };
+  },
+  'POST /api/order/cancel': async (b, ctx) => {
+    const o = await one(
+      `select o.id, o.buyer_id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
+        where o.id=$1 and o.status='reserved' and (o.buyer_id=$2 or o.seller_id=$2)`, [b.id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'нет такого заказа' };
+    try { await rpc('cancel_order', [b.id]); }
+    catch (e) { throw { code: 400, msg: 'не удалось отменить' }; }
+    const other = o.buyer_id === ctx.child ? o.seller_id : o.buyer_id;
+    sendPush(other, '↩️ Заказ отменён', `«${o.title}» — шишки вернулись покупателю`).catch(() => {});
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
     return { ok: true, balance: w.balance };
   },
@@ -685,10 +747,13 @@ const api = {
   },
   'GET /api/achievements': async (b, ctx) => {
     const row = await one('select achievement_progress($1) as data', [ctx.child]);   // функция returns jsonb (массив)
+    const rewards = await q('select code, coalesce(reward,0) as reward from achievements');
+    const rw = Object.fromEntries(rewards.map((x) => [x.code, x.reward]));
     return (row.data || []).map((a) => {
       const track = (a.code || '').split('_')[0];
       return { code: a.code, title: a.title, desc: achDesc(track, a.threshold) || a.title, threshold: a.threshold,
-        track, current: Math.min(a.current || 0, a.threshold), unlocked: !!a.unlocked };
+        track, reward: rw[a.code] || 0,
+        current: Math.min(a.current || 0, a.threshold), unlocked: !!a.unlocked };
     });
   },
 
@@ -733,10 +798,20 @@ const api = {
     return { ok: true, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance, collected: pot.collected, goal: pot.goal };
   },
   'POST /api/pot/delete': async (b, ctx) => {
-    const p = await one('select created_by from pots where id=$1 and circle_id=$2', [b.id, ctx.circle]);
+    const p = await one('select created_by, status from pots where id=$1 and circle_id=$2', [b.id, ctx.circle]);
     if (!p) throw { code: 400, msg: 'котёл не найден' };
     if (p.created_by !== ctx.child) throw { code: 400, msg: 'только создатель может удалить котёл' };
+    if (p.status === 'reached') throw { code: 400, msg: 'цель достигнута — жми «Исполнить»' };
     await q("update pots set status='fulfilled' where id=$1", [b.id]);
+    return { ok: true };
+  },
+  'POST /api/pot/fulfill': async (b, ctx) => {
+    const p = await one('select created_by, title, status from pots where id=$1 and circle_id=$2', [b.id, ctx.circle]);
+    if (!p) throw { code: 400, msg: 'котёл не найден' };
+    if (p.created_by !== ctx.child) throw { code: 400, msg: 'только создатель может исполнить' };
+    if (p.status !== 'reached') throw { code: 400, msg: 'сначала накопи до цели' };
+    try { await rpc('fulfill_pot', [b.id]); }
+    catch { throw { code: 400, msg: 'не удалось исполнить' }; }
     return { ok: true };
   },
 
@@ -1191,13 +1266,34 @@ const api = {
     return { ok: true, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance,
       fund: (await one('select insurance_fund from circles where id=$1', [ctx.circle])).insurance_fund };
   },
+  'POST /api/claim': async (b, ctx) => {
+    const amount = parseInt(b.amount, 10);
+    const reason = String(b.reason || '').trim().slice(0, 60);
+    if (!(amount > 0 && amount <= 50)) throw { code: 400, msg: 'сумма от 1 до 50' };
+    if (reason.length < 3) throw { code: 400, msg: 'напиши, что случилось' };
+    const open = await one(
+      `select count(*)::int c from proposals
+        where circle_id=$1 and type='insurance_claim' and created_by=$2 and status='voting'`,
+      [ctx.circle, ctx.child]);
+    if ((open?.c || 0) >= 1) throw { code: 400, msg: 'у тебя уже есть заявка на голосовании' };
+    try { await rpc('file_claim', [ctx.child, amount, reason]); }
+    catch { throw { code: 400, msg: 'не удалось подать заявку' }; }
+    return { ok: true };
+  },
 
   // ── Совет ──
   'GET /api/proposals': (b, ctx) => q(`select p.id, p.type as kind, p.title, (case when p.status='passed' then 'accepted' else p.status end) as status,
       (select count(*) from votes where proposal_id=p.id and choice='yes') as yes,
       (select count(*) from votes where proposal_id=p.id and choice='no') as no,
       exists(select 1 from votes where proposal_id=p.id and voter_id=$2) as voted
-      from proposals p where p.circle_id=$1 and p.type<>'insurance_claim' order by p.created_at`, [ctx.circle, ctx.child]),
+      from proposals p where p.circle_id=$1 and p.type<>'insurance_claim' order by p.created_at desc`, [ctx.circle, ctx.child]),
+  'POST /api/proposals': async (b, ctx) => {
+    const title = String(b.title || '').trim().slice(0, 80);
+    if (title.length < 4) throw { code: 400, msg: 'тема слишком короткая' };
+    await q(`insert into proposals(circle_id, type, title, created_by)
+      values ($1, 'custom', $2, $3)`, [ctx.circle, title, ctx.child]);
+    return { ok: true };
+  },
   'POST /api/vote': async (b, ctx) => {
     await assertOwn("select 1 from proposals where id=$1 and circle_id=$2", [b.id, ctx.circle], 'нет такой инициативы');  // только своя семья
     try { await rpc('vote_proposal', [b.id, ctx.child, b.choice === 'yes' ? 'yes' : 'no']); }
@@ -1369,6 +1465,27 @@ const api = {
   'GET /api/parent/templates': () => memoGet('templates', 6e5, () =>
     q('select id,title,reward,category,needs_photo from task_templates order by category nulls last, reward, title')),
   'GET /api/parent/pending': () => q("select t.id, t.title, t.reward, t.proof_url as photo, u.name as \"childName\" from tasks t join users u on u.id=t.child_id where t.status='pending_review' order by t.created_at"),
+  'GET /api/parent/purchases': () => q(`
+      select p.id, p.price, p.created_at, u.name as "childName", i.title
+        from purchases p
+        join users u on u.id = p.child_id
+        join shop_items i on i.id = p.item_id
+       where p.status = 'promised'
+       order by p.created_at`),
+  'POST /api/parent/purchase/fulfill': async (b) => {
+    let pu;
+    try { [pu] = await rpc('fulfill_purchase', [b.id]); }
+    catch { throw { code: 400, msg: 'нет такого обещания' }; }
+    sendPush(pu.child_id, '🎁 Получено!', 'Ведущий исполнил твоё впечатление').catch(() => {});
+    return { ok: true };
+  },
+  'POST /api/parent/purchase/cancel': async (b) => {
+    let pu;
+    try { [pu] = await rpc('cancel_purchase', [b.id]); }
+    catch { throw { code: 400, msg: 'нет такого обещания' }; }
+    sendPush(pu.child_id, '↩️ Возврат', 'Обещание отменили — шишки вернулись').catch(() => {});
+    return { ok: true };
+  },
   // лог сделок картами (мониторинг ведущим): последние 40 продаж/отмен, флаг сделок у краёв коридора
   'POST /api/parent/market': async (b, ctx) => {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [b.child, ctx.circle], 'нет такого ребёнка');
@@ -1419,7 +1536,15 @@ const api = {
       left join users bu on bu.id=l.buyer_id
       where l.status in ('sold','cancelled') order by l.closed_at desc limit 40`),
   'POST /api/parent/approve': async (b) => { try { await rpc('approve_task', [b.id]); } catch (e) { throw { code: 400, msg: 'нет задания на проверке' }; } const t = await one('select child_id, title from tasks where id=$1', [b.id]); if (t) sendPush(t.child_id, "✅ Задание одобрено", t.title).catch(() => {}); return { ok: true }; },
-  'POST /api/parent/reject': async (b) => { await rpc('reject_task', [b.id]).catch(() => {}); return { ok: true }; },
+  'POST /api/parent/reject': async (b) => {
+    let t;
+    try { [t] = await rpc('reject_task', [b.id]); }
+    catch { return { ok: true }; }
+    if (t?.child_id) {
+      sendPush(t.child_id, '📝 Доработай дело', `«${t.title}» вернули — отправь ещё раз`).catch(() => {});
+    }
+    return { ok: true };
+  },
   'POST /api/parent/topup': async (b) => {
     const ch = await one('select circle_id from users where id=$1', [b.childId]); if (!ch) throw { code: 400, msg: 'нет ребёнка' };
     const amount = parseInt(b.amount, 10); if (!(amount > 0)) throw { code: 400, msg: 'укажи сумму' };

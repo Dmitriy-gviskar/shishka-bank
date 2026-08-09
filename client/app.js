@@ -385,7 +385,7 @@ if (page === 'index.html' || page === '') {
     const bal = document.getElementById('bal'); if (bal) bal.textContent = s.balance;
     paintBubble();
     const lvl = document.querySelector('.level');
-    if (lvl) lvl.innerHTML = `Уровень ${s.tree_level}<br>${esc(s.tree_title || 'Дубок')}`;
+    if (lvl) lvl.innerHTML = `Уровень ${s.tree_level}<br>${esc(s.tree_title || 'Саженец')}`;
     const av = document.querySelector('.lvlbadge-tree'); if (av && s.tree_asset) av.src = 'assets/' + s.tree_asset;  // надетый наряд
     initDaily(s);   // ежедневный подарок
   });
@@ -428,7 +428,14 @@ if (page === 'index.html' || page === '') {
     const el = document.getElementById('daily'); if (!el) return;
     const t1 = document.getElementById('dailyT1'), t2 = document.getElementById('dailyT2');
     const fire = document.getElementById('dailyFire'), btn = document.getElementById('dailyBtn');
+    const freezeEl = document.getElementById('freezeChip');
     el.style.display = 'flex';
+    const paintFreeze = (n) => {
+      if (!freezeEl) return;
+      freezeEl.hidden = !(n > 0);
+      freezeEl.textContent = `🌧×${n}`;
+    };
+    paintFreeze(s.streak_freezes || 0);
     if (!s.can_claim_daily) {   // уже забрал — тонкий чип, без второго этажа текста
       el.classList.add('got'); fire.textContent = '🔥';
       t1.textContent = s.streak > 0 ? `Серия ${s.streak} · завтра снова` : 'Заходи завтра за подарком';
@@ -437,24 +444,38 @@ if (page === 'index.html' || page === '') {
     }
     fire.textContent = s.streak > 0 ? '🔥' : '🎁';
     t1.textContent = 'Подарок ждёт!';
-    t2.textContent = s.streak > 0 ? `Серия ${s.streak} дн. · растит дерево` : 'Серия дней растит дерево';
+    t2.textContent = s.streak > 0
+      ? `Серия ${s.streak} дн.` + ((s.streak_freezes || 0) > 0 ? ` · 🌧${s.streak_freezes}` : '')
+      : 'Серия дней растит дерево';
     btn.onclick = async () => {
       btn.disabled = true;
       const prevLvl = s.tree_level || 1;
       const r = await api('/api/daily', {});
       if (r.error) { btn.disabled = false; t2.textContent = r.error; return; }
+      const parts = [];
+      if (r.bonus) parts.push(`+${r.bonus} серия`);
+      if (r.milestone) parts.push(`+${r.milestone} веха`);
+      if (r.rain) parts.push(`🌧+${r.rain}`);
       const total = (r.bonus || 0) + (r.milestone || 0) + (r.rain || 0);
       coneRain(12 + (r.milestone ? 18 : 0));
       el.classList.add('got'); fire.textContent = '🔥';
       const grew = (r.tree_level || prevLvl) > prevLvl;
-      t1.textContent = grew
-        ? `+${total} 🌰 · дерево → ур. ${r.tree_level}!`
-        : `+${total} 🌰 · серия ${r.streak}`;
-      t2.textContent = grew ? `Серия ${r.streak} дн.` : '';
+      let msg = parts.join(' · ') || `+${total}`;
+      if (r.freeze_used) msg += ' · 🌧 спас серию';
+      else if (r.freeze_granted) msg += ' · +🌧 защитник';
+      if (grew) msg += ` · дерево → ур. ${r.tree_level}`;
+      t1.textContent = msg;
+      t2.textContent = `Серия ${r.streak} дн.`;
+      paintFreeze(r.freeze_granted || r.freeze_used
+        ? Math.max(0, (s.streak_freezes || 0) + (r.freeze_granted ? 1 : 0) - (r.freeze_used ? 1 : 0))
+        : (s.streak_freezes || 0));
       const bal = document.getElementById('bal');
       if (bal) bal.textContent = (parseInt(bal.textContent, 10) || 0) + total;
       const lvl = document.querySelector('.level');
-      if (lvl && r.tree_level) lvl.innerHTML = `Уровень ${r.tree_level}<br>${esc(s.tree_title || 'Дубок')}`;
+      if (lvl && r.tree_level) {
+        const titles = { 1: 'Саженец', 2: 'Дубок', 3: 'Деревце', 4: 'Крепкое', 5: 'Могучее' };
+        lvl.innerHTML = `Уровень ${r.tree_level}<br>${esc(titles[r.tree_level] || s.tree_title || 'Саженец')}`;
+      }
     };
   }
   api('/api/surprises').then((sp) => {   // есть тайные подарки → подсветить ссылку
@@ -529,9 +550,11 @@ async function loadTasks() {
     cont.innerHTML = '<div class="quest-empty">Сегодня дел пока нет — загляни чуть позже</div>';
     return;
   }
-  const daily = tasks.filter((t) => t.is_daily);
-  const other = tasks.filter((t) => !t.is_daily);
+  const redo = tasks.filter((t) => t.status === 'rejected');
+  const daily = tasks.filter((t) => t.is_daily && t.status !== 'rejected');
+  const other = tasks.filter((t) => !t.is_daily && t.status !== 'rejected');
   const sections = [];
+  if (redo.length) sections.push(['Вернули — переделай', redo]);
   if (daily.length) sections.push(['Сегодня', daily]);
   if (other.length) sections.push(['От ведущего', other]);
   const bind = (el, t) => {
@@ -556,6 +579,13 @@ async function loadTasks() {
     if (t.status === 'submitted') {
       return `<div class="quest-wait"><b>…</b><span>На проверке</span></div>`;
     }
+    if (t.status === 'rejected') {
+      return t.needs_photo
+        ? `<button class="quest-act-img" type="button" aria-label="Переснять фото">
+            <img src="assets/quest/quest_btn_photo.webp" alt="Переснять"></button>`
+        : `<button class="quest-act-img" type="button" aria-label="Отправить снова">
+            <img src="assets/quest/quest_btn_done.webp" alt="Снова"></button>`;
+    }
     if (t.needs_photo) {
       return `<button class="quest-act-img" type="button" aria-label="Отправить фото">
         <img src="assets/quest/quest_btn_photo.webp" alt="Отправить фото"></button>`;
@@ -566,10 +596,11 @@ async function loadTasks() {
   for (const [label, list] of sections) {
     const h = document.createElement('div'); h.className = 'quest-sec'; h.textContent = label; cont.appendChild(h);
     for (const t of list) {
-      const el = document.createElement('div'); el.className = 'quest' + (t.is_daily ? ' daily' : '');
+      const el = document.createElement('div');
+      el.className = 'quest' + (t.is_daily ? ' daily' : '') + (t.status === 'rejected' ? ' rejected' : '');
       el.innerHTML = `<div class="ic"><img src="${questIcon(t.category)}" alt=""></div>
         <div class="mid"><div class="nm">${esc(t.title)}</div>
-          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}</div></div>
+          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}${t.status === 'rejected' ? ' · доработай' : ''}</div></div>
         ${statusHtml(t)}`;
       bind(el, t);
       cont.appendChild(el);
@@ -588,8 +619,20 @@ function shopIcon(title) {
   return 'assets/shop/shop_ic_gift.webp';
 }
 async function loadShop() {
-  const items = await api('/api/shop');
+  const say = (t, ok) => {
+    const n = document.getElementById('note'); if (!n) return;
+    n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e';
+  };
+  const [items, mine] = await Promise.all([api('/api/shop'), api('/api/shop/purchases')]);
   const cont = document.getElementById('shopList'); cont.innerHTML = '';
+  if (Array.isArray(mine) && mine.length) {
+    const box = document.createElement('div'); box.className = 'my-purchases';
+    box.innerHTML = '<div class="mp-h">Мои впечатления</div>' + mine.map((p) =>
+      `<div class="mp-row ${p.status}"><span class="mp-t">${esc(p.title)}</span>
+        <span class="mp-s">${p.status === 'promised' ? 'ждёт ведущего' : 'получено'} · ${p.price} 🌰</span></div>`
+    ).join('');
+    cont.appendChild(box);
+  }
   for (const it of items) {
     const el = document.createElement('div'); el.className = 'lot';
     el.innerHTML = `<div class="pic"><img src="${shopIcon(it.title)}" alt="" loading="lazy"></div>
@@ -597,9 +640,10 @@ async function loadShop() {
         <div class="price"><img src="assets/coin1.webp" alt="">${it.price}</div></div>
       <div class="right"><button class="shop-buy" type="button">Купить</button></div>`;
     el.querySelector('button').onclick = async () => {
+      if (!confirm(`Купить «${it.title}» за ${it.price} 🌰?\nВедущий получит обещание исполнить.`)) return;
       const r = await api('/api/shop/buy', { id: it.id });
-      if (r.error) { const n = document.getElementById('note'); if (n) { n.textContent = r.error; n.style.display = 'block'; } }
-      else { loadShop(); refreshBalance(); }
+      if (r.error) say(r.error, false);
+      else { say('Куплено! Жди, когда ведущий исполнит обещание.', true); loadShop(); refreshBalance(); }
     };
     cont.appendChild(el);
   }
@@ -698,7 +742,44 @@ function marketNote(text, ok) {
   const n = document.getElementById('note'); if (!n) return;
   n.style.display = 'block'; n.textContent = text; n.style.color = ok ? '#5f8e37' : '#b3452e';
 }
+async function loadOrders() {
+  const box = document.getElementById('ordersBox'); if (!box) return;
+  const list = await api('/api/orders');
+  if (!Array.isArray(list) || !list.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = '<h3>Мои сделки</h3>' + list.map((o) => {
+    const buy = o.role === 'buy';
+    const meta = buy
+      ? `У ${esc(o.seller_name)} · ${o.price} 🌰 · ждёт получения`
+      : `От ${esc(o.buyer_name)} · ${o.price} 🌰 · отдай товар`;
+    const acts = buy
+      ? `<button class="btn btn-sm conf" type="button" data-id="${o.id}">Получил</button>
+         <button class="cancel" type="button" data-id="${o.id}">Отмена</button>`
+      : `<button class="cancel" type="button" data-id="${o.id}">Отменить</button>`;
+    return `<div class="ord-row"><div class="info"><div class="t">${esc(o.title)}</div><div class="m">${meta}</div></div>
+      <div class="acts">${acts}</div></div>`;
+  }).join('');
+  box.querySelectorAll('.conf').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('Товар у тебя? Шишки уйдут продавцу.')) return;
+      btn.disabled = true;
+      const r = await api('/api/order/confirm', { id: btn.dataset.id });
+      if (r.error) { marketNote(r.error, false); btn.disabled = false; return; }
+      marketNote('Сделка закрыта — спасибо!', true); refreshBalance(); loadMarket();
+    };
+  });
+  box.querySelectorAll('.cancel').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('Отменить заказ? Шишки вернутся покупателю.')) return;
+      btn.disabled = true;
+      const r = await api('/api/order/cancel', { id: btn.dataset.id });
+      if (r.error) { marketNote(r.error, false); btn.disabled = false; return; }
+      marketNote('Заказ отменён', true); refreshBalance(); loadMarket();
+    };
+  });
+}
 async function loadMarket() {
+  await loadOrders();
   const shops = await api('/api/shops');
   const c = document.getElementById('marketList'); c.innerHTML = '';
   const openBtn = document.getElementById('openShopBtn');
@@ -760,9 +841,13 @@ async function loadMarket() {
         };
       } else {
         row.querySelector('.shop-buy').onclick = async () => {
+          if (!confirm(`Заказать «${l.title}» за ${l.price} 🌰?\nШишки заморозятся, пока не подтвердишь получение.`)) return;
           const r = await api('/api/lot/buy', { id: l.id });
           if (r.error) marketNote(r.error, false);
-          else { marketNote('Куплено у ' + s.name + '! Осталось ' + r.balance, true); refreshBalance(); loadMarket(); }
+          else {
+            marketNote('Заказано у ' + s.name + '! Когда получишь — жми «Получил» выше.', true);
+            refreshBalance(); loadMarket();
+          }
         };
       }
       lots.appendChild(row);
@@ -843,7 +928,25 @@ if (page === 'profile.html') {
     const g = document.getElementById('grove');
     if (g) setTimeout(() => g.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
   }
-  api('/api/state').then((s) => { const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset; });  // наряд перекрывает арт только если надет
+  api('/api/state').then((s) => {
+    const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset;
+    const fc = document.getElementById('freezeCount'); if (fc) fc.textContent = s.streak_freezes || 0;
+  });
+  const buyFz = document.getElementById('buyFreezeBtn');
+  if (buyFz) buyFz.onclick = async () => {
+    if (!confirm('Купить дождик-защитник за 20 шишек?\nОн спасёт серию, если пропустишь один день.')) return;
+    buyFz.disabled = true;
+    const r = await api('/api/freeze/buy', {});
+    buyFz.disabled = false;
+    const n = document.getElementById('pnote');
+    if (r.error) {
+      if (n) { n.style.display = 'block'; n.textContent = r.error; n.style.color = '#b3452e'; }
+      return;
+    }
+    const fc = document.getElementById('freezeCount'); if (fc) fc.textContent = r.streak_freezes;
+    if (n) { n.style.display = 'block'; n.textContent = `Дождик куплен! Теперь 🌧×${r.streak_freezes}`; n.style.color = '#5f8e37'; }
+    refreshBalance();
+  };
   api('/api/profile').then((p) => {
     const title = p.tree_title || 'Саженец';
     const ll = document.getElementById('levelLabel');
@@ -863,7 +966,8 @@ if (page === 'profile.html') {
         : `Ты на максимуме! Лучшая серия — ${p.best_streak || 0} дн. Паспорт ниже растёт от дел и подарков.`;
     }
     for (const [k, v] of Object.entries(p.reputation || {})) {
-      const bar = document.querySelector(`[data-trait="${k}"]`); if (bar) bar.style.width = v + '%';
+      const bar = document.querySelector(`[data-trait="${k}"]`);
+      if (bar) bar.style.width = Math.min(100, Number(v) || 0) + '%';
     }
     const bc = document.querySelector('.badges'); if (bc) {   // бейджи из данных ребёнка, а не хардкод
       const arts = { guardian: 'badge1.webp', philanthropist: 'badge2.webp', saver: 'badge3.webp' };
@@ -938,10 +1042,10 @@ async function loadAch() {
     const el = document.createElement('div'); el.className = 'ach' + (a.unlocked ? '' : ' lock');
     const pct = Math.min(100, Math.round(a.current / a.threshold * 100));
     el.innerHTML = `<img src="assets/ach/icon_${a.track}.png" onerror="this.src='assets/coin1.webp'">
-      <div class="t">${a.title}</div>
-      <div class="d">${a.desc}</div>
+      <div class="t">${esc(a.title)}</div>
+      <div class="d">${esc(a.desc)}${a.reward ? ` · +${a.reward}🌰` : ''}</div>
       <div class="pb"><i style="width:${pct}%"></i></div>`;
-    el.title = `${a.desc} — ${a.current}/${a.threshold}`;
+    el.title = `${a.desc} — ${a.current}/${a.threshold}` + (a.reward ? ` · награда ${a.reward}` : '');
     g.appendChild(el);
   }
 }
@@ -986,8 +1090,11 @@ if (page === 'pot.html') {
       el.innerHTML = `${p.mine ? '<button class="mini potDel" style="float:right;font-size:16px;line-height:1;padding:2px 6px" title="Удалить">×</button>' : ''}${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
         <div class="pn">${esc(p.title)}</div><div class="pa">поставил: ${esc(p.author)}</div>
         <div class="scale"><i style="width:${pct}%"></i><span>${p.collected} / ${p.goal}</span></div>
-        ${full ? '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута!</div>'
-               : `<div class="give"><div class="s sel" data-a="5">5</div><div class="s" data-a="10">10</div><div class="s" data-a="20">20</div>
+        ${full
+          ? (p.mine
+            ? '<button class="btn btn-sm potFul" type="button" style="margin-top:8px;width:100%">Исполнить цель</button>'
+            : '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута — ждём исполнения!</div>')
+          : `<div class="give"><div class="s sel" data-a="5">5</div><div class="s" data-a="10">10</div><div class="s" data-a="20">20</div>
                   <button class="btn btn-sm">Вложить</button></div>`}`;
       let amt = 5;
       el.querySelectorAll('.give .s').forEach((t) => t.onclick = () => {
@@ -997,6 +1104,12 @@ if (page === 'pot.html') {
         if (!confirm('Удалить котёл «' + p.title + '»?')) return;
         const r = await api('/api/pot/delete', { id: p.id });
         if (r.error) note(r.error); else loadPots();
+      };
+      const ful = el.querySelector('.potFul');
+      if (ful) ful.onclick = async () => {
+        if (!confirm('Отметить «' + p.title + '» исполненным?')) return;
+        const r = await api('/api/pot/fulfill', { id: p.id });
+        if (r.error) note(r.error); else { note('Цель исполнена! 🎉', 1); loadPots(); }
       };
       const btn = el.querySelector('.give .btn');
       if (btn) btn.onclick = async () => {
@@ -1402,6 +1515,17 @@ if (page === 'insurance.html') {
     const n = document.getElementById('note'); n.style.display = 'block';
     if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
     else { document.getElementById('fund').textContent = r.fund; n.textContent = 'Спасибо за взнос!'; n.style.color = '#5f8e37'; refreshBalance(); } };
+  document.getElementById('claimBtn').onclick = async () => {
+    const n = document.getElementById('note'); n.style.display = 'block';
+    const r = await api('/api/claim', {
+      amount: document.getElementById('claimAmt').value,
+      reason: document.getElementById('claimReason').value,
+    });
+    if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; return; }
+    n.textContent = 'Заявка ушла на голосование семьи!'; n.style.color = '#5f8e37';
+    document.getElementById('claimReason').value = '';
+    api('/api/insurance').then(renderIns);
+  };
 }
 
 // ── Совет ──
@@ -1419,7 +1543,26 @@ function renderProps(list) { const c = document.getElementById('props'); c.inner
       el.querySelector('.no').onclick = async () => { await api('/api/vote', { id: p.id, choice: 'no' }); api('/api/proposals').then(renderProps); };
     }
     c.appendChild(el); } }
-if (page === 'council.html') api('/api/proposals').then(renderProps);
+if (page === 'council.html') {
+  const paintProps = (list) => {
+    renderProps(Array.isArray(list) ? list : []);
+    if (!Array.isArray(list) || !list.length) {
+      const c = document.getElementById('props');
+      if (c && !c.children.length) {
+        c.innerHTML = '<div class="card prop"><div class="t" style="text-align:center;color:#8a7358;font-size:14px">Пока тишина — предложи тему выше</div></div>';
+      }
+    }
+  };
+  api('/api/proposals').then(paintProps);
+  document.getElementById('propBtn').onclick = async () => {
+    const n = document.getElementById('note'); n.style.display = 'block';
+    const r = await api('/api/proposals', { title: document.getElementById('propTitle').value });
+    if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; return; }
+    n.textContent = 'Тема предложена — голосуйте!'; n.style.color = '#5f8e37';
+    document.getElementById('propTitle').value = '';
+    api('/api/proposals').then(paintProps);
+  };
+}
 
 // ── Гильдии (вынесены в guilds.js) ──
 if (page === 'guilds.html' && window.runGuilds) window.runGuilds();
@@ -1560,7 +1703,7 @@ if (page === 'parent.html') {
         const r = await api('/api/parent/remove-child', { childId: k.id, confirm: typed.trim() });
         if (r.error) return note(r.error);
         note(`«${r.name}» удалён`, 1);
-        loadKids(); loadPending(); loadGuilds();
+        loadKids(); loadPending(); loadPurchases(); loadGuilds();
       };
       c.appendChild(el);
       const o = document.createElement('option'); o.value = k.id; o.textContent = k.name; sel.appendChild(o);
@@ -1575,6 +1718,34 @@ if (page === 'parent.html') {
       el.innerHTML = `<div class="t">${esc(p.title)}</div>${p.photo ? `<img src="${esc(p.photo)}" style="width:100%;border-radius:12px;margin:6px 0;border:2px solid #d9c39a" loading="lazy">` : ''}<div class="row"><span class="who">${esc(p.childName)} · +${p.reward} шишек</span><button class="mini g ap">Одобрить</button><button class="mini r rj">Вернуть</button></div>`;
       el.querySelector('.ap').onclick = async () => { await api('/api/parent/approve', { id: p.id }); note('Одобрено, шишки начислены', 1); loadPending(); loadKids(); };
       el.querySelector('.rj').onclick = async () => { await api('/api/parent/reject', { id: p.id }); note('Возвращено на доработку', 1); loadPending(); };
+      c.appendChild(el);
+    }
+  }
+  async function loadPurchases() {
+    const list = await api('/api/parent/purchases');
+    const c = document.getElementById('purchases'); if (!c) return;
+    c.innerHTML = '';
+    if (!Array.isArray(list) || !list.length) {
+      c.innerHTML = '<div class="empty">Нет обещаний — дети ещё ничего не купили</div>';
+      return;
+    }
+    for (const p of list) {
+      const el = document.createElement('div'); el.className = 'card pend';
+      el.innerHTML = `<div class="t">${esc(p.title)}</div>
+        <div class="row"><span class="who">${esc(p.childName)} · ${p.price} шишек</span>
+          <button class="mini g ok">Исполнено</button>
+          <button class="mini r no">Отменить</button></div>`;
+      el.querySelector('.ok').onclick = async () => {
+        const r = await api('/api/parent/purchase/fulfill', { id: p.id });
+        if (r.error) return note(r.error);
+        note('Обещание исполнено', 1); loadPurchases();
+      };
+      el.querySelector('.no').onclick = async () => {
+        if (!confirm('Отменить и вернуть шишки ребёнку?')) return;
+        const r = await api('/api/parent/purchase/cancel', { id: p.id });
+        if (r.error) return note(r.error);
+        note('Отменено, шишки возвращены', 1); loadPurchases(); loadKids();
+      };
       c.appendChild(el);
     }
   }
@@ -1722,7 +1893,7 @@ if (page === 'parent.html') {
     };
   }
 
-  loadKids(); loadPending(); loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
+  loadKids(); loadPending(); loadPurchases(); loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
 }
 
 // ── Питомцы на поляне: до 5 карт, каждая с фразой + диалог ──

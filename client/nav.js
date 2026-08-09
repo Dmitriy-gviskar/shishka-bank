@@ -23,6 +23,13 @@
       b.addEventListener('click', () => { if (it.href !== file) navigate(it.href); });
       nav.appendChild(b);
     }
+    // отступ перед доком, чтобы нижние плашки не резались sticky-nav
+    if (!wrap.querySelector('.nav-spacer')) {
+      const sp = document.createElement('div');
+      sp.className = 'nav-spacer';
+      sp.setAttribute('aria-hidden', 'true');
+      wrap.appendChild(sp);
+    }
     wrap.appendChild(nav);
     // подэкраны (не из навбара) получают кнопку «Назад»
     if (!ITEMS.some((it) => it.href === file)) {

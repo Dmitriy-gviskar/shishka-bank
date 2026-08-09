@@ -9,6 +9,9 @@
     linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
   .wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:8px}
   .wrap::-webkit-scrollbar{width:0}
+  /* место под sticky-навигацию, чтобы нижние плашки не резались */
+  .wrap > :not(.nav):last-of-type{margin-bottom:12px}
+  .wrap > .nav{margin-top:16px}
 
   .head-card{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 12px;
     background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
@@ -28,11 +31,19 @@
     box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.12)}
   .progress i{display:block;height:100%;width:65%;background:linear-gradient(90deg,#f1c65a,#e8a93b);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
-  .prog-cap{text-align:center;margin-top:6px;font-weight:800;color:#8a5a20;font-size:12px;
-    font-family:"Fredoka","Nunito",sans-serif}
+  .prog-cap{display:block;width:fit-content;max-width:92%;margin:8px auto 0;text-align:center;
+    font-weight:900;color:#1a120c;font-size:13px;line-height:1.25;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:12px;padding:6px 12px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
   .tree-tip{margin:8px 8px 0;text-align:center;font-weight:700;color:#6b4f3a;font-size:12.5px;line-height:1.35;
     background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:14px;padding:8px 12px;
     box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .freeze-buy{margin:8px 8px 0;padding:10px 12px;display:flex;align-items:center;gap:8px;
+    background:rgba(220,238,248,.92);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #9ec4d8}
+  .freeze-buy .fb-txt{flex:1;font-weight:700;color:#3a5a6a;font-size:12px;line-height:1.3;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .freeze-buy button{flex:none;font-size:13px;padding:8px 10px;white-space:nowrap}
 
   .passport{margin-top:12px;padding:14px 14px 12px;
     background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
@@ -66,7 +77,7 @@
     background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:7px 12px;
     box-shadow:0 0 0 2px #c9a86a;text-decoration:none;font-family:"Fredoka","Nunito",sans-serif}
 
-  .grove{margin-top:12px;padding:14px;
+  .grove{margin-top:12px;padding:14px 14px 16px;scroll-margin-top:8px;scroll-margin-bottom:96px;
     background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
     box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
   .grove h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 4px;
@@ -88,10 +99,9 @@
     box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
   .grove-actions{display:flex;gap:8px}
   .grove-actions button{flex:1;font-size:14px;padding:10px 8px;font-family:"Fredoka","Nunito",sans-serif}
-  #refFriends{margin-top:10px;max-height:140px;overflow-y:auto}
-  #refFriends::-webkit-scrollbar{width:0}
-  .ref-row{display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:5px;
-    background:rgba(255,255,255,.5);border:2px solid #fff;border-radius:12px;box-shadow:0 0 0 1.5px #c9a86a}
+  #refFriends,#refCascade{margin-top:10px;max-height:none;overflow:visible;padding-bottom:4px}
+  .ref-row{display:flex;align-items:center;gap:8px;padding:9px 10px;margin-bottom:6px;
+    background:rgba(255,255,255,.72);border:2.5px solid #fff;border-radius:12px;box-shadow:0 0 0 2px #c9a86a}
   .ref-row .nm{font-weight:900;color:var(--ink);font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ref-row .rw{font-weight:900;color:#5f8e37;font-size:13px;display:inline-flex;align-items:center;gap:2px}
   .ref-row .rw img{width:16px;height:16px}
@@ -120,6 +130,10 @@
   <div class="progress"><i id="treeProg"></i></div>
   <div class="prog-cap" id="treeProgCap">До следующего уровня</div>
   <div class="tree-tip" id="treeTip">Заходи каждый день на главную и забирай подарок — от серии дней дерево растёт.</div>
+  <div class="freeze-buy">
+    <div class="fb-txt">Дождик-защитник спасает серию, если пропустишь 1 день. Сейчас: <b id="freezeCount">0</b></div>
+    <button class="btn btn-sm" id="buyFreezeBtn" type="button">Купить за 20 🌰</button>
+  </div>
 
   <div class="grove" id="grove">
     <h3>Поляна дружбы</h3>

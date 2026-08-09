@@ -188,7 +188,7 @@ begin
   end if;
   update users
     set reputation = jsonb_set(reputation, array[p_trait],
-        to_jsonb(coalesce((reputation->>p_trait)::int, 0) + p_delta))
+        to_jsonb(least(100, coalesce((reputation->>p_trait)::int, 0) + p_delta)))
     where id = p_user;
 end $$;
 
