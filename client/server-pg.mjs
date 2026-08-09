@@ -968,9 +968,34 @@ const api = {
   'POST /api/game/guess/start': async (b, ctx) => {
     const beings = await q(`select t.code, t.name, t.category, coalesce(f.fact,'') as fact
       from card_types t left join card_facts f on f.code=t.code order by random() limit 5`);
+    const escapeRe = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // вырезаем имя и формы («комар» → «комаров»), чтобы факт не спойлерил ответ
+    const redactName = (text, name) => {
+      let t = String(text || '');
+      const n = String(name || '').trim();
+      if (!t || !n) return t;
+      const stems = new Set([n]);
+      if (n.length >= 4) stems.add(n.slice(0, -1));
+      if (n.length >= 5) stems.add(n.slice(0, -2));
+      for (const stem of [...stems].sort((a, b) => b.length - a.length)) {
+        const re = new RegExp(`(^|[^А-Яа-яЁёA-Za-z])(${escapeRe(stem)}[А-Яа-яЁё]*)`, 'gi');
+        t = t.replace(re, (_, pre) => `${pre}•••`);
+      }
+      return t.replace(/\s{2,}/g, ' ').trim();
+    };
+    const catLabel = (c) => (c === 'zver' ? 'зверь' : c === 'rastenie' ? 'растение'
+      : c === 'nasekomoe' ? 'насекомое' : c === 'ptica' ? 'птица' : 'особое существо');
     const questions = beings.map((row) => {
-      const hints = [`Это ${row.category === 'zver' ? 'зверь' : row.category === 'rastenie' ? 'растение' : row.category === 'nasekomoe' ? 'насекомое' : 'особое существо'}.`];
-      if (row.fact) hints.push(row.fact.slice(0, 80) + (row.fact.length > 80 ? '...' : ''));
+      const hints = [`Это ${catLabel(row.category)}.`];
+      if (row.fact) {
+        let fact = redactName(row.fact, row.name);
+        if (fact.length > 90) fact = fact.slice(0, 90).replace(/\s+\S*$/, '') + '…';
+        // если после маскировки почти ничего не осталось — подсказку не даём
+        const meaningful = fact.replace(/[•.\s…,;:!?«»"'-]/g, '');
+        if (meaningful.length >= 12 && !new RegExp(escapeRe(row.name), 'i').test(fact)) {
+          hints.push(fact);
+        }
+      }
       const nameHint = row.name.length <= 5 ? `В имени ${row.name.length} букв.`
         : `В имени первая буква «${row.name[0]}».`;
       hints.push(nameHint);
