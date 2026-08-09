@@ -127,7 +127,12 @@ insert into achievements (code,title,description,metric,threshold,tier,reward) v
   ('gfound_2','Гильдмейстер','Гильдмейстер','guild_founded',3,2,15),
   ('grec_1','Вербовщик','Вербовщик','guild_members_recruited',1,1,0),
   ('grec_2','Душа компании','Душа компании','guild_members_recruited',5,2,10),
-  ('grec_3','Лесной вожак','Лесной вожак','guild_members_recruited',12,3,25);
+  ('grec_3','Лесной вожак','Лесной вожак','guild_members_recruited',12,3,25),
+  ('math_1','Считатель','10 правильных ответов в таблице умножения','math_score',10,1,5),
+  ('math_2','Математик','50 правильных ответов в таблице умножения','math_score',50,2,15),
+  ('math_3','Архимед леса','200 правильных ответов в таблице умножения','math_score',200,3,40),
+  ('count_1','Считатель блица','30 правильных ответов в блиц-счёте','count_score',30,1,5),
+  ('count_2','Калькулятор','100 правильных ответов в блиц-счёте','count_score',100,2,15);
 
 delete from task_templates;
 insert into task_templates (title,reward,category,is_daily,needs_photo) values

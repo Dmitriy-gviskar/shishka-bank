@@ -499,76 +499,480 @@
       "reward": 12,
       "category": "забота"
     },
-    { "id": "t51", "title": "Почистить зубы утром", "reward": 3, "category": "здоровье", "daily": true },
-    { "id": "t52", "title": "Умыться и причесаться", "reward": 3, "category": "здоровье", "daily": true },
-    { "id": "t53", "title": "Съесть полезный завтрак", "reward": 4, "category": "здоровье", "daily": true },
-    { "id": "t54", "title": "Одеться самому без помощи", "reward": 4, "category": "самостоятельность", "daily": true },
-    { "id": "t55", "title": "Сказать спасибо за завтрак", "reward": 2, "category": "забота", "daily": true },
-    { "id": "t56", "title": "Обнять маму и папу", "reward": 2, "category": "забота", "daily": true },
-    { "id": "t57", "title": "Погулять на улице 20 минут", "reward": 5, "category": "здоровье", "daily": true },
-    { "id": "t58", "title": "Сделать 10 приседаний", "reward": 3, "category": "здоровье", "daily": true },
-    { "id": "t59", "title": "Помыть руки перед едой", "reward": 2, "category": "здоровье", "daily": true },
-    { "id": "t60", "title": "Собрать рюкзак самому", "reward": 5, "category": "самостоятельность", "daily": true },
-    { "id": "t61", "title": "Прочитать страницу книги", "reward": 5, "category": "развитие", "daily": true },
-    { "id": "t62", "title": "Написать 3 предложения в дневник", "reward": 6, "category": "развитие", "daily": true },
-    { "id": "t63", "title": "Посчитать до 100", "reward": 4, "category": "развитие", "daily": true },
-    { "id": "t64", "title": "Нарисовать что-то из леса", "reward": 6, "category": "развитие", "daily": true },
-    { "id": "t65", "title": "Спеть песенку для семьи", "reward": 5, "category": "развитие", "daily": true },
-    { "id": "t66", "title": "Сложить свою одежду", "reward": 4, "category": "дом", "daily": true },
-    { "id": "t67", "title": "Вытереть стол после еды", "reward": 3, "category": "дом", "daily": true },
-    { "id": "t68", "title": "Помочь накрыть на стол", "reward": 4, "category": "дом", "daily": true },
-    { "id": "t69", "title": "Полить цветок на подоконнике", "reward": 3, "category": "дом", "daily": true },
-    { "id": "t70", "title": "Покормить рыбок или хомяка", "reward": 4, "category": "забота", "daily": true },
-    { "id": "t71", "title": "Сказать комплимент другу", "reward": 3, "category": "забота", "daily": true },
-    { "id": "t72", "title": "Поделиться игрушкой", "reward": 5, "category": "забота", "daily": true },
-    { "id": "t73", "title": "Помочь донести сумку", "reward": 4, "category": "забота", "daily": true },
-    { "id": "t74", "title": "Посмотреть на звёзды вечером", "reward": 3, "category": "приключение", "daily": true },
-    { "id": "t75", "title": "Найти три разных листочка", "reward": 5, "category": "приключение", "daily": true },
-    { "id": "t76", "title": "Почистить зубы после завтрака", "reward": 2, "category": "здоровье", "daily": true },
-    { "id": "t77", "title": "Лечь спать вовремя без напоминаний", "reward": 5, "category": "здоровье", "daily": true },
-    { "id": "t78", "title": "Сделать утреннюю растяжку", "reward": 3, "category": "здоровье", "daily": true },
-    { "id": "t79", "title": "Пройти пешком 2000 шагов", "reward": 4, "category": "здоровье", "daily": true },
-    { "id": "t80", "title": "День без телефона", "reward": 10, "category": "здоровье" },
-    { "id": "t81", "title": "Приготовить полезный перекус", "reward": 6, "category": "здоровье", "daily": true },
-    { "id": "t82", "title": "Проветрить комнату перед сном", "reward": 2, "category": "здоровье", "daily": true },
-    { "id": "t83", "title": "Отжаться 5 раз утром", "reward": 4, "category": "здоровье", "daily": true },
-    { "id": "t84", "title": "Заправить постель красиво", "reward": 3, "category": "дом", "daily": true },
-    { "id": "t85", "title": "Помыть зеркало в ванной", "reward": 6, "category": "дом" },
-    { "id": "t86", "title": "Разложить обувь аккуратно", "reward": 3, "category": "дом", "daily": true },
-    { "id": "t87", "title": "Протереть подоконники", "reward": 5, "category": "дом" },
-    { "id": "t88", "title": "Собрать мусор со стола после уроков", "reward": 3, "category": "дом", "daily": true },
-    { "id": "t89", "title": "Помочь почистить овощи к ужину", "reward": 5, "category": "дом", "daily": true },
-    { "id": "t90", "title": "Развесить бельё после стирки", "reward": 8, "category": "дом" },
-    { "id": "t91", "title": "Помыть свою кружку", "reward": 2, "category": "дом", "daily": true },
-    { "id": "t92", "title": "Приготовить завтрак для всей семьи", "reward": 15, "category": "самостоятельность", "photo": true },
-    { "id": "t93", "title": "Самому выбрать одежду на завтра", "reward": 3, "category": "самостоятельность", "daily": true },
-    { "id": "t94", "title": "Позвонить бабушке самому", "reward": 8, "category": "самостоятельность" },
-    { "id": "t95", "title": "Спланировать день на завтра", "reward": 4, "category": "самостоятельность", "daily": true },
-    { "id": "t96", "title": "Самому разогреть обед", "reward": 5, "category": "самостоятельность" },
-    { "id": "t97", "title": "Завязать шнурки без помощи", "reward": 4, "category": "самостоятельность" },
-    { "id": "t98", "title": "Разобрать почту и выбросить спам", "reward": 3, "category": "самостоятельность", "daily": true },
-    { "id": "t99", "title": "Выучить 5 новых слов на английском", "reward": 6, "category": "развитие", "daily": true },
-    { "id": "t100", "title": "Рассказать маме что узнал сегодня", "reward": 3, "category": "развитие", "daily": true },
-    { "id": "t101", "title": "Собрать пазл или головоломку", "reward": 8, "category": "развитие", "photo": true },
-    { "id": "t102", "title": "Посмотреть научное видео", "reward": 6, "category": "развитие" },
-    { "id": "t103", "title": "Придумать свою сказку", "reward": 10, "category": "развитие" },
-    { "id": "t104", "title": "Сосчитать все деревья во дворе", "reward": 5, "category": "развитие" },
-    { "id": "t105", "title": "Слепить что-то из пластилина", "reward": 6, "category": "развитие", "photo": true },
-    { "id": "t106", "title": "Сделать открытку для друга", "reward": 8, "category": "забота", "photo": true },
-    { "id": "t107", "title": "Помочь однокласснику с заданием", "reward": 12, "category": "забота" },
-    { "id": "t108", "title": "Накормить бездомного кота", "reward": 8, "category": "забота", "photo": true },
-    { "id": "t109", "title": "Уступить место в транспорте", "reward": 5, "category": "забота" },
-    { "id": "t110", "title": "Поздравить друга с днём рождения", "reward": 6, "category": "забота" },
-    { "id": "t111", "title": "Прочитать сказку младшему", "reward": 8, "category": "забота" },
-    { "id": "t112", "title": "Помочь пожилому соседу", "reward": 15, "category": "забота" },
-    { "id": "t113", "title": "Построить шалаш из веток", "reward": 15, "category": "приключение", "photo": true },
-    { "id": "t114", "title": "Найти птичье гнездо и зарисовать", "reward": 10, "category": "приключение", "photo": true },
-    { "id": "t115", "title": "Погулять босиком по траве", "reward": 5, "category": "приключение", "daily": true },
-    { "id": "t116", "title": "Собрать природный материал для поделки", "reward": 6, "category": "приключение", "daily": true },
-    { "id": "t117", "title": "Покормить птиц зимой", "reward": 6, "category": "приключение" },
-    { "id": "t118", "title": "Пройти по бревну как по мосту", "reward": 5, "category": "приключение", "daily": true },
-    { "id": "t119", "title": "Найти и сфоткать гриб", "reward": 8, "category": "приключение", "photo": true },
-    { "id": "t120", "title": "Встретить рассвет", "reward": 12, "category": "приключение", "photo": true }
+    {
+      "id": "t51",
+      "title": "Почистить зубы утром",
+      "reward": 3,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t52",
+      "title": "Умыться и причесаться",
+      "reward": 3,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t53",
+      "title": "Съесть полезный завтрак",
+      "reward": 4,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t54",
+      "title": "Одеться самому без помощи",
+      "reward": 4,
+      "category": "самостоятельность",
+      "daily": true
+    },
+    {
+      "id": "t55",
+      "title": "Сказать спасибо за завтрак",
+      "reward": 2,
+      "category": "забота",
+      "daily": true
+    },
+    {
+      "id": "t56",
+      "title": "Обнять маму и папу",
+      "reward": 2,
+      "category": "забота",
+      "daily": true
+    },
+    {
+      "id": "t57",
+      "title": "Погулять на улице 20 минут",
+      "reward": 5,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t58",
+      "title": "Сделать 10 приседаний",
+      "reward": 3,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t59",
+      "title": "Помыть руки перед едой",
+      "reward": 2,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t60",
+      "title": "Собрать рюкзак самому",
+      "reward": 5,
+      "category": "самостоятельность",
+      "daily": true
+    },
+    {
+      "id": "t61",
+      "title": "Прочитать страницу книги",
+      "reward": 5,
+      "category": "развитие",
+      "daily": true
+    },
+    {
+      "id": "t62",
+      "title": "Написать 3 предложения в дневник",
+      "reward": 6,
+      "category": "развитие",
+      "daily": true
+    },
+    {
+      "id": "t63",
+      "title": "Посчитать до 100",
+      "reward": 4,
+      "category": "развитие",
+      "daily": true
+    },
+    {
+      "id": "t64",
+      "title": "Нарисовать что-то из леса",
+      "reward": 6,
+      "category": "развитие",
+      "daily": true
+    },
+    {
+      "id": "t65",
+      "title": "Спеть песенку для семьи",
+      "reward": 5,
+      "category": "развитие",
+      "daily": true
+    },
+    {
+      "id": "t66",
+      "title": "Сложить свою одежду",
+      "reward": 4,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t67",
+      "title": "Вытереть стол после еды",
+      "reward": 3,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t68",
+      "title": "Помочь накрыть на стол",
+      "reward": 4,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t69",
+      "title": "Полить цветок на подоконнике",
+      "reward": 3,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t70",
+      "title": "Покормить рыбок или хомяка",
+      "reward": 4,
+      "category": "забота",
+      "daily": true
+    },
+    {
+      "id": "t71",
+      "title": "Сказать комплимент другу",
+      "reward": 3,
+      "category": "забота",
+      "daily": true
+    },
+    {
+      "id": "t72",
+      "title": "Поделиться игрушкой",
+      "reward": 5,
+      "category": "забота",
+      "daily": true
+    },
+    {
+      "id": "t73",
+      "title": "Помочь донести сумку",
+      "reward": 4,
+      "category": "забота",
+      "daily": true
+    },
+    {
+      "id": "t74",
+      "title": "Посмотреть на звёзды вечером",
+      "reward": 3,
+      "category": "приключение",
+      "daily": true
+    },
+    {
+      "id": "t75",
+      "title": "Найти три разных листочка",
+      "reward": 5,
+      "category": "приключение",
+      "daily": true
+    },
+    {
+      "id": "t76",
+      "title": "Почистить зубы после завтрака",
+      "reward": 2,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t77",
+      "title": "Лечь спать вовремя без напоминаний",
+      "reward": 5,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t78",
+      "title": "Сделать утреннюю растяжку",
+      "reward": 3,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t79",
+      "title": "Пройти пешком 2000 шагов",
+      "reward": 4,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t80",
+      "title": "День без телефона",
+      "reward": 10,
+      "category": "здоровье"
+    },
+    {
+      "id": "t81",
+      "title": "Приготовить полезный перекус",
+      "reward": 6,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t82",
+      "title": "Проветрить комнату перед сном",
+      "reward": 2,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t83",
+      "title": "Отжаться 5 раз утром",
+      "reward": 4,
+      "category": "здоровье",
+      "daily": true
+    },
+    {
+      "id": "t84",
+      "title": "Заправить постель красиво",
+      "reward": 3,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t85",
+      "title": "Помыть зеркало в ванной",
+      "reward": 6,
+      "category": "дом"
+    },
+    {
+      "id": "t86",
+      "title": "Разложить обувь аккуратно",
+      "reward": 3,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t87",
+      "title": "Протереть подоконники",
+      "reward": 5,
+      "category": "дом"
+    },
+    {
+      "id": "t88",
+      "title": "Собрать мусор со стола после уроков",
+      "reward": 3,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t89",
+      "title": "Помочь почистить овощи к ужину",
+      "reward": 5,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t90",
+      "title": "Развесить бельё после стирки",
+      "reward": 8,
+      "category": "дом"
+    },
+    {
+      "id": "t91",
+      "title": "Помыть свою кружку",
+      "reward": 2,
+      "category": "дом",
+      "daily": true
+    },
+    {
+      "id": "t92",
+      "title": "Приготовить завтрак для всей семьи",
+      "reward": 15,
+      "category": "самостоятельность",
+      "photo": true
+    },
+    {
+      "id": "t93",
+      "title": "Самому выбрать одежду на завтра",
+      "reward": 3,
+      "category": "самостоятельность",
+      "daily": true
+    },
+    {
+      "id": "t94",
+      "title": "Позвонить бабушке самому",
+      "reward": 8,
+      "category": "самостоятельность"
+    },
+    {
+      "id": "t95",
+      "title": "Спланировать день на завтра",
+      "reward": 4,
+      "category": "самостоятельность",
+      "daily": true
+    },
+    {
+      "id": "t96",
+      "title": "Самому разогреть обед",
+      "reward": 5,
+      "category": "самостоятельность"
+    },
+    {
+      "id": "t97",
+      "title": "Завязать шнурки без помощи",
+      "reward": 4,
+      "category": "самостоятельность"
+    },
+    {
+      "id": "t98",
+      "title": "Разобрать почту и выбросить спам",
+      "reward": 3,
+      "category": "самостоятельность",
+      "daily": true
+    },
+    {
+      "id": "t99",
+      "title": "Выучить 5 новых слов на английском",
+      "reward": 6,
+      "category": "развитие",
+      "daily": true
+    },
+    {
+      "id": "t100",
+      "title": "Рассказать маме что узнал сегодня",
+      "reward": 3,
+      "category": "развитие",
+      "daily": true
+    },
+    {
+      "id": "t101",
+      "title": "Собрать пазл или головоломку",
+      "reward": 8,
+      "category": "развитие",
+      "photo": true
+    },
+    {
+      "id": "t102",
+      "title": "Посмотреть научное видео",
+      "reward": 6,
+      "category": "развитие"
+    },
+    {
+      "id": "t103",
+      "title": "Придумать свою сказку",
+      "reward": 10,
+      "category": "развитие"
+    },
+    {
+      "id": "t104",
+      "title": "Сосчитать все деревья во дворе",
+      "reward": 5,
+      "category": "развитие"
+    },
+    {
+      "id": "t105",
+      "title": "Слепить что-то из пластилина",
+      "reward": 6,
+      "category": "развитие",
+      "photo": true
+    },
+    {
+      "id": "t106",
+      "title": "Сделать открытку для друга",
+      "reward": 8,
+      "category": "забота",
+      "photo": true
+    },
+    {
+      "id": "t107",
+      "title": "Помочь однокласснику с заданием",
+      "reward": 12,
+      "category": "забота"
+    },
+    {
+      "id": "t108",
+      "title": "Накормить бездомного кота",
+      "reward": 8,
+      "category": "забота",
+      "photo": true
+    },
+    {
+      "id": "t109",
+      "title": "Уступить место в транспорте",
+      "reward": 5,
+      "category": "забота"
+    },
+    {
+      "id": "t110",
+      "title": "Поздравить друга с днём рождения",
+      "reward": 6,
+      "category": "забота"
+    },
+    {
+      "id": "t111",
+      "title": "Прочитать сказку младшему",
+      "reward": 8,
+      "category": "забота"
+    },
+    {
+      "id": "t112",
+      "title": "Помочь пожилому соседу",
+      "reward": 15,
+      "category": "забота"
+    },
+    {
+      "id": "t113",
+      "title": "Построить шалаш из веток",
+      "reward": 15,
+      "category": "приключение",
+      "photo": true
+    },
+    {
+      "id": "t114",
+      "title": "Найти птичье гнездо и зарисовать",
+      "reward": 10,
+      "category": "приключение",
+      "photo": true
+    },
+    {
+      "id": "t115",
+      "title": "Погулять босиком по траве",
+      "reward": 5,
+      "category": "приключение",
+      "daily": true
+    },
+    {
+      "id": "t116",
+      "title": "Собрать природный материал для поделки",
+      "reward": 6,
+      "category": "приключение",
+      "daily": true
+    },
+    {
+      "id": "t117",
+      "title": "Покормить птиц зимой",
+      "reward": 6,
+      "category": "приключение"
+    },
+    {
+      "id": "t118",
+      "title": "Пройти по бревну как по мосту",
+      "reward": 5,
+      "category": "приключение",
+      "daily": true
+    },
+    {
+      "id": "t119",
+      "title": "Найти и сфоткать гриб",
+      "reward": 8,
+      "category": "приключение",
+      "photo": true
+    },
+    {
+      "id": "t120",
+      "title": "Встретить рассвет",
+      "reward": 12,
+      "category": "приключение",
+      "photo": true
+    }
   ],
   "skins": [
     {
@@ -1860,17 +2264,182 @@
       "track": "mail",
       "level": 3
     },
-    { "code": "gord_1", "title": "Первый заказ", "desc": "Первый заказ — достигни 1 (guild_orders)", "metric": "guild_orders", "threshold": 1, "tier": 1, "reward": 0, "track": "gord", "level": 1 },
-    { "code": "gord_2", "title": "Гильдейский подмастерье", "desc": "Гильдейский подмастерье — достигни 5 (guild_orders)", "metric": "guild_orders", "threshold": 5, "tier": 2, "reward": 10, "track": "gord", "level": 2 },
-    { "code": "gord_3", "title": "Мастер заказов", "desc": "Мастер заказов — достигни 15 (guild_orders)", "metric": "guild_orders", "threshold": 15, "tier": 3, "reward": 25, "track": "gord", "level": 3 },
-    { "code": "gord_4", "title": "Опора гильдии", "desc": "Опора гильдии — достигни 30 (guild_orders)", "metric": "guild_orders", "threshold": 30, "tier": 3, "reward": 50, "track": "gord", "level": 4 },
-    { "code": "gcone_1", "title": "Гильдейский доход", "desc": "Гильдейский доход — достигни 50 (guild_cones)", "metric": "guild_cones", "threshold": 50, "tier": 1, "reward": 5, "track": "gcone", "level": 1 },
-    { "code": "gcone_2", "title": "Кормилец гильдии", "desc": "Кормилец гильдии — достигни 200 (guild_cones)", "metric": "guild_cones", "threshold": 200, "tier": 2, "reward": 15, "track": "gcone", "level": 2 },
-    { "code": "gcone_3", "title": "Золотая гильдия", "desc": "Золотая гильдия — достигни 500 (guild_cones)", "metric": "guild_cones", "threshold": 500, "tier": 3, "reward": 35, "track": "gcone", "level": 3 },
-    { "code": "gfound_1", "title": "Основатель", "desc": "Основатель — достигни 1 (guild_founded)", "metric": "guild_founded", "threshold": 1, "tier": 1, "reward": 0, "track": "gfound", "level": 1 },
-    { "code": "gfound_2", "title": "Гильдмейстер", "desc": "Гильдмейстер — достигни 3 (guild_founded)", "metric": "guild_founded", "threshold": 3, "tier": 2, "reward": 15, "track": "gfound", "level": 2 },
-    { "code": "grec_1", "title": "Вербовщик", "desc": "Вербовщик — достигни 1 (guild_members_recruited)", "metric": "guild_members_recruited", "threshold": 1, "tier": 1, "reward": 0, "track": "grec", "level": 1 },
-    { "code": "grec_2", "title": "Душа компании", "desc": "Душа компании — достигни 5 (guild_members_recruited)", "metric": "guild_members_recruited", "threshold": 5, "tier": 2, "reward": 10, "track": "grec", "level": 2 },
-    { "code": "grec_3", "title": "Лесной вожак", "desc": "Лесной вожак — достигни 12 (guild_members_recruited)", "metric": "guild_members_recruited", "threshold": 12, "tier": 3, "reward": 25, "track": "grec", "level": 3 }
+    {
+      "code": "gord_1",
+      "title": "Первый заказ",
+      "desc": "Первый заказ — достигни 1 (guild_orders)",
+      "metric": "guild_orders",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "gord",
+      "level": 1
+    },
+    {
+      "code": "gord_2",
+      "title": "Гильдейский подмастерье",
+      "desc": "Гильдейский подмастерье — достигни 5 (guild_orders)",
+      "metric": "guild_orders",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 10,
+      "track": "gord",
+      "level": 2
+    },
+    {
+      "code": "gord_3",
+      "title": "Мастер заказов",
+      "desc": "Мастер заказов — достигни 15 (guild_orders)",
+      "metric": "guild_orders",
+      "threshold": 15,
+      "tier": 3,
+      "reward": 25,
+      "track": "gord",
+      "level": 3
+    },
+    {
+      "code": "gord_4",
+      "title": "Опора гильдии",
+      "desc": "Опора гильдии — достигни 30 (guild_orders)",
+      "metric": "guild_orders",
+      "threshold": 30,
+      "tier": 3,
+      "reward": 50,
+      "track": "gord",
+      "level": 4
+    },
+    {
+      "code": "gcone_1",
+      "title": "Гильдейский доход",
+      "desc": "Гильдейский доход — достигни 50 (guild_cones)",
+      "metric": "guild_cones",
+      "threshold": 50,
+      "tier": 1,
+      "reward": 5,
+      "track": "gcone",
+      "level": 1
+    },
+    {
+      "code": "gcone_2",
+      "title": "Кормилец гильдии",
+      "desc": "Кормилец гильдии — достигни 200 (guild_cones)",
+      "metric": "guild_cones",
+      "threshold": 200,
+      "tier": 2,
+      "reward": 15,
+      "track": "gcone",
+      "level": 2
+    },
+    {
+      "code": "gcone_3",
+      "title": "Золотая гильдия",
+      "desc": "Золотая гильдия — достигни 500 (guild_cones)",
+      "metric": "guild_cones",
+      "threshold": 500,
+      "tier": 3,
+      "reward": 35,
+      "track": "gcone",
+      "level": 3
+    },
+    {
+      "code": "gfound_1",
+      "title": "Основатель",
+      "desc": "Основатель — достигни 1 (guild_founded)",
+      "metric": "guild_founded",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "gfound",
+      "level": 1
+    },
+    {
+      "code": "gfound_2",
+      "title": "Гильдмейстер",
+      "desc": "Гильдмейстер — достигни 3 (guild_founded)",
+      "metric": "guild_founded",
+      "threshold": 3,
+      "tier": 2,
+      "reward": 15,
+      "track": "gfound",
+      "level": 2
+    },
+    {
+      "code": "grec_1",
+      "title": "Вербовщик",
+      "desc": "Вербовщик — достигни 1 (guild_members_recruited)",
+      "metric": "guild_members_recruited",
+      "threshold": 1,
+      "tier": 1,
+      "reward": 0,
+      "track": "grec",
+      "level": 1
+    },
+    {
+      "code": "grec_2",
+      "title": "Душа компании",
+      "desc": "Душа компании — достигни 5 (guild_members_recruited)",
+      "metric": "guild_members_recruited",
+      "threshold": 5,
+      "tier": 2,
+      "reward": 10,
+      "track": "grec",
+      "level": 2
+    },
+    {
+      "code": "grec_3",
+      "title": "Лесной вожак",
+      "desc": "Лесной вожак — достигни 12 (guild_members_recruited)",
+      "metric": "guild_members_recruited",
+      "threshold": 12,
+      "tier": 3,
+      "reward": 25,
+      "track": "grec",
+      "level": 3
+    },
+    {
+      "code": "math_1",
+      "title": "Считатель",
+      "desc": "10 правильных ответов в таблице умножения",
+      "metric": "math_score",
+      "threshold": 10,
+      "tier": 1,
+      "reward": 5
+    },
+    {
+      "code": "math_2",
+      "title": "Математик",
+      "desc": "50 правильных ответов в таблице умножения",
+      "metric": "math_score",
+      "threshold": 50,
+      "tier": 2,
+      "reward": 15
+    },
+    {
+      "code": "math_3",
+      "title": "Архимед леса",
+      "desc": "200 правильных ответов в таблице умножения",
+      "metric": "math_score",
+      "threshold": 200,
+      "tier": 3,
+      "reward": 40
+    },
+    {
+      "code": "count_1",
+      "title": "Считатель блица",
+      "desc": "30 правильных ответов в блиц-счёте",
+      "metric": "count_score",
+      "threshold": 30,
+      "tier": 1,
+      "reward": 5
+    },
+    {
+      "code": "count_2",
+      "title": "Калькулятор",
+      "desc": "100 правильных ответов в блиц-счёте",
+      "metric": "count_score",
+      "threshold": 100,
+      "tier": 2,
+      "reward": 15
+    }
   ]
 }

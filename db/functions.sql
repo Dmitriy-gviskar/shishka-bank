@@ -623,6 +623,16 @@ returns int language sql stable security definer set search_path = public as $$
     when 'sales_sum'         then (select coalesce(sum(price),0) from orders where seller_id = p_child and status = 'delivered')
     when 'shop_buys'         then (select count(*) from orders where buyer_id = p_child and status = 'delivered')
     when 'messages_sent'     then (select count(*) from messages where from_user = p_child)
+    when 'investigations_done' then (select count(*) from transactions where to_user = p_child and is_anonymous and revealed)
+    when 'guild_orders'     then (select count(*) from guild_history gh
+      join guild_members gm on gm.guild_id=gh.guild_id where gm.child_id=p_child and gh.kind='order_completed')
+    when 'guild_cones'      then (select coalesce(sum(t.amount),0) from transactions t
+      where t.to_user=p_child and t.type='reward' and t.message like 'Заказ гильдии:%')
+    when 'guild_founded'    then (select count(*) from guilds g where g.created_by=p_child)
+    when 'guild_members_recruited' then (select count(distinct gh.title) from guild_history gh
+      join guilds g on g.id=gh.guild_id where g.created_by=p_child and gh.kind='member_joined')
+    when 'math_score'       then (select coalesce(score,0) from mini_games where child_id=p_child and game='multiply')
+    when 'count_score'      then (select coalesce(score,0) from mini_games where child_id=p_child and game='count')
     else 0 end::int
 $$;
 

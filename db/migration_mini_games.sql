@@ -36,26 +36,27 @@ insert into achievements(code, title, description, metric, threshold, tier, rewa
   ('math_3', 'Архимед леса', '200 правильных ответов',                    'math_score', 200, 3, 40)
   on conflict (code) do nothing;
 
--- 4. Фразы питомца для игры (добавляем к существующим)
-insert into familiar_dialogs(category, trigger, phrase) values
+-- 4–5. Фразы питомца для игр (без ON CONFLICT — unique нет)
+insert into familiar_dialogs(category, trigger, phrase)
+select v.category, v.trigger, v.phrase from (values
   ('any','multiply_start','Давай проверим твою таблицу умножения! Готов?'),
   ('any','multiply_correct','Верно! Ты отлично считаешь!'),
   ('any','multiply_correct','Правильно! Ещё один!'),
   ('any','multiply_wrong','Почти! Попробуй ещё раз.'),
   ('any','multiply_wrong','Не совсем. Давай ещё попытку!'),
   ('any','multiply_done','Умница! Ты решил все примеры. Возвращайся завтра!'),
-  ('any','multiply_done','Отлично потренировались! До завтра!')
-  on conflict do nothing;
-
--- 5. Лесная угадайка: фразы триггеров
-insert into familiar_dialogs(category, trigger, phrase) values
+  ('any','multiply_done','Отлично потренировались! До завтра!'),
   ('any','guess_start','Давай поиграем в угадайку! Я опишу лесного жителя, а ты угадай кто это.'),
   ('any','guess_correct','Точно! Ты настоящий следопыт!'),
   ('any','guess_correct','Угадал! Отлично знаешь лес!'),
   ('any','guess_wrong','Не угадал. Это был {name}. Ничего, следующий раз повезёт!'),
   ('any','guess_wrong','Мимо! Я загадал {name}. Продолжим?'),
   ('any','guess_done','Все загадки разгаданы! Ты отлично знаешь лесных жителей.')
-  on conflict do nothing;
+) as v(category, trigger, phrase)
+where not exists (
+  select 1 from familiar_dialogs d
+  where d.category=v.category and d.trigger=v.trigger and d.phrase=v.phrase
+);
 
 -- 6. Блиц-счёт: ачивки
 insert into achievements(code, title, description, metric, threshold, tier, reward) values
