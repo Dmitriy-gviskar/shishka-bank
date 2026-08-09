@@ -16,6 +16,25 @@ if (!window.__spaInit) {
   window.setInterval = (f, t) => { const id = _si(f, t); window.__timers.push(id); return id; };
 }
 function urlBase64ToUint8Array(s) { const pad = '='.repeat((4 - s.length % 4) % 4); return Uint8Array.from(atob((s + pad).replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)); }
+
+// Единый URL карты: thumb (сетки) / md (диалог, игры) / full (крупный просмотр, evo, jackpot).
+window.cardUrl = function (code, grade, size) {
+  const g = grade == null ? 1 : grade;
+  if (size === 'thumb') return `assets/cards/thumb/${code}_${g}.webp`;
+  if (size === 'md') return `assets/cards/md/${code}_${g}.webp`;
+  return `assets/cards/${code}_${g}.webp`;
+};
+// Снять decoded bitmaps карт с DOM (SPA-уход / pagehide) — иначе Chrome копит сотни МБ.
+window.releaseCardImages = function (root) {
+  (root || document).querySelectorAll('img[src*="assets/cards/"]').forEach((img) => {
+    try { img.removeAttribute('src'); } catch {}
+  });
+};
+if (!window.__cardMemHook) {
+  window.__cardMemHook = true;
+  window.addEventListener('pagehide', () => { try { window.releaseCardImages(); } catch {} });
+}
+
 function runApp() {
 async function api(path, body, method) {
   const headers = {};
@@ -1332,7 +1351,7 @@ if (page === 'forest.html') {
     if (!fams || !fams.length) { cont.innerHTML = '<div style="text-align:center;color:#a1876a;font-weight:700;padding:8px">Питомцев пока нет — сделай карту питомцем в коллекции!</div>'; return; }
     cont.innerHTML = fams.map((f) => {
       return `<div class="famCard" style="--fc:${f.color || '#ffc21f'};display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:6px;background:rgba(255,250,240,.85);border:2px solid var(--fc);border-radius:14px;cursor:pointer">
-        <img src="assets/cards/thumb/${f.code}_${f.grade}.webp" alt="${esc(f.name)}" style="width:48px;height:48px;object-fit:contain;border-radius:10px;flex:none">
+        <img src="${cardUrl(f.code, f.grade, 'thumb')}" alt="${esc(f.name)}" loading="lazy" style="width:48px;height:48px;object-fit:contain;border-radius:10px;flex:none">
         <div style="flex:1;min-width:0">
           <div style="font-weight:900;color:var(--ink);font-size:14px">${esc(f.name)}</div>
           <div style="font-size:11px;color:#a1876a;font-weight:700;margin-top:1px">${esc(f.title || '')}</div>
@@ -1349,7 +1368,7 @@ if (page === 'forest.html') {
   async function openFamiliarTalk(f) {
     const ov = document.getElementById('talkOv'), bubble = document.getElementById('talkBubble');
     const btns = document.getElementById('talkBtns');
-    document.getElementById('talkImg').src = `assets/cards/${f.code}_${f.grade}.webp`;
+    document.getElementById('talkImg').src = cardUrl(f.code, f.grade, 'md');
     document.getElementById('talkName').textContent = f.name;
     ov.classList.add('on');
 
@@ -1373,8 +1392,14 @@ if (page === 'forest.html') {
 
     await say('greet');
   }
-  if (document.getElementById('talkClose')) document.getElementById('talkClose').onclick = () => document.getElementById('talkOv').classList.remove('on');
-  if (document.getElementById('talkOv')) document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') e.target.classList.remove('on'); };
+  const closeTalk = () => {
+    const ov = document.getElementById('talkOv');
+    if (ov) ov.classList.remove('on');
+    const img = document.getElementById('talkImg');
+    if (img) img.removeAttribute('src');
+  };
+  if (document.getElementById('talkClose')) document.getElementById('talkClose').onclick = closeTalk;
+  if (document.getElementById('talkOv')) document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') closeTalk(); };
 }
 
   // ── Мини-игры (умножение / угадайка / блиц-счёт) ──
@@ -1401,6 +1426,8 @@ if (page === 'forest.html') {
   function closeGameOv() {
     clearInterval(countTimer);
     countTimer = null;
+    const q = document.getElementById('gameQ');
+    if (q) { q.innerHTML = ''; q.textContent = ''; }
     const ov = document.getElementById('gameOv');
     if (ov) ov.classList.remove('on');
   }
@@ -1476,7 +1503,7 @@ if (page === 'forest.html') {
 
   function showGuessQ() {
     const q = guessQuestions[guessIdx];
-    document.getElementById('gameQ').innerHTML = `<img src="assets/cards/${q.code}_1.webp" style="width:140px;height:187px;object-fit:cover;border-radius:16px;border:3px solid #cbb083;filter:blur(12px) brightness(.7)">`;
+    document.getElementById('gameQ').innerHTML = `<img src="${cardUrl(q.code, 1, 'md')}" style="width:140px;height:187px;object-fit:cover;border-radius:16px;border:3px solid #cbb083;filter:blur(12px) brightness(.7)">`;
     document.getElementById('gameMsg').innerHTML = q.hints.map((h) => `<div style="margin:2px 0">${h}</div>`).join('');
     document.getElementById('gameProg').textContent = `${guessIdx} / 5`;
     document.getElementById('gameA').value = '';
@@ -1541,7 +1568,7 @@ if (page === 'forest.html') {
       if (!val) return;
       const q = guessQuestions[guessIdx];
       const r = await api('/api/game/guess/answer', { answer: val, name: q.name });
-      document.getElementById('gameQ').innerHTML = `<img src="assets/cards/${q.code}_1.webp" style="width:160px;height:213px;object-fit:cover;border-radius:16px;border:3px solid #cbb083">`;
+      document.getElementById('gameQ').innerHTML = `<img src="${cardUrl(q.code, 1, 'md')}" style="width:160px;height:213px;object-fit:cover;border-radius:16px;border:3px solid #cbb083">`;
       if (r.correct) {
         guessCorrect++;
         document.getElementById('gameMsg').innerHTML = `<div style="color:#5f8e37;font-weight:900">✅ Верно! Это ${q.name}!</div>`;

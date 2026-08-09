@@ -4,8 +4,14 @@
 window.runCards = function () {
   const api = window.api, esc = window.esc, refreshBalance = window.refreshBalance;
   const CAT = { zver: '🦊 Звери', rastenie: '🌿 Растения', nasekomoe: '🐞 Насекомые', special: '🎖 Особые' };
-  const asset = (code, grade) => `assets/cards/${code}_${grade}.webp`;          // крупный показ
-  const thumb = (code, grade) => `assets/cards/thumb/${code}_${grade}.webp`;    // сетки: в 5 раз легче
+  const cardUrl = window.cardUrl || ((code, grade, size) => {
+    if (size === 'thumb') return `assets/cards/thumb/${code}_${grade}.webp`;
+    if (size === 'md') return `assets/cards/md/${code}_${grade}.webp`;
+    return `assets/cards/${code}_${grade}.webp`;
+  });
+  const asset = (code, grade) => cardUrl(code, grade, 'full');   // крупный показ / evo / jackpot
+  const thumb = (code, grade) => cardUrl(code, grade, 'thumb');  // сетки
+  const md = (code, grade) => cardUrl(code, grade, 'md');        // модалки / средний превью
   let RAR = {}, DATA = null, LOTS = [], WANTS = [], AUCS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
   const note = (t) => {   // всплывающая подсказка поверх экрана
     const el = document.createElement('div'); el.textContent = t;
@@ -379,7 +385,11 @@ window.runCards = function () {
       setTimeout(() => el.remove(), 3200);
     });
   }
-  function closeDetail() { document.getElementById('detail').classList.remove('on'); }
+  function closeDetail() {
+    const d = document.getElementById('detail');
+    d.classList.remove('on');
+    d.querySelectorAll('img[src*="assets/cards/"]').forEach((img) => img.removeAttribute('src'));
+  }
   document.getElementById('detail').onclick = (e) => { if (e.target.id === 'detail') closeDetail(); };
 
   async function reload() {
@@ -438,11 +448,15 @@ window.runCards = function () {
       const col = (RAR[card.grade] || {}).color || '#9aa4b2';
       const el = document.createElement('div'); el.className = 'pcard'; el.style.setProperty('--rc', col);
       el.style.width = '150px';
-      el.innerHTML = `<img src="${asset(card.code, card.grade)}">`;
+      el.innerHTML = `<img src="${md(card.code, card.grade)}">`;
       box.appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
       done.style.display = 'block'; done.textContent = 'Забрать';
       ov.classList.add('on');
-      done.onclick = () => { ov.classList.remove('on'); done.textContent = 'Забрать'; resolve(); };
+      done.onclick = () => {
+        ov.classList.remove('on'); done.textContent = 'Забрать';
+        box.querySelectorAll('img').forEach((img) => img.removeAttribute('src'));
+        resolve();
+      };
     });
   }
 
@@ -493,7 +507,11 @@ window.runCards = function () {
         s.style.animationDelay = (Math.random() * .3) + 's';
         parts.appendChild(s);
       }
-      const close = () => { jp.classList.remove('on'); jp.onclick = null; resolve(); };
+      const close = () => {
+        jp.classList.remove('on'); jp.onclick = null;
+        img.removeAttribute('src');
+        resolve();
+      };
       // авто-продолжение через 2.6с или по тапу (не раньше 0.8с, чтоб не проскочить)
       setTimeout(() => { jp.onclick = close; }, 800);
       setTimeout(close, 2600);
@@ -529,7 +547,13 @@ window.runCards = function () {
       ov.classList.remove('on'); void ov.offsetWidth; ov.classList.add('on');
       const phone = document.querySelector('.phone');
       setTimeout(() => { phone.classList.remove('shake'); void phone.offsetWidth; phone.classList.add('shake'); }, 850);
-      const close = () => { ov.classList.remove('on'); ov.onclick = null; resolve(); };
+      const close = () => {
+        ov.classList.remove('on'); ov.onclick = null;
+        ['evoS1', 'evoS2', 'evoS3', 'evoNewImg'].forEach((id) => {
+          const el = document.getElementById(id); if (el) el.removeAttribute('src');
+        });
+        resolve();
+      };
       setTimeout(() => { ov.onclick = close; }, 1600);   // тап не раньше, чем родилась карта
       setTimeout(close, 3400);
     });
@@ -593,7 +617,11 @@ window.runCards = function () {
         setTimeout(reveal, 560);
       }
     };
-    done.onclick = () => { ov.classList.remove('on'); reload(); };
+    done.onclick = () => {
+      ov.classList.remove('on');
+      box.querySelectorAll('img').forEach((img) => img.removeAttribute('src'));
+      reload();
+    };
   };
 
   // вкладки

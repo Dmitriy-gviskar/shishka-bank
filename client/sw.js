@@ -1,4 +1,7 @@
-const CACHE = 'shishka-v33';
+const CACHE = 'shishka-v34';
+const CARDS_CACHE = 'shishka-cards-v1';
+const CARDS_MAX = 120;       // thumb/md + немного full
+const CARDS_FULL_MAX = 30;   // full-res отдельно жёстче
 const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 'market.html', 'profile.html',
   'forest.html', 'games.html', 'album.html', 'news.html', 'achievements.html', 'deposit.html', 'horoscope.html', 'pot.html',
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
@@ -8,27 +11,67 @@ const PAGES = ['/', 'index.html', 'quests.html', 'shop.html', 'transfers.html', 
   'assets/quest/cam.svg', 'assets/quest/quest_done.webp',
   'assets/quest/quest_ic_home.webp', 'assets/quest/quest_ic_care.webp', 'assets/quest/quest_ic_health.webp',
   'assets/quest/quest_ic_learn.webp', 'assets/quest/quest_ic_self.webp', 'assets/quest/quest_ic_adventure.webp'];
-self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });  // клиент просит новый воркер встать немедленно
+
+function isCardUrl(pathname) {
+  return pathname.startsWith('/assets/cards/');
+}
+function isFullCard(pathname) {
+  // /assets/cards/code_1.webp — не thumb/ и не md/
+  return /^\/assets\/cards\/[^/]+\.webp$/.test(pathname);
+}
+
+async function trimCardsCache(cache) {
+  let keys = await cache.keys();
+  const fulls = keys.filter((r) => isFullCard(new URL(r.url).pathname));
+  while (fulls.length > CARDS_FULL_MAX) {
+    await cache.delete(fulls.shift());
+  }
+  keys = await cache.keys();
+  while (keys.length > CARDS_MAX) {
+    await cache.delete(keys.shift());
+    keys = await cache.keys();
+  }
+}
+
+async function cardsFetch(request) {
+  const cache = await caches.open(CARDS_CACHE);
+  const hit = await cache.match(request);
+  if (hit) {
+    // LRU: повторный put двигает запись «в конец» порядка keys()
+    cache.put(request, hit.clone()).catch(() => {});
+    return hit;
+  }
+  const res = await fetch(request);
+  if (res && res.ok) {
+    cache.put(request, res.clone()).then(() => trimCardsCache(cache)).catch(() => {});
+  }
+  return res;
+}
+
+self.addEventListener('message', (e) => { if (e.data === 'skip') self.skipWaiting(); });
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PAGES)).catch(() => {}));  // все экраны в кэш сразу
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(PAGES)).catch(() => {}));
   self.skipWaiting();
 });
 self.addEventListener('activate', (e) => { e.waitUntil((async () => {
   const keys = await caches.keys();
-  const hadOld = keys.some((k) => k !== CACHE);                                   // была прошлая версия = это ОБНОВЛЕНИЕ
-  await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))); // снести старый кэш
+  const keep = new Set([CACHE, CARDS_CACHE]);
+  const hadOld = keys.some((k) => !keep.has(k));
+  await Promise.all(keys.filter((k) => !keep.has(k)).map((k) => caches.delete(k)));
   await clients.claim();
-  // не перезагружаем открытые вкладки принудительно — теряется состояние (форма перевода, фото).
-  // Новый sw подхватится при следующей навигации; кэш уже обновлён.
   if (hadOld) {
     const wins = await clients.matchAll({ type: 'window' });
-    for (const c of wins) c.postMessage('update');  // мягкий сигнал «обнови страницу когда удобно»
+    for (const c of wins) c.postMessage('update');
   }
 })()); });
 self.addEventListener('fetch', (e) => {
   const u = new URL(e.request.url);
-  if (u.pathname.startsWith('/api/')) return;                          // API — всегда сеть
-  // разметка/код — NETWORK-FIRST: свежий деплой всегда побеждает, офлайн — из кэша (precache)
+  if (u.pathname.startsWith('/api/')) return;
+  if (isCardUrl(u.pathname)) {
+    e.respondWith(cardsFetch(e.request).catch(() => caches.open(CARDS_CACHE).then((c) => c.match(e.request))));
+    return;
+  }
+  // разметка/код — NETWORK-FIRST
   if (u.pathname === '/' || /\.(html|js|css)$/.test(u.pathname)) {
     e.respondWith(
       fetch(e.request)
@@ -37,7 +80,7 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
-  // картинки/ассеты — cache-first (быстро, они не меняются)
+  // прочие ассеты — cache-first в shell-кэше (не карты)
   e.respondWith(caches.open(CACHE).then((c) => c.match(e.request).then((hit) =>
     hit || fetch(e.request).then((res) => { if (res.ok) c.put(e.request, res.clone()); return res; }).catch(() => hit))));
 });

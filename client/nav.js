@@ -59,6 +59,8 @@
       if (!newPhone) throw 0;                                  // не наш шаблон — обычная навигация
       // 1) гасим таймеры прошлого экрана (иначе тикают в мёртвый DOM)
       (window.__timers || []).forEach(clearInterval); window.__timers = [];
+      // 1b) отпустить decoded bitmaps карт до замены DOM
+      if (window.releaseCardImages) window.releaseCardImages();
       // 2) переносим per-page стили из <head> (общий style.css оставляем как есть)
       document.querySelectorAll('[data-spa-style]').forEach((e) => e.remove());
       doc.querySelectorAll('head style, head link[rel="stylesheet"]').forEach((e) => {
