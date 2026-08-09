@@ -22,6 +22,63 @@ const REF_L2 = 50;   // твой друг позвал своего → тебе
 const REF_L3 = 25;   // друг друга позвал ещё кого-то → тебе +25
 const REF_PAY = { 1: REF_L1, 2: REF_L2, 3: REF_L3 };
 
+// Знакомый детям пул карт для развивающих игр (угадайка / память / слово / лишнее)
+const GAME_EASY = [
+  'lisa', 'volk', 'medved', 'zayac', 'belka', 'ezh', 'sova', 'enot', 'olen', 'kaban',
+  'bobr', 'krot', 'mysh', 'barsuk', 'los', 'filin', 'burunduk', 'lyagushka', 'yashcherica',
+  'dyatel', 'sinica', 'soroka', 'snegir', 'voron', 'solovey',
+  'babochka', 'korovka', 'pchela', 'muravey', 'komar', 'strekoza', 'kuznechik', 'ulitka',
+  'pauk', 'shmel', 'osa', 'gusenica', 'svetlyachok',
+  'romashka', 'oduvanchik', 'podsolnuh', 'muhomor', 'dub', 'bereza', 'el', 'sosna',
+  'malina', 'chernika', 'zemlyanika', 'klever', 'mak', 'ryabina', 'landysh', 'kolokolchik',
+];
+const GAME_CLUES = {
+  lisa: 'Рыжая, с пушистым хвостом', volk: 'Серый, воет по ночам', medved: 'Большой, любит мёд',
+  zayac: 'Длинные уши, прыгает', belka: 'Прыгает по деревьям, грызёт орехи', ezh: 'Колючий шарик',
+  sova: 'Ночная птица, говорит «ух»', enot: 'Полосатый хвостик и чёрная маска на мордочке',
+  olen: 'Ветвистые рога', kaban: 'Клыкастый лесной кабанчик', bobr: 'Строит плотины из веток',
+  krot: 'Роет норы под землёй', mysh: 'Маленькая, пищит', barsuk: 'Полосатая мордочка',
+  los: 'Очень большие рога и длинные ноги', filin: 'Крупная сова с кисточками на ушах',
+  burunduk: 'Полосатый спиной, как маленький бурундучок', lyagushka: 'Зелёная, квакает',
+  yashcherica: 'Быстрая, хвостик может отбросить', dyatel: 'Стучит клювом по дереву',
+  sinica: 'Маленькая жёлтогрудая птичка', soroka: 'Чёрно-белая, любит блестящее',
+  snegir: 'Зимой красная грудка', voron: 'Большая чёрная птица', solovey: 'Красиво поёт по ночам',
+  babochka: 'Красивые крылья, порхает', korovka: 'Красная в чёрный горошек',
+  pchela: 'Собирает мёд, жужжит', muravey: 'Маленький, живёт в муравейнике',
+  komar: 'Пищит и кусается летом', strekoza: 'Длинные крылья, летает у воды',
+  kuznechik: 'Зелёный, прыгает и стрекочет', ulitka: 'Ползает с домиком на спине',
+  pauk: 'Плетёт паутину', shmel: 'Мохнатый и громко жужжит', osa: 'Полосатая, может ужалить',
+  gusenica: 'Ползёт и потом станет бабочкой', svetlyachok: 'Светится в темноте',
+  romashka: 'Белые лепестки, жёлтая серединка', oduvanchik: 'Жёлтый, потом белый пух',
+  podsolnuh: 'Большой жёлтый цветок к солнцу', muhomor: 'Красная шляпка в белый горошек',
+  dub: 'Большое дерево с желудями', bereza: 'Белый ствол с чёрными пятнами',
+  el: 'Зелёная колючая, как на Новый год', sosna: 'Хвоя длинными иголками, шишки',
+  malina: 'Красные ягоды на кусте', chernika: 'Синие лесные ягоды',
+  zemlyanika: 'Маленькая красная ягодка', klever: 'Листочки по три', mak: 'Ярко-красный цветок',
+  ryabina: 'Гроздья красных ягод на дереве', landysh: 'Белые колокольчики и сильный запах',
+  kolokolchik: 'Цветок похож на колокольчик',
+};
+const shuffleArr = (arr) => {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+};
+const lettersOf = (name) => String(name || '').replace(/[^А-Яа-яЁёA-Za-z]/g, '');
+const catLabelRu = (c) => (c === 'zver' ? 'зверь или птица' : c === 'rastenie' ? 'растение или гриб'
+  : c === 'nasekomoe' ? 'насекомое' : 'лесной житель');
+const GAME_LABELS = {
+  multiply: 'Мини-игра: таблица умножения',
+  guess: 'Мини-игра: лесная угадайка',
+  count: 'Мини-игра: блиц-счёт',
+  memory: 'Мини-игра: найди пару',
+  word: 'Мини-игра: собери слово',
+  odd: 'Мини-игра: что лишнее',
+};
+const GAME_MAX = { multiply: 10, guess: 5, count: 30, memory: 6, word: 5, odd: 6 };
+
 async function creditCones(userId, amount, message) {
   await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [userId, amount]);
   await q(
@@ -966,75 +1023,28 @@ const api = {
     return { questions, duration: 30 };
   },
   'POST /api/game/guess/start': async (b, ctx) => {
-    // только знакомые детям существа — без выхухоли, златоглазки и т.п.
-    const EASY = [
-      'lisa', 'volk', 'medved', 'zayac', 'belka', 'ezh', 'sova', 'enot', 'olen', 'kaban',
-      'bobr', 'krot', 'mysh', 'barsuk', 'los', 'filin', 'burunduk', 'lyagushka', 'yashcherica',
-      'dyatel', 'sinica', 'soroka', 'snegir', 'voron', 'solovey',
-      'babochka', 'korovka', 'pchela', 'muravey', 'komar', 'strekoza', 'kuznechik', 'ulitka',
-      'pauk', 'shmel', 'osa', 'gusenica', 'svetlyachok',
-      'romashka', 'oduvanchik', 'podsolnuh', 'muhomor', 'dub', 'bereza', 'el', 'sosna',
-      'malina', 'chernika', 'zemlyanika', 'klever', 'mak', 'ryabina', 'landysh', 'kolokolchik',
-    ];
-    // короткие детские подсказки (без спойлера имени)
-    const CLUES = {
-      lisa: 'Рыжая, с пушистым хвостом', volk: 'Серый, воет по ночам', medved: 'Большой, любит мёд',
-      zayac: 'Длинные уши, прыгает', belka: 'Прыгает по деревьям, грызёт орехи', ezh: 'Колючий шарик',
-      sova: 'Ночная птица, говорит «ух»', enot: 'Полосатый хвостик и чёрная маска на мордочке',
-      olen: 'Ветвистые рога', kaban: 'Клыкастый лесной кабанчик', bobr: 'Строит плотины из веток',
-      krot: 'Роет норы под землёй', mysh: 'Маленькая, пищит', barsuk: 'Полосатая мордочка',
-      los: 'Очень большие рога и длинные ноги', filin: 'Крупная сова с кисточками на ушах',
-      burunduk: 'Полосатый спиной, как маленький бурундучок', lyagushka: 'Зелёная, квакает',
-      yashcherica: 'Быстрая, хвостик может отбросить', dyatel: 'Стучит клювом по дереву',
-      sinica: 'Маленькая жёлтогрудая птичка', soroka: 'Чёрно-белая, любит блестящее',
-      snegir: 'Зимой красная грудка', voron: 'Большая чёрная птица', solovey: 'Красиво поёт по ночам',
-      babochka: 'Красивые крылья, порхает', korovka: 'Красная в чёрный горошек',
-      pchela: 'Собирает мёд, жужжит', muravey: 'Маленький, живёт в муравейнике',
-      komar: 'Пищит и кусается летом', strekoza: 'Длинные крылья, летает у воды',
-      kuznechik: 'Зелёный, прыгает и стрекочет', ulitka: 'Ползает с домиком на спине',
-      pauk: 'Плетёт паутину', shmel: 'Мохнатый и громко жужжит', osa: 'Полосатая, может ужалить',
-      gusenica: 'Ползёт и потом станет бабочкой', svetlyachok: 'Светится в темноте',
-      romashka: 'Белые лепестки, жёлтая серединка', oduvanchik: 'Жёлтый, потом белый пух',
-      podsolnuh: 'Большой жёлтый цветок к солнцу', muhomor: 'Красная шляпка в белый горошек',
-      dub: 'Большое дерево с желудями', bereza: 'Белый ствол с чёрными пятнами',
-      el: 'Зелёная колючая, как на Новый год', sosna: 'Хвоя длинными иголками, шишки',
-      malina: 'Красные ягоды на кусте', chernika: 'Синие лесные ягоды',
-      zemlyanika: 'Маленькая красная ягодка', klever: 'Листочки по три', mak: 'Ярко-красный цветок',
-      ryabina: 'Гроздья красных ягод на дереве', landysh: 'Белые колокольчики и сильный запах',
-      kolokolchik: 'Цветок похож на колокольчик',
-    };
-    const shuffle = (arr) => {
-      const a = arr.slice();
-      for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-      }
-      return a;
-    };
     const beings = await q(
       `select t.code, t.name, t.category
          from card_types t
         where t.code = any($1::text[])
-        order by random() limit 5`, [EASY]);
+        order by random() limit 5`, [GAME_EASY]);
     const pool = await q(
-      `select code, name, category from card_types where code = any($1::text[])`, [EASY]);
-    const catLabel = (c) => (c === 'zver' ? 'зверь или птица' : c === 'rastenie' ? 'растение или гриб'
-      : c === 'nasekomoe' ? 'насекомое' : 'лесной житель');
-    const lettersOf = (name) => String(name || '').replace(/[^А-Яа-яЁёA-Za-z]/g, '').length;
+      `select code, name, category from card_types where code = any($1::text[])`, [GAME_EASY]);
     const questions = beings.map((row) => {
-      const same = shuffle(pool.filter((p) => p.code !== row.code && p.category === row.category));
-      const any = shuffle(pool.filter((p) => p.code !== row.code));
+      const same = shuffleArr(pool.filter((p) => p.code !== row.code && p.category === row.category));
+      const any = shuffleArr(pool.filter((p) => p.code !== row.code));
       const wrong = [];
       for (const p of same) { if (wrong.length >= 3) break; wrong.push(p); }
       for (const p of any) {
         if (wrong.length >= 3) break;
         if (!wrong.some((w) => w.code === p.code)) wrong.push(p);
       }
-      const options = shuffle([row.name, ...wrong.map((w) => w.name)]).slice(0, 4);
+      const options = shuffleArr([row.name, ...wrong.map((w) => w.name)]).slice(0, 4);
+      const letters = lettersOf(row.name);
       const hints = [
-        `Это ${catLabel(row.category)}.`,
-        CLUES[row.code] || 'Посмотри на картинку — она чуть размыта.',
-        `Имя начинается на «${row.name[0]}», всего ${lettersOf(row.name)} букв.`,
+        `Это ${catLabelRu(row.category)}.`,
+        GAME_CLUES[row.code] || 'Посмотри на картинку — она чуть размыта.',
+        `Имя начинается на «${row.name[0]}», всего ${letters.length} букв.`,
       ];
       return { code: row.code, name: row.name, hints, options };
     });
@@ -1047,14 +1057,62 @@ const api = {
     const correct = String(b.answer || '').trim().toLowerCase() === name.trim().toLowerCase();
     return { correct, name };
   },
+  'POST /api/game/memory/start': async (b, ctx) => {
+    const pairs = await q(
+      `select t.code, t.name from card_types t
+        where t.code = any($1::text[]) order by random() limit 6`, [GAME_EASY]);
+    if (pairs.length < 6) throw { code: 400, msg: 'мало карт для игры' };
+    await q(`insert into mini_games(child_id, game, last_played) values ($1,'memory',current_date)
+      on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+    return { pairs, duration: 90, reward: 4 };
+  },
+  'POST /api/game/word/start': async (b, ctx) => {
+    const rows = await q(
+      `select t.code, t.name, t.category from card_types t
+        where t.code = any($1::text[]) order by random()`, [GAME_EASY]);
+    const ok = rows.filter((r) => {
+      const L = lettersOf(r.name);
+      return L.length >= 3 && L.length <= 6 && !/[\s-]/.test(r.name);
+    }).slice(0, 5);
+    if (ok.length < 5) throw { code: 400, msg: 'мало слов для игры' };
+    const questions = ok.map((r) => {
+      const letters = shuffleArr(lettersOf(r.name).toUpperCase().split(''));
+      return { code: r.code, name: r.name, category: r.category, letters };
+    });
+    await q(`insert into mini_games(child_id, game, last_played) values ($1,'word',current_date)
+      on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+    return { questions, reward: 4 };
+  },
+  'POST /api/game/odd/start': async (b, ctx) => {
+    const pool = await q(
+      `select code, name, category from card_types where code = any($1::text[])`, [GAME_EASY]);
+    const byCat = { zver: [], rastenie: [], nasekomoe: [] };
+    for (const p of pool) if (byCat[p.category]) byCat[p.category].push(p);
+    const cats = Object.keys(byCat).filter((c) => byCat[c].length >= 3);
+    const rounds = [];
+    for (let i = 0; i < 6; i++) {
+      const major = cats[Math.floor(Math.random() * cats.length)];
+      const others = cats.filter((c) => c !== major);
+      const minor = others[Math.floor(Math.random() * others.length)];
+      const maj = shuffleArr(byCat[major]).slice(0, 3);
+      const odd = shuffleArr(byCat[minor])[0];
+      if (!odd || maj.length < 3) continue;
+      const items = shuffleArr([...maj, odd]).map((x) => ({
+        code: x.code, name: x.name, category: x.category,
+      }));
+      rounds.push({ items, oddCode: odd.code });
+    }
+    if (rounds.length < 6) throw { code: 400, msg: 'не удалось собрать раунды' };
+    await q(`insert into mini_games(child_id, game, last_played) values ($1,'odd',current_date)
+      on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+    return { rounds, reward: 4 };
+  },
   'POST /api/game/finish': async (b, ctx) => {
     const game = String(b.game || 'multiply');
-    if (!['multiply', 'guess', 'count'].includes(game)) throw { code: 400, msg: 'неизвестная игра' };
-    const maxScore = game === 'multiply' ? 10 : game === 'guess' ? 5 : 30;
+    if (!GAME_LABELS[game]) throw { code: 400, msg: 'неизвестная игра' };
+    const maxScore = GAME_MAX[game] || 10;
     const score = Math.min(Math.max(parseInt(b.score, 10) || 0, 0), maxScore);
-    const label = game === 'multiply' ? 'Мини-игра: таблица умножения'
-      : game === 'guess' ? 'Мини-игра: лесная угадайка'
-      : 'Мини-игра: блиц-счёт';
+    const label = GAME_LABELS[game];
 
     const w0 = await one('select balance from wallets where user_id=$1', [ctx.child]);
     if (score <= 0) return { ok: true, reward: 0, balance: w0?.balance ?? 0 };
@@ -1075,15 +1133,28 @@ const api = {
       reward = level === 1 ? 3 : level === 2 ? 5 : 8;
     } else if (game === 'guess') {
       reward = 5;
-    } else {
+    } else if (game === 'count') {
       reward = score;
+    } else if (game === 'memory') {
+      reward = score >= 6 ? 4 : 0; // награда только за полный забег
+    } else if (game === 'word' || game === 'odd') {
+      reward = score > 0 ? 4 : 0;
+    }
+
+    if (reward <= 0 && game === 'memory') {
+      await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,current_date)
+        on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=current_date`,
+        [ctx.child, game, score]);
+      return { ok: true, reward: 0, balance: w0.balance };
     }
 
     await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,current_date)
       on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=current_date`,
       [ctx.child, game, score]);
-    await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [ctx.child, reward]);
-    await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', $3 from users where id=$1", [ctx.child, reward, label]);
+    if (reward > 0) {
+      await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [ctx.child, reward]);
+      await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', $3 from users where id=$1", [ctx.child, reward, label]);
+    }
     await rpc('check_achievements', [ctx.child]).catch(() => {});
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
     return { ok: true, reward, balance: w.balance };

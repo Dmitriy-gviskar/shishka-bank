@@ -1991,11 +1991,14 @@ if (page === 'forest.html') {
   if (document.getElementById('talkOv')) document.getElementById('talkOv').onclick = (e) => { if (e.target.id === 'talkOv') closeTalk(); };
 }
 
-  // ── Мини-игры (умножение / угадайка / блиц-счёт) ──
+  // ── Мини-игры (умножение / угадайка / блиц / память / слово / лишнее) ──
   let currentGame = null;
   let gameQuestions = [], gameIdx = 0, gameCorrect = 0;
   let guessQuestions = [], guessIdx = 0, guessCorrect = 0;
   let countQuestions = [], countIdx = 0, countScore = 0, countTimer = null, countLeft = 0, countDuration = 30;
+  let memoryTimer = null, memoryLeft = 0, memoryMatched = 0, memoryMoves = 0, memoryLock = false, memoryOpen = [];
+  let wordQuestions = [], wordIdx = 0, wordCorrect = 0, wordBuilt = '';
+  let oddRounds = [], oddIdx = 0, oddCorrect = 0;
 
   function setGameInputMode(mode) {
     const a = document.getElementById('gameA');
@@ -2077,6 +2080,10 @@ if (page === 'forest.html') {
   function closeGameOv() {
     clearInterval(countTimer);
     countTimer = null;
+    clearInterval(memoryTimer);
+    memoryTimer = null;
+    memoryOpen = [];
+    memoryLock = false;
     const q = document.getElementById('gameQ');
     if (q) { q.innerHTML = ''; q.textContent = ''; }
     const lv = document.getElementById('gameLevels');
@@ -2088,6 +2095,8 @@ if (page === 'forest.html') {
   function resetGameSheet(title) {
     clearInterval(countTimer);
     countTimer = null;
+    clearInterval(memoryTimer);
+    memoryTimer = null;
     ensureGamePad();
     document.getElementById('gameTitle').textContent = title;
     document.getElementById('gameQ').textContent = '…';
@@ -2338,10 +2347,250 @@ if (page === 'forest.html') {
     };
   }
 
+  async function startMemoryGame() {
+    currentGame = 'memory';
+    resetGameSheet('Найди пару');
+    showGamePlay(false);
+    document.getElementById('gameQ').textContent = 'Загрузка…';
+    const r = await api('/api/game/memory/start', {});
+    if (r.error) {
+      document.getElementById('gameMsg').textContent = r.error;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+      return;
+    }
+    memoryMatched = 0; memoryMoves = 0; memoryOpen = []; memoryLock = false;
+    memoryLeft = r.duration || 90;
+    const tiles = shuffleArr(r.pairs.flatMap((p) => [
+      { code: p.code, name: p.name, id: p.code + '_a' },
+      { code: p.code, name: p.name, id: p.code + '_b' },
+    ]));
+    const q = document.getElementById('gameQ');
+    q.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'mem-grid';
+    tiles.forEach((t) => {
+      const card = document.createElement('div');
+      card.className = 'mem-card';
+      card.dataset.code = t.code;
+      card.innerHTML = `<div class="back">🌰</div><div class="face"><img src="${cardUrl(t.code, 1, 'sm')}" alt=""></div>`;
+      card.onclick = () => onMemoryFlip(card);
+      grid.appendChild(card);
+    });
+    q.appendChild(grid);
+    setGameProg(0, 6, `⏱ ${memoryLeft}с · 0/6`);
+    document.getElementById('gameMsg').textContent = 'Открой две одинаковые карты';
+    clearInterval(memoryTimer);
+    memoryTimer = setInterval(() => {
+      memoryLeft--;
+      setGameProg(memoryMatched, 6, `⏱ ${Math.max(memoryLeft, 0)}с · ${memoryMatched}/6 · ходов ${memoryMoves}`);
+      if (memoryLeft <= 0) {
+        clearInterval(memoryTimer);
+        memoryTimer = null;
+        document.getElementById('gameMsg').textContent = 'Время вышло — можно доиграть, награда за все 6 пар';
+        document.getElementById('gameMsg').style.color = '#8a6238';
+      }
+    }, 1000);
+  }
+
+  function onMemoryFlip(card) {
+    if (memoryLock || card.classList.contains('open') || card.classList.contains('matched')) return;
+    card.classList.add('open');
+    memoryOpen.push(card);
+    if (memoryOpen.length < 2) return;
+    memoryMoves++;
+    memoryLock = true;
+    const [a, b] = memoryOpen;
+    if (a.dataset.code === b.dataset.code) {
+      a.classList.add('matched');
+      b.classList.add('matched');
+      memoryMatched++;
+      flashStage(true);
+      memoryOpen = [];
+      memoryLock = false;
+      setGameProg(memoryMatched, 6, `⏱ ${Math.max(memoryLeft, 0)}с · ${memoryMatched}/6 · ходов ${memoryMoves}`);
+      if (memoryMatched >= 6) {
+        clearInterval(memoryTimer);
+        memoryTimer = null;
+        showGameDone(`Все пары! Ходов: ${memoryMoves}`, '🧠');
+      }
+    } else {
+      flashStage(false);
+      setTimeout(() => {
+        a.classList.remove('open');
+        b.classList.remove('open');
+        memoryOpen = [];
+        memoryLock = false;
+      }, 600);
+    }
+  }
+
+  function shuffleArr(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  async function startWordGame() {
+    currentGame = 'word';
+    resetGameSheet('Собери слово');
+    showGamePlay(false);
+    document.getElementById('gameQ').textContent = 'Загрузка…';
+    const r = await api('/api/game/word/start', {});
+    if (r.error) {
+      document.getElementById('gameMsg').textContent = r.error;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+      return;
+    }
+    wordQuestions = r.questions; wordIdx = 0; wordCorrect = 0;
+    showWordQ();
+  }
+
+  function showWordQ() {
+    const q = wordQuestions[wordIdx];
+    wordBuilt = '';
+    const used = [];
+    const box = document.getElementById('gameQ');
+    const cat = q.category === 'zver' ? 'зверь или птица'
+      : q.category === 'rastenie' ? 'растение' : 'насекомое';
+    box.innerHTML = `<img src="${cardUrl(q.code, 1, 'md')}" alt="" style="width:120px;height:160px;object-fit:cover;border-radius:14px;border:3px solid #fff;box-shadow:0 0 0 3px #c9a86a">
+      <div class="word-built" id="wordBuilt"></div>
+      <div class="word-letters" id="wordLetters"></div>
+      <div class="word-actions">
+        <button type="button" id="wordClear">Стереть</button>
+        <button type="button" class="go" id="wordCheck">Проверить</button>
+      </div>`;
+    const lettersEl = document.getElementById('wordLetters');
+    const builtEl = document.getElementById('wordBuilt');
+    const paintBuilt = () => {
+      builtEl.innerHTML = wordBuilt
+        ? wordBuilt.split('').map((ch) => `<span>${esc(ch)}</span>`).join('')
+        : '<span style="opacity:.35">?</span>';
+    };
+    paintBuilt();
+    q.letters.forEach((ch, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = ch;
+      b.onclick = () => {
+        if (used[i] || wordBuilt.length >= q.letters.length) return;
+        used[i] = true;
+        b.disabled = true;
+        wordBuilt += ch;
+        paintBuilt();
+      };
+      lettersEl.appendChild(b);
+    });
+    document.getElementById('wordClear').onclick = () => {
+      wordBuilt = '';
+      used.fill(false);
+      [...lettersEl.children].forEach((b) => { b.disabled = false; });
+      paintBuilt();
+      document.getElementById('gameMsg').textContent = '';
+    };
+    document.getElementById('wordCheck').onclick = () => {
+      const target = (q.name || '').replace(/[^А-Яа-яЁёA-Za-z]/g, '').toUpperCase();
+      const got = wordBuilt.toUpperCase();
+      if (!got) return;
+      if (got === target) {
+        wordCorrect++;
+        flashStage(true);
+        document.getElementById('gameMsg').textContent = `Верно! ${q.name}`;
+        document.getElementById('gameMsg').style.color = '#5f8e37';
+      } else {
+        flashStage(false);
+        document.getElementById('gameMsg').textContent = `Почти! Это «${q.name}». Начинается на «${q.name[0]}»`;
+        document.getElementById('gameMsg').style.color = '#b3452e';
+      }
+      wordIdx++;
+      setGameProg(wordIdx, 5);
+      if (wordIdx >= 5) {
+        setTimeout(() => showGameDone(`Собрано: ${wordCorrect} из 5`, wordCorrect >= 4 ? '📖' : '✏️'), 700);
+      } else {
+        setTimeout(showWordQ, 900);
+      }
+    };
+    setGameProg(wordIdx, 5);
+    document.getElementById('gameMsg').textContent = `Это ${cat}. Собери имя из букв`;
+    document.getElementById('gameMsg').style.color = '#5a3a18';
+  }
+
+  async function startOddGame() {
+    currentGame = 'odd';
+    resetGameSheet('Что лишнее?');
+    showGamePlay(false);
+    document.getElementById('gameQ').textContent = 'Загрузка…';
+    const r = await api('/api/game/odd/start', {});
+    if (r.error) {
+      document.getElementById('gameMsg').textContent = r.error;
+      document.getElementById('gameMsg').style.color = '#b3452e';
+      return;
+    }
+    oddRounds = r.rounds; oddIdx = 0; oddCorrect = 0;
+    showOddQ();
+  }
+
+  function showOddQ() {
+    const round = oddRounds[oddIdx];
+    const box = document.getElementById('gameQ');
+    box.innerHTML = '';
+    const grid = document.createElement('div');
+    grid.className = 'odd-grid';
+    let locked = false;
+    const catRu = (c) => (c === 'zver' ? 'звери/птицы' : c === 'rastenie' ? 'растения' : 'насекомые');
+    round.items.forEach((it) => {
+      const card = document.createElement('div');
+      card.className = 'odd-card';
+      card.dataset.code = it.code;
+      card.innerHTML = `<img src="${cardUrl(it.code, 1, 'sm')}" alt=""><div class="nm">${esc(it.name)}</div>`;
+      card.onclick = () => {
+        if (locked) return;
+        locked = true;
+        [...grid.querySelectorAll('.odd-card')].forEach((c) => c.classList.add('show-name'));
+        const oddItem = round.items.find((x) => x.code === round.oddCode);
+        const maj = round.items.find((x) => x.code !== round.oddCode);
+        if (it.code === round.oddCode) {
+          oddCorrect++;
+          card.classList.add('pick-ok');
+          flashStage(true);
+          document.getElementById('gameMsg').textContent =
+            `Верно! Лишний: ${oddItem.name} — ${catRu(oddItem.category)}, остальные — ${catRu(maj.category)}`;
+          document.getElementById('gameMsg').style.color = '#5f8e37';
+        } else {
+          card.classList.add('pick-bad');
+          [...grid.children].forEach((c) => {
+            if (c.dataset.code === round.oddCode) c.classList.add('pick-ok');
+          });
+          flashStage(false);
+          document.getElementById('gameMsg').textContent =
+            `Лишний был ${oddItem.name} (${catRu(oddItem.category)})`;
+          document.getElementById('gameMsg').style.color = '#b3452e';
+        }
+        oddIdx++;
+        setGameProg(oddIdx, 6);
+        if (oddIdx >= 6) {
+          setTimeout(() => showGameDone(`Верно: ${oddCorrect} из 6`, oddCorrect >= 5 ? '🦊' : '🌿'), 1100);
+        } else {
+          setTimeout(showOddQ, 1200);
+        }
+      };
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+    setGameProg(oddIdx, 6);
+    document.getElementById('gameMsg').textContent = 'Кто лишний? Нажми на карту';
+    document.getElementById('gameMsg').style.color = '#5a3a18';
+  }
+
   if (document.getElementById('gameClaim')) {
     document.getElementById('gameClaim').onclick = async () => {
       const score = currentGame === 'count' ? countScore
         : currentGame === 'guess' ? guessCorrect
+        : currentGame === 'memory' ? memoryMatched
+        : currentGame === 'word' ? wordCorrect
+        : currentGame === 'odd' ? oddCorrect
         : gameCorrect;
       await claimGameReward(score);
     };
@@ -2354,16 +2603,25 @@ if (page === 'forest.html') {
   window._startMultiply = startMultiplyGame;
   window._startGuess = startGuessGame;
   window._startCount = startCountGame;
+  window._startMemory = startMemoryGame;
+  window._startWord = startWordGame;
+  window._startOdd = startOddGame;
 
   // привязка плиток на странице игр (SPA-навигация не выполняет inline-скрипты)
   if ((location.pathname.split('/').pop() || '') === 'games.html') (function bind() {
     const m = document.getElementById('gmMultiply');
     const g = document.getElementById('gmGuess');
     const c = document.getElementById('gmCount');
-    if (!m || !g || !c) return setTimeout(bind, 50);
+    const mem = document.getElementById('gmMemory');
+    const w = document.getElementById('gmWord');
+    const o = document.getElementById('gmOdd');
+    if (!m || !g || !c || !mem || !w || !o) return setTimeout(bind, 50);
     m.onclick = (e) => { e.preventDefault(); window._startMultiply(); };
     g.onclick = (e) => { e.preventDefault(); window._startGuess(); };
     c.onclick = (e) => { e.preventDefault(); window._startCount(); };
+    mem.onclick = (e) => { e.preventDefault(); window._startMemory(); };
+    w.onclick = (e) => { e.preventDefault(); window._startWord(); };
+    o.onclick = (e) => { e.preventDefault(); window._startOdd(); };
   })();
 
 // ══════════════ Лесная коллекция (карточки) ══════════════

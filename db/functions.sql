@@ -635,6 +635,9 @@ returns int language sql stable security definer set search_path = public as $$
       join guilds g on g.id=gh.guild_id where g.created_by=p_child and gh.kind='member_joined')
     when 'math_score'       then (select coalesce(score,0) from mini_games where child_id=p_child and game='multiply')
     when 'count_score'      then (select coalesce(score,0) from mini_games where child_id=p_child and game='count')
+    when 'memory_score'     then (select coalesce(score,0) from mini_games where child_id=p_child and game='memory')
+    when 'word_score'       then (select coalesce(score,0) from mini_games where child_id=p_child and game='word')
+    when 'odd_score'        then (select coalesce(score,0) from mini_games where child_id=p_child and game='odd')
     else 0 end::int
 $$;
 

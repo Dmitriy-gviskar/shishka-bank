@@ -116,6 +116,52 @@
     box-shadow:0 5px 0 #3f6b2e, inset 0 2px 0 rgba(255,255,255,.28);
     text-shadow:0 1px 1px rgba(0,0,0,.2)}
   #gameClaim:active{transform:translateY(3px);box-shadow:0 2px 0 #3f6b2e, inset 0 2px 0 rgba(255,255,255,.28)}
+
+  /* Найди пару */
+  .mem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:320px;margin:0 auto}
+  .mem-card{aspect-ratio:1;border-radius:14px;cursor:pointer;position:relative;
+    border:3px solid #fff;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.18);
+    background:linear-gradient(180deg,#c4a574,#8a6238);overflow:hidden;
+    transition:transform .12s}
+  .mem-card:active{transform:scale(.96)}
+  .mem-card .face,.mem-card .back{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .mem-card .back{font-size:28px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.2))}
+  .mem-card .face{background:linear-gradient(180deg,#fffaf0,#f3e7cf);display:none}
+  .mem-card .face img{width:78%;height:78%;object-fit:contain}
+  .mem-card.open .face,.mem-card.matched .face{display:flex}
+  .mem-card.open .back,.mem-card.matched .back{display:none}
+  .mem-card.matched{opacity:.85;box-shadow:0 0 0 3px #6fad45,0 3px 0 rgba(60,100,30,.2)}
+
+  /* Собери слово */
+  .word-built{min-height:48px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+  .word-built span{min-width:32px;height:40px;padding:0 8px;display:flex;align-items:center;justify-content:center;
+    background:#fff;border:3px solid #fff;border-radius:10px;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:22px;color:#3d2a14}
+  .word-letters{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:6px}
+  .word-letters button{min-width:44px;height:44px;padding:0 10px;border:3px solid #fff;border-radius:12px;cursor:pointer;
+    background:linear-gradient(180deg,#fff8eb,#f0d7a4);box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.18);
+    font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:20px;color:#5a3a18}
+  .word-letters button:disabled{opacity:.35}
+  .word-letters button:active{transform:translateY(2px)}
+  .word-actions{display:flex;gap:8px;justify-content:center;margin-top:10px}
+  .word-actions button{flex:1;max-width:140px;height:44px;border:3px solid #fff;border-radius:14px;cursor:pointer;
+    font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:15px;color:#5a3a18;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.18)}
+  .word-actions button.go{background:linear-gradient(180deg,#9ad65f,#6fad45);color:#fff;border-color:#3f6b2e;
+    box-shadow:0 0 0 2px #5f9a38,0 3px 0 rgba(60,100,30,.25)}
+
+  /* Что лишнее */
+  .odd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:300px;margin:0 auto}
+  .odd-card{border-radius:16px;padding:8px;cursor:pointer;text-align:center;
+    background:linear-gradient(180deg,#fffaf0,#f3e7cf);border:3px solid #fff;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.18);transition:transform .1s}
+  .odd-card:active{transform:scale(.96)}
+  .odd-card img{width:100%;aspect-ratio:1;object-fit:contain;border-radius:12px;background:#fff8eb}
+  .odd-card .nm{display:none;margin-top:4px;font-weight:900;font-size:12px;color:#5a3a18;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .odd-card.show-name .nm{display:block}
+  .odd-card.pick-ok{box-shadow:0 0 0 3px #6fad45,0 3px 0 rgba(60,100,30,.25)}
+  .odd-card.pick-bad{box-shadow:0 0 0 3px #c45c4a,0 3px 0 rgba(120,40,30,.25)}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Развивающие игры</div>
@@ -173,6 +219,30 @@
         <div class="nm">Блиц-счёт</div>
         <div class="ds">Сложение и вычитание на скорость · 30 сек</div>
         <span class="rw"><img src="assets/coin1.webp" alt=""> 1 шишка за ответ</span>
+      </div>
+    </a>
+    <a class="gtile" href="#" id="gmMemory">
+      <div class="ic"><img src="assets/chest_closed.webp" alt=""></div>
+      <div class="body">
+        <div class="nm">Найди пару</div>
+        <div class="ds">Память · 6 пар лесных карт · 90 сек</div>
+        <span class="rw"><img src="assets/coin1.webp" alt=""> 4 за полный забег</span>
+      </div>
+    </a>
+    <a class="gtile" href="#" id="gmWord">
+      <div class="ic"><img src="assets/spirit_scroll.webp" alt=""></div>
+      <div class="body">
+        <div class="nm">Собери слово</div>
+        <div class="ds">Сложи имя зверя или растения из букв</div>
+        <span class="rw"><img src="assets/coin1.webp" alt=""> 4 за забег</span>
+      </div>
+    </a>
+    <a class="gtile" href="#" id="gmOdd">
+      <div class="ic"><img src="assets/coin1.webp" alt=""></div>
+      <div class="body">
+        <div class="nm">Что лишнее?</div>
+        <div class="ds">Найди карту не из своей группы</div>
+        <span class="rw"><img src="assets/coin1.webp" alt=""> 4 за забег</span>
       </div>
     </a>
   </div>
