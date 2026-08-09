@@ -16,10 +16,12 @@
   .greet img{width:56px;height:56px;
     filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 4px 6px rgba(60,40,15,.3))}
   .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:13px;padding:8px 12px}
-  /* ровно 2 полных ряда плашек (+ скролл дальше), без обрезания посередине */
+  /* ровно 3 полных ряда плашек (+ скролл дальше), без обрезания посередине */
   .friends{margin-top:2px;display:flex;gap:8px;justify-content:center;align-content:flex-start;flex-wrap:wrap;
     padding:8px 4px 12px;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;
-    flex:none;height:216px;box-sizing:border-box;
+    flex:none;box-sizing:border-box;
+    /* 3×90 + 2×gap8 + pad20 + border5 */
+    height:calc(3 * 90px + 2 * 8px + 20px + 5px);
     background:rgba(255,248,235,.55);border:2.5px solid #fff;border-radius:16px;
     box-shadow:0 0 0 2px #c9a86a}
   .friends::-webkit-scrollbar{width:0}
