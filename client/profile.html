@@ -68,14 +68,16 @@
     box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
   .grove h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 4px;
     font-family:"Fredoka","Nunito",sans-serif}
-  .grove .hook{text-align:center;font-weight:800;color:#8a5a20;font-size:13px;line-height:1.35;margin-bottom:10px;
+  .grove .hook{text-align:center;font-weight:800;color:#8a5a20;font-size:12.5px;line-height:1.4;margin-bottom:10px;
     font-family:"Fredoka","Nunito",sans-serif}
-  .grove .hook img{width:18px;height:18px;vertical-align:-3px}
+  .grove .hook img{width:16px;height:16px;vertical-align:-3px}
   .grove-stats{display:flex;gap:8px;margin-bottom:10px}
   .grove-stat{flex:1;text-align:center;background:rgba(255,255,255,.55);border:2.5px solid #fff;border-radius:14px;
     padding:8px 6px;box-shadow:0 0 0 2px #c9a86a}
   .grove-stat .n{font-weight:900;font-size:22px;color:#5f8e37;font-family:"Fredoka","Nunito",sans-serif;line-height:1}
   .grove-stat .l{font-weight:800;font-size:11px;color:#8a5a20;margin-top:3px}
+  .ref-sec{font-weight:900;color:var(--ink);font-size:13px;margin:10px 2px 6px;
+    font-family:"Fredoka","Nunito",sans-serif}
   .grove-code{text-align:center;font-weight:900;font-size:22px;letter-spacing:2px;color:var(--ink);
     background:#fffaf0;border:3px solid #fff;border-radius:14px;padding:10px;margin-bottom:8px;
     box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
@@ -112,17 +114,24 @@
 
   <div class="grove" id="grove">
     <h3>Поляна дружбы</h3>
-    <div class="hook">Позови друга посадить дерево — получишь <img src="assets/coin1.webp" alt=""> <b id="refReward">100</b></div>
+    <div class="hook">
+      Друг посадил дерево → тебе <img src="assets/coin1.webp" alt=""> <b id="refReward">100</b>.<br>
+      Он позвал своего → тебе ещё <img src="assets/coin1.webp" alt=""> <b id="refRewardL2">50</b>. Без потолка!
+    </div>
     <div class="grove-stats">
-      <div class="grove-stat"><div class="n" id="refCount">0</div><div class="l">друзей в лесу</div></div>
-      <div class="grove-stat"><div class="n" id="refEarned">0</div><div class="l">шишек за друзей</div></div>
+      <div class="grove-stat"><div class="n" id="refCount">0</div><div class="l">прямых друзей</div></div>
+      <div class="grove-stat"><div class="n" id="refCountL2">0</div><div class="l">друзей друзей</div></div>
+      <div class="grove-stat"><div class="n" id="refEarned">0</div><div class="l">шишек всего</div></div>
     </div>
     <div class="grove-code" id="refCode">······</div>
     <div class="grove-actions">
       <button class="btn btn-sm" id="refCopyBtn" type="button">Скопировать ссылку</button>
       <button class="btn btn-sm" id="refQrBtn" type="button">QR другу</button>
     </div>
+    <div class="ref-sec">Твои друзья</div>
     <div id="refFriends"><div class="ref-empty">Пока никого — позови первого!</div></div>
+    <div class="ref-sec">Друзья друзей</div>
+    <div id="refCascade"><div class="ref-empty">Когда твой друг позовёт кого-то — здесь +50</div></div>
   </div>
 
   <div class="passport">

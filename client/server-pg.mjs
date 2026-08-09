@@ -17,8 +17,8 @@ import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 // Раньше был предсказуемым (ИМЯ+порядковый номер) и ломался на букве Ё — теперь развязан от имени.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const genLoginCode = () => Array.from({ length: 6 }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
-const REF_REWARD = 100;       // шишки зовущему, когда друг посадил дерево
-const REF_MAX = 50;           // потолок приглашений на одного ребёнка
+const REF_L1 = 100;  // ты позвал друга → он посадил дерево
+const REF_L2 = 50;   // твой друг позвал своего друга → тебе тоже капает
 
 async function creditCones(userId, amount, message) {
   await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [userId, amount]);
@@ -26,6 +26,18 @@ async function creditCones(userId, amount, message) {
     `insert into transactions(circle_id, to_user, amount, type, message)
        select circle_id, $1, $2, 'reward', $3 from users where id=$1`,
     [userId, amount, message]);
+}
+
+async function payReferralLevel(beneficiaryId, sourceUserId, level, amount, message) {
+  const row = await one(
+    `insert into referral_rewards(beneficiary_id, source_user_id, level, amount)
+       values ($1,$2,$3,$4)
+       on conflict (beneficiary_id, source_user_id, level) do nothing
+       returning id`,
+    [beneficiaryId, sourceUserId, level, amount]);
+  if (!row) return false;
+  await creditCones(beneficiaryId, amount, message);
+  return true;
 }
 
 async function ensureReferralCode(childId) {
@@ -49,22 +61,37 @@ async function applyReferral(referrerCode, newChildId, newName) {
   const ref = String(referrerCode || '').toUpperCase().trim();
   if (!ref || ref.length < 4) return null;
   const referrer = await one(
-    `select id, name from users where referral_code=$1 and role='child'`, [ref]);
+    `select id, name, referred_by from users where referral_code=$1 and role='child'`, [ref]);
   if (!referrer || referrer.id === newChildId) return null;
-  const cnt = await one('select count(*)::int as c from referrals where referrer_id=$1', [referrer.id]);
-  if ((cnt?.c || 0) >= REF_MAX) return null;
   const ins = await one(
     `insert into referrals(referrer_id, referred_id, reward)
        values ($1,$2,$3)
        on conflict (referred_id) do nothing
        returning id`,
-    [referrer.id, newChildId, REF_REWARD]);
+    [referrer.id, newChildId, REF_L1]);
   if (!ins) return null;
   await q('update users set referred_by=$1 where id=$2 and referred_by is null', [referrer.id, newChildId]);
-  await creditCones(referrer.id, REF_REWARD, `Друг ${newName} посадил дерево!`);
+
+  // L1: прямой зовущий
+  await payReferralLevel(referrer.id, newChildId, 1, REF_L1, `Друг ${newName} посадил дерево!`);
   await q('update referrals set rewarded_at=now() where id=$1', [ins.id]);
   try { await rpc('bump_reputation', [referrer.id, 'generosity', 3]); } catch {}
-  return { referrer: referrer.name, reward: REF_REWARD };
+
+  // L2: кто привёл зовущего — «друг друга»
+  let l2 = null;
+  if (referrer.referred_by && referrer.referred_by !== newChildId && referrer.referred_by !== referrer.id) {
+    const upline = await one(`select id, name from users where id=$1 and role='child'`, [referrer.referred_by]);
+    if (upline) {
+      const ok = await payReferralLevel(
+        upline.id, newChildId, 2, REF_L2,
+        `Друг ${referrer.name} привёл ${newName}!`);
+      if (ok) {
+        l2 = { name: upline.name, reward: REF_L2 };
+        try { await rpc('bump_reputation', [upline.id, 'generosity', 1]); } catch {}
+      }
+    }
+  }
+  return { referrer: referrer.name, reward: REF_L1, upline: l2 };
 }
 
 const DIR = dirname(fileURLToPath(import.meta.url));
@@ -315,23 +342,44 @@ const api = {
 
   'GET /api/referral': async (b, ctx) => {
     const code = await ensureReferralCode(ctx.child);
-    const rows = await q(
+    const friends = await q(
       `select u.name, r.reward, r.created_at, r.rewarded_at
          from referrals r join users u on u.id=r.referred_id
         where r.referrer_id=$1
-        order by r.created_at desc limit 30`, [ctx.child]);
-    const earned = rows.reduce((s, r) => s + (r.rewarded_at ? r.reward : 0), 0);
+        order by r.created_at desc limit 50`, [ctx.child]);
+    const rewards = await q(
+      `select rr.level, rr.amount, rr.created_at, u.name as source_name, mid.name as via_name
+         from referral_rewards rr
+         join users u on u.id=rr.source_user_id
+         left join users mid on mid.id = u.referred_by
+        where rr.beneficiary_id=$1
+        order by rr.created_at desc limit 80`, [ctx.child]);
+    const earned = rewards.reduce((s, r) => s + r.amount, 0);
+    const earnedL1 = rewards.filter((r) => r.level === 1).reduce((s, r) => s + r.amount, 0);
+    const earnedL2 = rewards.filter((r) => r.level === 2).reduce((s, r) => s + r.amount, 0);
+    const countL2 = rewards.filter((r) => r.level === 2).length;
     return {
       code,
-      reward: REF_REWARD,
-      max: REF_MAX,
-      count: rows.length,
+      reward: REF_L1,
+      rewardL2: REF_L2,
+      count: friends.length,
+      countL2,
       earned,
-      friends: rows.map((r) => ({
+      earnedL1,
+      earnedL2,
+      friends: friends.map((r) => ({
         name: r.name,
         reward: r.reward,
+        level: 1,
         at: r.created_at,
         paid: !!r.rewarded_at,
+      })),
+      cascade: rewards.filter((r) => r.level === 2).slice(0, 30).map((r) => ({
+        name: r.source_name,
+        via: r.via_name,
+        reward: r.amount,
+        level: 2,
+        at: r.created_at,
       })),
     };
   },
