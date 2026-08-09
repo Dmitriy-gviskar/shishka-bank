@@ -61,10 +61,11 @@ begin
   -- магазин впечатлений (общий для круга)
 ${cat.gifts.map((g) => `  insert into shop_items(circle_id,type,title,price) values (v_circle,'impression',${q(g.title)},${g.price});`).join('\n')}
 
-  -- задания каждому ребёнку (весь каталог)
-  insert into tasks(circle_id,child_id,title,reward,category,needs_photo)
-    select v_circle, u.id, t.title, t.reward, coalesce(t.category,'home'), t.needs_photo
-    from users u, task_templates t where u.circle_id=v_circle and u.role='child';
+  -- каждому ребёнку — 6 ежедневных дел на сегодня (не весь каталог)
+  perform ensure_daily_tasks(v_taya);
+  perform ensure_daily_tasks(v_tim);
+  perform ensure_daily_tasks(v_eva);
+  perform ensure_daily_tasks(v_alex);
 
   -- семейные механики
   insert into pots(circle_id,title,goal,collected) values (v_circle,'Пицца-пати всей компанией',100,0);

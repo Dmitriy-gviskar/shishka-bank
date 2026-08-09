@@ -225,9 +225,22 @@ const api = {
   },
 
   'GET /api/tasks': async (b, ctx) => {
-    await rpc('ensure_daily_tasks', [ctx.child]).catch(() => {});
-    return (await q('select id,title,reward,needs_photo,status from tasks where child_id=$1 order by created_at', [ctx.child]))
-      .map((t) => ({ id: t.id, title: t.title, reward: t.reward, needs_photo: t.needs_photo, status: t.status === 'pending_review' ? 'submitted' : t.status }));
+    try { await rpc('ensure_daily_tasks', [ctx.child]); }
+    catch (e) { console.error('ensure_daily_tasks', e.message); }
+    // open/pending/done сегодняшних daily + open/pending от ведущего; rejected и старый bulk скрыты
+    return (await q(`select id,title,reward,needs_photo,status,is_daily,category,created_at
+      from tasks where child_id=$1 and status <> 'rejected'
+      and (
+        status in ('open','pending_review')
+        or (is_daily and created_at::date = (now() at time zone 'Europe/Moscow')::date)
+      )
+      order by case status when 'open' then 0 when 'pending_review' then 1 else 2 end,
+               is_daily desc, created_at`, [ctx.child]))
+      .map((t) => ({
+        id: t.id, title: t.title, reward: t.reward, needs_photo: t.needs_photo,
+        is_daily: !!t.is_daily, category: t.category || '',
+        status: t.status === 'pending_review' ? 'submitted' : t.status,
+      }));
   },
   'POST /api/task/done': async (b, ctx) => {
     const t = await one('select needs_photo,status from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);  // только своё задание

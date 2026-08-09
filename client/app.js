@@ -246,20 +246,21 @@ if (page === 'index.html' || page === '') {
 async function loadTasks() {
   const tasks = await api('/api/tasks');
   const cont = document.getElementById('taskList'); cont.innerHTML = '';
-  for (const t of tasks) {
-    const done = t.status === 'done';
-    const submitted = t.status === 'submitted';
-    const el = document.createElement('div'); el.className = 'card quest';
-    el.innerHTML = `<div class="ic"><img src="assets/coin1.webp" alt=""></div>
-      <div class="mid"><div class="nm">${esc(t.title)}</div>
-        <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}</div></div>
-      ${done ? '<span class="done">Выполнено</span>'
-             : submitted ? '<span class="done wait">На проверке</span>'
-             : `<button class="btn btn-sm">${t.needs_photo ? 'Отправить фото' : 'Готово'}</button>`}`;
-    if (!done && !submitted) el.querySelector('button').onclick = async () => {
+  if (!Array.isArray(tasks) || !tasks.length) {
+    cont.innerHTML = '<div class="quest-empty">Сегодня дел пока нет — загляни чуть позже</div>';
+    return;
+  }
+  const daily = tasks.filter((t) => t.is_daily);
+  const other = tasks.filter((t) => !t.is_daily);
+  const sections = [];
+  if (daily.length) sections.push(['Сегодня', daily]);
+  if (other.length) sections.push(['От ведущего', other]);
+  const bind = (el, t) => {
+    if (t.status === 'done' || t.status === 'submitted') return;
+    el.querySelector('button').onclick = async () => {
       const say = (t2, ok) => { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t2; n.style.color = ok ? '#5f8e37' : '#b3452e'; } };
       let photo;
-      if (t.needs_photo) {                                   // фото-задание: камера → сжатие → base64
+      if (t.needs_photo) {
         photo = await capturePhoto();
         if (!photo) { say('Не получилось обработать фото — попробуй ещё раз или другое фото', 0); return; }
         say('Отправляю фото…', 1);
@@ -268,7 +269,22 @@ async function loadTasks() {
       if (r.ok) { loadTasks(); say('Отправлено ведущему на проверку!', 1); }
       else say(r.error || 'не получилось');
     };
-    cont.appendChild(el);
+  };
+  for (const [label, list] of sections) {
+    const h = document.createElement('div'); h.className = 'quest-sec'; h.textContent = label; cont.appendChild(h);
+    for (const t of list) {
+      const done = t.status === 'done';
+      const submitted = t.status === 'submitted';
+      const el = document.createElement('div'); el.className = 'card quest' + (t.is_daily ? ' daily' : '');
+      el.innerHTML = `<div class="ic"><img src="assets/coin1.webp" alt=""></div>
+        <div class="mid"><div class="nm">${esc(t.title)}</div>
+          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}${t.category ? ` · ${esc(t.category)}` : ''}</div></div>
+        ${done ? '<span class="done">Выполнено</span>'
+               : submitted ? '<span class="done wait">На проверке</span>'
+               : `<button class="btn btn-sm">${t.needs_photo ? 'Отправить фото' : 'Готово'}</button>`}`;
+      bind(el, t);
+      cont.appendChild(el);
+    }
   }
 }
 if (page === 'quests.html') loadTasks();
