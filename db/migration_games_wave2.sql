@@ -57,6 +57,6 @@ insert into achievements(code, title, description, metric, threshold, tier, rewa
   ('number_2', 'Числовед',       '40 верных ответов в диктанте чисел', 'number_score', 40, 2, 12),
   ('compare_1','Сравниватель',   '16 верных в «Тропинке сравнения»', 'compare_score', 16, 1, 5),
   ('compare_2','Мастер сравнения','40 верных в «Тропинке сравнения»', 'compare_score', 40, 2, 12),
-  ('story_1',  'Решала задач',   '10 верных лесных задач', 'story_score', 10, 1, 5),
+  ('story_1',  'Решатель задач', '10 верных лесных задач', 'story_score', 10, 1, 5),
   ('story_2',  'Лесной математик','25 верных лесных задач', 'story_score', 25, 2, 15)
 on conflict (code) do nothing;
