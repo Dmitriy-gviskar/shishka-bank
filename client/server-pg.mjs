@@ -631,7 +631,7 @@ const api = {
     const badges = await q('select badge_type as code from badges where user_id=$1', [ctx.child]);
     const titles = { guardian: 'Хранитель', philanthropist: 'Меценат', saver: 'Спаситель' };
     // дерево растёт от максимальной серии ежедневных заходов (см. daily_visit)
-    const NEED = [0, 3, 7, 14, 30]; // дней longest_streak до уровней 2..5
+    const NEED = [0, 7, 21, 45, 90]; // дней longest_streak до уровней 2..5
     const TREE_NAME = { 1: 'Саженец', 2: 'Дубок', 3: 'Деревце', 4: 'Крепкое', 5: 'Могучее' };
     const lvl = Math.min(5, Math.max(1, u.tree_level || 1));
     const best = u.longest_streak || 0;

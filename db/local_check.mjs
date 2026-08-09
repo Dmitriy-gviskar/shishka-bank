@@ -211,7 +211,8 @@ function dailyVisit(childId, day) {
       freezeUsed = true;
     } else newStreak = 1;
     const ls = Math.max(u.longest_streak, newStreak);
-    const lvl = ls >= 30 ? 5 : ls >= 14 ? 4 : ls >= 7 ? 3 : ls >= 3 ? 2 : 1;
+    let lvl = ls >= 90 ? 5 : ls >= 45 ? 4 : ls >= 21 ? 3 : ls >= 7 ? 2 : 1;
+    lvl = Math.max(u.tree_level || 1, lvl);
     const rain = Math.random() < 0.30 ? 1 + Math.floor(Math.random() * 3) : 0;
     db.prepare('update users set last_visit=?, current_streak=?, longest_streak=?, tree_level=? where id=?')
       .run(day, newStreak, ls, lvl, childId);
@@ -812,7 +813,7 @@ let v;
 for (let day = 1; day <= 7; day++) v = dailyVisit(dasha, day);   // 7 дней подряд
 console.log(`Даша 7 дней подряд: streak=${v.streak}, дерево=${v.tree_level}`);
 assert.equal(v.streak, 7);
-assert.equal(v.tree_level, 3);                 // серия 7 -> дерево уровня 3
+assert.equal(v.tree_level, 2);                 // серия 7 -> дерево уровня 2
 
 const again = dailyVisit(dasha, 7);            // повторный заход в тот же день
 assert.equal(again.first_today, false);
@@ -821,7 +822,7 @@ assert.equal(again.streak, 7);                 // серию не двигает
 const after = dailyVisit(dasha, 10);           // пропущены дни 8-9
 console.log(`после пропуска (день 10): streak=${after.streak}, дерево=${after.tree_level} (держится)`);
 assert.equal(after.streak, 1);                 // серия сброшена
-assert.equal(after.tree_level, 3);             // дерево НЕ деградировало (метафора «не умирает»)
+assert.equal(after.tree_level, 2);             // дерево НЕ деградировало (метафора «не умирает»)
 assert.equal(db.prepare('select longest_streak l from users where id=?').get(dasha).l, 7);
 
 const dq = getDailyQuest(dasha, 10);

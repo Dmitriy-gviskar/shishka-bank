@@ -297,8 +297,10 @@ begin
     new_streak := 1;                                               -- первый заход или пропуск без защиты
   end if;
   ls := greatest(u.longest_streak, new_streak);
-  lvl := case when ls >= 30 then 5 when ls >= 14 then 4
-              when ls >= 7 then 3 when ls >= 3 then 2 else 1 end;
+  -- пороги серии: 7 → 21 → 45 → 90; уровень только растёт
+  lvl := case when ls >= 90 then 5 when ls >= 45 then 4
+              when ls >= 21 then 3 when ls >= 7 then 2 else 1 end;
+  lvl := greatest(coalesce(u.tree_level, 1), lvl);
 
   -- гарантированный растущий подарок: день1=2 … потолок 10
   bonus := least(new_streak + 1, 10);
