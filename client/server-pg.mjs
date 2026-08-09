@@ -1267,7 +1267,33 @@ const api = {
   },
 
   // ── Кабинет родителя ──
-  'GET /api/parent/children': () => q('select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance from child_logins cl join users u on u.id=cl.child_id join wallets w on w.user_id=u.id order by u.created_at'),
+  'GET /api/parent/children': () => q(
+    `select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance,
+            u.created_at, c.name as circle_name
+       from child_logins cl
+       join users u on u.id=cl.child_id
+       join wallets w on w.user_id=u.id
+       join circles c on c.id=u.circle_id
+      where u.role='child'
+      order by u.created_at desc`),
+  'POST /api/parent/remove-child': async (b) => {
+    const u = await one(
+      `select id, name, circle_id, role from users where id=$1`, [b.childId]);
+    if (!u || u.role !== 'child') throw { code: 400, msg: 'нет такого игрока' };
+    const confirm = String(b.confirm || '').trim();
+    if (!confirm || confirm.toLowerCase() !== String(u.name).toLowerCase()) {
+      throw { code: 400, msg: `для удаления введи имя точно: ${u.name}` };
+    }
+    auth.dropCache();
+    await q('update device_tokens set revoked_at=now() where child_id=$1 and revoked_at is null', [u.id]).catch(() => {});
+    await q('delete from users where id=$1 and role=$2', [u.id, 'child']);
+    // пустой круг после открытой регистрации — убираем
+    const left = await one('select count(*)::int as n from users where circle_id=$1', [u.circle_id]);
+    if (left && left.n === 0) {
+      await q('delete from circles where id=$1', [u.circle_id]).catch((e) => console.error('remove circle', e.message));
+    }
+    return { ok: true, name: u.name };
+  },
   'POST /api/parent/add-child': async (b) => {
     const cid = b.circle_id || null;
     const circle = cid

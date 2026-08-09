@@ -1466,10 +1466,12 @@ if (page === 'parent.html') {
     const c = document.getElementById('kids'); c.innerHTML = '';
     const sel = document.getElementById('taskKid'); sel.innerHTML = '';
     for (const k of kids) {
+      const when = k.created_at ? new Date(k.created_at).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
       const el = document.createElement('div'); el.className = 'card kid-row';
       el.innerHTML = `
         <div class="kid-head">
-          <div class="info"><div class="nm">${esc(k.name)}</div><div class="meta">Уровень ${k.level}</div>
+          <div class="info"><div class="nm">${esc(k.name)}</div>
+            <div class="meta">Ур. ${k.level}${when ? ' · ' + when : ''}${k.circle_name ? ' · ' + esc(k.circle_name) : ''}</div>
             <span class="code" title="нажми, чтобы скопировать">${esc(k.code)}</span></div>
           <div class="bal">${k.balance}<small>шишек</small></div>
         </div>
@@ -1477,6 +1479,7 @@ if (page === 'parent.html') {
           <input class="amt" type="number" min="1" placeholder="сколько" inputmode="numeric">
           <button class="mini g add">Начислить</button>
           <button class="mini r sub">Списать</button>
+          <button class="mini r del" type="button" title="Удалить игрока">✕</button>
         </div>
         <label class="mkt"><input type="checkbox" class="mktbox" ${k.market_allowed ? 'checked' : ''}>
           Рынок карт: покупка, продажа и торги<span class="mkthint">паки, альбом, слияния и подарки работают всегда</span></label>`;
@@ -1496,6 +1499,15 @@ if (page === 'parent.html') {
         const v = parseInt(amt.value, 10); if (!(v > 0)) return note('Укажи сумму');
         const r = await api('/api/parent/deduct', { childId: k.id, amount: v }); if (r.error) return note(r.error);
         note(`${k.name}: −${r.took} шишек (стало ${r.balance})`, 1); amt.value = ''; loadKids();
+      };
+      el.querySelector('.del').onclick = async () => {
+        if (!confirm(`Удалить игрока «${k.name}» навсегда?\n\nПропадут шишки, карты, задания и вход по коду ${k.code}.`)) return;
+        const typed = prompt(`Для подтверждения введи имя точно:\n${k.name}`);
+        if (typed == null) return;
+        const r = await api('/api/parent/remove-child', { childId: k.id, confirm: typed.trim() });
+        if (r.error) return note(r.error);
+        note(`«${r.name}» удалён`, 1);
+        loadKids(); loadPending(); loadGuilds();
       };
       c.appendChild(el);
       const o = document.createElement('option'); o.value = k.id; o.textContent = k.name; sel.appendChild(o);
