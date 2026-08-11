@@ -128,34 +128,49 @@ async function api(path, body, method) {
 }
 // экранирование пользовательских строк перед вставкой в innerHTML (защита от stored XSS)
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-// камера → сжатие до 1280px → base64 jpeg. Общий для фото заданий и фото лавок/товаров.
+// камера/галерея → сжатие до 1280px → base64 jpeg. Общий для фото заданий и фото лавок/товаров.
 function capturePhoto() {
   return new Promise((res) => {
     const inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
-    inp.onchange = () => {
-      const f = inp.files[0]; if (!f) return res(null);
+    inp.type = 'file';
+    inp.accept = 'image/*';
+    // без capture: в PWA/WebView forced-camera часто молча ломается; галерея надёжнее
+    inp.setAttribute('aria-hidden', 'true');
+    inp.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+    document.body.appendChild(inp);
+    let settled = false;
+    const finish = (v) => {
+      if (settled) return;
+      settled = true;
+      try { inp.remove(); } catch {}
+      res(v);
+    };
+    const encode = (f) => {
+      if (!f) return finish(null);
       const draw = (img, w, h) => {
         const k = Math.min(1, 1280 / Math.max(w, h));
         const cv = document.createElement('canvas');
         cv.width = Math.round(w * k); cv.height = Math.round(h * k);
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        res(cv.toDataURL('image/jpeg', 0.8));
+        finish(cv.toDataURL('image/jpeg', 0.8));
       };
       const viaImg = () => {   // резерв: некоторые HEIC/EXIF не берёт createImageBitmap, а <img> декодирует
         const img = new Image();
-        img.onload = () => draw(img, img.width, img.height);
-        img.onerror = () => res(null);
-        img.src = URL.createObjectURL(f);
+        const url = URL.createObjectURL(f);
+        img.onload = () => { try { URL.revokeObjectURL(url); } catch {} draw(img, img.width, img.height); };
+        img.onerror = () => { try { URL.revokeObjectURL(url); } catch {} finish(null); };
+        img.src = url;
       };
       if (window.createImageBitmap) {   // уважает EXIF-поворот — фото не ляжет боком
         createImageBitmap(f, { imageOrientation: 'from-image' })
-          .then((bm) => draw(bm, bm.width, bm.height))
+          .then((bm) => { draw(bm, bm.width, bm.height); try { bm.close && bm.close(); } catch {} })
           .catch(viaImg);
       } else viaImg();
     };
-    inp.oncancel = () => res(null);
-    inp.click();
+    inp.addEventListener('change', () => encode(inp.files && inp.files[0]));
+    inp.addEventListener('cancel', () => finish(null));
+    try { inp.click(); }
+    catch { finish(null); }
   });
 }
 const page = location.pathname.split('/').pop() || 'index.html';
@@ -401,7 +416,7 @@ async function loadTasks() {
       let photo;
       if (t.needs_photo) {
         photo = await capturePhoto();
-        if (!photo) { say('Не получилось обработать фото — попробуй ещё раз или другое фото', 0); return; }
+        if (!photo) { say('Фото не выбрано или не читается — выбери снимок из галереи и попробуй ещё раз', 0); return; }
         say('Отправляю фото…', 1);
       }
       const r = await api('/api/task/done', { id: t.id, photo });

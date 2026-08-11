@@ -63,7 +63,9 @@ async function loadMarket() {
     return;
   }
   for (const s of shops) {
-    const art = s.photo ? s.photo : ('assets/' + (s.avatar || 'friend1.webp'));
+    const art = s.photo
+      ? ('/' + String(s.photo).replace(/^\/+/, ''))
+      : ('assets/' + (s.avatar || 'friend1.webp'));
     const artClass = s.photo ? '' : ' avatar-fallback';
     const el = document.createElement('div'); el.className = 'shop-card';
     el.innerHTML = `${s.is_heir ? '<span class="heir">Наследник</span>' : ''}${s.mine ? '<span class="mine-tag">Моя</span>' : ''}
@@ -91,7 +93,9 @@ async function loadMarket() {
     }
     for (const l of s.lots) {
       const row = document.createElement('div'); row.className = 'lot-row';
-      const thumb = l.photo ? l.photo : 'assets/shop/shop_ic_gift.webp';
+      const thumb = l.photo
+        ? ('/' + String(l.photo).replace(/^\/+/, ''))
+        : 'assets/shop/shop_ic_gift.webp';
       row.innerHTML = `<img class="lot-thumb" src="${thumb}" alt="">
         <div class="lt">${esc(l.title)}</div>
         <div class="lot-side">

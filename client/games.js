@@ -25,16 +25,28 @@ function setGameInputMode(mode) {
   if (mode === 'text') {
     a.type = 'text';
     a.inputMode = 'text';
+    a.readOnly = false;
     a.removeAttribute('pattern');
     a.style.maxWidth = '220px';
     if (pad) pad.classList.remove('on');
   } else {
+    // своя клавиатура (.gpad) — системную гасим (readonly + inputmode=none)
     a.type = 'text';
-    a.inputMode = 'numeric';
-    a.pattern = '[0-9]*';
+    a.inputMode = 'none';
+    a.readOnly = true;
+    a.removeAttribute('pattern');
     a.style.maxWidth = '160px';
     if (pad) pad.classList.add('on');
+    try { a.blur(); } catch {}
   }
+}
+
+function focusGameAnswer() {
+  // при своей клавиатуре focus() на Android вытаскивает системную — не трогаем
+  const a = document.getElementById('gameA');
+  const pad = document.getElementById('gamePad');
+  if (!a || a.readOnly || (pad && pad.classList.contains('on'))) return;
+  try { a.focus(); } catch {}
 }
 
 function setGameProg(cur, total, label) {
@@ -79,6 +91,14 @@ function ensureGamePad() {
   const pad = document.getElementById('gamePad');
   if (!pad || pad.dataset.ready) return;
   pad.dataset.ready = '1';
+  const a0 = document.getElementById('gameA');
+  if (a0 && !a0.dataset.padGuard) {
+    a0.dataset.padGuard = '1';
+    // тап по полю на Android иногда всё равно поднимает системную клавиатуру
+    a0.addEventListener('focus', () => {
+      if (a0.readOnly) requestAnimationFrame(() => { try { a0.blur(); } catch {} });
+    });
+  }
   [['1'], ['2'], ['3'], ['4'], ['5'], ['6'], ['7'], ['8'], ['9'], ['⌫', 'bk'], ['0'], ['✓', 'go']].forEach(([k, cls]) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -192,7 +212,7 @@ function showQuestion() {
   setGameProg(gameIdx, 10);
   document.getElementById('gameA').value = '';
   document.getElementById('gameMsg').textContent = '';
-  document.getElementById('gameA').focus();
+  focusGameAnswer();
 }
 
 async function startGuessGame() {
@@ -255,7 +275,7 @@ async function startCountGame() {
   document.getElementById('gameQ').textContent =
     `${countQuestions[0].a} ${countQuestions[0].op} ${countQuestions[0].b} = ?`;
   setGameProg(countDuration - countLeft, countDuration, `⏱ ${countLeft}с · ${countScore}`);
-  document.getElementById('gameA').focus();
+  focusGameAnswer();
   clearInterval(countTimer);
   countTimer = setInterval(() => {
     countLeft--;
@@ -291,7 +311,7 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
       document.getElementById('gameQ').textContent =
         `${countQuestions[countIdx].a} ${countQuestions[countIdx].op} ${countQuestions[countIdx].b} = ?`;
       document.getElementById('gameA').value = '';
-      document.getElementById('gameA').focus();
+      focusGameAnswer();
     } else {
       flashStage(false);
       document.getElementById('gameMsg').textContent = `${q.a} ${q.op} ${q.b} = ${q.answer}`;
@@ -645,7 +665,7 @@ function showNumberQ() {
   document.getElementById('gameMsg').textContent = 'Набери это число цифрами';
   document.getElementById('gameMsg').style.color = '#5a3a18';
   setGameProg(numberIdx, 8);
-  document.getElementById('gameA').focus();
+  focusGameAnswer();
 }
 
 async function startCompareGame() {
@@ -691,7 +711,7 @@ function showCompareQ() {
     document.getElementById('gameBtn').textContent = 'Ответить';
     document.getElementById('gameA').value = '';
     document.getElementById('gameA').placeholder = 'На сколько?';
-    document.getElementById('gameA').focus();
+    focusGameAnswer();
     document.getElementById('gameMsg').textContent = 'Введи разницу';
     document.getElementById('gameMsg').style.color = '#5a3a18';
   }
@@ -749,7 +769,7 @@ function showStoryQ() {
   document.getElementById('gameMsg').textContent = 'Реши и введи число';
   document.getElementById('gameMsg').style.color = '#5a3a18';
   setGameProg(storyIdx, 5);
-  document.getElementById('gameA').focus();
+  focusGameAnswer();
 }
 
 if (document.getElementById('gameClaim')) {

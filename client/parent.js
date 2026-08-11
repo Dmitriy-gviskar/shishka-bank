@@ -67,7 +67,8 @@ async function loadPending() {
   if (!list.length) { c.innerHTML = '<div class="empty">Нет заданий на проверке</div>'; return; }
   for (const p of list) {
     const el = document.createElement('div'); el.className = 'card pend';
-    el.innerHTML = `<div class="t">${esc(p.title)}</div>${p.photo ? `<img src="${esc(p.photo)}" style="width:100%;border-radius:12px;margin:6px 0;border:2px solid #d9c39a" loading="lazy">` : ''}<div class="row"><span class="who">${esc(p.childName)} · +${p.reward} шишек</span><button class="mini g ap">Одобрить</button><button class="mini r rj">Вернуть</button></div>`;
+    const photoSrc = p.photo ? ('/' + String(p.photo).replace(/^\/+/, '')) : '';
+    el.innerHTML = `<div class="t">${esc(p.title)}</div>${photoSrc ? `<img src="${esc(photoSrc)}" style="width:100%;border-radius:12px;margin:6px 0;border:2px solid #d9c39a" loading="lazy">` : ''}<div class="row"><span class="who">${esc(p.childName)} · +${p.reward} шишек</span><button class="mini g ap">Одобрить</button><button class="mini r rj">Вернуть</button></div>`;
     el.querySelector('.ap').onclick = async () => { await api('/api/parent/approve', { id: p.id }); note('Одобрено, шишки начислены', 1); loadPending(); loadKids(); };
     el.querySelector('.rj').onclick = async () => { await api('/api/parent/reject', { id: p.id }); note('Возвращено на доработку', 1); loadPending(); };
     c.appendChild(el);

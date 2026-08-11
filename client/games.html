@@ -117,9 +117,10 @@
     text-shadow:0 1px 1px rgba(0,0,0,.2)}
   #gameClaim:active{transform:translateY(3px);box-shadow:0 2px 0 #3f6b2e, inset 0 2px 0 rgba(255,255,255,.28)}
 
-  /* Найди пару */
-  .mem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:320px;margin:0 auto}
-  .mem-card{aspect-ratio:1;border-radius:14px;cursor:pointer;position:relative;
+  /* Найди пару — .gq иначе схлопывается (absolute face/back без intrinsic size) */
+  .gq:has(.mem-grid){width:100%;max-width:100%;font-size:0;line-height:0}
+  .mem-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:min(100%,340px);margin:0 auto}
+  .mem-card{width:100%;aspect-ratio:1;min-height:72px;border-radius:14px;cursor:pointer;position:relative;
     border:3px solid #fff;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.18);
     background:linear-gradient(180deg,#c4a574,#8a6238);overflow:hidden;
     transition:transform .12s}
@@ -191,7 +192,7 @@
       </div>
       <div class="glevels" id="gameLevels" style="display:none"></div>
       <div class="gans" id="gameAnsRow">
-        <input id="gameA" type="text" inputmode="numeric" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ответ">
+        <input id="gameA" type="text" inputmode="none" readonly autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Ответ">
         <button class="btn" id="gameBtn" type="button">Ответить</button>
       </div>
       <div class="gpad" id="gamePad"></div>
