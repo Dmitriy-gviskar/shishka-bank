@@ -12,7 +12,8 @@ window.runCards = function () {
   const asset = (code, grade) => cardUrl(code, grade, 'full');   // крупный показ / evo / jackpot
   const thumb = (code, grade) => cardUrl(code, grade, 'thumb');  // сетки
   const md = (code, grade) => cardUrl(code, grade, 'md');        // модалки / средний превью
-  let RAR = {}, DATA = null, LOTS = [], WANTS = [], AUCS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
+  let RAR = {}, DATA = null, OWN = null, PEEK = null;
+  let LOTS = [], WANTS = [], AUCS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
   const note = (t) => {   // всплывающая подсказка поверх экрана
     const el = document.createElement('div'); el.textContent = t;
     el.style.cssText = 'position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:50;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px 16px;font-weight:800;color:#b3452e;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:80%;text-align:center';
@@ -72,6 +73,8 @@ window.runCards = function () {
 
   function render(d) {
     DATA = d;
+    if (!d.peek) OWN = d;
+    PEEK = d.peek && d.friend ? d.friend : null;
     RAR = {}; d.rarities.forEach((r) => RAR[r.grade] = r);
     LORE = {}; (d.lore || []).forEach((l) => LORE[l.category + ':' + l.grade] = l);   // титул+фраза по категории и грейду
     FAM = d.familiars || [];
@@ -84,19 +87,44 @@ window.runCards = function () {
     const met = d.beings_met != null ? d.beings_met : 0;
     const complete = d.beings_complete != null ? d.beings_complete : 0;
     const beingsTotal = d.beings_total != null ? d.beings_total : cellsTotal;
-    document.getElementById('progTxt').textContent = `Ячеек: ${cells} / ${cellsTotal}`;
+    document.getElementById('progTxt').textContent = PEEK
+      ? `У ${PEEK.name}: ${cells} / ${cellsTotal}`
+      : `Ячеек: ${cells} / ${cellsTotal}`;
     document.getElementById('progBar').style.width = Math.round(cells / cellsTotal * 100) + '%';
     // гарант новинки — видно, сколько паков осталось
     const pityEl = document.getElementById('pityTxt');
     if (pityEl) {
-      const guar = !d.pity ? '' : d.pity.to_top <= d.pity.to_new
-        ? ` · через ${d.pity.to_top} ${plural(d.pity.to_top, 'пак', 'пака', 'паков')} — Эпическая+, которой нет`
-        : ` · через ${d.pity.to_new} ${plural(d.pity.to_new, 'пак', 'пака', 'паков')} — новая карта точно`;
-      pityEl.textContent = `Встречено ${met} из ${beingsTotal} · полных ${complete}${guar}`;
+      if (PEEK) {
+        const help = d.can_help || 0;
+        pityEl.textContent = help > 0
+          ? `Встречено ${met} из ${beingsTotal} · полных ${complete} · ты можешь закрыть ${help} ${plural(help, 'дыру', 'дыры', 'дыр')}`
+          : `Встречено ${met} из ${beingsTotal} · полных ${complete}`;
+      } else {
+        const guar = !d.pity ? '' : d.pity.to_top <= d.pity.to_new
+          ? ` · через ${d.pity.to_top} ${plural(d.pity.to_top, 'пак', 'пака', 'паков')} — Эпическая+, которой нет`
+          : ` · через ${d.pity.to_new} ${plural(d.pity.to_new, 'пак', 'пака', 'паков')} — новая карта точно`;
+        pityEl.textContent = `Встречено ${met} из ${beingsTotal} · полных ${complete}${guar}`;
+      }
     }
+    const peekBar = document.getElementById('peekBar');
+    if (peekBar) {
+      peekBar.classList.toggle('on', !!PEEK);
+      if (PEEK) {
+        document.getElementById('peekTitle').textContent = `Альбом · ${PEEK.name}`;
+        const help = d.can_help || 0;
+        document.getElementById('peekSub').textContent = help > 0
+          ? `Зелёным — карты, которых нет у ${PEEK.name}, но есть у тебя. Можно подарить или выставить.`
+          : `Смотри, чего не хватает — и ищи на рынке или в чате.`;
+      }
+    }
+    const packBtn = document.getElementById('packBtn');
+    if (packBtn) packBtn.style.display = PEEK ? 'none' : '';
+    const albumTools = document.getElementById('albumTools');
+    if (albumTools) albumTools.style.display = PEEK ? 'none' : '';
     const av = document.getElementById('albumView'); av.innerHTML = '';
     const allCards = d.cards.filter((c) => c.category !== 'special');
-    renderNewShelf(d.cards);
+    if (!PEEK) renderNewShelf(d.cards);
+    else { const ns = document.getElementById('newShelf'); if (ns) { ns.style.display = 'none'; ns.innerHTML = ''; } }
     renderGroups(allCards, av);
     // Категорийные табы: показать + скролл по клику
     const catTabs = document.getElementById('catTabs');
@@ -121,16 +149,21 @@ window.runCards = function () {
       av.appendChild(h);
       const box = document.createElement('div'); box.className = 'sbody';
       for (const c of specials) {
-        const g6 = c.grades.find((g) => g.grade === 6) || { qty: 0 };
+        const g6 = c.grades.find((g) => g.grade === 6) || { qty: 0, mine_qty: 0 };
         const owned = g6.qty > 0;
+        const canGift = PEEK && !owned && (g6.mine_qty || 0) > 0;
         const el = document.createElement('div');
-        el.className = 'being spone' + (owned ? ' full' : '') + (owned && g6.unseen ? ' has-new' : '');
-        el.innerHTML = `<div class="spcell ${owned ? 'has' : 'locked'}">
+        el.className = 'being spone' + (owned ? ' full' : '') + (!PEEK && owned && g6.unseen ? ' has-new' : '')
+          + (canGift ? ' can-help' : '');
+        const why = PEEK
+          ? (owned ? `есть у ${esc(PEEK.name)}` : canGift ? 'нет у друга · у тебя есть' : (c.occasion || 'особый случай'))
+          : (owned ? 'у тебя есть' : (c.occasion || 'особый случай'));
+        el.innerHTML = `<div class="spcell ${owned ? 'has' : 'locked'}${canGift ? ' help-gap' : ''}">
             <img src="${thumb(c.code, 6)}" alt="" loading="lazy">
-            ${owned && g6.unseen ? '<div class="gnew">NEW</div>' : ''}
+            ${!PEEK && owned && g6.unseen ? '<div class="gnew">NEW</div>' : ''}
             ${g6.qty > 1 ? `<div class="gdup">×${g6.qty}</div>` : ''}</div>
-          <div class="spinfo"><div class="bn">${c.name}${owned && g6.unseen ? ' <span class="bnew">NEW</span>' : ''}</div>
-            <div class="spwhy">${owned ? 'у тебя есть' : (c.occasion || 'особый случай')}</div></div>`;
+          <div class="spinfo"><div class="bn">${c.name}${!PEEK && owned && g6.unseen ? ' <span class="bnew">NEW</span>' : ''}</div>
+            <div class="spwhy">${why}</div></div>`;
         el.onclick = () => openDetail(c, 6);
         box.appendChild(el);
       }
@@ -222,26 +255,30 @@ window.runCards = function () {
       for (const c of groups[cat]) {
         const have6 = c.grades.filter((x) => x.qty > 0).length;
         const full = have6 === 6;
-        const newN = c.grades.filter((g) => g.qty > 0 && g.unseen).length;
+        const newN = PEEK ? 0 : c.grades.filter((g) => g.qty > 0 && g.unseen).length;
+        const helpN = PEEK ? c.grades.filter((g) => g.qty <= 0 && (g.mine_qty || 0) > 0).length : 0;
         const being = document.createElement('div');
-        being.className = 'being' + (full ? ' full' : '') + (newN ? ' has-new' : '');
+        being.className = 'being' + (full ? ' full' : '') + (newN ? ' has-new' : '') + (helpN ? ' can-help' : '');
         const cells = c.grades.map((gr) => {
           const rc = (RAR[gr.grade] || {}).color || '#9aa4b2';
           const has = gr.qty > 0;
-          return `<div class="gcell ${has ? 'has g' + gr.grade : 'locked'}" style="--gc:${rc}">
+          const gap = PEEK && !has && (gr.mine_qty || 0) > 0;
+          return `<div class="gcell ${has ? 'has g' + gr.grade : 'locked'}${gap ? ' help-gap' : ''}" style="--gc:${rc}">
             <img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy">
             ${has && gr.unseen ? '<div class="gnew">NEW</div>' : ''}
-            ${has && gr.qty > 1 ? `<div class="gdup">×${gr.qty}</div>` : ''}</div>`;
+            ${has && gr.qty > 1 ? `<div class="gdup">×${gr.qty}</div>` : ''}
+            ${gap ? '<div class="gdup" style="background:#6fad45">у тебя</div>' : ''}</div>`;
         }).join('');
         // «ещё 1 до эволюции» — есть 2 карты ранга (до слияния нужно 3) и следующий ранг ещё пустой.
         // У полного 6/6 не показываем: коллекция уже собрана, дубли — не «дыра» в альбоме.
-        const almost = !full && c.grades.some((g) => {
+        const almost = !PEEK && !full && c.grades.some((g) => {
           if (g.qty !== 2 || g.grade >= 6) return false;
           const next = c.grades.find((x) => x.grade === g.grade + 1);
           return !next || next.qty <= 0;
         });
         being.innerHTML = `<div class="being-head"><span class="bn">${esc(c.name)}</span>
           ${newN ? `<span class="bnew">${newN > 1 ? 'NEW ×' + newN : 'NEW'}</span>` : ''}
+          ${helpN ? `<span class="bnear">🤝 можешь помочь · ${helpN}</span>` : ''}
           ${almost ? '<span class="bnear">🔥 ещё 1 до эволюции</span>' : ''}
           <span class="bp ${full ? 'done' : ''}">${have6}/6${full ? ' ✓' : ''}</span></div>
           <div class="grades6">${cells}</div>`;
@@ -266,15 +303,21 @@ window.runCards = function () {
       const rows = c.grades.map((gr) => {
         const r = RAR[gr.grade];
         const active = gr.grade === sel ? ' active' : '';
+        const mine = gr.mine_qty || 0;
+        const gq = PEEK
+          ? (gr.qty > 0 ? `×${gr.qty}` : '—') + (mine > 0 ? (gr.qty > 0 ? ` · у тебя ×${mine}` : ' · у тебя есть') : '')
+          : (gr.qty > 0 ? '×' + gr.qty : '—');
         return `<div class="gr ${gr.qty > 0 ? 'has' : 'no'}${active}" data-g="${gr.grade}" style="--gc:${r.color}">
-          <span class="dot"></span><span class="gn">${r.name}${gr.unseen ? ' · NEW' : ''}</span>
-          <span class="gq">${gr.qty > 0 ? '×' + gr.qty : '—'}</span></div>`;
+          <span class="dot"></span><span class="gn">${r.name}${!PEEK && gr.unseen ? ' · NEW' : ''}</span>
+          <span class="gq">${gq}</span></div>`;
       }).join('');
       const isSpecial = c.category === 'special';
-      const gr = c.grades.find((g) => g.grade === sel) || { qty: 0 };
+      const gr = c.grades.find((g) => g.grade === sel) || { qty: 0, mine_qty: 0 };
       const r = RAR[sel] || RAR[1];
-      // открыл карту — плашка NEW снимается
-      if (gr.qty > 0 && gr.unseen) markSeen(c.id, sel);
+      const mineQty = gr.mine_qty != null ? gr.mine_qty
+        : (((OWN && OWN.cards) || []).find((x) => x.id === c.id)?.grades.find((g) => g.grade === sel) || {}).qty || 0;
+      // открыл карту — плашка NEW снимается (только свой альбом)
+      if (!PEEK && gr.qty > 0 && gr.unseen) markSeen(c.id, sel);
       // топливо для слияния: карты того же ранга у ДРУГИХ существ (излишки дублей — отдельно)
       const fuelQty = (DATA.cards || []).filter((x) => x.id !== c.id)
         .map((x) => (x.grades.find((g) => g.grade === sel) || {}).qty || 0);
@@ -286,7 +329,29 @@ window.runCards = function () {
       const myWant = WANTS.find((w) => w.mine && w.code === c.code && w.grade === sel);
       const otherWants = WANTS.filter((w) => !w.mine && w.code === c.code && w.grade === sel);
       let acts = '';
-      if (isSpecial && gr.qty > 0) {
+      if (PEEK) {
+        // чужой альбом: только торговые действия вокруг «у него есть / у меня есть»
+        if (gr.qty > 0) {
+          acts = `<div class="sub">У ${esc(PEEK.name)} есть · ×${gr.qty}${mineQty > 0 ? ` · у тебя тоже ×${mineQty}` : ' · у тебя нет'}</div>`;
+          if (MARKET && !isSpecial && mineQty <= 0) {
+            if (offers.length) acts += `<button class="a-buy">🛒 Купить на рынке · ${offers[0].price} 🌰</button>`;
+            if (myWant) acts += `<button class="a-unwant">🙋 Снять заявку (${myWant.price} 🌰)</button>`;
+            else acts += `<button class="a-want">🙋 Хочу такую · оставить заявку</button>`;
+          }
+        } else if (mineQty > 0) {
+          acts = `<div class="sub">У ${esc(PEEK.name)} нет, а у тебя есть ×${mineQty} — можно помочь.</div>`;
+          if (!isSpecial && MARKET && sel < 6) acts += `<button class="a-list">🏷 Выставить на рынок</button>`;
+          if (!isSpecial && MARKET && sel >= 6) acts += `<button class="a-auc">🔨 На аукцион · 24 часа</button>`;
+          acts += `<button class="a-gift-peek">🎁 Подарить ${esc(PEEK.name)}</button>`;
+        } else {
+          acts = `<div class="sub">Нет ни у ${esc(PEEK.name)}, ни у тебя — ищите на рынке или в паках.</div>`;
+          if (MARKET && !isSpecial) {
+            if (offers.length) acts += `<button class="a-buy">🛒 Купить на рынке · ${offers[0].price} 🌰</button>`;
+            if (myWant) acts += `<button class="a-unwant">🙋 Снять заявку (${myWant.price} 🌰)</button>`;
+            else acts += `<button class="a-want">🙋 Хочу такую · оставить заявку</button>`;
+          }
+        }
+      } else if (isSpecial && gr.qty > 0) {
         acts = `<div class="sub">Памятная карта${c.occasion ? `: ${c.occasion.toLowerCase()}` : ''}. Её не продают — но можно подарить другу.</div>`
           + `<button class="a-fam">${FAM.some((f) => f.type === c.id && f.grade === sel) ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`
           + `<button class="a-gift">🎁 Подарить другу</button>`;
@@ -316,21 +381,23 @@ window.runCards = function () {
         acts = `<div class="sub">Этой карты у тебя ещё нет — ${MARKET ? 'открывай паки или найди на рынке' : 'открывай паки'}.</div>`;
       }
       // «Хочу такую»: сначала готовые лоты, потом — объявить свою цену
-      if (MARKET && !isSpecial) {
+      if (!PEEK && MARKET && !isSpecial) {
         if (offers.length) acts += `<button class="a-buy">🛒 Купить на рынке · ${offers[0].price} 🌰${offers.length > 1 ? ` (лотов: ${offers.length})` : ''}</button>`;
         if (myWant) acts += `<button class="a-unwant">🙋 Снять заявку (${myWant.price} 🌰)</button>`;
         else acts += `<button class="a-want">🙋 Хочу такую · оставить заявку</button>`;
       }
       sheet.style.setProperty('--rc', (RAR[sel] || RAR[best]).color);
       const lo = LORE[c.category + ':' + sel] || {};
+      // в чужом альбоме показываем выбранный ранг (в т.ч. «дыру», которую можешь закрыть)
+      const showGrade = (gr.qty > 0 || (PEEK && mineQty > 0)) ? sel : best;
       sheet.innerHTML = `<button class="x">&times;</button>
-        <img class="big" src="${asset(c.code, gr.qty > 0 ? sel : best)}" alt="${c.name}">
+        <img class="big" src="${asset(c.code, showGrade)}" alt="${c.name}">
         <h3>${c.name}${lo.title ? ' — ' + lo.title.toLowerCase() : ''}</h3>
-        <div class="sub">${CAT[c.category].slice(2)} · ${r.name}</div>
+        <div class="sub">${CAT[c.category].slice(2)} · ${r.name}${PEEK ? ` · альбом ${esc(PEEK.name)}` : ''}</div>
         ${lo.lore ? `<div class="lore">${lo.lore}</div>` : ''}
-        ${gr.merged > 0 ? `<div class="mtag">✨ прокачана тобой${gr.merged > 1 ? ` (${gr.merged} раза)` : ''}</div>` : ''}
-        ${FACTS[c.code] ? `<div class="fact"><b>Знаешь ли ты?</b> ${FACTS[c.code]}</div>`
-          : (!isSpecial && have6 < 6 ? `<div class="factlock">Собери все 6 карт — узнаешь про ${c.name.toLowerCase()} кое-что настоящее</div>` : '')}
+        ${!PEEK && gr.merged > 0 ? `<div class="mtag">✨ прокачана тобой${gr.merged > 1 ? ` (${gr.merged} раза)` : ''}</div>` : ''}
+        ${!PEEK && FACTS[c.code] ? `<div class="fact"><b>Знаешь ли ты?</b> ${FACTS[c.code]}</div>`
+          : (!PEEK && !isSpecial && have6 < 6 ? `<div class="factlock">Собери все 6 карт — узнаешь про ${c.name.toLowerCase()} кое-что настоящее</div>` : '')}
         ${isSpecial ? '' : `<div class="grades">${rows}</div>`}
          <div class="acts">${acts}</div>
          ${otherWants.length ? `<div class="sub" style="margin-top:4px;line-height:1.5">🙋 Ищут: ${otherWants.map((w) => `${esc(w.buyer)} за ${w.price}🌰`).join(', ')}</div>` : ''}
@@ -388,6 +455,15 @@ window.runCards = function () {
           reload();
         });
         document.getElementById('giftOv').classList.add('on');
+      };
+      const bGiftPeek = sheet.querySelector('.a-gift-peek');
+      if (bGiftPeek && PEEK) bGiftPeek.onclick = async () => {
+        if (!await ask('Подарить карту?', `«${c.name}» (${RAR[sel].name}) уйдёт ${PEEK.name} насовсем.`, 'Подарить')) return;
+        bGiftPeek.disabled = true;
+        const r = await api('/api/card/gift', { to: PEEK.id, type: c.id, grade: sel });
+        if (r.error) { bGiftPeek.disabled = false; dnote.textContent = r.error; dnote.style.color = '#b3452e'; return; }
+        note(`🎁 Подарено ${PEEK.name}! Сегодня можно ещё ${r.left_today}`);
+        reload();
       };
       const bFuel = sheet.querySelector('.a-fuel');
       if (bFuel) bFuel.onclick = async () => {
@@ -475,10 +551,26 @@ window.runCards = function () {
   document.getElementById('detail').onclick = (e) => { if (e.target.id === 'detail') closeDetail(); };
 
   async function reload() {
+    const peekId = PEEK && PEEK.id;
     closeDetail();
-    const [d] = await Promise.all([api('/api/cards'), fetchMarket()]);
+    const [d] = await Promise.all([
+      peekId ? api('/api/friend/cards', { id: peekId }) : api('/api/cards'),
+      fetchMarket(),
+    ]);
     if (!d.error) render(d);
     if (document.getElementById('tabMarket').classList.contains('on')) renderMarket();
+  }
+
+  async function openFriendAlbum(friendId) {
+    const d = await api('/api/friend/cards', { id: friendId });
+    if (d.error) { note(d.error); return; }
+    closeDetail();
+    render(d);
+    // альбом, не рынок
+    document.getElementById('tabAlbum')?.classList.add('on');
+    document.getElementById('tabMarket')?.classList.remove('on');
+    document.getElementById('albumView').style.display = '';
+    document.getElementById('marketView').style.display = 'none';
   }
 
   // ── Обменная полка: 5 лишних карт одного ранга → 1 недостающая того же ранга ──
@@ -871,7 +963,7 @@ window.runCards = function () {
     { emo: '🙋', title: 'Не хватает карты?',
       text: 'Тапни пустую ячейку — увидишь, продаёт ли её кто-то в лесу, и сможешь оставить заявку. Друзья её увидят.' },
     { emo: '🤝', title: 'Рынок и подарки',
-      text: 'Свои карты можно продать друзьям или купить у них — цена подсказывается, чтобы не продешевить. Передумал? Покупку можно отменить в течение пяти минут. А ещё картой можно просто поделиться — подарить другу.' },
+      text: 'Свои карты можно продать друзьям или купить у них — цена подсказывается, чтобы не продешевить. Кнопка «Посмотреть» открывает альбом друга: зелёным видно, чем ты можешь помочь. А карту можно просто подарить.' },
     { emo: '🌱', title: 'Сезоны и честный шанс',
       text: 'Каждый десятый пак обязательно принесёт карту, которой у тебя ещё нет, а каждый пятидесятый — редкую и выше. Собирай всех!' },
   ];
@@ -897,33 +989,27 @@ window.runCards = function () {
 
   const helpBtn = document.getElementById('helpBtn');       // памятку можно перечитать в любой момент
   if (helpBtn) helpBtn.onclick = () => showIntro(true);
-  const shareBtn = document.getElementById('shareBtn');
-  if (shareBtn) shareBtn.onclick = () => {
-    // данные коллекции уже в DATA после reload() — без await, чтобы navigator.share не терял жест
-    if (!DATA || DATA.error) return;
-    const cats = { zver: '🦊', rastenie: '🌿', nasekomoe: '🐞' };
-    const met = DATA.beings_met != null ? DATA.beings_met : 0;
-    const complete = DATA.beings_complete != null ? DATA.beings_complete : 0;
-    const beingsTotal = DATA.beings_total != null ? DATA.beings_total : 0;
-    const lines = ['🌲 Моя лесная коллекция:',
-      `Ячеек ${DATA.collected} из ${DATA.total}`,
-      `Встречено ${met}/${beingsTotal} · полных ${complete}`];
-    for (const [cat, emoji] of Object.entries(cats)) {
-      const c = (DATA.cards || []).filter((x) => x.category === cat);
-      const metC = c.filter((x) => x.grades.some((g) => g.qty > 0)).length;
-      const full = c.filter((x) => x.grades.filter((g) => g.qty > 0).length === 6).length;
-      if (c.length) lines.push(`${emoji} ${metC}/${c.length} (полных ${full})`);
-    }
-    const specials = (DATA.cards || []).filter((x) => x.category === 'special' && x.grades.some((g) => g.qty > 0));
-    if (specials.length) lines.push(`🎖 ${specials.length} особых карт`);
-    const text = lines.join('\n');
-    const url = 'https://elka-kvest-2026.ru/collection.html';
-    if (navigator.share) {
-      // синхронный вызов внутри обработчика клика — user gesture сохранён
-      try { navigator.share({ title: 'Моя коллекция Шишка Банк', text, url }).catch(() => {}); } catch {}
-    } else {
-      navigator.clipboard.writeText(text + '\n' + url).then(() => alert('Ссылка скопирована!')).catch(() => prompt('Твоя коллекция:', text + '\n' + url));
-    }
+  const peekBtnEl = document.getElementById('peekBtn');
+  if (peekBtnEl) peekBtnEl.onclick = async () => {
+    const friends = await api('/api/friends');
+    if (friends.error || !friends.length) { note('в твоём лесу пока нет друзей'); return; }
+    const gs = document.getElementById('giftSheet');
+    gs.innerHTML = `<button class="x">&times;</button><h3>Чей альбом посмотреть?</h3>
+      <div class="sub">Зелёным подсветятся карты, которых нет у друга, но есть у тебя — можно подарить или выставить на рынок.</div>
+      ${friends.map((f) => `<button class="gfriend" data-id="${f.id}">${esc(f.name)}</button>`).join('')}`;
+    gs.querySelector('.x').onclick = () => document.getElementById('giftOv').classList.remove('on');
+    gs.querySelectorAll('.gfriend').forEach((btn) => btn.onclick = async () => {
+      document.getElementById('giftOv').classList.remove('on');
+      btn.disabled = true;
+      await openFriendAlbum(btn.dataset.id);
+    });
+    document.getElementById('giftOv').classList.add('on');
+  };
+  const peekBack = document.getElementById('peekBack');
+  if (peekBack) peekBack.onclick = async () => {
+    document.getElementById('detail')?.classList.remove('on');
+    const [d] = await Promise.all([api('/api/cards'), fetchMarket()]);
+    if (!d.error) render(d);
   };
   reload().then(showIntro);
 }

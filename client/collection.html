@@ -301,6 +301,15 @@
   .gfriend{display:block;width:100%;border:2px solid #e4d6b8;background:#fff;border-radius:12px;padding:10px;
     font-weight:900;color:var(--ink);font-size:14px;cursor:pointer;margin-bottom:6px}
   .gfriend:disabled{opacity:.5;cursor:default}
+  .peekbar{display:none;margin:0 0 8px;padding:10px 12px;border-radius:14px;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .peekbar.on{display:block}
+  .peekbar .pt{font-weight:900;color:var(--ink);font-size:15px}
+  .peekbar .ps{font-weight:700;color:#8a5a20;font-size:12px;margin-top:2px;line-height:1.3}
+  .peekbar .pback{margin-top:8px;width:100%;font-size:14px;padding:9px}
+  .being.can-help{box-shadow:0 0 0 2px #6fad45}
+  .gcell.help-gap{outline:2px solid #6fad45;outline-offset:-2px}
   /* строка ранга в обменной полке */
   .exrow{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:10px;background:#f4ead2;
     border:2px solid #e4d6b8;margin-bottom:6px}
@@ -332,12 +341,17 @@
   </div>
   <button class="packbtn" id="packBtn">🎴 Открыть пак · 20 🌰</button>
   <div class="pity" id="pityTxt"></div>
-  <div style="text-align:center;margin-top:-4px;margin-bottom:8px">
+  <div id="albumTools" style="text-align:center;margin-top:-4px;margin-bottom:8px">
     <button id="exchBtn" style="background:none;border:none;color:#fff;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)">Обменная полка ♻</button>
     <span style="color:#fff;opacity:.5;margin:0 6px">·</span>
     <button id="helpBtn" style="background:none;border:none;color:#fff;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)">Памятка 📖</button>
     <span style="color:#fff;opacity:.5;margin:0 6px">·</span>
-    <button id="shareBtn" style="background:none;border:none;color:#fff;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)">Поделиться 📤</button>
+    <button id="peekBtn" style="background:none;border:none;color:#fff;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)">Посмотреть 👀</button>
+  </div>
+  <div class="peekbar" id="peekBar">
+    <div class="pt" id="peekTitle">Альбом друга</div>
+    <div class="ps" id="peekSub"></div>
+    <button class="btn btn-sm pback" id="peekBack" type="button">← К своему альбому</button>
   </div>
   <div class="tabs"><button id="tabAlbum" class="on">Альбом</button><button id="tabMarket">Рынок</button></div>
   <div class="tabs" id="catTabs" style="display:none;margin-top:-4px">

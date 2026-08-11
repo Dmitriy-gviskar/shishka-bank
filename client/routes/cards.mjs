@@ -54,6 +54,56 @@ export function routesCards({ q, one, rpc, assertOwn }) {
            beings_complete: complete,
            beings_total: album.length };
 },
+// Альбом друга в круге — чтобы торговать не вслепую (qty свои + чужие)
+'POST /api/friend/cards': async (b, ctx) => {
+  if (!b.id) throw { code: 400, msg: 'выбери друга' };
+  await assertOwn(
+    "select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3",
+    [b.id, ctx.circle, ctx.child], 'нет такого друга');
+  const friend = await one('select id, name from users where id=$1', [b.id]);
+  if (!friend) throw { code: 404, msg: 'друг не найден' };
+  const [types, rar, owned, mine, lore, seasons] = await Promise.all([
+    q('select id, code, name, category, sort, season, occasion from card_types order by sort'),
+    q('select grade, code, name, color, price, quicksell, weight from rarities order by grade'),
+    q('select type_id, grade, qty from user_cards where user_id=$1', [friend.id]),
+    q('select type_id, grade, qty from user_cards where user_id=$1', [ctx.child]),
+    q('select category, grade, title, lore from card_lore'),
+    q('select code, name, sort, status from card_seasons order by sort'),
+  ]);
+  const own = {}, my = {};
+  for (const r of owned) (own[r.type_id] ||= {})[r.grade] = r.qty;
+  for (const r of mine) (my[r.type_id] ||= {})[r.grade] = r.qty;
+  const cards = types.map((t) => {
+    const have = own[t.id] || {};
+    const mineHave = my[t.id] || {};
+    const grades = rar.map((g) => ({
+      grade: g.grade,
+      qty: have[g.grade] || 0,
+      mine_qty: mineHave[g.grade] || 0,
+      merged: 0,
+      unseen: false,
+    }));
+    const best = grades.filter((g) => g.qty > 0).reduce((m, g) => Math.max(m, g.grade), 0);
+    return { id: t.id, code: t.code, name: t.name, category: t.category, season: t.season,
+             occasion: t.occasion, grades, best, owned: best > 0 };
+  });
+  const album = cards.filter((c) => c.category !== 'special');
+  const cells = album.reduce((n, c) => n + c.grades.filter((g) => g.qty > 0).length, 0);
+  const met = album.filter((c) => c.owned).length;
+  const complete = album.filter((c) => c.grades.filter((g) => g.qty > 0).length === 6).length;
+  // сколько «дыр» у друга ты можешь закрыть (есть карта, у него пусто)
+  const can_help = album.reduce((n, c) => n + c.grades.filter((g) => g.qty <= 0 && g.mine_qty > 0).length, 0);
+  // рынок — свой флаг ведущего, не друга (иначе закрытый рынок «откроется» в peek)
+  const marketAllowed = await one('select market_allowed from users where id=$1', [ctx.child]);
+  return {
+    rarities: rar, cards, lore, facts: [], history: [], seasons, pity: null,
+    market_allowed: marketAllowed ? marketAllowed.market_allowed : true,
+    familiars: [],
+    collected: cells, total: album.length * 6,
+    beings_met: met, beings_complete: complete, beings_total: album.length,
+    peek: true, friend: { id: friend.id, name: friend.name }, can_help,
+  };
+},
 'POST /api/familiar/talk': async (b, ctx) => {
   const f = await one('select t.category from familiars fm join card_types t on t.id=fm.type_id where fm.user_id=$1 and fm.type_id=$2 and fm.grade=$3',
     [ctx.child, b.type, b.grade]);
