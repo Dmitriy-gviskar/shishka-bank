@@ -79,7 +79,7 @@ body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
 .price{display:inline-flex;align-items:center;gap:4px;font-weight:900;color:var(--brown);font-size:22px}
 .price img{width:30px;height:30px;object-fit:contain}
 
-/* нижняя навигация — поверх контента; место под неё даёт .nav-spacer */
+/* нижняя навигация — на .phone (не в .wrap), иначе уезжает со скроллом; место даёт .nav-spacer */
 .nav{position:absolute;left:0;right:0;bottom:0;z-index:12;flex:none;
   display:flex;justify-content:space-around;align-items:center;gap:2px;
   background:linear-gradient(180deg,#fbf3e4 0%,#efe2c8 100%);

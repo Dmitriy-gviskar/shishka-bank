@@ -31,7 +31,7 @@
   #chatDetail.open{display:flex}
   /* открытый чат: один ряд чипов вместо title + ← + полоски */
   .wrap.chat-open > .title{display:none}
-  .wrap.chat-open > .nav-back{display:none}
+  .phone:has(.wrap.chat-open) > .nav-back{display:none}
   .wrap.chat-open #chatHeader{
     position:absolute;top:14px;left:12px;right:118px;z-index:6;
     height:42px;box-sizing:border-box;margin:0;padding:0;gap:8px;
