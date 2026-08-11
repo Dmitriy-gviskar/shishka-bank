@@ -452,7 +452,7 @@ async function loadTasks() {
       el.className = 'quest' + (t.is_daily ? ' daily' : '') + (t.status === 'rejected' ? ' rejected' : '');
       el.innerHTML = `<div class="ic"><img src="${questIcon(t.category)}" alt=""></div>
         <div class="mid"><div class="nm">${esc(t.title)}</div>
-          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}${t.status === 'rejected' ? ' · доработай' : ''}</div></div>
+          <div class="rw"><img src="assets/coin1.webp" alt="">+${t.reward}</div></div>
         ${statusHtml(t)}`;
       bind(el, t);
       cont.appendChild(el);

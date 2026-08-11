@@ -912,7 +912,8 @@ begin
 
   select circle_id into c_id from users where id = p_from;
   insert into transactions(circle_id, from_user, to_user, amount, type, message)
-    values (c_id, p_from, p_to, net, 'transfer', coalesce(p_message, 'Оплата'));
+    values (c_id, p_from, p_to, net, 'transfer',
+      coalesce(p_message, 'Оплата') || ' · цена ' || p_amount || ' · банк −' || fee);
   insert into transactions(circle_id, from_user, to_user, amount, type, message)
     values (c_id, p_from, null, fee, 'fee', 'Комиссия банка');
   update bank_account set treasury = treasury + fee where id = 'main';   -- комиссия в кассу банка
@@ -1113,12 +1114,15 @@ returns jsonb language sql stable security definer set search_path = public as $
   -- продавцу пишем «банк −N», чтобы было ясно, почему пришло меньше
   with tx as (
     select t.*,
-      (select f.amount from transactions f
-        where f.type = 'fee' and f.from_user = t.from_user
-          and f.message like 'Комиссия%'
-          and f.created_at between t.created_at - interval '2 seconds'
-                               and t.created_at + interval '2 seconds'
-        order by f.created_at limit 1) as fee_amt
+      coalesce(
+        (select f.amount from transactions f
+          where f.type = 'fee' and f.from_user = t.from_user
+            and f.message like 'Комиссия%'
+            and f.created_at between t.created_at - interval '2 seconds'
+                                 and t.created_at + interval '2 seconds'
+          order by f.created_at limit 1),
+        nullif(substring(t.message from 'банк −([0-9]+)'), '')::int,
+        0) as fee_amt
     from transactions t
     where (t.to_user = p_child or t.from_user = p_child)
       and not (t.type = 'fee' and t.from_user = p_child and t.message like 'Комиссия%')
@@ -1131,10 +1135,12 @@ returns jsonb language sql stable security definer set search_path = public as $
         when type = 'transfer' and coalesce(is_anonymous,false) and to_user = p_child then 'gift_in'
         when type = 'transfer' and message = 'Подарок другу' and to_user = p_child then 'gift_in'
         when type = 'transfer' and message = 'Подарок другу' and from_user = p_child then 'gift_out'
-        when type = 'transfer' and message in ('Покупка карты на рынке','Продажа по заявке','Аукцион: продажа карты')
-             and to_user = p_child then 'trade_in'
-        when type = 'transfer' and message in ('Покупка карты на рынке','Продажа по заявке','Аукцион: продажа карты')
-             and from_user = p_child then 'trade_out'
+        when type = 'transfer' and message like 'Покупка карты на рынке%' and to_user = p_child then 'trade_in'
+        when type = 'transfer' and message like 'Покупка карты на рынке%' and from_user = p_child then 'trade_out'
+        when type = 'transfer' and message like 'Продажа по заявке%' and to_user = p_child then 'trade_in'
+        when type = 'transfer' and message like 'Продажа по заявке%' and from_user = p_child then 'trade_out'
+        when type = 'transfer' and message like 'Аукцион: продажа карты%' and to_user = p_child then 'trade_in'
+        when type = 'transfer' and message like 'Аукцион: продажа карты%' and from_user = p_child then 'trade_out'
         when type = 'transfer' and (message = 'Оплата' or message like 'Оплата %') and to_user = p_child then 'pay_in'
         when type = 'transfer' and (message = 'Оплата' or message like 'Оплата %') and from_user = p_child then 'pay_out'
         when type = 'transfer' and to_user = p_child then 'trade_in'
@@ -1148,25 +1154,31 @@ returns jsonb language sql stable security definer set search_path = public as $
         when type = 'payout' then 'payout'
         else type end,
       'title', case
-        when type = 'transfer' and message = 'Покупка карты на рынке' and to_user = p_child then
-          case when coalesce(fee_amt,0) > 0 then 'Карту купили · банк −' || fee_amt else 'Карту купили на рынке' end
-        when type = 'transfer' and message = 'Покупка карты на рынке' and from_user = p_child then 'Купил карту на рынке'
-        when type = 'transfer' and message = 'Продажа по заявке' and to_user = p_child then
-          case when coalesce(fee_amt,0) > 0 then 'Продал по заявке · банк −' || fee_amt else 'Продал карту по заявке' end
-        when type = 'transfer' and message = 'Продажа по заявке' and from_user = p_child then 'Купил карту по заявке'
-        when type = 'transfer' and message = 'Аукцион: продажа карты' and to_user = p_child then
-          case when coalesce(fee_amt,0) > 0 then 'Аукцион · банк −' || fee_amt else 'Продажа с аукциона' end
-        when type = 'transfer' and message = 'Аукцион: продажа карты' and from_user = p_child then 'Покупка с аукциона'
+        -- продавцу: цена / тебе / банк — иначе «почему 9, а не 10?»
+        when type = 'transfer' and message like 'Покупка карты на рынке%' and to_user = p_child then
+          case when fee_amt > 0 then 'Продажа за ' || (amount + fee_amt) || ' · тебе ' || amount || ' (банк −' || fee_amt || ')'
+               else 'Карту купили на рынке' end
+        when type = 'transfer' and message like 'Покупка карты на рынке%' and from_user = p_child then 'Купил карту на рынке'
+        when type = 'transfer' and message like 'Продажа по заявке%' and to_user = p_child then
+          case when fee_amt > 0 then 'Продажа за ' || (amount + fee_amt) || ' · тебе ' || amount || ' (банк −' || fee_amt || ')'
+               else 'Продал карту по заявке' end
+        when type = 'transfer' and message like 'Продажа по заявке%' and from_user = p_child then 'Купил карту по заявке'
+        when type = 'transfer' and message like 'Аукцион: продажа карты%' and to_user = p_child then
+          case when fee_amt > 0 then 'Аукцион за ' || (amount + fee_amt) || ' · тебе ' || amount || ' (банк −' || fee_amt || ')'
+               else 'Продажа с аукциона' end
+        when type = 'transfer' and message like 'Аукцион: продажа карты%' and from_user = p_child then 'Покупка с аукциона'
         when type = 'transfer' and (message = 'Оплата' or message like 'Оплата %') and to_user = p_child then
-          case when coalesce(fee_amt,0) > 0 then coalesce(message,'Оплата') || ' · банк −' || fee_amt else coalesce(message,'Оплата') end
+          case when fee_amt > 0 then 'Оплата ' || (amount + fee_amt) || ' · тебе ' || amount || ' (банк −' || fee_amt || ')'
+               else coalesce(nullif(split_part(message, ' ·', 1), ''), 'Оплата') end
         when type = 'transfer' and message = 'Подарок другу' and to_user = p_child then 'Подарок шишками'
         when type = 'transfer' and message = 'Подарок другу' and from_user = p_child then 'Подарок другу'
         when type = 'transfer' and message = 'Шишка-сюрприз' and to_user = p_child then 'Шишка-сюрприз'
         else coalesce(message, '') end,
       -- покупатель видит полную цену (нетто продавцу + комиссия), без отдельной строки налога
       'amount', case
-        when type = 'transfer' and from_user = p_child and coalesce(fee_amt,0) > 0
-             and (message in ('Покупка карты на рынке','Продажа по заявке','Аукцион: продажа карты')
+        when type = 'transfer' and from_user = p_child and fee_amt > 0
+             and (message like 'Покупка карты на рынке%' or message like 'Продажа по заявке%'
+                  or message like 'Аукцион: продажа карты%'
                   or message = 'Оплата' or message like 'Оплата %')
           then amount + fee_amt
         else amount end,

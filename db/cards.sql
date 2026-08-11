@@ -783,7 +783,9 @@ begin
   update wallets set balance = balance - l.price, total_spent = total_spent + l.price where user_id=p_child;
   update wallets set balance = balance + net, total_earned = total_earned + net where user_id=l.seller_id;
   insert into transactions(circle_id, from_user, to_user, amount, type, message)
-    values (l.circle_id, p_child, l.seller_id, net, 'transfer', 'Покупка карты на рынке');
+    values (l.circle_id, p_child, l.seller_id, net, 'transfer',
+      case when fee > 0 then 'Покупка карты на рынке · цена ' || l.price || ' · банк −' || fee
+           else 'Покупка карты на рынке' end);
   if fee > 0 then
     insert into transactions(circle_id, from_user, to_user, amount, type, message)
       values (l.circle_id, p_child, null, fee, 'fee', 'Комиссия рынка');
@@ -793,7 +795,10 @@ begin
     on conflict (user_id,type_id,grade) do update set qty = user_cards.qty + 1;
   update card_listings set status='sold', buyer_id=p_child, closed_at=now() where id=p_listing;
 
-  perform notify_child(l.seller_id, 'Твою карту купили на рынке за ' || l.price || ' 🌰 (тебе ' || net || ') 🏷');
+  perform notify_child(l.seller_id,
+    case when fee > 0
+      then 'Карту купили за ' || l.price || ' 🌰. Тебе ' || net || ' — банк взял ' || fee
+      else 'Твою карту купили на рынке за ' || l.price || ' 🌰' end);
   perform check_achievements(p_child);
   return jsonb_build_object('ok',true,'fee',fee);
 end $$;
@@ -818,7 +823,9 @@ begin
   update wallets set balance=balance-w.price, total_spent=total_spent+w.price where user_id=w.buyer_id;
   update wallets set balance=balance+net, total_earned=total_earned+net where user_id=p_seller;
   insert into transactions(circle_id, from_user, to_user, amount, type, message)
-    values (w.circle_id, w.buyer_id, p_seller, net, 'transfer', 'Продажа по заявке');
+    values (w.circle_id, w.buyer_id, p_seller, net, 'transfer',
+      case when fee > 0 then 'Продажа по заявке · цена ' || w.price || ' · банк −' || fee
+           else 'Продажа по заявке' end);
   if fee > 0 then
     insert into transactions(circle_id, from_user, to_user, amount, type, message)
       values (w.circle_id, w.buyer_id, null, fee, 'fee', 'Комиссия рынка');
@@ -832,6 +839,10 @@ begin
 
   update card_wants set status='filled', closed_at=now() where id=p_want;
   perform notify_child(w.buyer_id, 'По твоей заявке нашлась карта — она уже в альбоме 🙋');
+  perform notify_child(p_seller,
+    case when fee > 0
+      then 'Продажа по заявке за ' || w.price || ' 🌰. Тебе ' || net || ' — банк взял ' || fee
+      else 'Продажа по заявке за ' || w.price || ' 🌰 — шишки у тебя' end);
   perform check_card_rewards(w.buyer_id);
   perform check_achievements(w.buyer_id);
   return jsonb_build_object('ok', true, 'earned', net, 'fee', fee);
@@ -966,7 +977,9 @@ begin
   fee := card_fee(a.current_bid); net := a.current_bid - fee;
   update wallets set balance=balance+net, total_earned=total_earned+net where user_id=a.seller_id;
   insert into transactions(circle_id, from_user, to_user, amount, type, message)
-    values (a.circle_id, a.leader_id, a.seller_id, net, 'transfer', 'Аукцион: продажа карты');
+    values (a.circle_id, a.leader_id, a.seller_id, net, 'transfer',
+      case when fee > 0 then 'Аукцион: продажа карты · цена ' || a.current_bid || ' · банк −' || fee
+           else 'Аукцион: продажа карты' end);
   if fee > 0 then
     insert into transactions(circle_id, from_user, to_user, amount, type, message)
       values (a.circle_id, a.leader_id, null, fee, 'fee', 'Комиссия аукциона');
@@ -1223,7 +1236,9 @@ begin
   fee := card_fee(a.current_bid); net := a.current_bid - fee;
   update wallets set balance=balance+net, total_earned=total_earned+net where user_id=a.seller_id;
   insert into transactions(circle_id, from_user, to_user, amount, type, message)
-    values (a.circle_id, a.leader_id, a.seller_id, net, 'transfer', 'Аукцион: продажа карты');
+    values (a.circle_id, a.leader_id, a.seller_id, net, 'transfer',
+      case when fee > 0 then 'Аукцион: продажа карты · цена ' || a.current_bid || ' · банк −' || fee
+           else 'Аукцион: продажа карты' end);
   if fee > 0 then
     insert into transactions(circle_id, from_user, to_user, amount, type, message)
       values (a.circle_id, a.leader_id, null, fee, 'fee', 'Комиссия аукциона');
@@ -1234,7 +1249,10 @@ begin
   update card_auctions set status='sold' where id=p_auction;
 
   perform notify_child(a.leader_id, 'Ты выиграл торги! Карта «' || card_name || '» твоя 👑');
-  perform notify_child(a.seller_id, 'Карта «' || card_name || '» ушла с молотка за ' || a.current_bid || ' 🌰 (тебе ' || net || ')');
+  perform notify_child(a.seller_id,
+    case when fee > 0
+      then 'Карта «' || card_name || '» ушла за ' || a.current_bid || ' 🌰. Тебе ' || net || ' — банк взял ' || fee
+      else 'Карта «' || card_name || '» ушла с молотка за ' || a.current_bid || ' 🌰' end);
   perform check_card_rewards(a.leader_id);
   perform check_achievements(a.leader_id);
   return jsonb_build_object('ok', true, 'sold', true, 'price', a.current_bid);
