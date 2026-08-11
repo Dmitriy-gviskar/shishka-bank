@@ -263,6 +263,7 @@ async function sweepTesterPayroll() {
         limit 1`, [u.id, 'Зарплата тестировщика', slot.d]);
     if (paid) return;
     await creditCones(u.id, 500, 'Зарплата тестировщика');
+    sendPush(u.id, '🌲 Зарплата!', '+500 шишек — зарплата тестировщика').catch(() => {});
     console.log('зарплата тестировщика:', u.name, '+500');
   } catch (e) { console.error('sweepTesterPayroll', e.message); }
 }
