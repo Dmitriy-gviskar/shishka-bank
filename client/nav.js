@@ -14,8 +14,20 @@
     if (document.body.dataset.noNav !== undefined) return;
     const phone = document.querySelector('.phone'); if (!phone) return;
     const wrap = phone.querySelector('.wrap, .cwrap'); if (!wrap) return;  // collection использует .cwrap
-    // навбар крепим к .phone (как #topbar), иначе внутри overflow:.wrap он уезжает со скроллом
-    if (phone.querySelector('nav.nav')) return;
+    // навбар только прямой потомок .phone — иначе уезжает со скроллом .wrap
+    // (старый mount клал nav внутрь wrap; querySelector находил его и выходил рано)
+    const misplaced = [...phone.querySelectorAll('nav.nav, .nav-back')]
+      .filter((el) => el.parentElement !== phone);
+    misplaced.forEach((el) => el.remove());
+    if (phone.querySelector(':scope > nav.nav')) {
+      if (!wrap.querySelector('.nav-spacer')) {
+        const sp = document.createElement('div');
+        sp.className = 'nav-spacer';
+        sp.setAttribute('aria-hidden', 'true');
+        wrap.appendChild(sp);
+      }
+      return;
+    }
     const file = location.pathname.split('/').pop() || 'index.html';
     const nav = document.createElement('nav'); nav.className = 'nav';
     for (const it of ITEMS) {
@@ -34,6 +46,7 @@
     }
     phone.appendChild(nav);
     // подэкраны (не из навбара) получают кнопку «Назад»
+    phone.querySelectorAll(':scope > .nav-back').forEach((el) => el.remove());
     if (!ITEMS.some((it) => it.href === file)) {
       wrap.classList.add('has-back');
       const back = document.createElement('button');
@@ -42,6 +55,8 @@
       back.textContent = '←';
       back.onclick = () => { if (history.length > 1) history.back(); else navigate('forest.html'); };
       phone.appendChild(back);
+    } else {
+      wrap.classList.remove('has-back');
     }
   };
 

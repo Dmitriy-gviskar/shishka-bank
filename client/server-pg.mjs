@@ -646,9 +646,12 @@ const api = {
     sendPush(b.to, "🎁 Шишка-сюрприз!", "Кто-то прислал тебе анонимный подарок").catch(() => {});
     return { ok: true, balance: w.balance };
   },
+  // только подарки шишками — не покупки карт/оплаты (они тоже type=transfer)
   'GET /api/gifts/received': (b, ctx) => q(`select t.amount, u.name as sender, t.created_at at
     from transactions t join users u on u.id=t.from_user
     where t.to_user=$1 and t.type='transfer' and t.from_user is not null
+      and coalesce(t.is_anonymous,false)=false
+      and t.message = 'Подарок другу'
     order by t.created_at desc limit 20`, [ctx.child]),
   'GET /api/surprises': (b, ctx) => q(`select t.id, t.amount, t.revealed, t.created_at at,
       case when t.revealed then u.name else null end as sender
@@ -707,23 +710,33 @@ const api = {
        where o.status = 'reserved' and (o.buyer_id = $1 or o.seller_id = $1)
        order by o.created_at desc`, [ctx.child]),
   'POST /api/order/confirm': async (b, ctx) => {
+    const id = b.id || b.orderId;
+    if (!id) throw { code: 400, msg: 'нет заказа' };
     const o = await one(
       `select o.id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
-        where o.id=$1 and o.buyer_id=$2 and o.status='reserved'`, [b.id, ctx.child]);
-    if (!o) throw { code: 404, msg: 'нет такого заказа' };
-    try { await rpc('confirm_order', [b.id]); }
-    catch (e) { throw { code: 400, msg: 'не удалось подтвердить' }; }
+        where o.id=$1 and o.buyer_id=$2 and o.status='reserved'`, [id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'заказ уже закрыт или не твой' };
+    try { await rpc('confirm_order', [id]); }
+    catch (e) {
+      console.error('confirm_order', e.message || e);
+      throw { code: 400, msg: 'не удалось подтвердить — попробуй ещё раз' };
+    }
     sendPush(o.seller_id, '✅ Получено!', `Покупатель подтвердил «${o.title}» — шишки у тебя`).catch(() => {});
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
-    return { ok: true, balance: w.balance };
+    return { ok: true, balance: w.balance, closed: true };
   },
   'POST /api/order/cancel': async (b, ctx) => {
+    const id = b.id || b.orderId;
+    if (!id) throw { code: 400, msg: 'нет заказа' };
     const o = await one(
       `select o.id, o.buyer_id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
-        where o.id=$1 and o.status='reserved' and (o.buyer_id=$2 or o.seller_id=$2)`, [b.id, ctx.child]);
-    if (!o) throw { code: 404, msg: 'нет такого заказа' };
-    try { await rpc('cancel_order', [b.id]); }
-    catch (e) { throw { code: 400, msg: 'не удалось отменить' }; }
+        where o.id=$1 and o.status='reserved' and (o.buyer_id=$2 or o.seller_id=$2)`, [id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'заказ уже закрыт' };
+    try { await rpc('cancel_order', [id]); }
+    catch (e) {
+      console.error('cancel_order', e.message || e);
+      throw { code: 400, msg: 'не удалось отменить — попробуй ещё раз' };
+    }
     const other = o.buyer_id === ctx.child ? o.seller_id : o.buyer_id;
     sendPush(other, '↩️ Заказ отменён', `«${o.title}» — шишки вернулись покупателю`).catch(() => {});
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);

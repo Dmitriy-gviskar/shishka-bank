@@ -21,6 +21,7 @@ async function loadChatList() {
     let preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Написать... ✉️';
     if (preview.startsWith('/uploads/audio_')) preview = '🎤 Голосовое сообщение';
     else if (preview.startsWith('Дарю тебе карту:')) preview = '🃏 ' + preview;
+    else if (preview.startsWith('Дарю тебе') && preview.includes('шишек')) preview = '🎁 ' + preview;
     const time = ch.last_at ? fmtTime(ch.last_at) : '';
     el.innerHTML = `<div class="ava"><img src="assets/${ch.avatar}">${ch.online ? '<div class="dot"></div>' : ''}</div><div class="info"><div class="name">${esc(ch.name)}</div><div class="preview" style="${ch.last_msg ? '' : 'font-style:italic;color:#7bab4c'}">${preview}</div></div>
       <div class="meta"><div class="time">${time}</div>${ch.unread > 0 ? `<div class="badge">${ch.unread}</div>` : ''}</div>`;
@@ -141,8 +142,13 @@ function openPay() {
 function doPay() {
   document.getElementById('payPopup').classList.remove('open');
   api('/api/transfer', { to: chatFriend, amount: payAmt }).then((r) => {
-    if (r.error) { const n = document.createElement('div'); n.className = 'emptyChat'; n.textContent = r.error; document.getElementById('chatMsgs').appendChild(n); }
-    else { loadChat(); document.getElementById('chatMsgs').insertAdjacentHTML('beforeend', `<div class="msgBubble mine" style="background:var(--gold);color:#5b4636">🪙 ${payAmt} шишек<div class="msgTime">сейчас</div></div>`); }
+    if (r.error) {
+      const n = document.createElement('div'); n.className = 'emptyChat'; n.textContent = r.error;
+      document.getElementById('chatMsgs').appendChild(n);
+    } else {
+      // сообщение «Дарю тебе N шишек!» пишет transfer_cones — как подарок карты
+      loadChat();
+    }
   });
 }
 loadChatList();

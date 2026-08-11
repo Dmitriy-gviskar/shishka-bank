@@ -113,14 +113,31 @@
   .ord-row .m{font-weight:700;color:#8a5a20;font-size:12px;margin-top:2px}
   .ord-row .acts{flex:none;display:flex;flex-direction:column;gap:4px}
   .ord-row .acts button{font-size:12px;padding:7px 10px;font-family:"Fredoka","Nunito",sans-serif;white-space:nowrap}
+  .ord-row .acts .conf{min-width:96px}
   .ord-row .acts .cancel{background:linear-gradient(180deg,#fff8eb,#f3e7cf);color:var(--brown);
     border:2.5px solid #fff;border-radius:12px;box-shadow:0 0 0 2px #c9a86a;font-weight:900;cursor:pointer}
+  #mktNote{display:none;flex:none;text-align:center;font-weight:800;margin:0 0 8px;padding:9px;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:14px;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .mkt-ov{display:none;position:absolute;inset:0;z-index:40;background:rgba(20,26,18,.72);
+    align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(2px)}
+  .mkt-ov.on{display:flex}
+  .mkt-ov .sheet{background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:22px;
+    padding:16px;max-width:300px;width:100%;box-shadow:0 0 0 2px #c9a86a;text-align:center}
+  .mkt-ov h3{margin:0 0 8px;font-family:"Fredoka","Nunito",sans-serif;font-weight:900;color:var(--ink);font-size:18px}
+  .mkt-ov .asktext{font-weight:700;color:#6b4f3a;font-size:14px;line-height:1.35;margin-bottom:14px}
+  .mkt-ov .acts{display:flex;gap:8px;justify-content:center}
+  .mkt-ov .acts button{flex:1;font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:15px;
+    padding:12px 10px;border-radius:14px;cursor:pointer;border:3px solid #fff}
+  .mkt-ov .a-ok{background:linear-gradient(180deg,#9ad65f,#6fad45);color:#fff;box-shadow:0 0 0 2px #3f6b2e,0 3px 0 #3f6b2e}
+  .mkt-ov .a-no{background:linear-gradient(180deg,#fff8eb,#f3e7cf);color:var(--brown);box-shadow:0 0 0 2px #c9a86a}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="mkt-top">
     <img src="assets/spirit_bust.webp" alt="">
     <div class="mkt-title">Лесные лавки</div>
   </div>
+  <div id="mktNote"></div>
   <div id="ordersBox" class="orders-box" hidden></div>
   <div id="marketList"></div>
   <div class="mkt-foot">
@@ -131,9 +148,10 @@
       <input id="shopPrice" type="number" placeholder="Цена в шишках" min="1">
       <button class="btn btn-lg" id="createShopBtn" style="margin-top:2px" type="button">Создать лавку</button>
     </div>
-    <div id="note"></div>
   </div>
-</div></div><script src="app.js"></script>
+</div>
+  <div class="mkt-ov" id="askOv"><div class="sheet" id="askSheet"></div></div>
+</div><script src="app.js"></script>
 <script src="market.js"></script>
 <script src="nav.js"></script>
 </body></html>

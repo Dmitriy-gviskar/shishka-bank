@@ -60,19 +60,6 @@ document.querySelectorAll('.apick .ap').forEach((a) => a.onclick = () => {
   document.querySelectorAll('.apick .ap').forEach((x) => x.classList.remove('sel')); a.classList.add('sel');
   giftAmount = +a.dataset.a; paintAmt();
 });
-// входящие подарки — кто и сколько подарил
-api('/api/gifts/received').then((list) => {
-  const c = document.getElementById('giftsReceived');
-  if (!c || list.error) return;
-  if (!list.length) { c.innerHTML = '<div class="gifts-empty">Подарков пока нет</div>'; return; }
-  c.innerHTML = list.map((g) => {
-    const when = new Date(g.at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
-    return `<div class="gift-row">
-      <span class="who">${esc(g.sender)}</span>
-      <span class="amt"><img src="assets/coin1.webp" alt="">+${g.amount}</span>
-      <span class="when">${when}</span></div>`;
-  }).join('');
-});
 const btn = document.getElementById('giftSendBtn') || document.querySelector('.btn-lg');
 if (btn) btn.onclick = async () => {
   const custom = parseInt(document.getElementById('payAmt')?.value, 10);

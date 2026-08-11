@@ -795,9 +795,16 @@ if (page === 'skins.html') loadSkins();
 
 // ── Лесной альбом ──
 if (page === 'album.html') {
-  const KIND_RU = { earn: ['Заработано', '+'], gift_in: ['Подарок от друга', '+'], gift_out: ['Подарок другу', '−'],
-    buy: ['Покупка', '−'], spend: ['Оплата', '−'], interest: ['Проценты Дупла', '+'], deposit: ['Дупло-сейф', '−'],
-    insurance: ['Страховка', '−'], pot: ['Вклад в котёл', '−'], payout: ['От Банка', '+'], achievement: ['Достижение', '+'], photo: ['Фотоотчёт', ''] };
+  const KIND_RU = {
+    earn: ['Заработано', '+'],
+    gift_in: ['Подарок', '+'], gift_out: ['Подарок', '−'],
+    trade_in: ['Продажа', '+'], trade_out: ['Покупка', '−'],
+    pay_in: ['Оплата тебе', '+'], pay_out: ['Оплата', '−'],
+    buy: ['Покупка', '−'], spend: ['Комиссия', '−'],
+    interest: ['Проценты Дупла', '+'], deposit: ['Дупло-сейф', '−'],
+    insurance: ['Страховка', '−'], pot: ['Вклад в котёл', '−'],
+    payout: ['От Банка', '+'], achievement: ['Достижение', '+'], photo: ['Фотоотчёт', ''],
+  };
   const PAGE = 25;
   api('/api/album').then((evs) => {
     const c = document.getElementById('albumList'); c.innerHTML = '';

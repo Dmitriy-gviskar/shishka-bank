@@ -8,9 +8,31 @@ window.runMarket = function () {
 
 // ── Лавки ──
 function marketNote(text, ok) {
-  const n = document.getElementById('note'); if (!n) return;
-  n.style.display = 'block'; n.textContent = text; n.style.color = ok ? '#5f8e37' : '#b3452e';
+  const n = document.getElementById('mktNote') || document.getElementById('note');
+  if (!n) return;
+  n.style.display = 'block';
+  n.textContent = text;
+  n.style.color = ok ? '#5f8e37' : '#b3452e';
+  try { n.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch {}
 }
+
+// свой диалог вместо window.confirm — в PWA/WebView системный confirm часто «молчит»
+function ask(title, text, okText = 'Да', cancelText = 'Отмена') {
+  return new Promise((resolve) => {
+    const ov = document.getElementById('askOv');
+    const sheet = document.getElementById('askSheet');
+    if (!ov || !sheet) { resolve(window.confirm(`${title}\n\n${text}`)); return; }
+    sheet.innerHTML = `<h3>${esc(title)}</h3><div class="asktext">${esc(text)}</div>
+      <div class="acts"><button type="button" class="a-ok">${esc(okText)}</button>
+      <button type="button" class="a-no">${esc(cancelText)}</button></div>`;
+    const close = (v) => { ov.classList.remove('on'); ov.onclick = null; resolve(v); };
+    sheet.querySelector('.a-ok').onclick = () => close(true);
+    sheet.querySelector('.a-no').onclick = () => close(false);
+    ov.onclick = (e) => { if (e.target.id === 'askOv') close(false); };
+    ov.classList.add('on');
+  });
+}
+
 async function loadOrders() {
   const box = document.getElementById('ordersBox'); if (!box) return;
   const list = await api('/api/orders');
@@ -19,8 +41,8 @@ async function loadOrders() {
   box.innerHTML = '<h3>Мои сделки</h3>' + list.map((o) => {
     const buy = o.role === 'buy';
     const meta = buy
-      ? `У ${esc(o.seller_name)} · ${o.price} 🌰 · ждёт получения`
-      : `От ${esc(o.buyer_name)} · ${o.price} 🌰 · отдай товар`;
+      ? `У ${esc(o.seller_name)} · ${o.price} 🌰 · шишки заморожены`
+      : `От ${esc(o.buyer_name)} · ${o.price} 🌰 · отдай товар и жди «Получил»`;
     const acts = buy
       ? `<button class="btn btn-sm conf" type="button" data-id="${o.id}">Получил</button>
          <button class="cancel" type="button" data-id="${o.id}">Отмена</button>`
@@ -30,20 +52,30 @@ async function loadOrders() {
   }).join('');
   box.querySelectorAll('.conf').forEach((btn) => {
     btn.onclick = async () => {
-      if (!confirm('Товар у тебя? Шишки уйдут продавцу.')) return;
+      if (!await ask('Товар у тебя?', 'Если да — шишки сразу уйдут продавцу.', 'Получил', 'Ещё нет')) return;
       btn.disabled = true;
+      btn.textContent = '…';
       const r = await api('/api/order/confirm', { id: btn.dataset.id });
-      if (r.error) { marketNote(r.error, false); btn.disabled = false; return; }
-      marketNote('Сделка закрыта — спасибо!', true); refreshBalance(); loadMarket();
+      if (r.error) {
+        marketNote(r.error, false);
+        btn.disabled = false;
+        btn.textContent = 'Получил';
+        return;
+      }
+      marketNote('Сделка закрыта! Шишки у продавца.', true);
+      refreshBalance();
+      loadMarket();
     };
   });
   box.querySelectorAll('.cancel').forEach((btn) => {
     btn.onclick = async () => {
-      if (!confirm('Отменить заказ? Шишки вернутся покупателю.')) return;
+      if (!await ask('Отменить заказ?', 'Шишки вернутся покупателю.', 'Отменить', 'Оставить')) return;
       btn.disabled = true;
       const r = await api('/api/order/cancel', { id: btn.dataset.id });
       if (r.error) { marketNote(r.error, false); btn.disabled = false; return; }
-      marketNote('Заказ отменён', true); refreshBalance(); loadMarket();
+      marketNote('Заказ отменён, шишки вернулись', true);
+      refreshBalance();
+      loadMarket();
     };
   });
 }
@@ -108,17 +140,19 @@ async function loadMarket() {
       if (s.mine) {
         row.querySelector('.le').onclick = () => openLotForm(el, l);
         row.querySelector('.lr').onclick = async () => {
-          if (!confirm(`Убрать «${l.title}» из продажи?`)) return;
+          if (!await ask('Убрать с витрины?', `«${l.title}» больше не будет в продаже.`, 'Убрать', 'Оставить')) return;
           const r = await api('/api/lot/remove', { id: l.id });
           if (r.error) marketNote(r.error, false); else loadMarket();
         };
       } else {
         row.querySelector('.shop-buy').onclick = async () => {
-          if (!confirm(`Заказать «${l.title}» за ${l.price} 🌰?\nШишки заморозятся, пока не подтвердишь получение.`)) return;
+          if (!await ask('Заказать?',
+            `«${l.title}» за ${l.price} 🌰.\nШишки заморозятся, пока не нажмёшь «Получил».`,
+            'Заказать', 'Не сейчас')) return;
           const r = await api('/api/lot/buy', { id: l.id });
           if (r.error) marketNote(r.error, false);
           else {
-            marketNote('Заказано у ' + s.name + '! Когда получишь — жми «Получил» выше.', true);
+            marketNote('Заказано у ' + s.name + '! Когда получишь товар — жми «Получил» выше.', true);
             refreshBalance(); loadMarket();
           }
         };
@@ -138,7 +172,7 @@ async function loadMarket() {
         if (r.error) marketNote(r.error, false); else loadMarket();
       };
       el.querySelector('.close').onclick = async () => {
-        if (!confirm('Закрыть лавку? Все товары уйдут с витрины.')) return;
+        if (!await ask('Закрыть лавку?', 'Все товары уйдут с витрины.', 'Закрыть', 'Оставить')) return;
         const r = await api('/api/shop/close', {});
         if (r.error) marketNote(r.error, false); else loadMarket();
       };
