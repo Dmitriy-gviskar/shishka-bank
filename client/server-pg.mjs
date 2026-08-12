@@ -246,6 +246,29 @@ async function sweepGuilds() {
 }
 setInterval(sweepGuilds, 3600e3);  // раз в час
 sweepGuilds();
+
+// Ежедневная «зарплата» тестировщику Берёзе: +500 шишек с 09:00 МСК (не чаще раза в сутки).
+async function sweepTesterPayroll() {
+  try {
+    // в кластере крутит только worker 1 — иначе начислят N раз
+    if (process.env.CLUSTER_WORKER && process.env.CLUSTER_WORKER !== '1') return;
+    const slot = await one("select (now() at time zone 'Europe/Moscow')::date as d, extract(hour from (now() at time zone 'Europe/Moscow'))::int as h");
+    if (!slot || slot.h < 9) return;
+    const u = await one("select id, name from users where role='child' and name in ('Берёза','Береза') order by created_at limit 1");
+    if (!u) return;
+    const paid = await one(
+      `select 1 as x from transactions
+        where to_user=$1 and type='reward' and message=$2
+          and (created_at at time zone 'Europe/Moscow')::date = $3::date
+        limit 1`, [u.id, 'Зарплата тестировщика', slot.d]);
+    if (paid) return;
+    await creditCones(u.id, 500, 'Зарплата тестировщика');
+    sendPush(u.id, '🌲 Зарплата!', '+500 шишек — зарплата тестировщика').catch(() => {});
+    console.log('зарплата тестировщика:', u.name, '+500');
+  } catch (e) { console.error('sweepTesterPayroll', e.message); }
+}
+setInterval(sweepTesterPayroll, 60e3);
+sweepTesterPayroll();
 // гильдейский чат — только готовые фразы (без свободного текста, этика детского общения)
 const GUILD_PHRASES = new Set(['Собираемся!', 'Заказ готов!', 'Молодцы!', 'Нужна помощь', 'Ура!', 'Я за!']);
 // описания достижений «за что» по треку (в БД desc = title, генерим человеческое)
