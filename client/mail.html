@@ -106,7 +106,8 @@
     padding:8px 16px;font-weight:800;font-size:14px;cursor:pointer}
   #micBtn{width:40px;height:40px;border-radius:50%;background:#e8dcc8;border:2px solid #d9c39a;
     font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
-  #micBtn.recording{background:#e04545;border-color:#c03030;animation:pulse .8s infinite}
+  #micBtn.recording{background:#e04545;border-color:#c03030;animation:pulse .8s infinite;color:#fff}
+  #micBtn{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,69,69,.5)}50%{box-shadow:0 0 0 12px rgba(224,69,69,0)}}
   #recTime{font-size:11px;font-weight:700;color:#c03030;display:none}
   .msgAudio audio{width:220px;height:38px;border-radius:12px}

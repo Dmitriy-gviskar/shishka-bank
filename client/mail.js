@@ -259,28 +259,44 @@ setMailTab((location.hash || '').includes('chats') ? 'chats' : 'friends');
 const stickerBar = document.getElementById('stickerBar');
 STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
 
-// Голосовые: hold-to-talk (только Pointer Events — иначе touch+pointer стартуют дважды и запись пустая)
+// Голосовые: тап старт / тап стоп (hold-to-talk ломается на Android: диалог микрофона рвёт pointerup)
 let mediaRecorder = null, audioChunks = [], recTimer = null, recSecs = 0, recStarting = false;
 const micBtn = document.getElementById('micBtn'), recTime = document.getElementById('recTime');
 const fmtSec = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
-const flashMic = (t) => { if (!micBtn) return; micBtn.textContent = t; setTimeout(() => { micBtn.textContent = '🎤'; }, 2200); };
-const startRec = async (e) => {
+const flashMic = (t) => { if (!micBtn) return; micBtn.textContent = t; setTimeout(() => { if (!mediaRecorder) micBtn.textContent = '🎤'; }, 2200); };
+const pickMime = () => {
+  if (typeof MediaRecorder === 'undefined') return '';
+  const cands = [
+    'audio/webm;codecs=opus', 'audio/webm',
+    'audio/mp4', 'audio/aac',
+    'audio/ogg;codecs=opus', 'audio/ogg',
+  ];
+  for (const m of cands) {
+    try { if (MediaRecorder.isTypeSupported(m)) return m; } catch {}
+  }
+  return '';
+};
+const startRec = async () => {
   if (!chatFriend || mediaRecorder || recStarting) return;
-  if (e) { e.preventDefault(); try { micBtn.setPointerCapture(e.pointerId); } catch {} }
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+    flashMic('🚫'); return;
+  }
   recStarting = true;
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    if (!recStarting) { stream.getTracks().forEach((t) => t.stop()); return; } // отпустили, пока ждали микрофон
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
-      : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
-      : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
-      : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus'
-      : '';
-    mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+    });
+    if (!recStarting) { stream.getTracks().forEach((t) => t.stop()); return; }
+    const mime = pickMime();
+    mediaRecorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
     audioChunks = [];
     mediaRecorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) audioChunks.push(ev.data); };
-    mediaRecorder.start(250);
+    mediaRecorder.onerror = () => flashMic('⚠️');
+    // timeslice: на части Android WebView без него ondataavailable пустой до stop
+    try { mediaRecorder.start(1000); }
+    catch { mediaRecorder.start(); }
     micBtn.classList.add('recording');
+    micBtn.textContent = '⏹';
     if (recTime) { recTime.style.display = 'inline'; recTime.textContent = '0:00'; }
     recSecs = 0;
     recTimer = setInterval(() => { recSecs++; if (recTime) recTime.textContent = fmtSec(recSecs); }, 1000);
@@ -289,25 +305,32 @@ const startRec = async (e) => {
     flashMic('🚫');
   } finally { recStarting = false; }
 };
-const stopRec = async (e) => {
-  if (e) try { micBtn.releasePointerCapture(e.pointerId); } catch {}
-  if (recStarting) { recStarting = false; return; } // ещё не успели стартовать
+const stopRec = async () => {
+  if (recStarting) return; // ждём разрешение микрофона — не срываем старт
   if (!mediaRecorder) return;
   const rec = mediaRecorder;
   mediaRecorder = null;
   micBtn.classList.remove('recording');
+  micBtn.textContent = '🎤';
   if (recTime) recTime.style.display = 'none';
   clearInterval(recTimer);
-  const recMime = rec.mimeType || 'audio/webm';
+  const recMime = rec.mimeType || pickMime() || 'audio/webm';
+  if (rec.state === 'recording') {
+    try { rec.requestData(); } catch {}
+  }
   await new Promise((resolve) => {
-    rec.onstop = resolve;
-    try { rec.stop(); } catch { resolve(); }
+    const done = () => resolve();
+    rec.addEventListener('stop', done, { once: true });
+    try { rec.stop(); } catch { done(); }
+    setTimeout(done, 1500);
   });
   try { rec.stream.getTracks().forEach((t) => t.stop()); } catch {}
   if (!audioChunks.length) { flashMic('…'); return; }
-  const blob = new Blob(audioChunks, { type: recMime });
+  const blob = new Blob(audioChunks, { type: recMime.split(';')[0] || 'audio/webm' });
   audioChunks = [];
   if (blob.size < 200) { flashMic('…'); return; }
+  const to = chatFriend;
+  if (!to) { flashMic('⚠️'); return; }
   try {
     const data = await new Promise((res, rej) => {
       const reader = new FileReader();
@@ -315,9 +338,14 @@ const stopRec = async (e) => {
       reader.onerror = () => rej(reader.error);
       reader.readAsDataURL(blob);
     });
-    const up = await api('/api/audio', { data });
+    // Android иногда отдаёт data:;base64 без mime — чиним
+    let payload = String(data || '');
+    if (payload.startsWith('data:;base64,') || payload.startsWith('data:application/octet-stream;base64,')) {
+      payload = `data:${recMime.split(';')[0] || 'audio/webm'};base64,` + payload.split(',')[1];
+    }
+    const up = await api('/api/audio', { data: payload });
     if (up.error || !up.url) { flashMic('⚠️'); console.error('audio upload', up.error); return; }
-    const sent = await api('/api/message', { content: up.url, to: chatFriend, type: 'audio' });
+    const sent = await api('/api/message', { content: up.url, to, type: 'audio' });
     if (sent.error) { flashMic('⚠️'); console.error('audio send', sent.error); return; }
     loadChat();
   } catch (err) {
@@ -326,12 +354,11 @@ const stopRec = async (e) => {
   }
 };
 if (micBtn) {
-  micBtn.addEventListener('pointerdown', startRec);
-  micBtn.addEventListener('pointerup', stopRec);
-  micBtn.addEventListener('pointercancel', stopRec);
-  micBtn.addEventListener('lostpointercapture', () => { if (mediaRecorder || recStarting) stopRec(); });
-  // не даём touch+click дублировать pointer
-  micBtn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+  micBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (mediaRecorder || recStarting) stopRec();
+    else startRec();
+  });
   micBtn.addEventListener('contextmenu', (e) => e.preventDefault());
 }
 // Ответ

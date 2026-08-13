@@ -21,6 +21,7 @@ import androidx.core.content.FileProvider;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 // Шишка Банк: WebView на весь экран поверх живого сайта.
 // Данные (вход по коду) живут в localStorage — domStorage + персистентный профиль WebView.
@@ -28,6 +29,7 @@ public class MainActivity extends Activity {
 
     private static final String HOME = "https://elka-kvest-2026.ru/";
     private static final int FILE_CHOOSER_CODE = 51;
+    private static final int PERMISSION_CODE = 1;
     private WebView web;
     private PermissionRequest pendingRequest;
     private ValueCallback<Uri[]> filePathCallback;
@@ -61,15 +63,10 @@ public class MainActivity extends Activity {
         });
 
         web.setWebChromeClient(new WebChromeClient() {
-            // камера для встроенного QR-сканера (getUserMedia внутри WebView)
+            // камера (QR) + микрофон (голосовые) внутри WebView getUserMedia
             @Override
-            public void onPermissionRequest(PermissionRequest request) {
-                if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-                    requestPermissions(new String[]{Manifest.permission.CAMERA}, 1);
-                    pendingRequest = request;
-                    return;
-                }
-                request.grant(request.getResources());
+            public void onPermissionRequest(final PermissionRequest request) {
+                runOnUiThread(() -> handleWebPermission(request));
             }
 
             // фото-задания: <input type=file capture=environment> — без этого коллбэка WebView
@@ -101,6 +98,27 @@ public class MainActivity extends Activity {
         web.loadUrl(deep != null ? deep.toString() : HOME);
     }
 
+    private void handleWebPermission(PermissionRequest request) {
+        pendingRequest = request;
+        ArrayList<String> needed = new ArrayList<>();
+        for (String res : request.getResources()) {
+            if (PermissionRequest.RESOURCE_VIDEO_CAPTURE.equals(res)
+                    && checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                if (!needed.contains(Manifest.permission.CAMERA)) needed.add(Manifest.permission.CAMERA);
+            }
+            if (PermissionRequest.RESOURCE_AUDIO_CAPTURE.equals(res)
+                    && checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                if (!needed.contains(Manifest.permission.RECORD_AUDIO)) needed.add(Manifest.permission.RECORD_AUDIO);
+            }
+        }
+        if (needed.isEmpty()) {
+            request.grant(request.getResources());
+            pendingRequest = null;
+            return;
+        }
+        requestPermissions(needed.toArray(new String[0]), PERMISSION_CODE);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -114,11 +132,14 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
         super.onRequestPermissionsResult(code, perms, res);
-        if (pendingRequest != null) {
-            if (res.length > 0 && res[0] == PackageManager.PERMISSION_GRANTED) pendingRequest.grant(pendingRequest.getResources());
-            else pendingRequest.deny();
-            pendingRequest = null;
+        if (code != PERMISSION_CODE || pendingRequest == null) return;
+        boolean ok = res.length > 0;
+        for (int r : res) {
+            if (r != PackageManager.PERMISSION_GRANTED) { ok = false; break; }
         }
+        if (ok) pendingRequest.grant(pendingRequest.getResources());
+        else pendingRequest.deny();
+        pendingRequest = null;
     }
 
     @Override

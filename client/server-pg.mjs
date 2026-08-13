@@ -165,12 +165,18 @@ async function savePhoto(dataUrl, prefix) {
 }
 // base64-audio -> file (webm / mp4 / ogg — как прислал клиент)
 async function saveAudio(dataUrl) {
-  // Chrome даёт data:audio/webm;codecs=opus;base64,... — старый regex требовал ;base64 сразу после audio/*
-  const m = /^data:(audio\/[a-z0-9.+-]+)(?:;[\w.=-]+)*;base64,(.+)$/i.exec(String(dataUrl || ''));
+  // Chrome: data:audio/webm;codecs=opus;base64,...
+  // Android WebView иногда: data:audio/mp4;base64,... или data:;base64,...
+  let raw = String(dataUrl || '');
+  let m = /^data:(audio\/[a-z0-9.+-]+)(?:;[\w.="'-]+)*;base64,(.+)$/i.exec(raw);
+  if (!m) {
+    const loose = /^data:(?:application\/octet-stream)?;base64,(.+)$/i.exec(raw);
+    if (loose) m = ['', 'audio/webm', loose[1]];
+  }
   if (!m) throw { code: 400, msg: 'не удалось записать голос' };
   const mime = m[1].toLowerCase();
   const buf = Buffer.from(m[2], 'base64');
-  if (buf.length < 200) throw { code: 400, msg: 'слишком коротко — подержи микрофон дольше' };
+  if (buf.length < 200) throw { code: 400, msg: 'слишком коротко — нажми 🎤 ещё раз, чтобы остановить' };
   if (buf.length > 4e6) throw { code: 400, msg: 'голосовое слишком длинное' };
   const ext = mime.includes('mp4') || mime.includes('m4a') || mime.includes('aac') ? 'm4a'
     : mime.includes('ogg') ? 'ogg'
