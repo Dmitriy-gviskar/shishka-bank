@@ -1157,6 +1157,18 @@ const api = {
     return await q(`select mr.emoji, u.name from message_reactions mr
       join users u on u.id=mr.user_id where mr.message_id=$1`, [msgId]);
   },
+  // Удалить своё сообщение у обоих (как «удалить у всех» в мессенджерах)
+  'POST /api/message/delete': async (b, ctx) => {
+    const msgId = b.message_id || b.id;
+    if (!msgId) throw { code: 400, msg: 'нужен message_id' };
+    const row = await one(
+      `select id from messages where id=$1 and circle_id=$2 and from_user=$3`,
+      [msgId, ctx.circle, ctx.child],
+    );
+    if (!row) throw { code: 404, msg: 'можно удалить только своё сообщение' };
+    await q('delete from messages where id=$1', [msgId]);
+    return { ok: true };
+  },
 
   // ── Аукцион ──
   'GET /api/auction': async (b, ctx) => {

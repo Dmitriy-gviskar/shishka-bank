@@ -154,75 +154,74 @@ async function loadChat() {
   const msgs = await api('/api/chat', { with: chatFriend });
   if (msgs.error) { c.innerHTML = '<div class="emptyChat">Ошибка загрузки</div>'; return; }
   if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; }
-  for (const m of msgs) {
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;flex-direction:column;';
-    if (m.mine) wrap.style.alignItems = 'flex-end'; else wrap.style.alignItems = 'flex-start';
-    const el = document.createElement('div');
-    if (m.type === 'audio') {
-      el.className = 'msgAudio ' + (m.mine ? 'mine' : 'theirs');
-      const audio = document.createElement('audio');
-      audio.controls = true;
-      audio.playsInline = true;
-      audio.preload = 'metadata';
-      audio.src = m.content;
-      el.appendChild(audio);
-      const tm = document.createElement('div'); tm.className = 'msgTime'; tm.textContent = fmtTime(m.created_at); el.appendChild(tm);
-    } else if (m.type === 'sticker') {
-      el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
-      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
-    } else {
-      el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
-      el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
-    }
-    // Цитата
-    if (m.reply_to) {
-      const qt = document.createElement('div'); qt.className = 'replyQuote';
-      qt.innerHTML = `<div class="by">↩ ${esc(m.reply_by || '...')}</div>${esc(m.reply_content || '')}`;
-      el.appendChild(qt);
-    }
-    // Реакции
-    if (m.reactions && m.reactions.length) {
-      const rxRow = document.createElement('div'); rxRow.className = 'rxRow' + (m.mine ? ' mine' : '');
-      // сгруппировать по emoji
-      const groups = {}; m.reactions.forEach((r) => { groups[r.emoji] = (groups[r.emoji] || 0) + 1; });
-      Object.entries(groups).forEach(([emoji, cnt]) => {
-        const chip = document.createElement('span'); chip.className = 'rxChip';
-        chip.innerHTML = emoji + (cnt > 1 ? `<span class="cnt">${cnt}</span>` : '');
-        chip.onclick = (e) => { e.stopPropagation(); react(m.id, emoji); };
-        rxRow.appendChild(chip);
-      });
-      wrap.appendChild(el);
-      wrap.appendChild(rxRow);
-    } else {
-      wrap.appendChild(el);
-    }
-    // Свайп вправо → ответ
-    let swipeX = 0, swipeY = 0;
-    el.addEventListener('touchstart', (e) => {
-      swipeX = e.touches[0].clientX; swipeY = e.touches[0].clientY;
-      pressTimer = setTimeout(() => { showRxPicker(e, m.id); }, 500);
-    }, { passive: true });
-    el.addEventListener('touchmove', (e) => {
-      clearTimeout(pressTimer);
-      const dx = e.touches[0].clientX - swipeX;
-      if (Math.abs(dx) > 0) { clearTimeout(pressTimer); }
-    }, { passive: true });
-    el.addEventListener('touchend', (e) => {
-      clearTimeout(pressTimer);
-      const dx = (e.changedTouches[0]?.clientX || 0) - swipeX;
-      const dy = Math.abs((e.changedTouches[0]?.clientY || 0) - swipeY);
-      if (dx > 60 && dy < 30) {
-        replyTo = m.id;
-        document.getElementById('replyTxt').textContent = esc(m.content).slice(0, 50);
-        document.getElementById('replyBar').style.display = 'flex';
-        document.getElementById('msgInput').focus();
-      }
-    });
-    c.appendChild(wrap);
-  }
+  for (const m of msgs) appendMsg(c, m);
+  lastMsgCount = Array.isArray(msgs) ? msgs.length : 0;
   if (mailTab === 'chats') loadChatList();   // обновить счётчики в списке
   c.scrollTop = c.scrollHeight;
+}
+function appendMsg(c, m) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;';
+  wrap.dataset.msgId = m.id;
+  if (m.mine) wrap.style.alignItems = 'flex-end'; else wrap.style.alignItems = 'flex-start';
+  const el = document.createElement('div');
+  if (m.type === 'audio') {
+    el.className = 'msgAudio ' + (m.mine ? 'mine' : 'theirs');
+    const audio = document.createElement('audio');
+    audio.controls = true;
+    audio.playsInline = true;
+    audio.preload = 'metadata';
+    audio.src = m.content;
+    el.appendChild(audio);
+    const tm = document.createElement('div'); tm.className = 'msgTime'; tm.textContent = fmtTime(m.created_at); el.appendChild(tm);
+  } else if (m.type === 'sticker') {
+    el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
+    el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
+  } else {
+    el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
+    el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
+  }
+  if (m.reply_to) {
+    const qt = document.createElement('div'); qt.className = 'replyQuote';
+    qt.innerHTML = `<div class="by">↩ ${esc(m.reply_by || '...')}</div>${esc(m.reply_content || '')}`;
+    el.appendChild(qt);
+  }
+  if (m.reactions && m.reactions.length) {
+    const rxRow = document.createElement('div'); rxRow.className = 'rxRow' + (m.mine ? ' mine' : '');
+    const groups = {}; m.reactions.forEach((r) => { groups[r.emoji] = (groups[r.emoji] || 0) + 1; });
+    Object.entries(groups).forEach(([emoji, cnt]) => {
+      const chip = document.createElement('span'); chip.className = 'rxChip';
+      chip.innerHTML = emoji + (cnt > 1 ? `<span class="cnt">${cnt}</span>` : '');
+      chip.onclick = (e) => { e.stopPropagation(); react(m.id, emoji); };
+      rxRow.appendChild(chip);
+    });
+    wrap.appendChild(el);
+    wrap.appendChild(rxRow);
+  } else {
+    wrap.appendChild(el);
+  }
+  // долгое нажатие → меню (реакция / ответ / удалить своё); свайп вправо → ответ
+  let swipeX = 0, swipeY = 0;
+  el.addEventListener('touchstart', (e) => {
+    swipeX = e.touches[0].clientX; swipeY = e.touches[0].clientY;
+    pressTimer = setTimeout(() => { showMsgMenu(e, m); }, 500);
+  }, { passive: true });
+  el.addEventListener('touchmove', () => { clearTimeout(pressTimer); }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    clearTimeout(pressTimer);
+    const dx = (e.changedTouches[0]?.clientX || 0) - swipeX;
+    const dy = Math.abs((e.changedTouches[0]?.clientY || 0) - swipeY);
+    if (dx > 60 && dy < 30) startReply(m);
+  });
+  el.addEventListener('contextmenu', (e) => { e.preventDefault(); showMsgMenu(e, m); });
+  c.appendChild(wrap);
+}
+function startReply(m) {
+  replyTo = m.id;
+  const preview = m.type === 'audio' ? '🎤 Голосовое' : String(m.content || '').slice(0, 50);
+  document.getElementById('replyTxt').textContent = preview;
+  document.getElementById('replyBar').style.display = 'flex';
+  document.getElementById('msgInput').focus();
 }
 async function sendMsg(content) {
   if (!chatFriend) return;
@@ -363,22 +362,54 @@ if (micBtn) {
 // Ответ
 window.cancelReply = () => { replyTo = null; document.getElementById('replyBar').style.display = 'none'; };
 document.getElementById('replyCancel').onclick = cancelReply;
-// Реакции
-let rxMsgId = null;
+// Меню сообщения: реакции / ответ / удалить своё
+let rxMsgId = null, rxMsgMine = false, rxMsgRef = null;
 window.react = async (msgId, emoji) => {
   await api('/api/message/react', { message_id: msgId, emoji });
   loadChat();
 };
-window.showRxPicker = (e, msgId) => {
-  rxMsgId = msgId;
-  const pk = document.getElementById('rxPicker');
-  const t = e.touches ? e.touches[0] : e;
-  pk.style.display = 'flex'; pk.style.left = Math.min(t.clientX - 80, window.innerWidth - 200) + 'px';
-  pk.style.top = (t.clientY - 50) + 'px';
-  setTimeout(() => document.addEventListener('click', hideRxPicker, { once: true }), 50);
+window.deleteMsg = async (msgId) => {
+  if (!msgId) return;
+  if (!window.confirm('Удалить сообщение у вас обоих?')) return;
+  const r = await api('/api/message/delete', { message_id: msgId });
+  if (r.error) return;
+  hideMsgMenu();
+  loadChat();
 };
-const hideRxPicker = () => { document.getElementById('rxPicker').style.display = 'none'; rxMsgId = null; };
-document.querySelectorAll('#rxPicker button').forEach((b) => b.onclick = () => { if (rxMsgId) { react(rxMsgId, b.textContent); hideRxPicker(); } });
+window.showMsgMenu = (e, m) => {
+  rxMsgId = m.id;
+  rxMsgMine = !!m.mine;
+  rxMsgRef = m;
+  const pk = document.getElementById('rxPicker');
+  const del = document.getElementById('rxDelete');
+  if (del) del.style.display = rxMsgMine ? '' : 'none';
+  const t = e.touches ? e.touches[0] : e;
+  const x = t.clientX != null ? t.clientX : (window.innerWidth / 2);
+  const y = t.clientY != null ? t.clientY : (window.innerHeight / 2);
+  pk.style.display = 'flex';
+  pk.style.left = Math.max(8, Math.min(x - 100, window.innerWidth - 220)) + 'px';
+  pk.style.top = Math.max(8, y - 90) + 'px';
+  setTimeout(() => document.addEventListener('click', hideMsgMenu, { once: true }), 50);
+};
+const hideMsgMenu = () => {
+  document.getElementById('rxPicker').style.display = 'none';
+  rxMsgId = null; rxMsgMine = false; rxMsgRef = null;
+};
+document.querySelectorAll('#rxPicker .rxEmojis button').forEach((b) => {
+  b.onclick = (ev) => {
+    ev.stopPropagation();
+    if (rxMsgId) { react(rxMsgId, b.textContent); hideMsgMenu(); }
+  };
+});
+document.getElementById('rxReply').onclick = (ev) => {
+  ev.stopPropagation();
+  if (rxMsgRef) startReply(rxMsgRef);
+  hideMsgMenu();
+};
+document.getElementById('rxDelete').onclick = (ev) => {
+  ev.stopPropagation();
+  if (rxMsgId) deleteMsg(rxMsgId);
+};
 // Отправка вручную (быстрые фразы убраны — случайные тапы засоряли чат)
 document.getElementById('btnSend').onclick = () => { const v = document.getElementById('msgInput').value.trim(); if (v) sendMsg(v); };
 // На Android WebView клавиатура не двигает вьюпорт — скроллим поле ввода в видимую зону
@@ -406,47 +437,16 @@ const startChatPoll = () => {
   chatPoll = setInterval(async () => {
     if (document.hidden || !chatFriend) return;
     const msgs = await api('/api/chat', { with: chatFriend });
-    if (msgs.error || !msgs.length) return;
+    if (msgs.error) return;
     if (msgs.length === lastMsgCount) return;   // нет новых — не дёргаем DOM
     lastMsgCount = msgs.length;
     const c = document.getElementById('chatMsgs');
     const wasAtBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
     c.innerHTML = '';
-    for (const m of msgs) {
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'display:flex;flex-direction:column;';
-      if (m.mine) wrap.style.alignItems = 'flex-end'; else wrap.style.alignItems = 'flex-start';
-      const el = document.createElement('div');
-      if (m.type === 'audio') {
-        el.className = 'msgAudio ' + (m.mine ? 'mine' : 'theirs');
-        const a = document.createElement('audio'); a.controls = true; a.playsInline = true; a.preload = 'metadata'; a.src = m.content;
-        el.appendChild(a);
-        const tm = document.createElement('div'); tm.className = 'msgTime'; tm.textContent = fmtTime(m.created_at); el.appendChild(tm);
-      } else if (m.type === 'sticker') {
-        el.className = 'msgSticker ' + (m.mine ? 'mine' : 'theirs');
-        el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
-      } else {
-        el.className = 'msgBubble ' + (m.mine ? 'mine' : 'theirs');
-        el.innerHTML = esc(m.content) + `<div class="msgTime">${fmtTime(m.created_at)}${m.mine ? (m.is_read ? ' ✓✓' : ' ✓') : ''}</div>`;
-      }
-      // Цитата
-      if (m.reply_to) {
-        const qt = document.createElement('div'); qt.className = 'replyQuote';
-        qt.innerHTML = `<div class="by">↩ ${esc(m.reply_by || '...')}</div>${esc(m.reply_content || '')}`;
-        el.appendChild(qt);
-      }
-      if (m.reactions && m.reactions.length) {
-        const rxRow = document.createElement('div'); rxRow.className = 'rxRow' + (m.mine ? ' mine' : '');
-        const groups = {}; m.reactions.forEach((r) => { groups[r.emoji] = (groups[r.emoji] || 0) + 1; });
-        Object.entries(groups).forEach(([emoji, cnt]) => {
-          const chip = document.createElement('span'); chip.className = 'rxChip';
-          chip.innerHTML = emoji + (cnt > 1 ? `<span class="cnt">${cnt}</span>` : '');
-          chip.onclick = (e) => { e.stopPropagation(); react(m.id, emoji); };
-          rxRow.appendChild(chip);
-        });
-        wrap.appendChild(el); wrap.appendChild(rxRow);
-      } else { wrap.appendChild(el); }
-      c.appendChild(wrap);
+    if (!msgs.length) {
+      c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>';
+    } else {
+      for (const m of msgs) appendMsg(c, m);
     }
     if (wasAtBottom) c.scrollTop = c.scrollHeight;
   }, 2000);
