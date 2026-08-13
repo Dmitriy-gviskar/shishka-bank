@@ -99,16 +99,13 @@ public class MainActivity extends Activity {
                 cameraPhotoUri = null;
 
                 try {
+                    // Съёмка — только через getUserMedia на странице.
+                    // Сюда попадаем для «Из галереи»: камеру в chooser НЕ добавляем —
+                    // на Xiaomi/MIUI EXTRA_INITIAL_INTENTS с камерой часто сразу открывает камеру.
                     Intent pick = buildGalleryIntent();
-                    Intent camera = null;
-                    if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                        camera = buildCameraIntent();
-                    }
-                    Intent chooser = Intent.createChooser(pick, "Фото для задания");
-                    if (camera != null) {
-                        chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{ camera });
-                    }
-                    startActivityForResult(chooser, FILE_CHOOSER_CODE);
+                    startActivityForResult(
+                        Intent.createChooser(pick, "Фото из галереи"),
+                        FILE_CHOOSER_CODE);
                     return true;
                 } catch (Throwable t) {
                     ValueCallback<Uri[]> cb = filePathCallback;

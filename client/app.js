@@ -218,7 +218,9 @@ function capturePhotoFile() {
   return new Promise((res) => {
     const inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = 'image/*';
+    inp.accept = 'image/jpeg,image/png,image/webp,image/*';
+    // явно без capture — иначе WebView может форсить камеру
+    inp.removeAttribute('capture');
     inp.setAttribute('aria-hidden', 'true');
     inp.style.cssText = 'position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0.01;z-index:9999';
     document.body.appendChild(inp);
