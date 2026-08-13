@@ -10,8 +10,8 @@ android {
         applicationId "ru.elkakvest.shishka"
         minSdk 24
         targetSdk 34
-        versionCode 4
-        versionName "1.3"
+        versionCode 5
+        versionName "1.4"
     }
 
     buildTypes {
@@ -28,4 +28,5 @@ android {
 
 dependencies {
     implementation 'androidx.core:core:1.13.1'   // FileProvider — content:// URI для камеры (фото-задания)
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'  // WebSocket пуши без Firebase
 }

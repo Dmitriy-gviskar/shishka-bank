@@ -7,6 +7,7 @@ window.runMail = function () {
 // ── Чат ──
 const STICKERS = ['🦊','🐿️','🦉','🐻','🦌','🐰','🌲','🍄','🌰','🍂','🌟','❤️','🔥','😂','👍','🎉','😢','😡','🤔','🙏'];
 let chatFriend = null, chatFriendName = '', replyTo = null, pressTimer = null;
+let lastMsgCount = 0, lastMsgSig = '', lastMsgId = null, lastFullSync = 0;
 const fmtTime = (iso) => { const d = new Date(iso); return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
 
 // ── Список чатов ──
@@ -173,6 +174,8 @@ async function loadChat() {
   for (const m of msgs) appendMsg(c, m);
   lastMsgCount = Array.isArray(msgs) ? msgs.length : 0;
   lastMsgSig = msgs.length ? `${msgs.length}:${msgs[msgs.length - 1].id}` : '0';
+  lastMsgId = msgs.length ? msgs[msgs.length - 1].id : null;
+  lastFullSync = Date.now();
   c.scrollTop = c.scrollHeight;
 }
 function appendMsg(c, m) {
@@ -446,46 +449,62 @@ const payAmts = document.getElementById('payAmts');
   b.onclick = () => { payAmt = a; [...payAmts.children].forEach((x) => x.classList.remove('sel')); b.classList.add('sel'); };
   payAmts.appendChild(b);
 });
-// Автообновление: чат — каждые 2с (только открытый диалог), список — каждые 5с (только список, вкладка видима)
-let chatPoll = null, listPoll = null, lastMsgCount = 0, lastMsgSig = '';
+// Автообновление: чат — дельта по after_id (без полной перерисовки); раз в ~45с полный sync
+let chatPoll = null, listPoll = null;
 const startChatPoll = () => {
   if (chatPoll) clearInterval(chatPoll);
   chatPoll = setInterval(async () => {
     if (document.hidden || !chatFriend) return;
     const friend = chatFriend;
-    const msgs = await api('/api/chat', { with: friend });
-    if (chatFriend !== friend) return;
-    if (msgs.error) return;
-    const sig = msgs.length ? `${msgs.length}:${msgs[msgs.length - 1].id}` : '0';
-    if (sig === lastMsgSig) return;   // нет изменений — не дёргаем DOM
-    lastMsgSig = sig;
-    lastMsgCount = msgs.length;
     const c = document.getElementById('chatMsgs');
     if (!c) return;
-    const wasAtBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
-    c.innerHTML = '';
-    if (!msgs.length) {
-      c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>';
-    } else {
-      for (const m of msgs) appendMsg(c, m);
+    const needFull = !lastMsgId || (Date.now() - lastFullSync > 45000);
+    const msgs = await api('/api/chat', needFull ? { with: friend } : { with: friend, after_id: lastMsgId });
+    if (chatFriend !== friend) return;
+    if (msgs.error || !Array.isArray(msgs)) return;
+    if (needFull) {
+      const sig = msgs.length ? `${msgs.length}:${msgs[msgs.length - 1].id}` : '0';
+      lastFullSync = Date.now();
+      if (sig === lastMsgSig) return;
+      lastMsgSig = sig;
+      lastMsgCount = msgs.length;
+      lastMsgId = msgs.length ? msgs[msgs.length - 1].id : null;
+      const wasAtBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
+      c.innerHTML = '';
+      if (!msgs.length) {
+        c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>';
+      } else {
+        for (const m of msgs) appendMsg(c, m);
+      }
+      if (wasAtBottom) c.scrollTop = c.scrollHeight;
+      return;
     }
+    // дельта: только новые — дописываем в конец
+    if (!msgs.length) return;
+    const empty = c.querySelector('.emptyChat');
+    if (empty) empty.remove();
+    const wasAtBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
+    for (const m of msgs) appendMsg(c, m);
+    lastMsgId = msgs[msgs.length - 1].id;
+    lastMsgCount += msgs.length;
+    lastMsgSig = `${lastMsgCount}:${lastMsgId}`;
     if (wasAtBottom) c.scrollTop = c.scrollHeight;
-  }, 2000);
+  }, 6000);
   (window.__timers || (window.__timers = [])).push(chatPoll);
 };
 listPoll = setInterval(() => {
-  if (document.hidden || chatFriend) return;   // фон / открытый диалог — список не крутим
+  if (document.hidden || chatFriend) return;
   if (mailTab === 'chats') loadChatList();
   else if (mailTab === 'friends') loadFriendsHub();
-}, 5000);
+}, 12000);
 (window.__timers || (window.__timers = [])).push(listPoll);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
-  if (chatFriend) { lastMsgSig = ''; lastMsgCount = 0; }   // следующий тик чата подтянет свежее
+  if (chatFriend) { lastMsgSig = ''; lastFullSync = 0; } // следующий тик — полный sync
   else if (mailTab === 'chats') loadChatList();
   else loadFriendsHub();
 });
-const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; lastMsgSig = ''; startChatPoll(); };
+const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; lastMsgSig = ''; lastMsgId = null; lastFullSync = 0; startChatPoll(); };
 const origClose = closeChat; closeChat = () => { if (chatPoll) clearInterval(chatPoll); chatPoll = null; origClose(); };
 window.__mailBack = () => closeChat();
 // после обновления SW / reload — вернуть открытый диалог (уже с polling)

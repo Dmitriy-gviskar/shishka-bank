@@ -3,6 +3,8 @@
 // Rate-limit — per-worker (достаточно для детского приложения).
 // Запуск: DATABASE_URL="postgres://..." PARENT_PIN=1234 node server-pg.mjs
 import { createServer } from 'node:http';
+import cluster from 'node:cluster';
+import { WebSocketServer } from 'ws';
 
 
 import { writeFile, mkdir } from 'node:fs/promises';
@@ -353,14 +355,17 @@ async function sendPush(userId, title, body) {
   try {
     const subs = await q('select subscription from push_subscriptions where user_id=$1', [userId]);
     const vapid = process.env.VAPID_PRIVATE_KEY;
-    if (!vapid || !subs.length) return;
-    const webpush = await import('web-push');
-    webpush.setVapidDetails('mailto:shishka@elka-kvest-2026.ru',
-      'BCsLnC1aJlENYUggedmMT3Gb-wns2cOD5T4gRRMUgW609m3KWFHvVrIlJbx5WzrjhWxYH3kyfPspd_VEmZSfT8o', vapid);
-    for (const s of subs) {
-      webpush.sendNotification(JSON.parse(s.subscription), JSON.stringify({ title, body })).catch(() => {});
+    if (vapid && subs.length) {
+      const webpush = await import('web-push');
+      webpush.setVapidDetails('mailto:shishka@elka-kvest-2026.ru',
+        'BCsLnC1aJlENYUggedmMT3Gb-wns2cOD5T4gRRMUgW609m3KWFHvVrIlJbx5WzrjhWxYH3kyfPspd_VEmZSfT8o', vapid);
+      for (const s of subs) {
+        webpush.sendNotification(JSON.parse(s.subscription), JSON.stringify({ title, body })).catch(() => {});
+      }
     }
   } catch {}
+  // нативный APK: WebSocket-клиенты на этом и других воркерах кластера
+  try { broadcastPush(userId, title, body); } catch {}
 }
 
 
@@ -1072,14 +1077,21 @@ const api = {
   'GET /api/inbox': (b, ctx) => q(`select u.name as from_name, m.type as kind, m.content, m.is_whisper as whisper
       from messages m left join users u on u.id=m.from_user
       where m.to_user=$1 and m.deliver_at<=now() order by m.created_at desc`, [ctx.child]),
-  // Диалог с конкретным другом: все сообщения между мной и ним, по возрастанию времени
+  // Диалог с конкретным другом: все сообщения между мной и ним, по возрастанию времени.
+  // after_id — только новые после этого id (лёгкий опрос чата без полной перерисовки).
   'POST /api/chat': async (b, ctx) => {
     const withId = b.with;
     if (!withId) throw { code: 400, msg: 'нужен ?with=ID' };
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [withId, ctx.circle], 'друг не в твоём кругу');
     await assertFriend(ctx.child, withId);
-    // Пометить входящие от этого друга как прочитанные
     await q(`update messages set read_at=now() where to_user=$1 and from_user=$2 and read_at is null`, [ctx.child, withId]);
+    const afterId = b.after_id || null;
+    const params = [ctx.child, ctx.circle, withId];
+    let afterSql = '';
+    if (afterId) {
+      params.push(afterId);
+      afterSql = ` and m.created_at > coalesce((select created_at from messages where id=$4), '-infinity'::timestamptz)`;
+    }
     const msgs = await q(`select m.id, m.type, m.content, m.created_at, m.from_user=$1 as mine, m.read_at is not null as is_read, m.reply_to,
         (select r.content from messages r where r.id=m.reply_to) as reply_content,
         (select u.name from messages r join users u on u.id=r.from_user where r.id=m.reply_to) as reply_by,
@@ -1087,7 +1099,8 @@ const api = {
           join users u on u.id=mr.user_id where mr.message_id=m.id), '[]'::jsonb) as reactions
         from messages m where m.circle_id=$2 and m.deliver_at<=now()
         and ((m.from_user=$1 and m.to_user=$3) or (m.from_user=$3 and m.to_user=$1))
-        order by m.created_at asc`, [ctx.child, ctx.circle, withId]);
+        ${afterSql}
+        order by m.created_at asc`, params);
     return msgs;
   },
   // Список чатов: только принятые друзья
@@ -1399,7 +1412,29 @@ const SKIN_ASSET = { 'Обычное дерево': 'base', 'Осеннее де
 
 const MAX_BODY = 10 * 1024 * 1024;
 
-createServer(async (req, res) => {
+// ── Нативные пуши APK: WebSocket /api/push/ws?token=deviceToken ──
+const apkSockets = new Map(); // userId -> Set<WebSocket>
+function deliverApkPush(userId, title, body) {
+  const set = apkSockets.get(String(userId));
+  if (!set || !set.size) return;
+  const payload = JSON.stringify({ title: String(title || 'Шишка Банк'), body: String(body || '') });
+  for (const ws of set) {
+    try { if (ws.readyState === 1) ws.send(payload); } catch {}
+  }
+}
+function broadcastPush(userId, title, body) {
+  deliverApkPush(userId, title, body);
+  if (cluster.isWorker && typeof process.send === 'function') {
+    try { process.send({ type: 'apk-push', userId: String(userId), title, body }); } catch {}
+  }
+}
+if (cluster.isWorker) {
+  process.on('message', (msg) => {
+    if (msg && msg.type === 'apk-push') deliverApkPush(msg.userId, msg.title, msg.body);
+  });
+}
+
+const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   for (const [k, v] of SEC) res.setHeader(k, v);
   if (url.pathname.startsWith('/api/')) {
@@ -1447,6 +1482,36 @@ createServer(async (req, res) => {
   const [status, body, headers] = await serveStatic(url.pathname, DIR);
   res.writeHead(status, headers || {});
   res.end(body);
-}).listen(Number(process.env.PORT) || 3777, function () {
+});
+
+const wss = new WebSocketServer({ noServer: true });
+server.on('upgrade', async (req, socket, head) => {
+  try {
+    const url = new URL(req.url || '/', 'http://x');
+    if (url.pathname !== '/api/push/ws') { socket.destroy(); return; }
+    const token = url.searchParams.get('token') || '';
+    if (!token) { socket.destroy(); return; }
+    const row = await one(
+      `select d.child_id from device_tokens d
+         where d.token_hash=$1 and d.revoked_at is null`, [auth.hash(token)]);
+    if (!row) { socket.destroy(); return; }
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      const uid = String(row.child_id);
+      let set = apkSockets.get(uid);
+      if (!set) { set = new Set(); apkSockets.set(uid, set); }
+      set.add(ws);
+      ws.on('close', () => {
+        set.delete(ws);
+        if (!set.size) apkSockets.delete(uid);
+      });
+      ws.on('error', () => { try { ws.close(); } catch {} });
+      try { ws.send(JSON.stringify({ ok: true })); } catch {}
+    });
+  } catch {
+    try { socket.destroy(); } catch {}
+  }
+});
+
+server.listen(Number(process.env.PORT) || 3777, function () {
   console.log('Шишка Банк → http://localhost:' + this.address().port);
 });

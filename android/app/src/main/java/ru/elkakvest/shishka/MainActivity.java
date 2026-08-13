@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.Manifest;
 import android.provider.MediaStore;
+import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -32,15 +33,16 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private static final String HOME = "https://elka-kvest-2026.ru/";
-    private static final String PREFS = "shishka_wv";
+    private static final String PREFS = PushService.PREFS;
     private static final int FILE_CHOOSER_CODE = 51;
     private static final int PERMISSION_CODE = 1;
+    private static final int NOTIF_PERMISSION_CODE = 2;
     private WebView web;
     private PermissionRequest pendingRequest;
     private ValueCallback<Uri[]> filePathCallback;
     private Uri cameraPhotoUri;
 
-    @SuppressLint("SetJavaScriptEnabled")
+    @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,6 +61,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
         }
+        web.addJavascriptInterface(new Bridge(), "ShishkaNative");
 
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -73,6 +76,11 @@ public class MainActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 rememberUrl(url);
+                // подтянуть deviceToken из localStorage → нативный пуш-сервис
+                view.evaluateJavascript(
+                    "(function(){try{var t=localStorage.getItem('deviceToken')||'';"
+                        + "if(t&&window.ShishkaNative)ShishkaNative.setDeviceToken(t);}catch(e){}})();",
+                    null);
             }
         });
 
@@ -82,8 +90,6 @@ public class MainActivity extends Activity {
                 runOnUiThread(() -> handleWebPermission(request));
             }
 
-            // Фото-задания: галерея (надёжно на Xiaomi/MIUI). Камера — только если разрешение уже есть.
-            // Нельзя звать requestPermissions() в этом же вызове: диалог + chooser = краш процесса.
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (filePathCallback != null) {
@@ -105,7 +111,6 @@ public class MainActivity extends Activity {
                     startActivityForResult(chooser, FILE_CHOOSER_CODE);
                     return true;
                 } catch (Throwable t) {
-                    // любой сбой chooser — не роняем Activity, просто отменяем выбор
                     ValueCallback<Uri[]> cb = filePathCallback;
                     filePathCallback = null;
                     cameraPhotoUri = null;
@@ -117,6 +122,9 @@ public class MainActivity extends Activity {
             }
         });
 
+        askNotificationPermission();
+        PushService.start(this);
+
         Uri deep = getIntent().getData();
         if (deep != null && "elka-kvest-2026.ru".equals(deep.getHost())) {
             web.loadUrl(deep.toString());
@@ -127,8 +135,26 @@ public class MainActivity extends Activity {
         }
     }
 
+    private final class Bridge {
+        @JavascriptInterface
+        public void setDeviceToken(String token) {
+            if (token == null) token = "";
+            SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
+            String prev = p.getString(PushService.KEY_TOKEN, "");
+            p.edit().putString(PushService.KEY_TOKEN, token).apply();
+            if (!token.isEmpty() && !token.equals(prev)) {
+                runOnUiThread(() -> PushService.start(MainActivity.this));
+            }
+        }
+    }
+
+    private void askNotificationPermission() {
+        if (Build.VERSION.SDK_INT < 33) return;
+        if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return;
+        requestPermissions(new String[]{ Manifest.permission.POST_NOTIFICATIONS }, NOTIF_PERMISSION_CODE);
+    }
+
     private Intent buildGalleryIntent() {
-        // Android 13+: системный photo picker без READ_* permission
         if (Build.VERSION.SDK_INT >= 33) {
             try {
                 Intent pick = new Intent("android.provider.action.PICK_IMAGES");
@@ -220,12 +246,22 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        Uri deep = intent.getData();
+        if (deep != null && "elka-kvest-2026.ru".equals(deep.getHost()) && web != null) {
+            web.loadUrl(deep.toString());
+        }
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != FILE_CHOOSER_CODE) return;
         ValueCallback<Uri[]> cb = filePathCallback;
         filePathCallback = null;
-        if (cb == null) return; // Activity пересоздалась — некого уведомить
+        if (cb == null) return;
 
         Uri result = null;
         try {
@@ -259,6 +295,10 @@ public class MainActivity extends Activity {
     @Override
     public void onRequestPermissionsResult(int code, String[] perms, int[] res) {
         super.onRequestPermissionsResult(code, perms, res);
+        if (code == NOTIF_PERMISSION_CODE) {
+            PushService.start(this);
+            return;
+        }
         if (code != PERMISSION_CODE || pendingRequest == null) return;
         boolean ok = res.length > 0;
         for (int r : res) {

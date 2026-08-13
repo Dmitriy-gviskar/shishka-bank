@@ -11,6 +11,17 @@ if (!window.__spaInit) {
       } catch {}
     });
   }
+  // APK: отдать deviceToken нативному пуш-сервису
+  const syncNativePush = () => {
+    try {
+      const t = localStorage.getItem('deviceToken') || '';
+      if (t && window.ShishkaNative && window.ShishkaNative.setDeviceToken) {
+        window.ShishkaNative.setDeviceToken(t);
+      }
+    } catch {}
+  };
+  syncNativePush();
+  window.addEventListener('storage', syncNativePush);
   window.__timers = [];
   const _si = window.setInterval.bind(window);
   window.setInterval = (f, t) => { const id = _si(f, t); window.__timers.push(id); return id; };
@@ -726,21 +737,47 @@ if (page === 'pot.html') {
   loadPots();
 }
 
-// PWA: офлайн-кэш + БЕСШОВНОЕ авто-обновление (без «открой два раза»)
+// PWA: офлайн-кэш + обновление без выброса из чата/игры/съёмки фото
 if ('serviceWorker' in navigator) {
   let reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {   // новый воркер взял управление → один раз перезагружаемся на свежий код
-    if (reloading) return; reloading = true; location.reload();
+  let pendingReload = false;
+  const reloadUnsafe = () => {
+    // чат, игра, камера фото-задания, запись голоса
+    if (document.querySelector('.phone.chat-open')) return true;
+    if (document.querySelector('.phone.game-open')) return true;
+    if (document.querySelector('[role="dialog"]')) return true;
+    if (document.getElementById('micBtn')?.classList.contains('recording')) return true;
+    if (document.hidden) return true; // не рвём, пока в фоне — дождёмся возврата
+    return false;
+  };
+  const tryReloadSafe = () => {
+    if (!pendingReload || reloading) return;
+    if (reloadUnsafe()) return;
+    reloading = true;
+    pendingReload = false;
+    location.reload();
+  };
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    pendingReload = true;
+    tryReloadSafe();
   });
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data === 'update') { pendingReload = true; tryReloadSafe(); }
+  });
+  setInterval(tryReloadSafe, 4000);
   navigator.serviceWorker.register('sw.js').then((reg) => {
-    reg.update();                                                          // сразу спросить сервер о новой версии
-    reg.addEventListener('updatefound', () => {                           // нашёлся новый воркер → как встанет, попросить его взять управление немедленно
+    reg.update();
+    reg.addEventListener('updatefound', () => {
       const sw = reg.installing;
-      if (sw) sw.addEventListener('statechange', () => { if (sw.state === 'installed' && navigator.serviceWorker.controller) sw.postMessage('skip'); });
+      if (sw) sw.addEventListener('statechange', () => {
+        if (sw.state === 'installed' && navigator.serviceWorker.controller) sw.postMessage('skip');
+      });
     });
   }).catch(() => {});
-  document.addEventListener('visibilitychange', () => {                    // вернулись в аппку из фона → проверить обновление
-    if (!document.hidden) navigator.serviceWorker.getRegistration().then((r) => r && r.update()).catch(() => {});
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) return;
+    navigator.serviceWorker.getRegistration().then((r) => r && r.update()).catch(() => {});
+    tryReloadSafe(); // вернулись из фона — если ждали обновление, можно применить
   });
 }
 
