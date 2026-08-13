@@ -34,6 +34,30 @@ async function creditCones(userId, amount, message) {
     [userId, amount, message]);
 }
 
+// Дружба внутри круга: две строки (A→B и B→A) со status=accepted.
+async function areFriends(a, b) {
+  const r = await one(
+    `select 1 as x from friendships
+      where user_id=$1 and friend_id=$2 and status='accepted'`, [a, b]);
+  return !!r;
+}
+async function assertFriend(a, b, msg = 'сначала добавь в друзья') {
+  if (!(await areFriends(a, b))) throw { code: 403, msg };
+}
+async function linkFriends(a, b) {
+  if (!a || !b || a === b) return;
+  await q(
+    `insert into friendships(user_id, friend_id, status) values ($1,$2,'accepted'), ($2,$1,'accepted')
+     on conflict (user_id, friend_id) do update set status='accepted'`,
+    [a, b]);
+}
+async function linkChildToCircleFriends(childId, circleId) {
+  const peers = await q(
+    "select id from users where circle_id=$1 and role='child' and id<>$2",
+    [circleId, childId]);
+  for (const p of peers) await linkFriends(childId, p.id);
+}
+
 async function payReferralLevel(beneficiaryId, sourceUserId, level, amount, message) {
   const row = await one(
     `insert into referral_rewards(beneficiary_id, source_user_id, level, amount)
@@ -337,7 +361,7 @@ async function sendPush(userId, title, body) {
 const api = {
   ...routesGames({ q, one, rpc }),
   ...routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, sendPush, genLoginCode }),
-  ...routesCards({ q, one, rpc, assertOwn }),
+  ...routesCards({ q, one, rpc, assertOwn, assertFriend }),
   'POST /api/push/subscribe': async (b, ctx) => {
     const sub = b.subscription;
     if (!sub?.endpoint) throw { code: 400, msg: 'нужна подписка' };
@@ -648,8 +672,114 @@ const api = {
     return { ok: true };
   },
 
-  'GET /api/friends': (b, ctx) => q("select id,name from users where circle_id=$1 and role='child' and id<>$2 order by created_at", [ctx.circle, ctx.child])
-    .then((rows) => rows.map((r, i) => ({ id: r.id, name: r.name, avatar: FRIEND_AV[i % 3] }))),
+  // Друзья круга (accepted). Для подарков / пикеров.
+  'GET /api/friends': async (b, ctx) => {
+    const rows = await q(
+      `select u.id, u.name,
+              u.last_seen > now() - interval '5 minutes' as online
+         from friendships f
+         join users u on u.id = f.friend_id
+        where f.user_id=$1 and f.status='accepted'
+          and u.circle_id=$2 and u.role='child'
+        order by u.name`, [ctx.child, ctx.circle]);
+    return rows.map((r, i) => ({
+      id: r.id, name: r.name, online: !!r.online, avatar: FRIEND_AV[i % 3],
+    }));
+  },
+  // Хаб друзей для почты: друзья, заявки, остальные из круга
+  'GET /api/friends/hub': async (b, ctx) => {
+    const [friends, pendingIn, pendingOut, circle] = await Promise.all([
+      q(`select u.id, u.name, u.last_seen > now() - interval '5 minutes' as online
+           from friendships f join users u on u.id=f.friend_id
+          where f.user_id=$1 and f.status='accepted' and u.circle_id=$2 and u.role='child'
+          order by u.name`, [ctx.child, ctx.circle]),
+      q(`select u.id, u.name
+           from friendships f join users u on u.id=f.user_id
+          where f.friend_id=$1 and f.status='pending' and u.circle_id=$2 and u.role='child'
+          order by f.created_at desc`, [ctx.child, ctx.circle]),
+      q(`select u.id, u.name
+           from friendships f join users u on u.id=f.friend_id
+          where f.user_id=$1 and f.status='pending' and u.circle_id=$2 and u.role='child'
+          order by f.created_at desc`, [ctx.child, ctx.circle]),
+      q(`select u.id, u.name
+           from users u
+          where u.circle_id=$1 and u.role='child' and u.id<>$2
+            and not exists (
+              select 1 from friendships f
+               where f.user_id=$2 and f.friend_id=u.id)
+          order by u.name`, [ctx.circle, ctx.child]),
+    ]);
+    const av = (rows) => rows.map((r, i) => ({ ...r, online: !!r.online, avatar: FRIEND_AV[i % 3] }));
+    return {
+      friends: av(friends),
+      pending_in: av(pendingIn),
+      pending_out: av(pendingOut),
+      circle: av(circle),
+    };
+  },
+  'POST /api/friends/request': async (b, ctx) => {
+    let to = b.to;
+    if (!to && b.code) {
+      const r = await one(
+        `select u.id, u.name from child_logins cl
+           join users u on u.id=cl.child_id
+          where cl.code=$1 and u.circle_id=$2 and u.role='child'`,
+        [String(b.code).toUpperCase().trim(), ctx.circle]);
+      if (!r) throw { code: 400, msg: 'код не из твоего круга' };
+      to = r.id;
+    }
+    if (!to) throw { code: 400, msg: 'выбери друга' };
+    if (to === ctx.child) throw { code: 400, msg: 'это ты сам' };
+    await assertOwn(
+      "select 1 from users where id=$1 and circle_id=$2 and role='child'",
+      [to, ctx.circle], 'друг должен быть из твоего круга');
+    const existing = await one(
+      `select status from friendships where user_id=$1 and friend_id=$2`,
+      [ctx.child, to]);
+    if (existing?.status === 'accepted') return { ok: true, status: 'accepted' };
+    // встречная заявка → сразу друзья
+    const reverse = await one(
+      `select status from friendships where user_id=$1 and friend_id=$2`,
+      [to, ctx.child]);
+    if (reverse?.status === 'pending' || reverse?.status === 'accepted') {
+      await linkFriends(ctx.child, to);
+      const peer = await one('select name from users where id=$1', [to]);
+      sendPush(to, '🤝 Друзья!', `${(await one('select name from users where id=$1', [ctx.child])).name} теперь твой друг`).catch(() => {});
+      return { ok: true, status: 'accepted', name: peer?.name };
+    }
+    await q(
+      `insert into friendships(user_id, friend_id, status) values ($1,$2,'pending')
+       on conflict (user_id, friend_id) do update set status='pending'`,
+      [ctx.child, to]);
+    const me = await one('select name from users where id=$1', [ctx.child]);
+    sendPush(to, '👋 Заявка в друзья', `${me.name} хочет дружить`).catch(() => {});
+    return { ok: true, status: 'pending' };
+  },
+  'POST /api/friends/accept': async (b, ctx) => {
+    if (!b.from) throw { code: 400, msg: 'нет заявки' };
+    const req = await one(
+      `select 1 as x from friendships
+        where user_id=$1 and friend_id=$2 and status='pending'`,
+      [b.from, ctx.child]);
+    if (!req) throw { code: 400, msg: 'заявка не найдена' };
+    await assertOwn(
+      "select 1 from users where id=$1 and circle_id=$2 and role='child'",
+      [b.from, ctx.circle], 'не из твоего круга');
+    await linkFriends(ctx.child, b.from);
+    const peer = await one('select name from users where id=$1', [b.from]);
+    const me = await one('select name from users where id=$1', [ctx.child]);
+    sendPush(b.from, '✅ Заявка принята', `${me.name} добавил тебя в друзья`).catch(() => {});
+    return { ok: true, name: peer?.name };
+  },
+  'POST /api/friends/decline': async (b, ctx) => {
+    if (!b.from) throw { code: 400, msg: 'нет заявки' };
+    await q(
+      `delete from friendships
+        where user_id=$1 and friend_id=$2 and status='pending'`,
+      [b.from, ctx.child]);
+    return { ok: true };
+  },
+
   'POST /api/transfer': async (b, ctx) => {
     let to = b.to;
     if (!to && b.toCode) {   // перевод по QR: получатель задан кодом, id наружу не светим
@@ -660,6 +790,7 @@ const api = {
     if (to === ctx.child) throw { code: 400, msg: 'себе дарить нельзя' };
     b = { ...b, to };
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [b.to, ctx.circle], 'нет такого друга');  // только своя семья
+    await assertFriend(ctx.child, b.to);
     try { await rpc('transfer_cones', [ctx.child, b.to, parseInt(b.amount, 10), 'Подарок другу']); }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'не получилось' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
@@ -670,6 +801,7 @@ const api = {
   'POST /api/surprise': async (b, ctx) => {   // анонимный подарок «Шишка-сюрприз»
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [b.to, ctx.circle], 'нет такого друга');
     if (b.to === ctx.child) throw { code: 400, msg: 'себе нельзя' };
+    await assertFriend(ctx.child, b.to);
     try { await rpc('transfer_surprise', [ctx.child, b.to, parseInt(b.amount, 10)]); }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'не получилось' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
@@ -939,6 +1071,7 @@ const api = {
     const withId = b.with;
     if (!withId) throw { code: 400, msg: 'нужен ?with=ID' };
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child'", [withId, ctx.circle], 'друг не в твоём кругу');
+    await assertFriend(ctx.child, withId);
     // Пометить входящие от этого друга как прочитанные
     await q(`update messages set read_at=now() where to_user=$1 and from_user=$2 and read_at is null`, [ctx.child, withId]);
     const msgs = await q(`select m.id, m.type, m.content, m.created_at, m.from_user=$1 as mine, m.read_at is not null as is_read, m.reply_to,
@@ -951,7 +1084,7 @@ const api = {
         order by m.created_at asc`, [ctx.child, ctx.circle, withId]);
     return msgs;
   },
-  // Список чатов: для каждого друга — последнее сообщение, непрочитанные, аватар
+  // Список чатов: только принятые друзья
   'POST /api/chat/list': async (b, ctx) => {
     const rows = await q(`select u.id, u.name, u.last_seen > now() - interval '5 minutes' as online,
         (select content from messages m2 where m2.circle_id=$2 and m2.deliver_at<=now()
@@ -962,8 +1095,11 @@ const api = {
          order by m2.created_at desc limit 1) as last_at,
         (select count(*) from messages m2 where m2.circle_id=$2 and m2.to_user=$1 
          and m2.from_user=u.id and m2.read_at is null and m2.deliver_at<=now()) as unread
-      from users u where u.circle_id=$2 and u.role='child' and u.id<>$1
-      order by last_at desc nulls last`, [ctx.child, ctx.circle]);
+      from friendships f
+      join users u on u.id=f.friend_id
+      where f.user_id=$1 and f.status='accepted'
+        and u.circle_id=$2 and u.role='child'
+      order by last_at desc nulls last, u.name`, [ctx.child, ctx.circle]);
     return rows.map((r, i) => ({ ...r, avatar: FRIEND_AV[i % 3] }));
   },
   // Пометить сообщения от друга как прочитанные
@@ -975,6 +1111,7 @@ const api = {
   },
   'POST /api/message': async (b, ctx) => {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому отправить');
+    await assertFriend(ctx.child, b.to);
     const type = b.type === 'sticker' ? 'sticker' : b.type === 'audio' ? 'audio' : 'emoji';
     // аудио — путь к файлу, не режем до 80 (иначе URL обрежется); эмодзи/стикер — коротко
     let content;

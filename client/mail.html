@@ -7,7 +7,8 @@
   .wrap{display:flex;flex-direction:column;height:100%;padding:0 10px;position:relative}
   .title{flex:none;margin:0 0 8px}
   /* Список чатов */
-  #chatList{flex:1;overflow-y:auto;min-height:0;padding:6px 8px;display:flex;flex-direction:column;gap:6px}
+  #chatList{flex:1;overflow-y:auto;min-height:0;padding:6px 8px;display:none;flex-direction:column;gap:6px}
+  #chatList.on{display:flex}
   #chatList::-webkit-scrollbar{width:0}
   .chatRow{display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;
     background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;border-radius:14px;
@@ -31,6 +32,7 @@
   #chatDetail.open{display:flex}
   /* открытый чат: один ряд чипов вместо title + ← + полоски */
   .wrap.chat-open > .title{display:none}
+  .wrap.chat-open > .mailTabs{display:none}
   .phone:has(.wrap.chat-open) > .nav-back{display:none}
   .wrap.chat-open #chatHeader{
     position:absolute;top:14px;left:12px;right:118px;z-index:6;
@@ -122,9 +124,46 @@
   #payPopup .doPay{background:var(--gold);color:#5b4636;border:none;border-radius:12px;padding:8px 24px;
     font-weight:800;font-size:15px;cursor:pointer;margin-top:6px}
   #payPopup .cancel{background:none;border:none;color:#a09080;font-weight:700;font-size:13px;cursor:pointer;margin-top:6px}
+  /* вкладки Друзья / Чаты */
+  .mailTabs{flex:none;display:flex;gap:6px;margin:0 8px 8px;padding:4px;
+    background:rgba(255,248,235,.75);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .mailTabs button{flex:1;border:none;background:transparent;border-radius:12px;padding:9px 8px;
+    font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:14px;color:#8a6a48;cursor:pointer}
+  .mailTabs button.on{background:linear-gradient(180deg,#9ad65f,#6fad45);color:#fff;
+    box-shadow:0 2px 0 #3f6b2e;text-shadow:0 1px 0 rgba(0,0,0,.15)}
+  #friendsPane{flex:1;overflow-y:auto;min-height:0;padding:0 8px 10px;display:none;flex-direction:column;gap:10px}
+  #friendsPane.on{display:flex}
+  .fSec{font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:13px;color:#5a3a18;
+    margin:4px 2px 0}
+  .fRow{display:flex;align-items:center;gap:10px;padding:10px 12px;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .fRow img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;flex:none}
+  .fRow .nm{flex:1;min-width:0;font-weight:900;color:#4a3520;font-size:15px;
+    font-family:"Fredoka","Nunito",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fRow .acts{display:flex;gap:5px;flex:none}
+  .fRow .acts button{border:2px solid #fff;border-radius:12px;padding:6px 9px;cursor:pointer;
+    font-weight:900;font-size:12px;font-family:"Fredoka","Nunito",sans-serif;
+    background:linear-gradient(180deg,#fff8eb,#f0d7a4);color:#5a3a18;
+    box-shadow:0 0 0 2px #c9a86a}
+  .fRow .acts button.go{background:linear-gradient(180deg,#9ad65f,#6fad45);color:#fff;border-color:#3f6b2e;
+    box-shadow:0 0 0 2px #5f9a38}
+  .fAdd{display:flex;gap:6px;padding:10px;background:rgba(255,248,235,.9);border:2.5px solid #fff;
+    border-radius:14px;box-shadow:0 0 0 2px #c9a86a}
+  .fAdd input{flex:1;min-width:0;border:2px solid #d9c39a;border-radius:12px;padding:8px 10px;
+    font-weight:700;font-size:14px;outline:none;font-family:inherit;color:var(--ink);text-transform:uppercase}
+  .fAdd button{flex:none;background:var(--green);color:#fff;border:none;border-radius:12px;
+    padding:8px 12px;font-weight:900;font-size:13px;cursor:pointer;font-family:"Fredoka","Nunito",sans-serif}
+  .fHint{font-size:12px;font-weight:700;color:#8a6a48;line-height:1.35;padding:0 4px}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Лесная почта</div>
+  <div class="mailTabs" id="mailTabs">
+    <button type="button" class="on" data-tab="friends">Друзья</button>
+    <button type="button" data-tab="chats">Чаты</button>
+  </div>
+  <div id="friendsPane" class="on"></div>
   <!-- Список чатов -->
   <div id="chatList"></div>
   <!-- Детальный чат -->

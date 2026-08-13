@@ -1,5 +1,5 @@
 // Лесная коллекция: карты, питомцы, рынок, аукционы, wants.
-export function routesCards({ q, one, rpc, assertOwn }) {
+export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   return {
 // ── Лесная коллекция (карточки) ──
 'GET /api/cards': async (b, ctx) => {
@@ -60,6 +60,7 @@ export function routesCards({ q, one, rpc, assertOwn }) {
   await assertOwn(
     "select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3",
     [b.id, ctx.circle, ctx.child], 'нет такого друга');
+  if (assertFriend) await assertFriend(ctx.child, b.id);
   const friend = await one('select id, name from users where id=$1', [b.id]);
   if (!friend) throw { code: 404, msg: 'друг не найден' };
   const [types, rar, owned, mine, lore, seasons] = await Promise.all([
@@ -169,6 +170,7 @@ export function routesCards({ q, one, rpc, assertOwn }) {
 },
 'POST /api/card/gift': async (b, ctx) => {   // подарок карты другу: лимит 3 в день, лог у ведущего
   await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому подарить');
+  if (assertFriend) await assertFriend(ctx.child, b.to);
   try { return await one('select gift_card($1,$2,$3,$4) as v', [ctx.child, b.to, b.type, b.grade]).then((r) => r.v); }
   catch (e) {
     throw { code: 400, msg: /daily gift limit/.test(e.message) ? 'сегодня уже подарено 3 карты — завтра можно снова'

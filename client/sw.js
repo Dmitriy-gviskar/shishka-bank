@@ -1,4 +1,4 @@
-const CACHE = 'shishka-v99';
+const CACHE = 'shishka-v100';
 const CARDS_CACHE = 'shishka-cards-v2';
 const CARDS_MAX = 500;       // альбом тянет сотни thumb — 120 было мало, промахи ломали картинки
 const CARDS_FULL_MAX = 40;   // full-res отдельно жёстче

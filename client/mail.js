@@ -15,7 +15,10 @@ async function loadChatList() {
   const list = await api('/api/chat/list', {});
   const c = document.getElementById('chatList'); c.innerHTML = '';
   if (list.error) return;
-  if (!list.length) { c.innerHTML = '<div class="noChats">В твоём кругу пока никого нет. Позови ведущего! 🌲</div>'; return; }
+  if (!list.length) {
+    c.innerHTML = '<div class="noChats">Пока нет друзей для переписки.<br>Открой вкладку «Друзья» и добавь кого-нибудь из круга 🌲</div>';
+    return;
+  }
   for (const ch of list) {
     const el = document.createElement('div'); el.className = 'chatRow';
     let preview = ch.last_msg ? esc(ch.last_msg).slice(0, 40) : 'Написать... ✉️';
@@ -30,9 +33,109 @@ async function loadChatList() {
   }
 }
 
+// ── Вкладки + хаб друзей ──
+let mailTab = 'friends';
+function setMailTab(tab) {
+  mailTab = tab;
+  document.querySelectorAll('#mailTabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
+  document.getElementById('friendsPane')?.classList.toggle('on', tab === 'friends');
+  document.getElementById('chatList')?.classList.toggle('on', tab === 'chats');
+  if (tab === 'friends') loadFriendsHub();
+  else loadChatList();
+}
+async function loadFriendsHub() {
+  const pane = document.getElementById('friendsPane');
+  if (!pane) return;
+  const hub = await api('/api/friends/hub');
+  if (hub.error) { pane.innerHTML = `<div class="noChats">${esc(hub.error)}</div>`; return; }
+  const parts = [];
+  parts.push(`<div class="fHint">Писать и дарить можно только друзьям из твоего круга. Так в большом лесу не запутаетесь.</div>`);
+  parts.push(`<div class="fAdd"><input id="friendCode" placeholder="Код друга" maxlength="12" autocomplete="off"><button type="button" id="btnAddFriend">Добавить</button></div>`);
+
+  const row = (p, actsHtml) =>
+    `<div class="fRow"><img src="assets/${p.avatar || 'friend1.webp'}" alt=""><div class="nm">${esc(p.name)}</div><div class="acts">${actsHtml}</div></div>`;
+
+  if (hub.pending_in?.length) {
+    parts.push(`<div class="fSec">Заявки вам · ${hub.pending_in.length}</div>`);
+    for (const p of hub.pending_in) {
+      parts.push(row(p,
+        `<button type="button" class="go" data-act="accept" data-id="${p.id}">Принять</button>` +
+        `<button type="button" data-act="decline" data-id="${p.id}">Нет</button>`));
+    }
+  }
+  if (hub.friends?.length) {
+    parts.push(`<div class="fSec">Мои друзья · ${hub.friends.length}</div>`);
+    for (const p of hub.friends) {
+      parts.push(row(p,
+        `<button type="button" class="go" data-act="chat" data-id="${p.id}" data-name="${esc(p.name)}">Написать</button>` +
+        `<button type="button" data-act="gift" data-id="${p.id}" data-name="${esc(p.name)}">🎁</button>`));
+    }
+  } else {
+    parts.push(`<div class="noChats" style="margin:0">Друзей пока нет — добавь по коду или из списка круга.</div>`);
+  }
+  if (hub.pending_out?.length) {
+    parts.push(`<div class="fSec">Ждём ответа · ${hub.pending_out.length}</div>`);
+    for (const p of hub.pending_out) {
+      parts.push(row(p, `<button type="button" disabled>⏳</button>`));
+    }
+  }
+  if (hub.circle?.length) {
+    parts.push(`<div class="fSec">В кругу, ещё не друзья · ${hub.circle.length}</div>`);
+    for (const p of hub.circle) {
+      parts.push(row(p, `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
+    }
+  }
+  pane.innerHTML = parts.join('');
+  pane.querySelector('#btnAddFriend')?.addEventListener('click', async () => {
+    const code = pane.querySelector('#friendCode')?.value || '';
+    const r = await api('/api/friends/request', { code });
+    if (r.error) { alert(r.error); return; }
+    loadFriendsHub();
+  });
+  pane.querySelectorAll('[data-act]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const act = btn.dataset.act;
+      const id = btn.dataset.id;
+      if (act === 'chat') {
+        chatFriend = id; chatFriendName = btn.dataset.name || '';
+        document.getElementById('mailTabs').style.display = 'none';
+        openChat();
+        return;
+      }
+      if (act === 'gift') {
+        chatFriend = id; chatFriendName = btn.dataset.name || '';
+        document.getElementById('payToName').textContent = chatFriendName;
+        document.getElementById('payPopup').classList.add('open');
+        return;
+      }
+      if (act === 'request') {
+        const r = await api('/api/friends/request', { to: id });
+        if (r.error) alert(r.error);
+        loadFriendsHub();
+        return;
+      }
+      if (act === 'accept') {
+        const r = await api('/api/friends/accept', { from: id });
+        if (r.error) alert(r.error);
+        loadFriendsHub();
+        return;
+      }
+      if (act === 'decline') {
+        await api('/api/friends/decline', { from: id });
+        loadFriendsHub();
+      }
+    });
+  });
+}
+document.getElementById('mailTabs')?.querySelectorAll('button').forEach((b) => {
+  b.addEventListener('click', () => setMailTab(b.dataset.tab));
+});
+
 // ── Детальный чат ──
 let openChat = function openChat() {
-  document.getElementById('chatList').style.display = 'none';
+  document.getElementById('chatList')?.classList.remove('on');
+  document.getElementById('friendsPane')?.classList.remove('on');
+  document.getElementById('mailTabs').style.display = 'none';
   document.getElementById('chatDetail').classList.add('open');
   document.getElementById('chName').textContent = chatFriendName;
   document.querySelector('.wrap')?.classList.add('chat-open');
@@ -40,11 +143,11 @@ let openChat = function openChat() {
 }
 let closeChat = function closeChat() {
   document.getElementById('chatDetail').classList.remove('open');
-  document.getElementById('chatList').style.display = '';
+  document.getElementById('mailTabs').style.display = '';
   document.querySelector('.wrap')?.classList.remove('chat-open');
   const t = document.querySelector('.title'); if (t) t.textContent = 'Лесная почта';
   chatFriend = null; chatFriendName = '';
-  loadChatList();
+  setMailTab(mailTab || 'friends');
 }
 async function loadChat() {
   const c = document.getElementById('chatMsgs'); c.innerHTML = '';
@@ -119,7 +222,7 @@ async function loadChat() {
     });
     c.appendChild(wrap);
   }
-  loadChatList();   // обновить счётчики в списке
+  if (mailTab === 'chats') loadChatList();   // обновить счётчики в списке
   c.scrollTop = c.scrollHeight;
 }
 async function sendMsg(content) {
@@ -151,7 +254,7 @@ function doPay() {
     }
   });
 }
-loadChatList();
+setMailTab((location.hash || '').includes('chats') ? 'chats' : 'friends');
 // Стикеры
 const stickerBar = document.getElementById('stickerBar');
 STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
@@ -328,13 +431,15 @@ const startChatPoll = () => {
 };
 listPoll = setInterval(() => {
   if (document.hidden || chatFriend) return;   // фон / открытый диалог — список не крутим
-  loadChatList();
+  if (mailTab === 'chats') loadChatList();
+  else if (mailTab === 'friends') loadFriendsHub();
 }, 5000);
 (window.__timers || (window.__timers = [])).push(listPoll);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   if (chatFriend) lastMsgCount = 0;   // следующий тик чата подтянет свежее
-  else loadChatList();
+  else if (mailTab === 'chats') loadChatList();
+  else loadFriendsHub();
 });
 const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; startChatPoll(); };
 const origClose = closeChat; closeChat = () => { if (chatPoll) clearInterval(chatPoll); chatPoll = null; origClose(); };

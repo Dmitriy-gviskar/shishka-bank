@@ -84,6 +84,17 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
   let code;
   for (let i = 0; i < 6; i++) { code = genLoginCode(); if (!(await one('select 1 from child_logins where code=$1', [code]))) break; }  // на случай коллизии — переген
   await q('insert into child_logins(code,child_id) values($1,$2)', [code, u.id]);
+  // семья: новый ребёнок сразу дружит со всеми в круге
+  await q(
+    `insert into friendships(user_id, friend_id, status)
+     select $1, id, 'accepted' from users where circle_id=$2 and role='child' and id<>$1
+     on conflict (user_id, friend_id) do update set status='accepted'`,
+    [u.id, circle.id]).catch(() => {});
+  await q(
+    `insert into friendships(user_id, friend_id, status)
+     select id, $1, 'accepted' from users where circle_id=$2 and role='child' and id<>$1
+     on conflict (user_id, friend_id) do update set status='accepted'`,
+    [u.id, circle.id]).catch(() => {});
   return { ok: true, name, code };
 },
 'POST /api/parent/create-task': async (b) => {
