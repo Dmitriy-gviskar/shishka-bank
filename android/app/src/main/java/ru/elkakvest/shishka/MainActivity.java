@@ -3,10 +3,12 @@ package ru.elkakvest.shishka;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.Manifest;
 import android.provider.MediaStore;
@@ -30,6 +32,7 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     private static final String HOME = "https://elka-kvest-2026.ru/";
+    private static final String PREFS = "shishka_wv";
     private static final int FILE_CHOOSER_CODE = 51;
     private static final int PERMISSION_CODE = 1;
     private WebView web;
@@ -53,16 +56,23 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(true);
         s.setCacheMode(WebSettings.LOAD_DEFAULT);
         s.setMediaPlaybackRequiresUserGesture(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            s.setMixedContentMode(WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE);
+        }
 
         web.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 Uri u = request.getUrl();
-                return !"elka-kvest-2026.ru".equals(u.getHost()); // чужие ссылки не открываем, свои — внутри
+                return !"elka-kvest-2026.ru".equals(u.getHost());
             }
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
                 if (request.isForMainFrame()) view.loadUrl("file:///android_asset/offline.html");
+            }
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                rememberUrl(url);
             }
         });
 
@@ -72,42 +82,71 @@ public class MainActivity extends Activity {
                 runOnUiThread(() -> handleWebPermission(request));
             }
 
-            // фото-задания: галерея ИЛИ камера (раньше был только camera — часто пустой URI → «фото не выбрано»)
+            // Фото-задания: галерея (надёжно на Xiaomi/MIUI). Камера — только если разрешение уже есть.
+            // Нельзя звать requestPermissions() в этом же вызове: диалог + chooser = краш процесса.
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
-                if (filePathCallback != null) filePathCallback.onReceiveValue(null);
+                if (filePathCallback != null) {
+                    try { filePathCallback.onReceiveValue(null); } catch (Exception ignored) {}
+                }
                 filePathCallback = callback;
                 cameraPhotoUri = null;
 
-                Intent gallery = new Intent(Intent.ACTION_GET_CONTENT);
-                gallery.addCategory(Intent.CATEGORY_OPENABLE);
-                gallery.setType("image/*");
-
-                Intent camera = buildCameraIntent();
-                Intent chooser = Intent.createChooser(gallery, "Фото для задания");
-                if (camera != null) {
-                    chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{ camera });
-                }
                 try {
+                    Intent pick = buildGalleryIntent();
+                    Intent camera = null;
+                    if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                        camera = buildCameraIntent();
+                    }
+                    Intent chooser = Intent.createChooser(pick, "Фото для задания");
+                    if (camera != null) {
+                        chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{ camera });
+                    }
                     startActivityForResult(chooser, FILE_CHOOSER_CODE);
                     return true;
-                } catch (Exception e) {
+                } catch (Throwable t) {
+                    // любой сбой chooser — не роняем Activity, просто отменяем выбор
+                    ValueCallback<Uri[]> cb = filePathCallback;
                     filePathCallback = null;
                     cameraPhotoUri = null;
-                    return false;
+                    if (cb != null) {
+                        try { cb.onReceiveValue(null); } catch (Exception ignored) {}
+                    }
+                    return true;
                 }
             }
         });
 
         Uri deep = getIntent().getData();
-        web.loadUrl(deep != null ? deep.toString() : HOME);
+        if (deep != null && "elka-kvest-2026.ru".equals(deep.getHost())) {
+            web.loadUrl(deep.toString());
+        } else {
+            String saved = getSharedPreferences(PREFS, MODE_PRIVATE).getString("url", null);
+            if (saved != null && saved.startsWith(HOME)) web.loadUrl(saved);
+            else web.loadUrl(HOME);
+        }
+    }
+
+    private Intent buildGalleryIntent() {
+        // Android 13+: системный photo picker без READ_* permission
+        if (Build.VERSION.SDK_INT >= 33) {
+            try {
+                Intent pick = new Intent("android.provider.action.PICK_IMAGES");
+                pick.setType("image/*");
+                if (pick.resolveActivity(getPackageManager()) != null) return pick;
+            } catch (Exception ignored) {}
+        }
+        Intent pick = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        pick.setType("image/*");
+        if (pick.resolveActivity(getPackageManager()) != null) return pick;
+
+        Intent get = new Intent(Intent.ACTION_GET_CONTENT);
+        get.addCategory(Intent.CATEGORY_OPENABLE);
+        get.setType("image/*");
+        return get;
     }
 
     private Intent buildCameraIntent() {
-        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            // без камеры всё равно даём галерею; камеру попросим при getUserMedia / следующем разе
-            requestPermissions(new String[]{ Manifest.permission.CAMERA }, PERMISSION_CODE);
-        }
         try {
             File dir = new File(getCacheDir(), "task_photos");
             if (!dir.exists() && !dir.mkdirs()) return null;
@@ -127,6 +166,9 @@ public class MainActivity extends Activity {
             }
             return cams.isEmpty() ? null : camera;
         } catch (IOException e) {
+            cameraPhotoUri = null;
+            return null;
+        } catch (Throwable t) {
             cameraPhotoUri = null;
             return null;
         }
@@ -153,34 +195,65 @@ public class MainActivity extends Activity {
         requestPermissions(needed.toArray(new String[0]), PERMISSION_CODE);
     }
 
+    private void rememberUrl(String url) {
+        if (url == null || !url.startsWith(HOME)) return;
+        try {
+            getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString("url", url).apply();
+        } catch (Exception ignored) {}
+    }
+
+    @Override
+    protected void onPause() {
+        try {
+            if (web != null) {
+                rememberUrl(web.getUrl());
+                web.onPause();
+            }
+        } catch (Exception ignored) {}
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        try { if (web != null) web.onResume(); } catch (Exception ignored) {}
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode != FILE_CHOOSER_CODE || filePathCallback == null) return;
-        Uri result = null;
-        if (resultCode == RESULT_OK) {
-            if (data != null && data.getData() != null) {
-                result = data.getData(); // галерея / файлы
-                try {
-                    grantUriPermission(getPackageName(), result, Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                } catch (Exception ignored) {}
-            } else if (cameraPhotoUri != null) {
-                // камера писала в наш FileProvider — проверим, что файл не пустой
-                try {
-                    File f = new File(getCacheDir(), "task_photos");
-                    // путь из URI: content://…/task_photos/photo_….jpg
-                    String last = cameraPhotoUri.getLastPathSegment();
-                    File photo = last != null ? new File(f, last) : null;
-                    if (photo != null && photo.exists() && photo.length() > 0) result = cameraPhotoUri;
-                } catch (Exception ignored) {
-                    result = cameraPhotoUri;
-                }
-            }
-        }
+        if (requestCode != FILE_CHOOSER_CODE) return;
         ValueCallback<Uri[]> cb = filePathCallback;
         filePathCallback = null;
+        if (cb == null) return; // Activity пересоздалась — некого уведомить
+
+        Uri result = null;
+        try {
+            if (resultCode == RESULT_OK) {
+                if (data != null && data.getData() != null) {
+                    result = data.getData();
+                    try {
+                        grantUriPermission(getPackageName(), result, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (Exception ignored) {}
+                } else if (cameraPhotoUri != null) {
+                    try {
+                        File f = new File(getCacheDir(), "task_photos");
+                        String last = cameraPhotoUri.getLastPathSegment();
+                        File photo = last != null ? new File(f, last) : null;
+                        if (photo != null && photo.exists() && photo.length() > 0) result = cameraPhotoUri;
+                    } catch (Exception ignored) {
+                        result = cameraPhotoUri;
+                    }
+                } else if (data != null && data.getClipData() != null && data.getClipData().getItemCount() > 0) {
+                    result = data.getClipData().getItemAt(0).getUri();
+                }
+            }
+        } catch (Throwable ignored) {
+            result = null;
+        }
         cameraPhotoUri = null;
-        cb.onReceiveValue(result != null ? new Uri[]{ result } : null);
+        try { cb.onReceiveValue(result != null ? new Uri[]{ result } : null); }
+        catch (Exception ignored) {}
     }
 
     @Override
@@ -198,6 +271,6 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (web.canGoBack()) web.goBack(); else super.onBackPressed();
+        if (web != null && web.canGoBack()) web.goBack(); else super.onBackPressed();
     }
 }
