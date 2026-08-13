@@ -76,6 +76,11 @@ function clearSession() {
 function saveSession({ token, code }) {
   if (token) localStorage.setItem('deviceToken', token);
   if (code) localStorage.setItem('childCode', String(code).toUpperCase());
+  try {
+    if (token && window.ShishkaNative && window.ShishkaNative.setDeviceToken) {
+      window.ShishkaNative.setDeviceToken(token);
+    }
+  } catch {}
 }
 // Telegram / Instagram in-app browser — другой localStorage, чем у Safari/Chrome
 function isInAppBrowser() {
