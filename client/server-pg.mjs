@@ -139,13 +139,20 @@ async function savePhoto(dataUrl, prefix) {
   await writeFile(join(DIR, path), buf);
   return path;
 }
-// base64-webm -> file
+// base64-audio -> file (webm / mp4 / ogg — как прислал клиент)
 async function saveAudio(dataUrl) {
-  const m = /^data:audio\/[^;]+;base64,(.+)$/.exec(String(dataUrl || ''));
-  if (!m) throw { code: 400, msg: 'bad audio' };
-  const buf = Buffer.from(m[1], 'base64');
-  if (buf.length > 2e6) throw { code: 400, msg: 'too long' };
-  const path = `uploads/audio_${Date.now()}_${randomInt(1e6)}.webm`;
+  // Chrome даёт data:audio/webm;codecs=opus;base64,... — старый regex требовал ;base64 сразу после audio/*
+  const m = /^data:(audio\/[a-z0-9.+-]+)(?:;[\w.=-]+)*;base64,(.+)$/i.exec(String(dataUrl || ''));
+  if (!m) throw { code: 400, msg: 'не удалось записать голос' };
+  const mime = m[1].toLowerCase();
+  const buf = Buffer.from(m[2], 'base64');
+  if (buf.length < 200) throw { code: 400, msg: 'слишком коротко — подержи микрофон дольше' };
+  if (buf.length > 4e6) throw { code: 400, msg: 'голосовое слишком длинное' };
+  const ext = mime.includes('mp4') || mime.includes('m4a') || mime.includes('aac') ? 'm4a'
+    : mime.includes('ogg') ? 'ogg'
+    : mime.includes('mpeg') || mime.includes('mp3') ? 'mp3'
+    : 'webm';
+  const path = `uploads/audio_${Date.now()}_${randomInt(1e6)}.${ext}`;
   await writeFile(join(DIR, path), buf);
   return path;
 }
@@ -968,14 +975,20 @@ const api = {
   },
   'POST /api/message': async (b, ctx) => {
     await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому отправить');
-    // режем угловые скобки и длину (защита в глубину к клиентскому esc)
-    const content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
     const type = b.type === 'sticker' ? 'sticker' : b.type === 'audio' ? 'audio' : 'emoji';
+    // аудио — путь к файлу, не режем до 80 (иначе URL обрежется); эмодзи/стикер — коротко
+    let content;
+    if (type === 'audio') {
+      content = String(b.content || '').replace(/[<>]/g, '').slice(0, 200);
+      if (!/^\/uploads\/audio_[\w.-]+$/.test(content)) throw { code: 400, msg: 'сначала запиши голос' };
+    } else {
+      content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
+    }
     const replyId = b.reply_to || null;
     await rpc('send_message', [ctx.child, b.to, type, content, replyId]);
     // push-уведомление получателю
     const sender = await one('select name from users where id=$1', [ctx.child]);
-    if (sender) sendPush(b.to, sender.name, type === 'sticker' ? '🦊 Стикер' : content);
+    if (sender) sendPush(b.to, sender.name, type === 'sticker' ? '🦊 Стикер' : type === 'audio' ? '🎤 Голосовое' : content);
     return { ok: true };
   },
   // Реакции на сообщения

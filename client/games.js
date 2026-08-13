@@ -126,6 +126,7 @@ function closeGameOv() {
   if (q) { q.innerHTML = ''; q.textContent = ''; }
   const lv = document.getElementById('gameLevels');
   if (lv) { lv.style.display = 'none'; lv.innerHTML = ''; }
+  document.querySelector('.phone')?.classList.remove('game-open');
   const ov = document.getElementById('gameOv');
   if (ov) ov.classList.remove('on');
 }
@@ -147,6 +148,7 @@ function resetGameSheet(title) {
   if (lv) { lv.style.display = 'none'; lv.innerHTML = ''; }
   showGamePlay(false);
   setGameProg(0, 10, '—');
+  document.querySelector('.phone')?.classList.add('game-open');
   document.getElementById('gameOv').classList.add('on');
 }
 

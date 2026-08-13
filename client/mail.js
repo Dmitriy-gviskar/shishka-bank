@@ -156,52 +156,81 @@ loadChatList();
 const stickerBar = document.getElementById('stickerBar');
 STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
 
-// Голосовые
-let mediaRecorder = null, audioChunks = [], recTimer = null, recSecs = 0;
+// Голосовые: hold-to-talk (только Pointer Events — иначе touch+pointer стартуют дважды и запись пустая)
+let mediaRecorder = null, audioChunks = [], recTimer = null, recSecs = 0, recStarting = false;
 const micBtn = document.getElementById('micBtn'), recTime = document.getElementById('recTime');
-const fmtSec = (s) => Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
-const startRec = async () => {
-  if (!chatFriend) return;
+const fmtSec = (s) => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+const flashMic = (t) => { if (!micBtn) return; micBtn.textContent = t; setTimeout(() => { micBtn.textContent = '🎤'; }, 2200); };
+const startRec = async (e) => {
+  if (!chatFriend || mediaRecorder || recStarting) return;
+  if (e) { e.preventDefault(); try { micBtn.setPointerCapture(e.pointerId); } catch {} }
+  recStarting = true;
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+    if (!recStarting) { stream.getTracks().forEach((t) => t.stop()); return; } // отпустили, пока ждали микрофон
+    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+      : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4'
       : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus'
       : '';
     mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
     audioChunks = [];
-    mediaRecorder.ondataavailable = (e) => { if (e.data.size) audioChunks.push(e.data); };
-    mediaRecorder.start();
-    micBtn.classList.add('recording'); recTime.style.display = 'inline';
-    recSecs = 0; recTime.textContent = '0:00';
-    recTimer = setInterval(() => { recSecs++; recTime.textContent = fmtSec(recSecs); }, 1000);
-  } catch { micBtn.textContent = '🚫'; setTimeout(() => micBtn.textContent = '🎤', 2000); }
+    mediaRecorder.ondataavailable = (ev) => { if (ev.data && ev.data.size) audioChunks.push(ev.data); };
+    mediaRecorder.start(250);
+    micBtn.classList.add('recording');
+    if (recTime) { recTime.style.display = 'inline'; recTime.textContent = '0:00'; }
+    recSecs = 0;
+    recTimer = setInterval(() => { recSecs++; if (recTime) recTime.textContent = fmtSec(recSecs); }, 1000);
+  } catch (err) {
+    console.error('mic', err);
+    flashMic('🚫');
+  } finally { recStarting = false; }
 };
-const stopRec = async () => {
+const stopRec = async (e) => {
+  if (e) try { micBtn.releasePointerCapture(e.pointerId); } catch {}
+  if (recStarting) { recStarting = false; return; } // ещё не успели стартовать
   if (!mediaRecorder) return;
-  micBtn.classList.remove('recording'); recTime.style.display = 'none';
+  const rec = mediaRecorder;
+  mediaRecorder = null;
+  micBtn.classList.remove('recording');
+  if (recTime) recTime.style.display = 'none';
   clearInterval(recTimer);
-  const recMime = mediaRecorder.mimeType;
-  mediaRecorder.onstop = async () => {
-    const blob = new Blob(audioChunks, { type: recMime || 'audio/webm' });
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const r = await api('/api/audio', { data: reader.result });
-      if (!r.error && r.url) {
-        await api('/api/message', { content: r.url, to: chatFriend, type: 'audio' });
-        loadChat();
-      }
-    };
-    reader.readAsDataURL(blob);
-    mediaRecorder.stream.getTracks().forEach((t) => t.stop());
-  };
-  mediaRecorder.stop(); mediaRecorder = null;
+  const recMime = rec.mimeType || 'audio/webm';
+  await new Promise((resolve) => {
+    rec.onstop = resolve;
+    try { rec.stop(); } catch { resolve(); }
+  });
+  try { rec.stream.getTracks().forEach((t) => t.stop()); } catch {}
+  if (!audioChunks.length) { flashMic('…'); return; }
+  const blob = new Blob(audioChunks, { type: recMime });
+  audioChunks = [];
+  if (blob.size < 200) { flashMic('…'); return; }
+  try {
+    const data = await new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload = () => res(reader.result);
+      reader.onerror = () => rej(reader.error);
+      reader.readAsDataURL(blob);
+    });
+    const up = await api('/api/audio', { data });
+    if (up.error || !up.url) { flashMic('⚠️'); console.error('audio upload', up.error); return; }
+    const sent = await api('/api/message', { content: up.url, to: chatFriend, type: 'audio' });
+    if (sent.error) { flashMic('⚠️'); console.error('audio send', sent.error); return; }
+    loadChat();
+  } catch (err) {
+    console.error('voice send', err);
+    flashMic('⚠️');
+  }
 };
-micBtn.onpointerdown = startRec;
-micBtn.ontouchstart = (e) => { e.preventDefault(); startRec(); };
-micBtn.onpointerup = stopRec;
-micBtn.ontouchend = (e) => { e.preventDefault(); stopRec(); };
-micBtn.ontouchcancel = () => { if (mediaRecorder) stopRec(); };
-micBtn.onpointerleave = () => { if (mediaRecorder) stopRec(); };
+if (micBtn) {
+  micBtn.addEventListener('pointerdown', startRec);
+  micBtn.addEventListener('pointerup', stopRec);
+  micBtn.addEventListener('pointercancel', stopRec);
+  micBtn.addEventListener('lostpointercapture', () => { if (mediaRecorder || recStarting) stopRec(); });
+  // не даём touch+click дублировать pointer
+  micBtn.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+  micBtn.addEventListener('contextmenu', (e) => e.preventDefault());
+}
 // Ответ
 window.cancelReply = () => { replyTo = null; document.getElementById('replyBar').style.display = 'none'; };
 document.getElementById('replyCancel').onclick = cancelReply;

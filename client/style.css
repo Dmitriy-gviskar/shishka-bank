@@ -17,6 +17,9 @@ body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
     linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
 .wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:18px 16px 0;
   overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* игра открыта: лист на весь экран, док не перекрывает клавиатуру / «Забрать шишки» */
+.phone.game-open > .wrap{z-index:20}
+.phone.game-open > .nav{visibility:hidden;pointer-events:none}
 /* длинные списки прокручиваются ВНУТРИ экрана, навбар остаётся внизу */
 #taskList,#shopList,#marketList{flex:1 1 auto;min-height:0;overflow-y:auto;
   -webkit-overflow-scrolling:touch;padding-bottom:6px}
