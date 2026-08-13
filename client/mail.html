@@ -67,11 +67,6 @@
     background:#fffaf0;border:2px solid #e0d3b8;border-radius:16px;margin:10px;line-height:1.5}
   /* Нижняя панель ввода */
   #chatInput{flex:none;position:sticky;bottom:0;z-index:5;background:#fffaf2;border-top:2px solid #e0d3b8;padding:6px 8px 8px}
-  #phraseBar{display:flex;gap:5px;margin-bottom:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
-  #phraseBar::-webkit-scrollbar{height:0}
-  #phraseBar button{flex:none;background:#fff;border:1.5px solid #d9c39a;border-radius:10px;padding:3px 8px;
-    font-size:11px;font-weight:700;color:var(--brown);cursor:pointer;white-space:nowrap;transition:all .1s}
-  #phraseBar button:active{background:#e8dcc8}
   /* Стикеры */
   #stickerBar{display:flex;gap:4px;margin-bottom:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
   #stickerBar::-webkit-scrollbar{height:0}
@@ -178,7 +173,6 @@
     <div id="replyBar"><span class="txt" id="replyTxt"></span><button id="replyCancel">✕</button></div>
     <div id="chatInput">
       <div id="stickerBar"></div>
-      <div id="phraseBar"></div>
       <div id="inputRow">
         <button id="micBtn">🎤</button>
         <input type="text" id="msgInput" placeholder="Сообщение..." maxlength="80" autocomplete="off">

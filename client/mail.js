@@ -5,7 +5,6 @@ window.runMail = function () {
   const esc = window.esc;
 
 // ── Чат ──
-const PHRASES = ['Привет! 👋','Как дела? 😊','Давай дружить! 🤝','Спасибо! ❤️','Классно! 🔥','Давай меняться? 🔄','Помоги 🙏','Ура! 🎉','Пока! 👋','Хорошего дня! ☀️','Ты супер! ⭐','Да! ✅','Нет 🙅','Грустно 😢','Весело! 😂'];
 const STICKERS = ['🦊','🐿️','🦉','🐻','🦌','🐰','🌲','🍄','🌰','🍂','🌟','❤️','🔥','😂','👍','🎉','😢','😡','🤔','🙏'];
 let chatFriend = null, chatFriendName = '', replyTo = null, pressTimer = null;
 const fmtTime = (iso) => { const d = new Date(iso); return d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); };
@@ -380,10 +379,7 @@ window.showRxPicker = (e, msgId) => {
 };
 const hideRxPicker = () => { document.getElementById('rxPicker').style.display = 'none'; rxMsgId = null; };
 document.querySelectorAll('#rxPicker button').forEach((b) => b.onclick = () => { if (rxMsgId) { react(rxMsgId, b.textContent); hideRxPicker(); } });
-// Фразы-заготовки
-const phraseBar = document.getElementById('phraseBar');
-PHRASES.forEach((p) => { const b = document.createElement('button'); b.textContent = p; b.onclick = () => sendMsg(p); phraseBar.appendChild(b); });
-// Отправка вручную
+// Отправка вручную (быстрые фразы убраны — случайные тапы засоряли чат)
 document.getElementById('btnSend').onclick = () => { const v = document.getElementById('msgInput').value.trim(); if (v) sendMsg(v); };
 // На Android WebView клавиатура не двигает вьюпорт — скроллим поле ввода в видимую зону
 const msgInput = document.getElementById('msgInput');
