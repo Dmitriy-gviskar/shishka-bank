@@ -118,7 +118,9 @@ async function api(path, body, method) {
       return load();                                              // кэша нет или протух — ждём сеть
     }
     const r = await (await fetch(path, opt)).json();  // действие — сбросить кэш, данные изменились
-    if (path !== '/api/guild/chat') {
+    // опрос чата/реакции не должны сбрасывать весь кэш экранов — иначе лаг раз в 2с
+    if (path !== '/api/guild/chat' && path !== '/api/chat' && path !== '/api/chat/list'
+        && path !== '/api/message/react' && path !== '/api/message/read') {
       for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k);
       window.__balAt = 0;   // следующий refreshBalance обязан сходить в сеть
     }

@@ -36,6 +36,8 @@ async function loadChatList() {
 let mailTab = 'friends';
 function setMailTab(tab) {
   mailTab = tab;
+  // не трогаем панели, пока открыт диалог — иначе асинхронный refresh «выкидывает» из чата
+  if (chatFriend) return;
   document.querySelectorAll('#mailTabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === tab));
   document.getElementById('friendsPane')?.classList.toggle('on', tab === 'friends');
   document.getElementById('chatList')?.classList.toggle('on', tab === 'chats');
@@ -131,6 +133,12 @@ document.getElementById('mailTabs')?.querySelectorAll('button').forEach((b) => {
 });
 
 // ── Детальный чат ──
+const saveOpenChat = () => {
+  try {
+    if (chatFriend) sessionStorage.setItem('mailOpenChat', JSON.stringify({ id: chatFriend, name: chatFriendName }));
+    else sessionStorage.removeItem('mailOpenChat');
+  } catch {}
+};
 let openChat = function openChat() {
   document.getElementById('chatList')?.classList.remove('on');
   document.getElementById('friendsPane')?.classList.remove('on');
@@ -138,25 +146,33 @@ let openChat = function openChat() {
   document.getElementById('chatDetail').classList.add('open');
   document.getElementById('chName').textContent = chatFriendName;
   document.querySelector('.wrap')?.classList.add('chat-open');
+  document.querySelector('.phone')?.classList.add('chat-open');
+  saveOpenChat();
   loadChat();
 }
 let closeChat = function closeChat() {
   document.getElementById('chatDetail').classList.remove('open');
   document.getElementById('mailTabs').style.display = '';
   document.querySelector('.wrap')?.classList.remove('chat-open');
+  document.querySelector('.phone')?.classList.remove('chat-open');
   const t = document.querySelector('.title'); if (t) t.textContent = 'Лесная почта';
   chatFriend = null; chatFriendName = '';
+  saveOpenChat();
   setMailTab(mailTab || 'friends');
 }
+window.__mailBack = () => closeChat();
 async function loadChat() {
   const c = document.getElementById('chatMsgs'); c.innerHTML = '';
   if (!chatFriend) return;
-  const msgs = await api('/api/chat', { with: chatFriend });
+  const friend = chatFriend;
+  const msgs = await api('/api/chat', { with: friend });
+  // пока ждали сеть — диалог могли закрыть / сменить
+  if (chatFriend !== friend) return;
   if (msgs.error) { c.innerHTML = '<div class="emptyChat">Ошибка загрузки</div>'; return; }
   if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; }
   for (const m of msgs) appendMsg(c, m);
   lastMsgCount = Array.isArray(msgs) ? msgs.length : 0;
-  if (mailTab === 'chats') loadChatList();   // обновить счётчики в списке
+  lastMsgSig = msgs.length ? `${msgs.length}:${msgs[msgs.length - 1].id}` : '0';
   c.scrollTop = c.scrollHeight;
 }
 function appendMsg(c, m) {
@@ -431,16 +447,21 @@ const payAmts = document.getElementById('payAmts');
   payAmts.appendChild(b);
 });
 // Автообновление: чат — каждые 2с (только открытый диалог), список — каждые 5с (только список, вкладка видима)
-let chatPoll = null, listPoll = null, lastMsgCount = 0;
+let chatPoll = null, listPoll = null, lastMsgCount = 0, lastMsgSig = '';
 const startChatPoll = () => {
   if (chatPoll) clearInterval(chatPoll);
   chatPoll = setInterval(async () => {
     if (document.hidden || !chatFriend) return;
-    const msgs = await api('/api/chat', { with: chatFriend });
+    const friend = chatFriend;
+    const msgs = await api('/api/chat', { with: friend });
+    if (chatFriend !== friend) return;
     if (msgs.error) return;
-    if (msgs.length === lastMsgCount) return;   // нет новых — не дёргаем DOM
+    const sig = msgs.length ? `${msgs.length}:${msgs[msgs.length - 1].id}` : '0';
+    if (sig === lastMsgSig) return;   // нет изменений — не дёргаем DOM
+    lastMsgSig = sig;
     lastMsgCount = msgs.length;
     const c = document.getElementById('chatMsgs');
+    if (!c) return;
     const wasAtBottom = c.scrollHeight - c.scrollTop - c.clientHeight < 60;
     c.innerHTML = '';
     if (!msgs.length) {
@@ -460,10 +481,20 @@ listPoll = setInterval(() => {
 (window.__timers || (window.__timers = [])).push(listPoll);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
-  if (chatFriend) lastMsgCount = 0;   // следующий тик чата подтянет свежее
+  if (chatFriend) { lastMsgSig = ''; lastMsgCount = 0; }   // следующий тик чата подтянет свежее
   else if (mailTab === 'chats') loadChatList();
   else loadFriendsHub();
 });
-const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; startChatPoll(); };
+const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; lastMsgSig = ''; startChatPoll(); };
 const origClose = closeChat; closeChat = () => { if (chatPoll) clearInterval(chatPoll); chatPoll = null; origClose(); };
+window.__mailBack = () => closeChat();
+// после обновления SW / reload — вернуть открытый диалог (уже с polling)
+try {
+  const saved = JSON.parse(sessionStorage.getItem('mailOpenChat') || 'null');
+  if (saved && saved.id) {
+    chatFriend = saved.id;
+    chatFriendName = saved.name || '';
+    openChat();
+  }
+} catch {}
 };

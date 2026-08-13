@@ -53,7 +53,14 @@
       back.className = 'nav-back';
       back.setAttribute('aria-label', 'Назад');
       back.textContent = '←';
-      back.onclick = () => { if (history.length > 1) history.back(); else navigate('forest.html'); };
+      back.onclick = () => {
+        // открытый диалог почты: сначала закрыть чат, не уходить с экрана
+        if (document.querySelector('.phone.chat-open') && typeof window.__mailBack === 'function') {
+          window.__mailBack();
+          return;
+        }
+        if (history.length > 1) history.back(); else navigate('forest.html');
+      };
       phone.appendChild(back);
     } else {
       wrap.classList.remove('has-back');
