@@ -59,9 +59,9 @@
     font-size:18px;line-height:1;cursor:pointer}
   #chatMsgs{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:6px;min-height:0}
   #chatMsgs::-webkit-scrollbar{width:0}
-  .msgBubble{max-width:82%;padding:8px 12px;border-radius:14px;font-size:14px;font-weight:700;line-height:1.4;word-break:break-word}
-  .msgBubble.mine{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:3px}
-  .msgBubble.theirs{align-self:flex-start;background:#fff;color:var(--ink);border:2px solid #e0d3b8;border-bottom-left-radius:3px}
+  .msgBubble{max-width:82%;padding:8px 14px;border-radius:22px;font-size:14px;font-weight:700;line-height:1.4;word-break:break-word}
+  .msgBubble.mine{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:8px}
+  .msgBubble.theirs{align-self:flex-start;background:#fff;color:var(--ink);border:2px solid #e0d3b8;border-bottom-left-radius:8px}
   .msgTime{font-size:10px;font-weight:600;opacity:.6;margin-top:2px;text-align:right}
   .emptyChat{text-align:center;color:var(--brown);font-weight:800;padding:24px 16px;font-size:15px;
     background:#fffaf0;border:2px solid #e0d3b8;border-radius:16px;margin:10px;line-height:1.5}
@@ -111,7 +111,7 @@
   #micBtn{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,69,69,.5)}50%{box-shadow:0 0 0 12px rgba(224,69,69,0)}}
   #recTime{font-size:11px;font-weight:700;color:#c03030;display:none}
-  .msgAudio audio{width:220px;height:38px;border-radius:12px}
+  .msgAudio audio{width:220px;height:38px;border-radius:20px}
   .msgAudio.mine audio{background:#5f8e37}
   .msgAudio.theirs audio{background:#f0f0f0}
   /* Попап перевода шишек */
