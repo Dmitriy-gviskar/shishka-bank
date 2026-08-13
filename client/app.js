@@ -136,39 +136,66 @@ function capturePhoto() {
     inp.accept = 'image/*';
     // без capture: в PWA/WebView forced-camera часто молча ломается; галерея надёжнее
     inp.setAttribute('aria-hidden', 'true');
-    inp.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+    // не pointer-events:none — на части Android WebView change после chooser иначе теряется
+    inp.style.cssText = 'position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0.01;z-index:9999';
     document.body.appendChild(inp);
     let settled = false;
     const finish = (v) => {
       if (settled) return;
       settled = true;
+      document.removeEventListener('visibilitychange', onVis);
       try { inp.remove(); } catch {}
       res(v);
     };
     const encode = (f) => {
       if (!f) return finish(null);
       const draw = (img, w, h) => {
+        if (!(w > 0 && h > 0)) return finish(null);
         const k = Math.min(1, 1280 / Math.max(w, h));
         const cv = document.createElement('canvas');
         cv.width = Math.round(w * k); cv.height = Math.round(h * k);
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        finish(cv.toDataURL('image/jpeg', 0.8));
+        try { finish(cv.toDataURL('image/jpeg', 0.8)); }
+        catch { finish(null); }
       };
-      const viaImg = () => {   // резерв: некоторые HEIC/EXIF не берёт createImageBitmap, а <img> декодирует
+      const viaImg = () => {
         const img = new Image();
         const url = URL.createObjectURL(f);
-        img.onload = () => { try { URL.revokeObjectURL(url); } catch {} draw(img, img.width, img.height); };
+        img.onload = () => { try { URL.revokeObjectURL(url); } catch {} draw(img, img.naturalWidth || img.width, img.naturalHeight || img.height); };
         img.onerror = () => { try { URL.revokeObjectURL(url); } catch {} finish(null); };
         img.src = url;
       };
-      if (window.createImageBitmap) {   // уважает EXIF-поворот — фото не ляжет боком
+      const viaReader = () => {
+        const r = new FileReader();
+        r.onload = () => {
+          const img = new Image();
+          img.onload = () => draw(img, img.naturalWidth || img.width, img.naturalHeight || img.height);
+          img.onerror = viaImg;
+          img.src = r.result;
+        };
+        r.onerror = viaImg;
+        r.readAsDataURL(f);
+      };
+      if (window.createImageBitmap) {
         createImageBitmap(f, { imageOrientation: 'from-image' })
           .then((bm) => { draw(bm, bm.width, bm.height); try { bm.close && bm.close(); } catch {} })
-          .catch(viaImg);
-      } else viaImg();
+          .catch(viaReader);
+      } else viaReader();
     };
+    const tryFiles = () => {
+      if (settled) return;
+      const f = inp.files && inp.files[0];
+      if (f) encode(f);
+    };
+    const onVis = () => {
+      // Android: после камеры/галереи change иногда приходит только после возврата на экран
+      if (document.visibilityState === 'visible') setTimeout(tryFiles, 400);
+    };
+    document.addEventListener('visibilitychange', onVis);
     inp.addEventListener('change', () => encode(inp.files && inp.files[0]));
     inp.addEventListener('cancel', () => finish(null));
+    // если пользователь закрыл chooser без файла — не висим вечно
+    setTimeout(() => { if (!settled && !(inp.files && inp.files[0])) finish(null); }, 120000);
     try { inp.click(); }
     catch { finish(null); }
   });
