@@ -1,4 +1,4 @@
-const CACHE = 'shishka-v110';
+const CACHE = 'shishka-v111';
 const CARDS_CACHE = 'shishka-cards-v2';
 const CARDS_MAX = 500;       // альбом тянет сотни thumb — 120 было мало, промахи ломали картинки
 const CARDS_FULL_MAX = 40;   // full-res отдельно жёстче
@@ -99,20 +99,28 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
   if (!e.data) return;
   try {
-    const { title, body } = e.data.json();
+    const data = e.data.json();
+    const title = data.title || 'Шишка Банк';
+    const body = data.body || '';
+    const url = data.url || '/mail.html';
     e.waitUntil(self.registration.showNotification(title, {
       body,
       icon: '/assets/app-icon-192.png',
       badge: '/assets/coin1.webp',
       vibrate: [200, 100, 200],
-      tag: 'shishka-msg'
+      tag: 'shishka-msg',
+      data: { url },
     }));
   } catch {}
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const raw = (e.notification && e.notification.data && e.notification.data.url) || '/mail.html';
+  const path = String(raw).replace(/^https?:\/\/[^/]+/, '') || '/mail.html';
   e.waitUntil(clients.matchAll({ type: 'window' }).then((wins) => {
-    if (wins.length) { wins[0].focus(); wins[0].navigate('mail.html'); }
-    else clients.openWindow('/mail.html');
+    if (wins.length) {
+      wins[0].focus();
+      try { wins[0].navigate(path); } catch { clients.openWindow(path); }
+    } else clients.openWindow(path);
   }));
 });

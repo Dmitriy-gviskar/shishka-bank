@@ -64,6 +64,9 @@ async function loadKids() {
 async function loadPending() {
   const list = await api('/api/parent/pending');
   const c = document.getElementById('pending'); c.innerHTML = '';
+  const title = document.getElementById('pendingTitle');
+  const n = Array.isArray(list) ? list.length : 0;
+  if (title) title.textContent = n ? `Задания на проверке · ${n}` : 'Задания на проверке';
   if (!list.length) { c.innerHTML = '<div class="empty">Нет заданий на проверке</div>'; return; }
   for (const p of list) {
     const el = document.createElement('div'); el.className = 'card pend';
@@ -249,4 +252,19 @@ async function loadGrant() {
 }
 
 loadKids(); loadPending(); loadPurchases(); loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
+
+// очередь проверки: автообновление + якорь #pending из пуша
+const pendingPoll = setInterval(() => {
+  if (document.hidden) return;
+  loadPending();
+}, 15000);
+(window.__timers || (window.__timers = [])).push(pendingPoll);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { loadPending(); loadPurchases(); }
+});
+if ((location.hash || '') === '#pending') {
+  setTimeout(() => {
+    document.getElementById('pendingTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+}
 };

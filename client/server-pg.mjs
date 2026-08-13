@@ -351,7 +351,8 @@ const assertOwn = async (sql, params, msg) => { if (!(await one(sql, params))) t
 
 // ── endpoints (async). ctx = { child, circle } резолвится из кода ──
 
-async function sendPush(userId, title, body) {
+async function sendPush(userId, title, body, url) {
+  const openUrl = url || '/mail.html';
   try {
     const subs = await q('select subscription from push_subscriptions where user_id=$1', [userId]);
     const vapid = process.env.VAPID_PRIVATE_KEY;
@@ -359,13 +360,14 @@ async function sendPush(userId, title, body) {
       const webpush = await import('web-push');
       webpush.setVapidDetails('mailto:shishka@elka-kvest-2026.ru',
         'BCsLnC1aJlENYUggedmMT3Gb-wns2cOD5T4gRRMUgW609m3KWFHvVrIlJbx5WzrjhWxYH3kyfPspd_VEmZSfT8o', vapid);
+      const payload = JSON.stringify({ title, body, url: openUrl });
       for (const s of subs) {
-        webpush.sendNotification(JSON.parse(s.subscription), JSON.stringify({ title, body })).catch(() => {});
+        webpush.sendNotification(JSON.parse(s.subscription), payload).catch(() => {});
       }
     }
   } catch {}
   // нативный APK: WebSocket-клиенты на этом и других воркерах кластера
-  try { broadcastPush(userId, title, body); } catch {}
+  try { broadcastPush(userId, title, body, openUrl); } catch {}
 }
 
 
@@ -614,12 +616,26 @@ const api = {
       }));
   },
   'POST /api/task/done': async (b, ctx) => {
-    const t = await one('select needs_photo,status from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);  // только своё задание
+    const t = await one('select id, title, needs_photo, status from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);
     if (!t || t.status === 'done' || t.status === 'pending_review') throw { code: 400, msg: 'задание недоступно' };
     let proof = null;
-    if (t.needs_photo) proof = await savePhoto(b.photo, 'task_' + b.id);   // фото обязательно: base64-jpeg → файл на диске → url в задании
-    await rpc('submit_task', [b.id, proof]);   // ВСЁ через модерацию ведущего (решение 11.07)
+    if (t.needs_photo) proof = await savePhoto(b.photo, 'task_' + b.id);
+    await rpc('submit_task', [b.id, proof]);
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    const me = await one('select name from users where id=$1', [ctx.child]);
+    // ведущий + опекуны — как при покупке в магазине (иначе дело висит «на проверке» незамеченным)
+    const notify = await q(`
+      select id from users where circle_id=$1 and role='parent'
+      union
+      select guardian_id as id from child_guardians where child_id=$2`, [ctx.circle, ctx.child]);
+    for (const p of notify) {
+      sendPush(
+        p.id,
+        '📋 На проверку!',
+        `${me?.name || 'Ребёнок'} сдал «${t.title}»`,
+        '/parent.html#pending',
+      ).catch(() => {});
+    }
     return { ok: true, submitted: true, balance: w.balance };
   },
 
@@ -1414,23 +1430,27 @@ const MAX_BODY = 10 * 1024 * 1024;
 
 // ── Нативные пуши APK: WebSocket /api/push/ws?token=deviceToken ──
 const apkSockets = new Map(); // userId -> Set<WebSocket>
-function deliverApkPush(userId, title, body) {
+function deliverApkPush(userId, title, body, url) {
   const set = apkSockets.get(String(userId));
   if (!set || !set.size) return;
-  const payload = JSON.stringify({ title: String(title || 'Шишка Банк'), body: String(body || '') });
+  const payload = JSON.stringify({
+    title: String(title || 'Шишка Банк'),
+    body: String(body || ''),
+    url: String(url || 'https://elka-kvest-2026.ru/mail.html'),
+  });
   for (const ws of set) {
     try { if (ws.readyState === 1) ws.send(payload); } catch {}
   }
 }
-function broadcastPush(userId, title, body) {
-  deliverApkPush(userId, title, body);
+function broadcastPush(userId, title, body, url) {
+  deliverApkPush(userId, title, body, url);
   if (cluster.isWorker && typeof process.send === 'function') {
-    try { process.send({ type: 'apk-push', userId: String(userId), title, body }); } catch {}
+    try { process.send({ type: 'apk-push', userId: String(userId), title, body, url }); } catch {}
   }
 }
 if (cluster.isWorker) {
   process.on('message', (msg) => {
-    if (msg && msg.type === 'apk-push') deliverApkPush(msg.userId, msg.title, msg.body);
+    if (msg && msg.type === 'apk-push') deliverApkPush(msg.userId, msg.title, msg.body, msg.url);
   });
 }
 
