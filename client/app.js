@@ -131,14 +131,79 @@ async function api(path, body, method) {
 // экранирование пользовательских строк перед вставкой в innerHTML (защита от stored XSS)
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 // камера/галерея → сжатие до 1280px → base64 jpeg. Общий для фото заданий и фото лавок/товаров.
-function capturePhoto() {
+// На Android НЕ трогаем <input type=file>: в APK WebView chooser часто роняет приложение.
+// Вместо этого снимаем кадр через getUserMedia прямо на странице — без новой раздачи APK.
+function isAndroidApp() {
+  return /Android/i.test(navigator.userAgent || '');
+}
+function shrinkToJpeg(img, w, h) {
+  if (!(w > 0 && h > 0)) return null;
+  const k = Math.min(1, 1280 / Math.max(w, h));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(w * k); cv.height = Math.round(h * k);
+  cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+  try { return cv.toDataURL('image/jpeg', 0.8); }
+  catch { return null; }
+}
+function capturePhotoLive() {
+  return new Promise(async (res) => {
+    if (!navigator.mediaDevices?.getUserMedia) return res(null);
+    let stream = null, settled = false;
+    const finish = (v) => {
+      if (settled) return;
+      settled = true;
+      try { stream?.getTracks?.().forEach((t) => t.stop()); } catch {}
+      try { ov.remove(); } catch {}
+      res(v);
+    };
+    const ov = document.createElement('div');
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(20,28,16,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px';
+    const video = document.createElement('video');
+    video.playsInline = true; video.muted = true; video.autoplay = true;
+    video.style.cssText = 'width:min(100%,420px);max-height:62vh;border-radius:18px;background:#111;object-fit:cover;border:3px solid #c9a86a';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:10px;width:min(100%,420px)';
+    const mkBtn = (label, bg) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = label;
+      b.style.cssText = `flex:1;padding:14px 12px;border:3px solid #3f6b2e;border-radius:14px;font-weight:900;font-size:16px;font-family:Fredoka,Nunito,sans-serif;color:#fff;background:${bg};cursor:pointer`;
+      return b;
+    };
+    const shoot = mkBtn('Снять фото', 'linear-gradient(180deg,#9ad65f,#6fad45)');
+    const cancel = mkBtn('Отмена', 'linear-gradient(180deg,#8a6a48,#6b4f3a)');
+    cancel.style.borderColor = '#5a3a18';
+    row.appendChild(cancel); row.appendChild(shoot);
+    const tip = document.createElement('div');
+    tip.textContent = 'Наведи камеру на выполненное дело';
+    tip.style.cssText = 'color:#fff8eb;font-weight:800;font-size:14px;text-align:center;font-family:Fredoka,Nunito,sans-serif';
+    ov.appendChild(tip); ov.appendChild(video); ov.appendChild(row);
+    document.body.appendChild(ov);
+    cancel.onclick = () => finish(null);
+    shoot.onclick = () => {
+      try {
+        const w = video.videoWidth || 0, h = video.videoHeight || 0;
+        finish(shrinkToJpeg(video, w, h));
+      } catch { finish(null); }
+    };
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
+      });
+      video.srcObject = stream;
+      try { await video.play(); } catch {}
+    } catch {
+      finish(null);
+    }
+  });
+}
+function capturePhotoFile() {
   return new Promise((res) => {
     const inp = document.createElement('input');
     inp.type = 'file';
     inp.accept = 'image/*';
-    // без capture: в PWA/WebView forced-camera часто молча ломается; галерея надёжнее
     inp.setAttribute('aria-hidden', 'true');
-    // не pointer-events:none — на части Android WebView change после chooser иначе теряется
     inp.style.cssText = 'position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0.01;z-index:9999';
     document.body.appendChild(inp);
     let settled = false;
@@ -151,15 +216,7 @@ function capturePhoto() {
     };
     const encode = (f) => {
       if (!f) return finish(null);
-      const draw = (img, w, h) => {
-        if (!(w > 0 && h > 0)) return finish(null);
-        const k = Math.min(1, 1280 / Math.max(w, h));
-        const cv = document.createElement('canvas');
-        cv.width = Math.round(w * k); cv.height = Math.round(h * k);
-        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        try { finish(cv.toDataURL('image/jpeg', 0.8)); }
-        catch { finish(null); }
-      };
+      const draw = (img, w, h) => finish(shrinkToJpeg(img, w, h));
       const viaImg = () => {
         const img = new Image();
         const url = URL.createObjectURL(f);
@@ -190,17 +247,24 @@ function capturePhoto() {
       if (f) encode(f);
     };
     const onVis = () => {
-      // Android: после камеры/галереи change иногда приходит только после возврата на экран
       if (document.visibilityState === 'visible') setTimeout(tryFiles, 400);
     };
     document.addEventListener('visibilitychange', onVis);
     inp.addEventListener('change', () => encode(inp.files && inp.files[0]));
     inp.addEventListener('cancel', () => finish(null));
-    // если пользователь закрыл chooser без файла — не висим вечно
     setTimeout(() => { if (!settled && !(inp.files && inp.files[0])) finish(null); }, 120000);
     try { inp.click(); }
     catch { finish(null); }
   });
+}
+async function capturePhoto() {
+  // Android (приложение и браузер): живая камера на странице — без системного file chooser
+  if (isAndroidApp()) {
+    const live = await capturePhotoLive();
+    if (live) return live;
+    return null;
+  }
+  return capturePhotoFile();
 }
 const page = location.pathname.split('/').pop() || 'index.html';
 const urlParams = new URLSearchParams(location.search);
@@ -445,7 +509,7 @@ async function loadTasks() {
       let photo;
       if (t.needs_photo) {
         photo = await capturePhoto();
-        if (!photo) { say('Фото не выбрано или не читается — выбери снимок из галереи и попробуй ещё раз', 0); return; }
+        if (!photo) { say('Не удалось сделать фото — разреши камеру и попробуй ещё раз', 0); return; }
         say('Отправляю фото…', 1);
       }
       const r = await api('/api/task/done', { id: t.id, photo });
