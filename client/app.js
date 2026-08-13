@@ -273,11 +273,48 @@ function capturePhotoFile() {
     catch { finish(null); }
   });
 }
+function capturePhotoChoose() {
+  return new Promise((res) => {
+    const ov = document.createElement('div');
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(20,28,16,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:12px';
+    const card = document.createElement('div');
+    card.style.cssText = 'width:min(100%,360px);background:linear-gradient(180deg,#fffaf2,#f4e6c8);border:4px solid #8a6238;border-radius:22px;padding:18px 16px;box-shadow:0 0 0 3px #c9a86a,0 14px 28px rgba(20,30,10,.35)';
+    const title = document.createElement('div');
+    title.textContent = 'Фото для задания';
+    title.style.cssText = 'font-family:Fredoka,Nunito,sans-serif;font-weight:900;font-size:18px;color:#5a3a18;text-align:center;margin-bottom:6px';
+    const tip = document.createElement('div');
+    tip.textContent = 'Сними сейчас или выбери готовый снимок';
+    tip.style.cssText = 'font-weight:700;font-size:13px;color:#8a6a48;text-align:center;margin-bottom:14px;font-family:Fredoka,Nunito,sans-serif';
+    const mkBtn = (label, bg, border) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.textContent = label;
+      b.style.cssText = `display:block;width:100%;margin:0 0 8px;padding:14px 12px;border:3px solid ${border};border-radius:14px;font-weight:900;font-size:16px;font-family:Fredoka,Nunito,sans-serif;color:#fff;background:${bg};cursor:pointer`;
+      return b;
+    };
+    const cam = mkBtn('📷 Снять фото', 'linear-gradient(180deg,#9ad65f,#6fad45)', '#3f6b2e');
+    const gal = mkBtn('🖼 Из галереи', 'linear-gradient(180deg,#ffe7a0,#f0c14a)', '#c9a86a');
+    gal.style.color = '#5a3a18';
+    const cancel = mkBtn('Отмена', 'linear-gradient(180deg,#fff8eb,#f3e7cf)', '#fff');
+    cancel.style.color = '#5a3a18';
+    cancel.style.boxShadow = '0 0 0 2px #c9a86a';
+    cancel.style.marginBottom = '0';
+    const done = (v) => { try { ov.remove(); } catch {} res(v); };
+    cam.onclick = () => done('camera');
+    gal.onclick = () => done('gallery');
+    cancel.onclick = () => done(null);
+    ov.onclick = (e) => { if (e.target === ov) done(null); };
+    card.appendChild(title); card.appendChild(tip); card.appendChild(cam); card.appendChild(gal); card.appendChild(cancel);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  });
+}
 async function capturePhoto() {
-  // Android (приложение и браузер): живая камера на странице — без системного file chooser
+  // Android: сначала выбор — камера на странице (безопасно) или галерея (системный picker)
   if (isAndroidApp()) {
-    const live = await capturePhotoLive();
-    if (live) return live;
+    const mode = await capturePhotoChoose();
+    if (mode === 'camera') return capturePhotoLive();
+    if (mode === 'gallery') return capturePhotoFile();
     return null;
   }
   return capturePhotoFile();
