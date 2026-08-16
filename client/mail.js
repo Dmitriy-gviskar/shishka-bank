@@ -45,10 +45,18 @@ function setMailTab(tab) {
   if (tab === 'friends') loadFriendsHub();
   else loadChatList();
 }
-async function loadFriendsHub() {
+function friendCodeBusy() {
+  const el = document.getElementById('friendCode');
+  if (!el) return false;
+  return document.activeElement === el || !!(el.value || '').trim();
+}
+async function loadFriendsHub(opts) {
+  const silent = !!(opts && opts.silent);
+  if (silent && friendCodeBusy()) return;
   const pane = document.getElementById('friendsPane');
   if (!pane) return;
   const hub = await api('/api/friends/hub');
+  if (silent && friendCodeBusy()) return;
   if (hub.error) { pane.innerHTML = `<div class="noChats">${esc(hub.error)}</div>`; return; }
   const parts = [];
   parts.push(`<div class="fHint">Код друга — с его поляны (профиль). Так можно добавить даже из другой семьи.</div>`);
@@ -518,14 +526,14 @@ const startChatPoll = () => {
 listPoll = setInterval(() => {
   if (document.hidden || chatFriend) return;
   if (mailTab === 'chats') loadChatList();
-  else if (mailTab === 'friends') loadFriendsHub();
+  else if (mailTab === 'friends') loadFriendsHub({ silent: true });
 }, 12000);
 (window.__timers || (window.__timers = [])).push(listPoll);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
   if (chatFriend) { lastMsgSig = ''; lastFullSync = 0; } // следующий тик — полный sync
   else if (mailTab === 'chats') loadChatList();
-  else loadFriendsHub();
+  else loadFriendsHub({ silent: true });
 });
 const origOpen = openChat; openChat = () => { origOpen(); lastMsgCount = 0; lastMsgSig = ''; lastMsgId = null; lastFullSync = 0; startChatPoll(); };
 const origClose = closeChat; closeChat = () => { if (chatPoll) clearInterval(chatPoll); chatPoll = null; origClose(); };
