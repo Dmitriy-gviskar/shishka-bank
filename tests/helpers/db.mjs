@@ -23,9 +23,35 @@ export async function setupDb() {
   // Supabase-специфика: схема auth и заглушка auth.uid() — их зовут функции из functions.sql
   await run('psql', ['-q', '-d', DB, '-c',
     'create schema if not exists auth; create or replace function auth.uid() returns uuid language sql as $$ select null::uuid $$;']);
+  await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, 'db/schema.sql')]);
+  // functions.sql ссылается на колонки/таблицы из более поздних миграций — без заглушек CREATE FUNCTION падает
+  await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c', `
+    alter table transactions add column if not exists is_anonymous boolean not null default false;
+    alter table transactions add column if not exists revealed boolean not null default false;
+    alter table users add column if not exists last_seen timestamptz;
+    create table if not exists mini_games (
+      child_id uuid not null references users(id) on delete cascade,
+      game text not null, level int not null default 1, score int not null default 0,
+      streak int not null default 0, last_played date, primary key (child_id, game));
+    create table if not exists guild_history (
+      id uuid primary key default gen_random_uuid(),
+      guild_id uuid not null references guilds(id) on delete cascade,
+      kind text not null, title text not null, amount int,
+      created_at timestamptz not null default now());
+    create or replace function achievement_metric_legacy(p_child uuid, p_metric text)
+    returns int language sql stable as $$ select 0 $$;
+    create table if not exists friendships (
+      user_id uuid not null references users(id) on delete cascade,
+      friend_id uuid not null references users(id) on delete cascade,
+      status text not null check (status in ('pending','accepted')),
+      created_at timestamptz not null default now(),
+      primary key (user_id, friend_id), check (user_id <> friend_id));
+  `]);
   // cards.sql — часть прод-схемы (карты, лор, рынок, аукцион): /api/state читает familiar_* из неё
-  for (const f of ['db/schema.sql', 'db/functions.sql', 'db/migration_auth.sql', 'db/cards.sql',
-                     'db/migration_guilds_v2.sql', 'db/migration_guilds_v3.sql'])
+  for (const f of ['db/functions.sql', 'db/migration_auth.sql', 'db/cards.sql',
+                     'db/migration_referrals.sql', 'db/migration_referral_levels.sql',
+                     'db/migration_referral_l3.sql', 'db/migration_friendships.sql',
+                     'db/migration_reactions.sql', 'db/migration_cross_circle_friends.sql'])
     await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, f)]);
   // child_logins не входит в schema.sql — в проде её создаёт db/seed.sql (см. server-pg.mjs: авторизация ребёнка по коду из этой таблицы)
   await run('psql', ['-q', '-d', DB, '-c',
@@ -41,9 +67,17 @@ export async function setupDb() {
       const [u] = await q("insert into users(circle_id, role, name) values ($1,'child',$2) returning id", [c.id, `Ребёнок ${key}${i}`]);
       await q('insert into wallets(user_id, balance) values ($1, 30)', [u.id]);
       await q('insert into child_logins(code, child_id) values ($1,$2)', [`${key}${i}-01`, u.id]);
-      ids[`child${key}${i}`] = { id: u.id, code: `${key}${i}-01` };
+      await q('update users set referral_code=$1 where id=$2', [`REF${key}${i}`, u.id]);
+      ids[`child${key}${i}`] = { id: u.id, code: `${key}${i}-01`, ref: `REF${key}${i}` };
     }
   }
+  await q(`
+    insert into friendships(user_id, friend_id, status)
+    select a.id, b.id, 'accepted'
+      from users a
+      join users b on b.circle_id = a.circle_id and b.role = 'child' and b.id <> a.id
+     where a.role = 'child'
+    on conflict do nothing`);
   await pool.end();
   return { url, ...ids };
 }

@@ -1,5 +1,5 @@
--- Друзья внутри круга: переписка/подарки только с accepted.
--- Заявки (pending) — чтобы в большом круге не писали всем подряд.
+-- Друзья: в круге — авто; между кругами — заявка по коду с поляны.
+-- Переписка/подарки только с accepted.
 
 create table if not exists friendships (
   user_id    uuid not null references users(id) on delete cascade,

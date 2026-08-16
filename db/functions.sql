@@ -834,17 +834,27 @@ end $$;
 
 -- ═══════════════════ Лесная почта: эмоции/стикеры/аудио + «Шёпот леса» ═══════════════════
 
--- Отправить сообщение (эмодзи/стикер/аудио). Только внутри своего круга.
+-- Отправить сообщение (эмодзи/стикер/аудио). Свой круг или принятые друзья (в т.ч. по коду).
 create or replace function send_message(p_from uuid, p_to uuid, p_type text, p_content text, p_reply_to uuid default null)
 returns messages language plpgsql security definer set search_path = public as $$
-declare m messages; c_id uuid;
+declare m messages; c_id uuid; to_circle uuid;
 begin
   select circle_id into c_id from users where id = p_from;
-  if c_id is distinct from (select circle_id from users where id = p_to) then
-    raise exception 'recipient is not in your circle';
+  select circle_id into to_circle from users where id = p_to;
+  if c_id is distinct from to_circle then
+    if not exists (
+      select 1 from friendships
+       where user_id = p_from and friend_id = p_to and status = 'accepted'
+    ) then
+      raise exception 'recipient is not in your circle';
+    end if;
   end if;
   if p_reply_to is not null then
-    if not exists (select 1 from messages where id=p_reply_to and circle_id=c_id) then
+    if not exists (
+      select 1 from messages
+       where id = p_reply_to
+         and ((from_user = p_from and to_user = p_to) or (from_user = p_to and to_user = p_from))
+    ) then
       raise exception 'replied message not found';
     end if;
   end if;

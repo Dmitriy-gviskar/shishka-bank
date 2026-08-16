@@ -16,7 +16,7 @@ async function loadChatList() {
   const c = document.getElementById('chatList'); c.innerHTML = '';
   if (list.error) return;
   if (!list.length) {
-    c.innerHTML = '<div class="noChats">Пока нет друзей для переписки.<br>Открой вкладку «Друзья» и добавь кого-нибудь из круга 🌲</div>';
+    c.innerHTML = '<div class="noChats">Пока нет друзей для переписки.<br>Открой вкладку «Друзья» и добавь по коду с поляны 🌲</div>';
     return;
   }
   for (const ch of list) {
@@ -51,8 +51,11 @@ async function loadFriendsHub() {
   const hub = await api('/api/friends/hub');
   if (hub.error) { pane.innerHTML = `<div class="noChats">${esc(hub.error)}</div>`; return; }
   const parts = [];
-  parts.push(`<div class="fHint">Писать и дарить можно только друзьям из твоего круга. Так в большом лесу не запутаетесь.</div>`);
-  parts.push(`<div class="fAdd"><input id="friendCode" placeholder="Код друга" maxlength="12" autocomplete="off"><button type="button" id="btnAddFriend">Добавить</button></div>`);
+  parts.push(`<div class="fHint">Код друга — с его поляны (профиль). Так можно добавить даже из другой семьи.</div>`);
+  if (hub.my_code) {
+    parts.push(`<div class="fMyCode">Твой код: <b id="myFriendCode">${esc(hub.my_code)}</b><button type="button" id="btnCopyMyCode">Скопировать</button></div>`);
+  }
+  parts.push(`<div class="fAdd"><input id="friendCode" placeholder="Код друга" maxlength="12" autocomplete="off" autocapitalize="characters"><button type="button" id="btnAddFriend">Добавить</button></div>`);
 
   const row = (p, actsHtml) =>
     `<div class="fRow"><img src="assets/${p.avatar || 'friend1.webp'}" alt=""><div class="nm">${esc(p.name)}</div><div class="acts">${actsHtml}</div></div>`;
@@ -73,7 +76,7 @@ async function loadFriendsHub() {
         `<button type="button" data-act="gift" data-id="${p.id}" data-name="${esc(p.name)}">🎁</button>`));
     }
   } else {
-    parts.push(`<div class="noChats" style="margin:0">Друзей пока нет — добавь по коду или из списка круга.</div>`);
+    parts.push(`<div class="noChats" style="margin:0">Друзей пока нет — введи код с поляны друга.</div>`);
   }
   if (hub.pending_out?.length) {
     parts.push(`<div class="fSec">Ждём ответа · ${hub.pending_out.length}</div>`);
@@ -88,11 +91,31 @@ async function loadFriendsHub() {
     }
   }
   pane.innerHTML = parts.join('');
-  pane.querySelector('#btnAddFriend')?.addEventListener('click', async () => {
-    const code = pane.querySelector('#friendCode')?.value || '';
+  const addByCode = async () => {
+    const input = pane.querySelector('#friendCode');
+    const code = (input?.value || '').trim();
+    if (!code) { alert('Введи код с поляны друга'); return; }
     const r = await api('/api/friends/request', { code });
     if (r.error) { alert(r.error); return; }
+    if (input) input.value = '';
+    if (r.status === 'pending') alert(`Заявка ушла к ${r.name || 'другу'} — пусть нажмёт «Принять»`);
+    else if (r.status === 'accepted') alert(`${r.name || 'Друг'} теперь в друзьях — можно писать`);
     loadFriendsHub();
+  };
+  pane.querySelector('#btnAddFriend')?.addEventListener('click', addByCode);
+  pane.querySelector('#friendCode')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); addByCode(); }
+  });
+  pane.querySelector('#btnCopyMyCode')?.addEventListener('click', async () => {
+    const code = hub.my_code || '';
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      const btn = pane.querySelector('#btnCopyMyCode');
+      if (btn) { btn.textContent = 'Скопирован'; setTimeout(() => { btn.textContent = 'Скопировать'; }, 1600); }
+    } catch {
+      prompt('Скопируй свой код:', code);
+    }
   });
   pane.querySelectorAll('[data-act]').forEach((btn) => {
     btn.addEventListener('click', async () => {
