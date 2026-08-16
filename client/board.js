@@ -1,9 +1,10 @@
-// Поляна друзей: рейтинг по добытым шишкам / делам / картам.
+// Поляна леса: весь лес или только друзья. Шишки / дела / карты.
 window.runBoard = function () {
   const api = window.api;
   const esc = window.esc;
   const MEDAL = ['', '🥇', '🥈', '🥉'];
   let sort = 'cones';
+  let scope = 'all';
   let data = null;
 
   const scoreOf = (row) => Number(row[sort] || 0);
@@ -16,13 +17,16 @@ window.runBoard = function () {
   function render() {
     const box = document.getElementById('boardList');
     if (!box || !data) return;
-    const rows = [...(data.rows || [])].sort((a, b) => {
+    const pool = (data.rows || []).filter((r) => scope === 'all' || r.friend || r.mine);
+    const rows = [...pool].sort((a, b) => {
       const d = scoreOf(b) - scoreOf(a);
       if (d) return d;
       return String(a.name).localeCompare(String(b.name), 'ru');
     });
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">Пока только ты. Добавь друга по коду — появитесь вместе 🌲</div>';
+      box.innerHTML = scope === 'friends'
+        ? '<div class="empty">Друзей пока нет — добавь по коду с поляны 🌲</div>'
+        : '<div class="empty">В лесу пока тихо.</div>';
       return;
     }
     const top = rows.slice(0, 3);
@@ -42,7 +46,7 @@ window.runBoard = function () {
         parts.push(`<div class="pod p${place}${p.mine ? ' mine' : ''}">
           <div class="place">${MEDAL[place] || place}</div>
           <img src="assets/${p.avatar || 'friend1.webp'}" alt="">
-          <div class="nm">${esc(p.name)}${p.mine ? ' · ты' : ''}</div>
+          <div class="nm">${esc(p.name)}${p.mine ? ' · ты' : (scope === 'all' && p.friend ? ' · друг' : '')}</div>
           <div class="sc">${labelOf(scoreOf(p))}</div>
         </div>`);
       });
@@ -53,16 +57,23 @@ window.runBoard = function () {
       parts.push(`<div class="bRow${p.mine ? ' mine' : ''}">
         <div class="rk">${place}</div>
         <img src="assets/${p.avatar || 'friend1.webp'}" alt="">
-        <div class="nm">${esc(p.name)}${p.mine ? '<span class="you">ты</span>' : ''}</div>
+        <div class="nm">${esc(p.name)}${p.mine ? '<span class="you">ты</span>' : (scope === 'all' && p.friend ? '<span class="pal">друг</span>' : '')}</div>
         <div class="sc">${labelOf(scoreOf(p))}</div>
       </div>`);
     });
-    if (rows.length === 1 && rows[0].mine) {
-      parts.push('<div class="empty" style="margin-top:6px">Добавь друга по коду — и поляна оживет.</div>');
+    if (scope === 'friends' && rows.length === 1 && rows[0].mine) {
+      parts.push('<div class="empty" style="margin-top:6px">Добавь друга по коду — и сравнитесь.</div>');
     }
     box.innerHTML = parts.join('');
   }
 
+  document.getElementById('scopeTabs')?.querySelectorAll('button').forEach((b) => {
+    b.addEventListener('click', () => {
+      scope = b.dataset.scope || 'all';
+      document.querySelectorAll('#scopeTabs button').forEach((x) => x.classList.toggle('on', x === b));
+      render();
+    });
+  });
   document.getElementById('sortTabs')?.querySelectorAll('button').forEach((b) => {
     b.addEventListener('click', () => {
       sort = b.dataset.sort || 'cones';

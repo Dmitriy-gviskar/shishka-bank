@@ -1,7 +1,7 @@
 <!doctype html><html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
-<title>Поляна друзей</title><link rel="stylesheet" href="style.css">
+<title>Поляна леса</title><link rel="stylesheet" href="style.css">
 <style>
   .hint{font-size:12px;font-weight:700;color:#8a6a48;line-height:1.35;text-align:center;
     padding:0 8px 8px;font-family:"Fredoka","Nunito",sans-serif}
@@ -35,14 +35,20 @@
   .bRow img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;flex:none}
   .bRow .nm{flex:1;min-width:0;font-weight:900;color:#4a3520;font-size:15px;
     font-family:"Fredoka","Nunito",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .bRow .you{font-size:11px;color:#5f8e37;font-weight:800;margin-left:4px}
+  .bRow .you,.bRow .pal{font-size:11px;font-weight:800;margin-left:4px}
+  .bRow .you{color:#5f8e37}
+  .bRow .pal{color:#c48a2a}
   .bRow .sc{font-weight:900;color:#5f8e37;font-size:16px;flex:none}
   .empty{text-align:center;color:var(--brown);font-weight:800;padding:24px 16px;font-size:15px;
     background:#fffaf0;border:2px solid #e0d3b8;border-radius:16px;line-height:1.5}
 </style></head><body>
 <div class="phone"><div class="wrap">
-  <div class="title">Поляна друзей</div>
-  <div class="hint">Не гонка на выбывание — кто как растёт. Только ты и друзья.</div>
+  <div class="title">Поляна леса</div>
+  <div class="hint">Весь лес видит, кто как растёт. Друзья — если хочешь сравниться только с ними.</div>
+  <div class="sortTabs" id="scopeTabs">
+    <button type="button" class="on" data-scope="all">Весь лес</button>
+    <button type="button" data-scope="friends">Друзья</button>
+  </div>
   <div class="sortTabs" id="sortTabs">
     <button type="button" class="on" data-sort="cones">Шишки</button>
     <button type="button" data-sort="tasks">Дела</button>

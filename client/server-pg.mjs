@@ -724,7 +724,7 @@ const api = {
       id: r.id, name: r.name, online: !!r.online, avatar: FRIEND_AV[i % 3],
     }));
   },
-  // Поляна друзей: я + accepted. Добытые шишки, сделанные дела, ячейки альбома.
+  // Поляна: весь лес + флаг друга. Добытые шишки, дела, ячейки альбома.
   'GET /api/board': async (b, ctx) => {
     const rows = await q(
       `select u.id, u.name,
@@ -733,20 +733,38 @@ const api = {
               (select count(*)::int from tasks t
                 where t.child_id = u.id and t.status = 'done') as tasks,
               (select count(*)::int from user_cards c
-                where c.user_id = u.id and c.qty > 0) as cards
+                where c.user_id = u.id and c.qty > 0) as cards,
+              (u.id = $1 or exists (
+                 select 1 from friendships f
+                  where f.user_id = $1 and f.friend_id = u.id and f.status = 'accepted'
+               )) as friend
          from users u
          left join wallets w on w.user_id = u.id
-        where u.role = 'child' and (
-          u.id = $1 or exists (
-            select 1 from friendships f
-             where f.user_id = $1 and f.friend_id = u.id and f.status = 'accepted'))
-        order by u.name`, [ctx.child]);
+        where u.role = 'child'
+        order by coalesce(w.total_earned, 0) desc, u.name
+        limit 80`, [ctx.child]);
+    if (!rows.some((r) => r.id === ctx.child)) {
+      const me = await q(
+        `select u.id, u.name,
+                u.last_seen > now() - interval '5 minutes' as online,
+                coalesce(w.total_earned, 0)::int as cones,
+                (select count(*)::int from tasks t
+                  where t.child_id = u.id and t.status = 'done') as tasks,
+                (select count(*)::int from user_cards c
+                  where c.user_id = u.id and c.qty > 0) as cards,
+                true as friend
+           from users u
+           left join wallets w on w.user_id = u.id
+          where u.id = $1`, [ctx.child]);
+      if (me[0]) rows.push(me[0]);
+    }
     return {
       me: ctx.child,
       rows: rows.map((r, i) => ({
         id: r.id,
         name: r.name,
         mine: r.id === ctx.child,
+        friend: !!r.friend,
         online: !!r.online,
         cones: r.cones,
         tasks: r.tasks,
