@@ -41,8 +41,15 @@ if (buyFz) buyFz.onclick = async () => {
 };
 api('/api/profile').then((p) => {
   const title = p.tree_title || 'Саженец';
+  const hn = document.getElementById('heroName');
+  if (hn && p.name) hn.textContent = p.name;
   const ll = document.getElementById('levelLabel');
-  if (ll) ll.textContent = `${title} · Уровень ${p.tree_level}`;
+  if (ll) {
+    const breed = p.tree_breed ? `${p.tree_breed} · ` : '';
+    ll.textContent = `${breed}${title} · Уровень ${p.tree_level}`;
+  }
+  const story = document.getElementById('chStory');
+  if (story && p.chronicle) story.textContent = p.chronicle;
   const prog = document.getElementById('treeProg') || document.querySelector('.progress i');
   if (prog) prog.style.width = Math.min(100, p.progress ?? 0) + '%';
   const cap = document.getElementById('treeProgCap');

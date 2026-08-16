@@ -87,3 +87,18 @@ test('без дружбы в чужой круг писать и дарить н
   assert.equal(again.status, 200);
   assert.equal(again.body.status, 'accepted');
 });
+
+test('лесная грамота собирается из породы, имени и роста', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const p = await srv.api('/api/profile', H(db.childA1.code));
+  assert.equal(p.status, 200);
+  assert.equal(p.body.name, 'Ребёнок A1');
+  assert.equal(p.body.tree_breed, 'Сосна');
+  assert.match(p.body.chronicle, /Сосна «Ребёнок A1»/);
+  assert.match(p.body.chronicle, /Корни с /);
+  assert.match(p.body.chronicle, /саженец/i);
+  assert.match(p.body.chronicle, /паспорт ещё чистый/i);
+});

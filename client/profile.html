@@ -43,6 +43,14 @@
     font-family:"Fredoka","Nunito",sans-serif}
   .freeze-buy button{flex:none;font-size:13px;padding:8px 10px;white-space:nowrap}
 
+  .chronicle{margin-top:12px;padding:14px 14px 12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .chronicle h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 8px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .chronicle p{margin:0;text-align:center;font-weight:800;color:#6b4f3a;font-size:14px;line-height:1.45;
+    font-family:"Fredoka","Nunito",sans-serif}
+
   .passport{margin-top:12px;padding:14px 14px 12px;
     background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
     box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
@@ -121,7 +129,7 @@
 <div class="phone"><div class="wrap">
   <div class="head-card">
     <div class="ht">
-      <div class="h1">Моё дерево</div>
+      <div class="h1" id="heroName">Моё дерево</div>
       <div class="h2" id="levelLabel">Дубок · Уровень 5</div>
     </div>
     <img class="av" src="assets/spirit_bust.webp" alt="">
@@ -131,6 +139,10 @@
   <div class="progress"><i id="treeProg"></i></div>
   <div class="prog-cap" id="treeProgCap">До следующего уровня</div>
   <div class="tree-tip" id="treeTip">Заходи каждый день на главную и забирай подарок — от серии дней дерево растёт.</div>
+  <div class="chronicle" id="chronicle">
+    <h3>Лесная грамота</h3>
+    <p id="chStory">Лес ещё пишет твою историю…</p>
+  </div>
   <div class="freeze-buy">
     <div class="fb-txt">Дождик-защитник спасает серию, если пропустишь 1 день. Сейчас: <b id="freezeCount">0</b></div>
     <button class="btn btn-sm" id="buyFreezeBtn" type="button">Купить за 20 🌰</button>

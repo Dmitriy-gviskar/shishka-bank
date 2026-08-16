@@ -202,6 +202,39 @@ async function saveAudio(dataUrl) {
 }
 
 const TREE = { pine: 'tree.webp', spruce: 'tree3.webp', cedar: 'tree4.webp', oak: 'tree5.webp' };
+const TREE_BREED = { pine: 'Сосна', cedar: 'Кедр', spruce: 'Ель', oak: 'Дуб' };
+const TRAIT_RU = { honesty: 'честность', generosity: 'щедрость', reliability: 'надёжность', wisdom: 'мудрость' };
+const MONTH_IN = ['январе', 'феврале', 'марте', 'апреле', 'мае', 'июне',
+  'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре'];
+function ruDays(n) {
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'день';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return 'дня';
+  return 'дней';
+}
+function strongestTrait(rep) {
+  let best = null, val = 0;
+  for (const [k, label] of Object.entries(TRAIT_RU)) {
+    const n = Number(rep?.[k] || 0);
+    if (n > val) { val = n; best = label; }
+  }
+  return best;
+}
+function forestChronicle({ name, tree_type, planted_month, planted_year, tree_title, best_streak, reputation }) {
+  const breed = TREE_BREED[tree_type] || 'Дерево';
+  const bits = [`${breed} «${name}»`];
+  const m = Number(planted_month);
+  const y = Number(planted_year);
+  if (m >= 1 && m <= 12 && y) bits.push(`Корни с ${MONTH_IN[m - 1]} ${y}`);
+  if (tree_title) bits.push(`Сейчас — ${String(tree_title).toLowerCase()}`);
+  const streak = Number(best_streak || 0);
+  if (streak > 0) bits.push(`Лучшая серия — ${streak} ${ruDays(streak)}`);
+  const trait = strongestTrait(reputation);
+  bits.push(trait
+    ? `В лесу сильнее всего растёт ${trait}`
+    : 'Паспорт ещё чистый — дела его заполнят');
+  return bits.join('. ') + '.';
+}
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
 const PUBLIC = new Set([
@@ -997,7 +1030,10 @@ const api = {
 
   'GET /api/profile': async (b, ctx) => {
     const u = await one(
-      'select name,tree_level,reputation,current_streak,longest_streak from users where id=$1',
+      `select name, tree_level, tree_type, reputation, current_streak, longest_streak,
+              extract(month from created_at at time zone 'Europe/Moscow')::int as planted_month,
+              extract(year from created_at at time zone 'Europe/Moscow')::int as planted_year
+         from users where id=$1`,
       [ctx.child]);
     const badges = await q('select badge_type as code from badges where user_id=$1', [ctx.child]);
     const titles = { guardian: 'Хранитель', philanthropist: 'Меценат', saver: 'Спаситель' };
@@ -1011,11 +1047,17 @@ const api = {
     const span = nextNeed == null ? 1 : Math.max(1, nextNeed - prevNeed);
     const into = nextNeed == null ? span : Math.max(0, Math.min(span, best - prevNeed));
     const progress = nextNeed == null ? 100 : Math.round((into / span) * 100);
+    const tree_title = TREE_NAME[lvl] || 'Саженец';
+    const tree_breed = TREE_BREED[u.tree_type] || 'Дерево';
     return {
-      name: u.name, tree_level: lvl, tree_title: TREE_NAME[lvl] || 'Саженец',
+      name: u.name, tree_level: lvl, tree_title, tree_type: u.tree_type, tree_breed,
       streak: u.current_streak || 0, best_streak: best,
       next_level_at: nextNeed, days_to_next: nextNeed == null ? 0 : Math.max(0, nextNeed - best),
       progress, reputation: u.reputation,
+      chronicle: forestChronicle({
+        name: u.name, tree_type: u.tree_type, planted_month: u.planted_month,
+        planted_year: u.planted_year, tree_title, best_streak: best, reputation: u.reputation,
+      }),
       badges: badges.map((x) => ({ code: x.code, title: titles[x.code] || x.code })),
     };
   },
