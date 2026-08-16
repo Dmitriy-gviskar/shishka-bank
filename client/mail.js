@@ -302,7 +302,7 @@ function doPay() {
     }
   });
 }
-setMailTab((location.hash || '').includes('chats') ? 'chats' : 'friends');
+setMailTab((location.hash || '').includes('friends') ? 'friends' : 'chats');
 // Стикеры
 const stickerBar = document.getElementById('stickerBar');
 STICKERS.forEach((s) => { const b = document.createElement('button'); b.textContent = s; b.onclick = () => sendSticker(s); stickerBar.appendChild(b); });
