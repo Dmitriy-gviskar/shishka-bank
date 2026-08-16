@@ -64,14 +64,12 @@ api('/api/profile').then((p) => {
       ? `Как качать: каждый день заходи на главную и жми «Забрать» у подарка. Серия дней растит дерево (7→21→45→90 дн.). Сейчас серия ${p.streak || 0}, лучшая ${p.best_streak || 0}.`
       : `Ты на максимуме! Лучшая серия — ${p.best_streak || 0} дн. Паспорт ниже растёт от дел и подарков.`;
   }
-  for (const [k, v] of Object.entries(p.reputation || {})) {
+  for (const k of ['honesty', 'generosity', 'reliability', 'wisdom']) {
+    const n = Math.min(100, Number((p.reputation || {})[k]) || 0);
     const bar = document.querySelector(`[data-trait="${k}"]`);
-    if (bar) bar.style.width = Math.min(100, Number(v) || 0) + '%';
-  }
-  const bc = document.querySelector('.badges'); if (bc) {   // бейджи из данных ребёнка, а не хардкод
-    const arts = { guardian: 'badge1.webp', philanthropist: 'badge2.webp', saver: 'badge3.webp' };
-    bc.innerHTML = p.badges.length ? p.badges.map((b) => `<div class="badge"><img src="assets/${arts[b.code] || 'badge1.webp'}"><span>${esc(b.title)}</span></div>`).join('')
-      : '<div style="width:100%;text-align:center;padding:6px"><span class="on-art" style="color:#8a7358;font-weight:700;font-size:13px">Пока нет наград — выполняй задания!</span></div>';
+    if (bar) bar.style.width = n + '%';
+    const val = document.querySelector(`[data-val="${k}"]`);
+    if (val) val.textContent = String(n);
   }
 });
 // Поляна дружбы: код / ссылка / QR / список приведённых

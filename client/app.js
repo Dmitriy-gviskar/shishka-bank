@@ -1040,20 +1040,21 @@ if (page === 'forest.html') {
     const cont = document.getElementById('famList');
     if (!cont) return;
     const fams = s && s.familiars;
-    if (!fams || !fams.length) { cont.innerHTML = '<div style="text-align:center;color:#a1876a;font-weight:700;padding:8px">Питомцев пока нет — сделай карту питомцем в коллекции!</div>'; return; }
-    cont.innerHTML = fams.map((f) => {
-      return `<div class="famCard" style="--fc:${f.color || '#ffc21f'};display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:6px;background:rgba(255,250,240,.85);border:2px solid var(--fc);border-radius:14px;cursor:pointer">
-        <img src="${cardUrl(f.code, f.grade, 'thumb')}" alt="${esc(f.name)}" loading="lazy" style="width:48px;height:48px;object-fit:contain;border-radius:10px;flex:none">
-        <div style="flex:1;min-width:0">
-          <div style="font-weight:900;color:var(--ink);font-size:14px">${esc(f.name)}</div>
-          <div style="font-size:11px;color:#a1876a;font-weight:700;margin-top:1px">${esc(f.title || '')}</div>
-          <div style="font-size:12px;color:var(--brown);font-style:italic;margin-top:2px">«${esc(f.phrase || 'Привет!')}»</div>
+    if (!fams || !fams.length) { cont.innerHTML = '<div class="fam-empty">Питомец ждёт в коллекции</div>'; return; }
+    const shown = fams.slice(0, 1);
+    cont.innerHTML = shown.map((f) => {
+      return `<div class="fam" style="--fc:${f.color || '#ffc21f'}">
+        <img src="${cardUrl(f.code, f.grade, 'thumb')}" alt="${esc(f.name)}" loading="lazy">
+        <div class="fi">
+          <div class="fn">${esc(f.name)}</div>
+          <div class="ft">${esc(f.title || '')}</div>
+          <div class="fp">«${esc(f.phrase || 'Привет!')}»</div>
         </div>
       </div>`;
     }).join('');
     // тап по питомцу → диалог
-    cont.querySelectorAll('.famCard').forEach((el, i) => {
-      el.onclick = () => openFamiliarTalk(fams[i]);
+    cont.querySelectorAll('.fam').forEach((el, i) => {
+      el.onclick = () => openFamiliarTalk(shown[i]);
     });
   });
 

@@ -54,11 +54,15 @@
   .passport{margin-top:12px;padding:14px 14px 12px;
     background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
     box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
-  .passport h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 12px;
+  .passport h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 6px;
     font-family:"Fredoka","Nunito",sans-serif}
-  .trait{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .pass-hint{text-align:center;font-weight:800;color:#8a5a20;font-size:12.5px;line-height:1.35;margin:0 0 12px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .trait{display:flex;align-items:center;gap:8px}
   .trait .nm{width:98px;font-weight:800;color:#6b4f3a;font-size:13px;
     font-family:"Fredoka","Nunito",sans-serif}
+  .trait .val{width:28px;text-align:right;font-weight:900;color:#5f8e37;font-size:14px;
+    font-family:"Fredoka","Nunito",sans-serif;flex:none}
   .bar{flex:1;height:14px;background:#e4d3ad;border:2.5px solid #fff;border-radius:10px;overflow:hidden;
     box-shadow:0 0 0 2px #c9a86a}
   .bar i{display:block;height:100%;background:linear-gradient(90deg,#8ec44f,#5f8e37);
@@ -66,14 +70,10 @@
   .bar i[data-trait="generosity"]{background:linear-gradient(90deg,#f0a35a,#e07a3a)}
   .bar i[data-trait="reliability"]{background:linear-gradient(90deg,#f1c65a,#e0a52e)}
   .bar i[data-trait="wisdom"]{background:linear-gradient(90deg,#7cbc5a,#4f8a2e)}
-
-  .badges{display:flex;justify-content:space-around;margin-top:12px;gap:6px}
-  .badge{text-align:center;flex:1;min-width:0}
-  .badge img{width:64px;height:64px;object-fit:contain;
-    filter:drop-shadow(0 3px 4px rgba(60,40,15,.22))}
-  .badge span{display:inline-block;font-weight:800;color:var(--brown);font-size:11px;margin-top:3px;
-    background:rgba(255,248,235,.96);border:2px solid #fff;border-radius:10px;padding:2px 8px;
-    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .how{font-weight:700;color:#8a7358;font-size:11.5px;line-height:1.3;margin:3px 0 10px 0;
+    padding-left:2px;font-family:"Fredoka","Nunito",sans-serif}
+  .pass-more{display:block;text-align:center;margin-top:4px;font-weight:800;font-size:13px;color:#5f8e37;
+    text-decoration:none;font-family:"Fredoka","Nunito",sans-serif}
 
   .profile-btn{margin-top:14px;width:100%;max-width:300px;font-size:18px;padding:13px 22px;
     font-family:"Fredoka","Nunito",sans-serif}
@@ -148,6 +148,20 @@
     <button class="btn btn-sm" id="buyFreezeBtn" type="button">Купить за 20 🌰</button>
   </div>
 
+  <div class="passport">
+    <h3>Лесной паспорт</h3>
+    <div class="pass-hint">Качается от настоящих дел. Каждое — +1, полоска до 100.</div>
+    <div class="trait"><span class="nm">Честность</span><div class="bar"><i style="width:0%" data-trait="honesty"></i></div><span class="val" data-val="honesty">0</span></div>
+    <div class="how">Задание, которое приняли родители</div>
+    <div class="trait"><span class="nm">Щедрость</span><div class="bar"><i style="width:0%" data-trait="generosity"></i></div><span class="val" data-val="generosity">0</span></div>
+    <div class="how">Подарок другу, котёл или друг с поляны</div>
+    <div class="trait"><span class="nm">Надёжность</span><div class="bar"><i style="width:0%" data-trait="reliability"></i></div><span class="val" data-val="reliability">0</span></div>
+    <div class="how">Дождался срока в дупле и забрал шишки</div>
+    <div class="trait"><span class="nm">Мудрость</span><div class="bar"><i style="width:0%" data-trait="wisdom"></i></div><span class="val" data-val="wisdom">0</span></div>
+    <div class="how">Положил шишки в дупло на срок</div>
+    <a class="pass-more" href="achievements.html">Все награды →</a>
+  </div>
+
   <div class="grove" id="grove">
     <h3>Поляна дружбы</h3>
     <div class="hook">
@@ -170,19 +184,6 @@
     <div id="refFriends"><div class="ref-empty">Пока никого — позови первого!</div></div>
     <div class="ref-sec">Глубже в поляне</div>
     <div id="refCascade"><div class="ref-empty">Друг друга / 3-й круг — здесь +50 и +25</div></div>
-  </div>
-
-  <div class="passport">
-    <h3>Лесной паспорт</h3>
-    <div class="trait"><span class="nm">Честность</span><div class="bar"><i style="width:0%" data-trait="honesty"></i></div></div>
-    <div class="trait"><span class="nm">Щедрость</span><div class="bar"><i style="width:0%" data-trait="generosity"></i></div></div>
-    <div class="trait"><span class="nm">Надёжность</span><div class="bar"><i style="width:0%" data-trait="reliability"></i></div></div>
-    <div class="trait"><span class="nm">Мудрость</span><div class="bar"><i style="width:0%" data-trait="wisdom"></i></div></div>
-    <div class="badges" onclick="navigate('achievements.html')" style="cursor:pointer">
-      <div class="badge"><img src="assets/badge1.webp" alt=""><span>Хранитель</span></div>
-      <div class="badge"><img src="assets/badge2.webp" alt=""><span>Меценат</span></div>
-      <div class="badge"><img src="assets/badge3.webp" alt=""><span>Спаситель</span></div>
-    </div>
   </div>
 
   <button class="btn btn-lg profile-btn" type="button">Сменить наряд</button>

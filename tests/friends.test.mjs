@@ -101,4 +101,6 @@ test('лесная грамота собирается из породы, име
   assert.match(p.body.chronicle, /Корни с /);
   assert.match(p.body.chronicle, /саженец/i);
   assert.match(p.body.chronicle, /паспорт ещё чистый/i);
+  assert.equal(p.body.reputation.honesty, 0);
+  assert.equal(p.body.reputation.generosity, 0);
 });
