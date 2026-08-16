@@ -34,7 +34,7 @@ async function loadChatList() {
 }
 
 // ── Вкладки + хаб друзей ──
-let mailTab = 'friends';
+let mailTab = 'chats';
 function setMailTab(tab) {
   mailTab = tab;
   // не трогаем панели, пока открыт диалог — иначе асинхронный refresh «выкидывает» из чата
@@ -190,7 +190,7 @@ let closeChat = function closeChat() {
   const t = document.querySelector('.title'); if (t) t.textContent = 'Лесная почта';
   chatFriend = null; chatFriendName = '';
   saveOpenChat();
-  setMailTab(mailTab || 'friends');
+  setMailTab(mailTab || 'chats');
 }
 window.__mailBack = () => closeChat();
 async function loadChat() {
