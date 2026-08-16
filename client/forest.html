@@ -26,6 +26,12 @@
   .tile small{font-weight:700;color:#a1876a;font-size:11px;line-height:1.2}
   .doors .tile{padding:14px 8px 12px}
   .doors .tile img{width:78px;height:78px}
+  .board-door{display:flex;align-items:center;gap:10px;margin:2px 2px 8px;padding:10px 12px;
+    text-decoration:none;background:linear-gradient(180deg,#fff4c8,#f3e08a);
+    border:3px solid #fff;border-radius:18px;box-shadow:0 0 0 3px #e4b84a,0 4px 0 rgba(180,130,30,.2)}
+  .board-door img{width:44px;height:44px;object-fit:contain;flex:none}
+  .board-door .t{font-weight:900;color:#5a3a18;font-size:16px;font-family:"Fredoka","Nunito",sans-serif}
+  .board-door small{display:block;font-weight:700;color:#8a6a48;font-size:11px;margin-top:1px}
   .more-forest{margin:4px 2px 8px;flex:1 1 auto;min-height:0;overflow-y:auto}
   .more-forest::-webkit-scrollbar{width:0}
   .more-forest > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
@@ -69,6 +75,10 @@
     <a class="tile" href="mail.html#chats"><img src="assets/mail.webp" alt=""><span>Почта</span><small>чаты с друзьями</small></a>
     <a class="tile" href="profile.html#grove"><img src="assets/tree5.webp" alt=""><span>Моё дерево</span><small>профиль и код</small></a>
   </div>
+  <a class="board-door" href="board.html">
+    <img src="assets/badge1.webp" alt="">
+    <div><div class="t">Поляна друзей</div><small>шишки · дела · карты</small></div>
+  </a>
 
   <details class="more-forest">
     <summary>Ещё в лесу</summary>

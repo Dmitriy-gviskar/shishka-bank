@@ -1113,6 +1113,7 @@ if (page === 'forest.html') {
   if (page === 'market.html' && window.runMarket) window.runMarket();
   if (page === 'profile.html' && window.runProfile) window.runProfile();
   if (page === 'mail.html' && window.runMail) window.runMail();
+  if (page === 'board.html' && window.runBoard) window.runBoard();
   if (page === 'parent.html' && window.runParent) window.runParent();
   (function ensureNav(n) {   // nav.js может ещё не загрузиться на самой первой отрисовке — ждём его (гонка порядка скриптов)
     if (window.mountNav) window.mountNav();

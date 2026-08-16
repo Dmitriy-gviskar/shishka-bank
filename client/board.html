@@ -1,0 +1,56 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Поляна друзей</title><link rel="stylesheet" href="style.css">
+<style>
+  .hint{font-size:12px;font-weight:700;color:#8a6a48;line-height:1.35;text-align:center;
+    padding:0 8px 8px;font-family:"Fredoka","Nunito",sans-serif}
+  .sortTabs{flex:none;display:flex;gap:6px;margin:0 0 10px;padding:4px;
+    background:rgba(255,248,235,.75);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .sortTabs button{flex:1;border:none;background:transparent;border-radius:12px;padding:9px 4px;
+    font-family:"Fredoka","Nunito",sans-serif;font-weight:900;font-size:13px;color:#8a6a48;cursor:pointer}
+  .sortTabs button.on{background:linear-gradient(180deg,#9ad65f,#6fad45);color:#fff;
+    box-shadow:0 2px 0 #3f6b2e;text-shadow:0 1px 0 rgba(0,0,0,.15)}
+  #boardList{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:8px}
+  #boardList::-webkit-scrollbar{width:0}
+  .podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:6px;align-items:end;margin-bottom:4px}
+  .pod{text-align:center;padding:10px 6px 8px;background:linear-gradient(180deg,#fff8eb,#f3e7cf);
+    border:2.5px solid #fff;border-radius:16px;box-shadow:0 0 0 2px #c9a86a}
+  .pod.p1{padding-top:14px;box-shadow:0 0 0 2px #e4b84a,0 4px 0 rgba(180,130,30,.2);
+    background:linear-gradient(180deg,#fff4c8,#f3e08a)}
+  .pod.mine{box-shadow:0 0 0 2px #6fad45}
+  .pod img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #fff}
+  .pod.p1 img{width:56px;height:56px}
+  .pod .place{font-size:18px;line-height:1;margin-bottom:2px}
+  .pod .nm{font-weight:900;color:#4a3520;font-size:12px;font-family:"Fredoka","Nunito",sans-serif;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pod .sc{font-weight:900;color:#5f8e37;font-size:15px;margin-top:2px}
+  .bRow{display:flex;align-items:center;gap:10px;padding:10px 12px;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .bRow.mine{box-shadow:0 0 0 2px #6fad45}
+  .bRow .rk{width:28px;text-align:center;font-weight:900;color:#8a6a48;font-size:16px;
+    font-family:"Fredoka","Nunito",sans-serif;flex:none}
+  .bRow img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;flex:none}
+  .bRow .nm{flex:1;min-width:0;font-weight:900;color:#4a3520;font-size:15px;
+    font-family:"Fredoka","Nunito",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bRow .you{font-size:11px;color:#5f8e37;font-weight:800;margin-left:4px}
+  .bRow .sc{font-weight:900;color:#5f8e37;font-size:16px;flex:none}
+  .empty{text-align:center;color:var(--brown);font-weight:800;padding:24px 16px;font-size:15px;
+    background:#fffaf0;border:2px solid #e0d3b8;border-radius:16px;line-height:1.5}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Поляна друзей</div>
+  <div class="hint">Не гонка на выбывание — кто как растёт. Только ты и друзья.</div>
+  <div class="sortTabs" id="sortTabs">
+    <button type="button" class="on" data-sort="cones">Шишки</button>
+    <button type="button" data-sort="tasks">Дела</button>
+    <button type="button" data-sort="cards">Карты</button>
+  </div>
+  <div id="boardList"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="board.js"></script>
+<script src="nav.js"></script>
+</body></html>

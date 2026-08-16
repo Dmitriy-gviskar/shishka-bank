@@ -57,6 +57,12 @@ test('код с поляны из другого круга: заявка, пр�
 
   const gift = await srv.api('/api/transfer', P(db.childA1.code, { to: db.childB1.id, amount: 5 }));
   assert.equal(gift.status, 200);
+
+  const board = await srv.api('/api/board', H(db.childA1.code));
+  assert.equal(board.status, 200);
+  assert.ok(board.body.rows.some((r) => r.id === db.childA1.id && r.mine));
+  assert.ok(board.body.rows.some((r) => r.id === db.childB1.id && !r.mine));
+  assert.ok(!board.body.rows.some((r) => r.id === db.childB2.id), 'чужой круг без дружбы не в поляне');
 });
 
 test('без дружбы в чужой круг писать и дарить нельзя; код входа тоже находит друга', async (t) => {
