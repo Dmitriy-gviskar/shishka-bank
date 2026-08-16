@@ -9,11 +9,19 @@
     linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
   .wrap{overflow-y:hidden}
   .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px}
-  .greet{margin:2px 0 8px}
-  .greet img{width:100px;height:100px;
-    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
-  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
-  .doors{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:2px 2px 6px}
+  .spirit-tip{position:absolute;top:14px;left:12px;z-index:6;width:42px;height:42px;padding:0;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22)}
+  .spirit-tip:active{transform:translateY(2px);box-shadow:0 0 0 3px #c9a86a,0 1px 0 rgba(107,79,58,.22)}
+  .spirit-tip img{width:34px;height:34px;object-fit:contain;
+    filter:drop-shadow(0 2px 3px rgba(60,40,15,.25))}
+  .spirit-pop{display:none;margin:0 0 8px;padding:9px 12px;text-align:center;
+    font-weight:800;color:#5a3a18;font-size:13px;line-height:1.35;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .spirit-pop.on{display:block}
+  .doors{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:2px 2px 4px}
   .more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:2px 2px 6px}
   .tile{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:20px;
     padding:12px 6px 10px;text-align:center;text-decoration:none;
@@ -24,8 +32,8 @@
   .tile span{font-weight:900;color:var(--ink);font-size:14px;line-height:1.05;
     font-family:"Fredoka","Nunito",sans-serif}
   .tile small{font-weight:700;color:#a1876a;font-size:11px;line-height:1.2}
-  .doors .tile{padding:14px 8px 12px}
-  .doors .tile img{width:78px;height:78px}
+  .doors .tile{padding:10px 6px 8px}
+  .doors .tile img{width:60px;height:60px}
   .more-forest{margin:4px 2px 8px;flex:1 1 auto;min-height:0;overflow-y:auto}
   .more-forest::-webkit-scrollbar{width:0}
   .more-forest > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
@@ -49,12 +57,13 @@
     align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
   .ov.on{display:flex}
 </style></head><body>
-<div class="phone"><div class="wrap">
+<div class="phone">
+  <button class="spirit-tip" id="spiritTip" type="button" aria-label="Подсказка о поляне">
+    <img src="assets/spirit.webp" alt="">
+  </button>
+  <div class="wrap">
   <div class="title">Лесная поляна</div>
-  <div class="greet">
-    <img src="assets/spirit.webp" alt="Лесной Дух">
-    <div class="bubble">Почта рядом — напиши другу!</div>
-  </div>
+  <div class="spirit-pop" id="spiritPop"></div>
   <div id="famList"></div>
   <div class="ov" id="talkOv"><div class="sheet" id="talkSheet" style="max-width:320px;text-align:center">
     <button class="x" id="talkClose">&times;</button>

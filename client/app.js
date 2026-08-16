@@ -1036,6 +1036,24 @@ if (page === 'surprises.html') {
 
 // ── Питомцы на поляне: до 5 карт, каждая с фразой + диалог ──
 if (page === 'forest.html') {
+  const FOREST_TIPS = [
+    'Четыре двери — главное. Остальное спрятано в «Ещё в лесу».',
+    'Коллекция — альбом существ. Карту можно взять питомцем.',
+    'В играх питомец помогает копить шишки.',
+    'Почта — чаты с друзьями. Зовут по коду с дерева.',
+    'Моё дерево — грамота, паспорт и твой код поляны.',
+    'В «Ещё» — дупло, лавки, рейтинг леса и награды.',
+  ];
+  const tipBtn = document.getElementById('spiritTip');
+  const tipPop = document.getElementById('spiritPop');
+  if (tipBtn && tipPop) {
+    let tipI = 0;
+    tipBtn.onclick = () => {
+      tipPop.textContent = FOREST_TIPS[tipI % FOREST_TIPS.length];
+      tipPop.classList.add('on');
+      tipI += 1;
+    };
+  }
   api('/api/state').then((s) => {
     const cont = document.getElementById('famList');
     if (!cont) return;
