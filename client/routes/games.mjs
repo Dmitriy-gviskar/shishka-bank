@@ -62,6 +62,17 @@ const GAME_MAX = {
   multiply: 10, guess: 5, count: 30, memory: 6, word: 5, odd: 6,
   number: 8, compare: 8, story: 5,
 };
+const GAME_FULL = {
+  guess: 5, word: 4, odd: 4, number: 3, compare: 3, story: 5,
+};
+// Банк платит за верные ответы, не за заход в игру: доля от обещанного.
+function payForScore(full, score, maxScore) {
+  const max = Math.max(1, Number(maxScore) || 1);
+  const s = Math.min(Math.max(parseInt(score, 10) || 0, 0), max);
+  const f = Math.max(0, parseInt(full, 10) || 0);
+  if (s <= 0 || f <= 0) return 0;
+  return Math.round((f * s) / max);
+}
 const RU_ONES = ['ноль', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
 const RU_TEENS = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать',
   'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
@@ -288,19 +299,14 @@ const STORY_TEMPLATES = [
   if (game === 'multiply') {
     const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
     const level = row?.level || 1;
-    reward = level === 1 ? 3 : level === 2 ? 5 : 8;
-  } else if (game === 'guess') {
-    reward = 5;
+    const full = level === 1 ? 3 : level === 2 ? 5 : 8;
+    reward = payForScore(full, score, maxScore);
   } else if (game === 'count') {
     reward = score;
   } else if (game === 'memory') {
-    reward = score >= 6 ? 4 : 0; // награда только за полный забег
-  } else if (game === 'word' || game === 'odd') {
-    reward = score > 0 ? 4 : 0;
-  } else if (game === 'number' || game === 'compare') {
-    reward = score > 0 ? 3 : 0;
-  } else if (game === 'story') {
-    reward = score > 0 ? 5 : 0;
+    reward = score >= 6 ? 4 : 0; // память: только полный забег
+  } else if (GAME_FULL[game] != null) {
+    reward = payForScore(GAME_FULL[game], score, maxScore);
   }
 
   if (reward <= 0 && game === 'memory') {
