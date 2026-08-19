@@ -27,11 +27,22 @@ th{color:#9c99b0;font-weight:700}
 <script>
 async function load() {
   try {
-    const h = {};
+    let pin = '';
+    try { pin = sessionStorage.getItem('parentPin') || ''; } catch {}
+    if (!pin) {
+      pin = prompt('PIN ведущего') || '';
+      if (pin) try { sessionStorage.setItem('parentPin', pin); } catch {}
+    }
+    const h = pin ? { 'x-parent-pin': pin } : {};
     const [s,r] = await Promise.all([
       fetch('/api/parent/state', { headers: h }).then(r => r.json()),
       fetch('/api/parent/report', { headers: h }).then(r => r.json())
     ]);
+    if (s.error || r.error) {
+      try { sessionStorage.removeItem('parentPin'); } catch {}
+      document.body.innerHTML = '<h1 style="color:#e04040">Нужен PIN ведущего</h1>';
+      return;
+    }
     document.getElementById('online').textContent = s.online || 0;
     document.getElementById('totalKids').textContent = s.totalKids || 0;
     document.getElementById('txToday').textContent = s.txToday || 0;

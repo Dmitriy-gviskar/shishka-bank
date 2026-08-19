@@ -55,7 +55,7 @@
 | Транспорт | TLS (nginx → Let's Encrypt), HSTS |
 | HTTP-заголовки | CSP, X-Content-Type-Options, X-Frame-Options, CORS |
 | Auth детей | 6-симв. криптослучайный код (алфавит без 0/O/1/I/L) |
-| Auth родителей | PIN (из env, без дефолта) + rate-limit |
+| Auth ведущего | PIN из env (пустой PIN = кабинет закрыт) + rate-limit |
 | Auth устройств | Токен устройства (SHA-256 хэш в БД, сырой у клиента) |
 | Доступ к БД | Node-прокси (нет прямого доступа клиентов) |
 | Изоляция семей | `circle_id` во всех запросах |

@@ -1,8 +1,50 @@
-// Кабинет родителя.
+// Кабинет ведущего (PIN).
 // Зависит от window.api, window.esc.
-window.runParent = function () {
+window.runParent = async function () {
   const api = window.api;
   const esc = window.esc;
+  const PIN_KEY = 'parentPin';
+  const gate = document.getElementById('gate');
+  const cabinet = document.getElementById('cabinet');
+  const pinInput = document.getElementById('pinInput');
+  const pinBtn = document.getElementById('pinBtn');
+
+  const showGate = (msg) => {
+    if (gate) gate.hidden = false;
+    if (cabinet) cabinet.hidden = true;
+    const n = document.getElementById('pinNote');
+    if (n && msg) { n.style.display = 'block'; n.textContent = msg; }
+  };
+  const checkPin = async (pin) => {
+    const res = await fetch('/api/parent/children', { headers: { 'x-parent-pin': pin } });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || d.error || !Array.isArray(d)) return d.error || 'Неверный PIN';
+    return null;
+  };
+  const bindGate = () => {
+    const go = async () => {
+      const pin = String(pinInput?.value || '').trim();
+      if (!pin) return showGate('Введи PIN ведущего');
+      const err = await checkPin(pin);
+      if (err) return showGate(err);
+      try { sessionStorage.setItem(PIN_KEY, pin); } catch {}
+      location.reload();
+    };
+    if (pinBtn) pinBtn.onclick = go;
+    if (pinInput) pinInput.onkeydown = (e) => { if (e.key === 'Enter') go(); };
+  };
+
+  const saved = (() => { try { return sessionStorage.getItem(PIN_KEY) || ''; } catch { return ''; } })();
+  if (!saved) { showGate(); bindGate(); return; }
+  const pinErr = await checkPin(saved);
+  if (pinErr) {
+    try { sessionStorage.removeItem(PIN_KEY); } catch {}
+    showGate(pinErr);
+    bindGate();
+    return;
+  }
+  if (gate) gate.hidden = true;
+  if (cabinet) cabinet.hidden = false;
 
 const note = (t, ok) => { const n = document.getElementById('note'); n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; };
 async function loadKids() {
@@ -161,7 +203,11 @@ document.getElementById('addPrize').onclick = async () => {
   const r = await api('/api/parent/add-prize', { title: document.getElementById('prizeTitle').value, price: document.getElementById('prizePrice').value });
   if (r.error) note(r.error); else { note('Приз добавлен в магазин!', 1); document.getElementById('prizeTitle').value = ''; document.getElementById('prizePrice').value = ''; }
 };
-document.getElementById('logout').onclick = (e) => { e.preventDefault(); location.href = 'link.html'; };
+document.getElementById('logout').onclick = (e) => {
+  e.preventDefault();
+  try { sessionStorage.removeItem(PIN_KEY); } catch {}
+  location.href = 'link.html';
+};
 // ── Лесная коллекция: сезон, дедлайн, прогресс детей ──
 async function loadSeason() {
   const d = await api('/api/parent/season');

@@ -11,7 +11,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import pg from 'pg';
-import { randomInt } from 'node:crypto';
+import { randomInt, timingSafeEqual } from 'node:crypto';
 import { makeAuth } from './lib/auth.mjs';
 import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 import { routesGames } from './routes/games.mjs';
@@ -236,7 +236,14 @@ function forestChronicle({ name, tree_type, planted_month, planted_year, tree_ti
   return bits.join('. ') + '.';
 }
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
-const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
+const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN кабинета ведущего; пустой = кабинет закрыт
+function parentPinOk(headerVal) {
+  if (!PARENT_PIN) return false;
+  const got = Buffer.from(String(headerVal || ''));
+  const exp = Buffer.from(PARENT_PIN);
+  if (got.length !== exp.length) return false;
+  return timingSafeEqual(got, exp);
+}
 const PUBLIC = new Set([
   'POST /api/link', 'POST /api/signup', 'GET /api/signup/hint', 'POST /api/recover', 'GET /api/ping',
 ]); // роуты без кода ребёнка
@@ -1576,12 +1583,17 @@ const server = createServer(async (req, res) => {
     try {
       if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
       if (!guarded && !childRateCheck(ip)) throw { code: 429, msg: 'Слишком много запросов — подожди полминуты.' };
-      // родительский контур: PIN опционален (проверка только если PARENT_PIN задан)
-      if (isParent) {
-        if (PARENT_PIN && (req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN родителя' }; }
-        okTry(ip);
-      }
       const ctx = await auth.resolve(req);
+      // кабинет ведущего: PIN или сессия взрослого (owner/leader). Пустой PARENT_PIN больше не открывает пульт.
+      if (isParent) {
+        const pinOk = parentPinOk(req.headers['x-parent-pin']);
+        const adultOk = !!(ctx.adult && (ctx.role === 'owner' || ctx.role === 'leader'));
+        if (!pinOk && !adultOk) {
+          if (req.headers['x-parent-pin']) badTry(ip);
+          throw { code: 401, msg: 'нужен PIN ведущего' };
+        }
+        if (pinOk) okTry(ip);
+      }
       // детские endpoint'ы требуют валидный код/токен (иначе 401, а не 500/пустота)
       if (!ctx.child && !PUBLIC.has(route) && !isParent) throw { code: 401, msg: 'нужен код входа' };
       // статус «в лесу»: обновляем время последней активности (не на каждом пинге)

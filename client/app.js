@@ -112,6 +112,10 @@ async function api(path, body, method) {
   const code = localStorage.getItem('childCode');
   if (token) headers['x-device-token'] = token;                    // основной вход после саморегистрации
   else if (code) headers['x-child-code'] = encodeURIComponent(code); // legacy / запасной код
+  try {
+    const pin = sessionStorage.getItem('parentPin');
+    if (pin) headers['x-parent-pin'] = pin;
+  } catch {}
   const post = body !== undefined || method === 'POST';
   const opt = post ? { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }
                    : { headers };

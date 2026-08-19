@@ -22,6 +22,39 @@ test('почта: угловые скобки и длина режутся на 
   assert.ok(msg.content.length <= 80, `длина ограничена 80 (было ${msg.content.length})`);
 });
 
+test('кабинет ведущего закрыт без PIN, даже если PARENT_PIN не задан в env', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url, { PARENT_PIN: '' });
+  t.after(() => srv.stop());
+
+  const open = await srv.api('/api/parent/children');
+  assert.equal(open.status, 401, 'без PIN пульт не открывается');
+  assert.match(String(open.body.error || ''), /PIN/i);
+
+  const guess = await srv.api('/api/parent/children', { headers: { 'x-parent-pin': '1234' } });
+  assert.equal(guess.status, 401, 'любой пароль бесполезен, пока PIN не задан на сервере');
+
+  const topup = await srv.api('/api/parent/topup', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ childId: db.childA1.id, amount: 9999 }),
+  });
+  assert.equal(topup.status, 401, 'начислить шишки без PIN нельзя');
+});
+
+test('кабинет ведущего: без заголовка PIN — 401, с верным PIN — пульт открыт', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const naked = await srv.api('/api/parent/children');
+  assert.equal(naked.status, 401);
+
+  const ok = await srv.api('/api/parent/children', { headers: { 'x-parent-pin': 'testpin' } });
+  assert.equal(ok.status, 200);
+  assert.ok(Array.isArray(ok.body), 'ведущий видит список детей');
+});
+
 test('PIN-кабинет: 10 неверных попыток с IP → лок (429)', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
