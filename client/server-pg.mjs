@@ -75,6 +75,24 @@ async function ensureForestTalk(from, to) {
   }
   return { peer, friends: false };
 }
+// Письмо пишем здесь, не через send_message: деплой везёт только client/*,
+// а старая SQL на проде всё ещё режет чужой круг.
+async function insertForestMessage(from, to, type, content, replyTo) {
+  if (replyTo) {
+    const ok = await one(
+      `select 1 from messages
+        where id=$1 and ((from_user=$2 and to_user=$3) or (from_user=$3 and to_user=$2))`,
+      [replyTo, from, to]);
+    if (!ok) throw { code: 400, msg: 'сообщение не найдено' };
+  }
+  const me = await one('select circle_id from users where id=$1', [from]);
+  if (!me?.circle_id) throw { code: 400, msg: 'не получилось' };
+  await q(
+    `insert into messages(circle_id, from_user, to_user, type, content, reply_to)
+     values ($1,$2,$3,$4,$5,$6)`,
+    [me.circle_id, from, to, type, content, replyTo]);
+  await rpc('check_achievements', [from]).catch(() => {});
+}
 async function linkFriends(a, b) {
   if (!a || !b || a === b) return;
   await q(
@@ -1352,7 +1370,7 @@ const api = {
       content = String(b.emoji ?? b.content ?? 'привет').replace(/[<>]/g, '').slice(0, 80) || 'привет';
     }
     const replyId = b.reply_to || null;
-    await rpc('send_message', [ctx.child, b.to, type, content, replyId]);
+    await insertForestMessage(ctx.child, b.to, type, content, replyId);
     // push-уведомление получателю
     const sender = await one('select name from users where id=$1', [ctx.child]);
     if (sender) sendPush(b.to, sender.name, type === 'sticker' ? '🦊 Стикер' : type === 'audio' ? '🎤 Голосовое' : content);

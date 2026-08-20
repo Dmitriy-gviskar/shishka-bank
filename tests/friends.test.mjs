@@ -92,7 +92,28 @@ test('код с поляны из другого круга: заявка, пр�
 test('без дружбы можно писать — заявка уходит сама; дарить шишки нельзя', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
-  t.after(() => srv.stop());
+  const pool = new pg.Pool({ connectionString: db.url });
+  t.after(() => { srv.stop(); pool.end(); });
+  // Как на проде сейчас: старая send_message режет чужой круг. Письмо всё равно должно пройти.
+  await pool.query(`
+    create or replace function send_message(p_from uuid, p_to uuid, p_type text, p_content text, p_reply_to uuid default null)
+    returns messages language plpgsql security definer set search_path = public as $$
+    declare m messages; c_id uuid; to_circle uuid;
+    begin
+      select circle_id into c_id from users where id = p_from;
+      select circle_id into to_circle from users where id = p_to;
+      if c_id is distinct from to_circle then
+        if not exists (
+          select 1 from friendships
+           where user_id = p_from and friend_id = p_to and status = 'accepted'
+        ) then
+          raise exception 'recipient is not in your circle';
+        end if;
+      end if;
+      insert into messages(circle_id, from_user, to_user, type, content, reply_to)
+        values (c_id, p_from, p_to, p_type, p_content, p_reply_to) returning * into m;
+      return m;
+    end $$`);
 
   const msg = await srv.api('/api/message', P(db.childA1.code, { to: db.childB1.id, content: 'хай' }));
   assert.equal(msg.status, 200, msg.body?.error || JSON.stringify(msg.body));
