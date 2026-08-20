@@ -59,14 +59,17 @@ async function loadFriendsHub(opts) {
   if (silent && friendCodeBusy()) return;
   if (hub.error) { pane.innerHTML = `<div class="noChats">${esc(hub.error)}</div>`; return; }
   const parts = [];
-  parts.push(`<div class="fHint">Код друга — с его поляны (профиль). Так можно добавить даже из другой семьи.</div>`);
+  parts.push(`<div class="fHint">Подай заявку обитателю леса — он примет или нет. Код с поляны тоже подходит.</div>`);
   if (hub.my_code) {
     parts.push(`<div class="fMyCode">Твой код: <b id="myFriendCode">${esc(hub.my_code)}</b><button type="button" id="btnCopyMyCode">Скопировать</button></div>`);
   }
   parts.push(`<div class="fAdd"><input id="friendCode" placeholder="Код друга" maxlength="12" autocomplete="off" autocapitalize="characters"><button type="button" id="btnAddFriend">Добавить</button></div>`);
+  if ((hub.forest?.length || 0) + (hub.circle?.length || 0) > 6) {
+    parts.push(`<div class="fFind"><input id="forestFind" placeholder="Найти по имени" maxlength="24" autocomplete="off"></div>`);
+  }
 
   const row = (p, actsHtml) =>
-    `<div class="fRow"><img src="assets/${p.avatar || 'friend1.webp'}" alt=""><div class="nm">${esc(p.name)}</div><div class="acts">${actsHtml}</div></div>`;
+    `<div class="fRow" data-name="${esc((p.name || '').toLowerCase())}"><img src="assets/${p.avatar || 'tree.webp'}" alt=""><div class="nm">${esc(p.name)}</div><div class="acts">${actsHtml}</div></div>`;
 
   if (hub.pending_in?.length) {
     parts.push(`<div class="fSec">Заявки вам · ${hub.pending_in.length}</div>`);
@@ -84,7 +87,7 @@ async function loadFriendsHub(opts) {
         `<button type="button" data-act="gift" data-id="${p.id}" data-name="${esc(p.name)}">🎁</button>`));
     }
   } else {
-    parts.push(`<div class="noChats" style="margin:0">Друзей пока нет — введи код с поляны друга.</div>`);
+    parts.push(`<div class="noChats" style="margin:0">Друзей пока нет — выбери кого-нибудь из леса ниже или введи код.</div>`);
   }
   if (hub.pending_out?.length) {
     parts.push(`<div class="fSec">Ждём ответа · ${hub.pending_out.length}</div>`);
@@ -95,6 +98,12 @@ async function loadFriendsHub(opts) {
   if (hub.circle?.length) {
     parts.push(`<div class="fSec">В кругу, ещё не друзья · ${hub.circle.length}</div>`);
     for (const p of hub.circle) {
+      parts.push(row(p, `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
+    }
+  }
+  if (hub.forest?.length) {
+    parts.push(`<div class="fSec">Обитатели леса · ${hub.forest.length}</div>`);
+    for (const p of hub.forest) {
       parts.push(row(p, `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
     }
   }
@@ -110,6 +119,12 @@ async function loadFriendsHub(opts) {
     else if (r.status === 'accepted') alert(`${r.name || 'Друг'} теперь в друзьях — можно писать`);
     loadFriendsHub();
   };
+  pane.querySelector('#forestFind')?.addEventListener('input', () => {
+    const q = (pane.querySelector('#forestFind')?.value || '').trim().toLowerCase();
+    pane.querySelectorAll('.fRow').forEach((el) => {
+      el.style.display = !q || (el.dataset.name || '').includes(q) ? '' : 'none';
+    });
+  });
   pane.querySelector('#btnAddFriend')?.addEventListener('click', addByCode);
   pane.querySelector('#friendCode')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); addByCode(); }

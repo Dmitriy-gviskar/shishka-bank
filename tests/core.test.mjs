@@ -22,6 +22,7 @@ test('задание проходит модерацию: submit не плати
   const pp = openPool(db.url);
   t.after(async () => { srv.stop(); await pp.end(); });
 
+  await pp.q("insert into users(circle_id, role, name) values($1,'parent','Ведущий А')", [db.circleA]);
   const [task] = await pp.q(
     "insert into tasks(circle_id,child_id,title,reward,status) values($1,$2,'Полить дерево',15,'open') returning id",
     [db.circleA, db.childA1.id]);
@@ -37,6 +38,22 @@ test('задание проходит модерацию: submit не плати
 
   const again = await srv.api('/api/parent/approve', PIN({ id: task.id }));
   assert.equal(again.status, 400, 'повторное одобрение отклонено — нет двойного начисления');
+});
+
+test('в лесу без ведущего дело засчитывается сразу', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  const pp = openPool(db.url);
+  t.after(async () => { srv.stop(); await pp.end(); });
+
+  const [task] = await pp.q(
+    "insert into tasks(circle_id,child_id,title,reward,status) values($1,$2,'Собрать шишки',12,'open') returning id",
+    [db.circleB, db.childB1.id]);
+  const before = await bal(srv, db.childB1.code);
+  const done = await srv.api('/api/task/done', P(db.childB1.code, { id: task.id }));
+  assert.equal(done.status, 200);
+  assert.equal(done.body.approved, true);
+  assert.equal(await bal(srv, db.childB1.code), before + 12);
 });
 
 test('нельзя одобрить чужое задание чужим PIN, но главное — approve требует PIN', async (t) => {

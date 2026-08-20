@@ -468,7 +468,12 @@ begin
   select * into w from card_wants where id=p_want for update;
   if not found or w.status <> 'open' then raise exception 'want unavailable'; end if;
   if w.buyer_id = p_seller then raise exception 'own want'; end if;
-  if (select circle_id from users where id=p_seller) is distinct from w.circle_id then raise exception 'other circle'; end if;
+  if (select circle_id from users where id=p_seller) is distinct from w.circle_id then
+    if not exists (
+      select 1 from friendships
+       where user_id=p_seller and friend_id=w.buyer_id and status='accepted'
+    ) then raise exception 'other circle'; end if;
+  end if;
 
   select qty into have from user_cards where user_id=p_seller and type_id=w.type_id and grade=w.grade for update;
   if have is null or have < 1 then raise exception 'no card'; end if;
@@ -812,7 +817,12 @@ begin
   select * into w from card_wants where id=p_want for update;
   if not found or w.status <> 'open' then raise exception 'want unavailable'; end if;
   if w.buyer_id = p_seller then raise exception 'own want'; end if;
-  if (select circle_id from users where id=p_seller) is distinct from w.circle_id then raise exception 'other circle'; end if;
+  if (select circle_id from users where id=p_seller) is distinct from w.circle_id then
+    if not exists (
+      select 1 from friendships
+       where user_id=p_seller and friend_id=w.buyer_id and status='accepted'
+    ) then raise exception 'other circle'; end if;
+  end if;
 
   select qty into have from user_cards where user_id=p_seller and type_id=w.type_id and grade=w.grade for update;
   if have is null or have < 1 then raise exception 'no card'; end if;
@@ -849,8 +859,8 @@ begin
 end $$;
 
 -- ═══════════════════ Подарок карты другу (D4) ═══════════════════
--- Детям важнее подарить, чем продать. Не более 3 подарков в день, только внутри круга,
--- каждый подарок виден ведущему в логе сделок — защита от давления старших.
+-- Детям важнее подарить, чем продать. Не более 3 подарков в день, и другу
+-- из любого леса (дружбу проверяет /api/card/gift). Лог — в круге дарителя.
 create table if not exists card_gifts (
   id        uuid primary key default gen_random_uuid(),
   circle_id uuid not null references circles(id) on delete cascade,
@@ -868,7 +878,6 @@ declare have int; c_id uuid; today_n int; t card_types;
 begin
   if p_child = p_to then raise exception 'self gift'; end if;
   select circle_id into c_id from users where id=p_child;
-  if (select circle_id from users where id=p_to) is distinct from c_id then raise exception 'other circle'; end if;
   select count(*) into today_n from card_gifts
     where from_user=p_child and created_at >= date_trunc('day', now() at time zone 'Europe/Moscow') at time zone 'Europe/Moscow';
   if today_n >= 3 then raise exception 'daily gift limit'; end if;
@@ -891,7 +900,7 @@ end $$;
 
 -- ═══════════════════ Аукцион золотых карт (D2) ═══════════════════
 -- Золотая карта (номинал 1000) не продаётся обычным лотом: её слишком легко слить за бесценок
--- или пропустить. Только аукцион на 24 часа — событие для всего круга.
+-- или пропустить. Только аукцион на 24 часа — событие на весь лес.
 -- Шишки резервируются в момент ставки (перебили — деньги сразу вернулись), поэтому у победителя
 -- всегда есть чем заплатить. Комиссия банка — та же, что на рынке.
 create table if not exists card_auctions (
@@ -940,7 +949,6 @@ begin
   select * into a from card_auctions where id=p_auction for update;
   if not found or a.status <> 'live' or now() >= a.ends_at then raise exception 'auction closed'; end if;
   if a.seller_id = p_child then raise exception 'own auction'; end if;
-  if (select circle_id from users where id=p_child) is distinct from a.circle_id then raise exception 'other circle'; end if;
   if a.leader_id = p_child then raise exception 'already leading'; end if;
 
   need := case when a.current_bid is null then a.start_price
@@ -1194,7 +1202,6 @@ begin
   select * into a from card_auctions where id=p_auction for update;
   if not found or a.status <> 'live' or now() >= a.ends_at then raise exception 'auction closed'; end if;
   if a.seller_id = p_child then raise exception 'own auction'; end if;
-  if (select circle_id from users where id=p_child) is distinct from a.circle_id then raise exception 'other circle'; end if;
   if a.leader_id = p_child then raise exception 'already leading'; end if;
 
   need := case when a.current_bid is null then a.start_price

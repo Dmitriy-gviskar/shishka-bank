@@ -91,7 +91,7 @@ async function loadMarket() {
     return;
   }
   if (!shops.length) {
-    c.innerHTML = '<div class="mkt-empty">Пока никого на ярмарке.<br>Открой первую лавку!</div>';
+    c.innerHTML = '<div class="mkt-empty">Пока никого на ярмарке.<br>Открой лавку или подружись — лавки друзей тоже видны.</div>';
     return;
   }
   for (const s of shops) {

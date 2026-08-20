@@ -123,8 +123,7 @@ window.runCards = function () {
     if (albumTools) albumTools.style.display = PEEK ? 'none' : '';
     const av = document.getElementById('albumView'); av.innerHTML = '';
     const allCards = d.cards.filter((c) => c.category !== 'special');
-    if (!PEEK) renderNewShelf(d.cards);
-    else { const ns = document.getElementById('newShelf'); if (ns) { ns.style.display = 'none'; ns.innerHTML = ''; } }
+    if (!PEEK) renderNewShelf(d.cards, av);
     renderGroups(allCards, av);
     // Категорийные табы: показать + скролл по клику
     const catTabs = document.getElementById('catTabs');
@@ -209,15 +208,14 @@ window.runCards = function () {
     if (DATA) render(DATA);
   }
 
-  function renderNewShelf(cards) {
-    const host = document.getElementById('newShelf');
+  function renderNewShelf(cards, host) {
     if (!host) return;
     const items = listUnseen(cards);
-    if (!items.length) { host.style.display = 'none'; host.innerHTML = ''; return; }
-    host.style.display = '';
-    host.className = 'newshelf';
+    if (!items.length) return;
     const n = items.length;
-    host.innerHTML = `<div class="newshelf-h">
+    const el = document.createElement('div');
+    el.className = 'newshelf';
+    el.innerHTML = `<div class="newshelf-h">
         <span class="nt">✨ Новинки · ${n}</span>
         <button type="button" class="nok" id="newShelfOk">Скрыть все</button>
       </div>
@@ -230,11 +228,12 @@ window.runCards = function () {
           <div class="ng">${esc(rn)}</div>
         </div>`;
       }).join('')}</div>`;
-    host.querySelector('#newShelfOk').onclick = (e) => { e.stopPropagation(); markSeenAll(); };
-    host.querySelectorAll('.ncard').forEach((el) => {
-      el.onclick = () => {
-        const c = (DATA.cards || []).find((x) => x.id === el.dataset.type);
-        if (c) openDetail(c, +el.dataset.grade);
+    host.prepend(el);
+    el.querySelector('#newShelfOk').onclick = (e) => { e.stopPropagation(); markSeenAll(); };
+    el.querySelectorAll('.ncard').forEach((card) => {
+      card.onclick = () => {
+        const c = (DATA.cards || []).find((x) => x.id === card.dataset.type);
+        if (c) openDetail(c, +card.dataset.grade);
       };
     });
   }
@@ -839,7 +838,7 @@ window.runCards = function () {
 
     // ── аукцион золотых карт ──
     if (AUCS.length) {
-      const sec0 = document.createElement('div'); sec0.className = 'msec'; sec0.textContent = '🔨 Торги';
+      const sec0 = document.createElement('div'); sec0.className = 'msec'; sec0.textContent = '🔨 Торги леса';
       view.appendChild(sec0);
       for (const au of AUCS) {
         const el = document.createElement('div'); el.className = 'lot auc'; el.style.setProperty('--rc', col(au.grade));
