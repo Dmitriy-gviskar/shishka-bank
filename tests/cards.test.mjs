@@ -61,6 +61,12 @@ test('заявку нельзя закрыть из другого круга и
 
     await assert.rejects(() => f.q('select fill_want($1,$2)', [stranger, want.id]), /other circle/);
     await assert.rejects(() => f.q('select fill_want($1,$2)', [buyer, want.id]), /own want/);
+
+    await f.q(`insert into friendships(user_id, friend_id, status) values
+      ($1,$2,'accepted'),($2,$1,'accepted')
+      on conflict (user_id, friend_id) do update set status='accepted'`, [buyer, stranger]);
+    const crossed = (await f.one('select fill_want($1,$2) as v', [stranger, want.id])).v;
+    assert.equal(crossed.ok, true);
   } finally { await f.pool.end(); }
 });
 
@@ -119,14 +125,22 @@ test('обменная полка: 5 излишков → недостающая
 test('подарок: карта переходит другу, больше трёх в день нельзя', async () => {
   const f = await fixture();
   try {
-    const from = f.childA1.id, to = f.childA2.id;
+    const from = f.childA1.id, to = f.childA2.id, other = f.childB1.id;
     await f.give(from, 'lisa', 4, 4);
     const lisa = await f.typeId('lisa');
 
-    for (let i = 0; i < 3; i++) await f.q('select gift_card($1,$2,$3,$4)', [from, to, lisa, 4]);
+    await f.q(`insert into friendships(user_id, friend_id, status) values
+      ($1,$2,'accepted'),($2,$1,'accepted')
+      on conflict (user_id, friend_id) do update set status='accepted'`, [from, other]);
+    const cross = (await f.one('select gift_card($1,$2,$3,$4) as v', [from, other, lisa, 4])).v;
+    assert.equal(cross.ok, true);
+    const gotCross = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=4', [other, lisa]);
+    assert.equal(gotCross.qty, 1);
+
+    for (let i = 0; i < 2; i++) await f.q('select gift_card($1,$2,$3,$4)', [from, to, lisa, 4]);
     await assert.rejects(() => f.q('select gift_card($1,$2,$3,$4)', [from, to, lisa, 4]), /daily gift limit/);
     const got = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=4', [to, lisa]);
-    assert.equal(got.qty, 3);
+    assert.equal(got.qty, 2);
   } finally { await f.pool.end(); }
 });
 
@@ -151,6 +165,26 @@ test('золотая карта идёт только с молотка, ста�
     assert.equal(closed.sold, true);
     assert.equal(await f.balance(seller), 630);             // 700 минус 10% комиссии
     const won = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=6', [bidder, sova]);
+    assert.equal(won.qty, 1);
+  } finally { await f.pool.end(); }
+});
+
+test('золотой аукцион виден всему лесу: ставить может другой круг', async () => {
+  const f = await fixture();
+  try {
+    const seller = f.childA1.id, stranger = f.childB1.id;
+    await f.setBalance(seller, 0);
+    await f.setBalance(stranger, 2000);
+    await f.give(seller, 'sova', 6, 1);
+    const sova = await f.typeId('sova');
+    const a = (await f.one('select start_card_auction($1,$2,$3,$4) as v', [seller, sova, 6, 700])).v;
+    await f.q('select bid_card_auction($1,$2,$3)', [stranger, a.auction, 700]);
+    assert.equal(await f.balance(stranger), 1300);
+    await f.q("update card_auctions set ends_at = now() - interval '1 minute' where id=$1", [a.auction]);
+    const closed = (await f.one('select close_card_auction($1) as v', [a.auction])).v;
+    assert.equal(closed.sold, true);
+    assert.equal(await f.balance(seller), 630);
+    const won = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=6', [stranger, sova]);
     assert.equal(won.qty, 1);
   } finally { await f.pool.end(); }
 });

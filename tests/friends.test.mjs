@@ -1,7 +1,12 @@
 // Дружба по коду с поляны: между кругами заявка → принять → чат.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { setupDb, startServer } from './helpers/db.mjs';
+
+const pg = createRequire(join(dirname(fileURLToPath(import.meta.url)), '..', 'client/'))('pg');
 
 const H = (code) => ({ headers: { 'x-child-code': code, 'content-type': 'application/json' } });
 const P = (code, body) => ({ method: 'POST', ...H(code), body: JSON.stringify(body || {}) });
@@ -21,9 +26,10 @@ test('код с поляны из другого круга: заявка, пр�
   assert.equal(self.status, 400);
   assert.match(self.body.error, /сам/);
 
-  // чужой id без кода — нельзя обходить круговую изоляцию
   const byId = await srv.api('/api/friends/request', P(db.childA1.code, { to: db.childB1.id }));
-  assert.equal(byId.status, 403);
+  assert.equal(byId.status, 200);
+  assert.equal(byId.body.status, 'pending');
+  assert.equal(byId.body.name, 'Ребёнок B1');
 
   const req = await srv.api('/api/friends/request', P(db.childA1.code, { code }));
   assert.equal(req.status, 200);
@@ -38,6 +44,8 @@ test('код с поляны из другого круга: заявка, пр�
   const hubA = await srv.api('/api/friends/hub', H(db.childA1.code));
   assert.equal(hubA.body.pending_out.length, 1);
   assert.ok(hubA.body.my_code);
+  assert.ok(hubA.body.forest.some((p) => p.id === db.childB2.id), 'в хабе видны обитатели другого леса');
+  assert.ok(!hubA.body.forest.some((p) => p.id === db.childB1.id), 'заявка уже ушла — не дублируем в лесу');
 
   const acc = await srv.api('/api/friends/accept', P(db.childB1.code, { from: db.childA1.id }));
   assert.equal(acc.status, 200);
@@ -57,6 +65,20 @@ test('код с поляны из другого круга: заявка, пр�
 
   const gift = await srv.api('/api/transfer', P(db.childA1.code, { to: db.childB1.id, amount: 5 }));
   assert.equal(gift.status, 200);
+
+  const pool = new pg.Pool({ connectionString: db.url });
+  t.after(() => pool.end());
+  await pool.query(
+    `insert into user_cards(user_id,type_id,grade,qty)
+      select $1, id, 2, 1 from card_types where code='lisa'`,
+    [db.childA1.id]);
+  const lisa = (await pool.query("select id from card_types where code='lisa'")).rows[0].id;
+  const peek = await srv.api('/api/friend/cards', P(db.childA1.code, { id: db.childB1.id }));
+  assert.equal(peek.status, 200, peek.body?.error || 'peek');
+  assert.equal(peek.body.friend.id, db.childB1.id);
+  const cardGift = await srv.api('/api/card/gift', P(db.childA1.code, { to: db.childB1.id, type: lisa, grade: 2 }));
+  assert.equal(cardGift.status, 200, cardGift.body?.error || 'gift');
+  assert.equal(cardGift.body.ok, true);
 
   const board = await srv.api('/api/board', H(db.childA1.code));
   assert.equal(board.status, 200);
@@ -86,6 +108,48 @@ test('без дружбы в чужой круг писать и дарить н
   const again = await srv.api('/api/friends/request', P(db.childA1.code, { code: db.childB1.code }));
   assert.equal(again.status, 200);
   assert.equal(again.body.status, 'accepted');
+});
+
+test('золотые торги видит весь лес, ставка без дружбы проходит', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  const pool = new pg.Pool({ connectionString: db.url });
+  t.after(() => { srv.stop(); pool.end(); });
+
+  await pool.query(
+    `insert into user_cards(user_id,type_id,grade,qty)
+      select $1, id, 6, 1 from card_types where code='sova'`,
+    [db.childA1.id]);
+  await pool.query('update wallets set balance=2000 where user_id=$1', [db.childB2.id]);
+  const sova = (await pool.query("select id from card_types where code='sova'")).rows[0].id;
+  const started = await srv.api('/api/card-auction/start', P(db.childA1.code, { type: sova, grade: 6, price: 700 }));
+  assert.equal(started.status, 200, started.body?.error || 'start');
+
+  const list = await srv.api('/api/card-auctions', H(db.childB2.code));
+  assert.equal(list.status, 200);
+  const live = (list.body || []).find((a) => a.seller === 'Ребёнок A1');
+  assert.ok(live, 'чужой круг видит торги');
+
+  const bid = await srv.api('/api/card-auction/bid', P(db.childB2.code, { id: live.id, amount: live.next_bid }));
+  assert.equal(bid.status, 200, bid.body?.error || 'bid');
+  assert.equal(bid.body.ok, true);
+});
+
+test('приглашение сразу делает друзьями', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const sign = await srv.api('/api/signup', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name: 'РостокТест', tree: 'pine', ref: db.childA1.ref, force: true }),
+  });
+  assert.equal(sign.status, 200, JSON.stringify(sign.body));
+  assert.ok(sign.body.code);
+  const friends = await srv.api('/api/friends', H(sign.body.code));
+  assert.equal(friends.status, 200);
+  assert.ok(friends.body.some((f) => f.id === db.childA1.id), 'зовущий сразу в друзьях');
 });
 
 test('лесная грамота собирается из породы, имени и роста', async (t) => {

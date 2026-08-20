@@ -54,13 +54,11 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
            beings_complete: complete,
            beings_total: album.length };
 },
-// Альбом друга в круге — чтобы торговать не вслепую (qty свои + чужие)
+// Альбом друга — любой принятый друг, даже из другого леса
 'POST /api/friend/cards': async (b, ctx) => {
   if (!b.id) throw { code: 400, msg: 'выбери друга' };
-  await assertOwn(
-    "select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3",
-    [b.id, ctx.circle, ctx.child], 'нет такого друга');
-  if (assertFriend) await assertFriend(ctx.child, b.id);
+  if (b.id === ctx.child) throw { code: 400, msg: 'это твой альбом' };
+  await assertFriend(ctx.child, b.id, 'нет такого друга');
   const friend = await one('select id, name from users where id=$1', [b.id]);
   if (!friend) throw { code: 404, msg: 'друг не найден' };
   const [types, rar, owned, mine, lore, seasons] = await Promise.all([
@@ -169,12 +167,13 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   return { ...r, rewards };
 },
 'POST /api/card/gift': async (b, ctx) => {   // подарок карты другу: лимит 3 в день, лог у ведущего
-  await assertOwn("select 1 from users where id=$1 and circle_id=$2 and role='child' and id<>$3", [b.to, ctx.circle, ctx.child], 'выбери, кому подарить');
-  if (assertFriend) await assertFriend(ctx.child, b.to);
+  if (!b.to || b.to === ctx.child) throw { code: 400, msg: 'выбери, кому подарить' };
+  await assertFriend(ctx.child, b.to, 'нет такого друга');
   try { return await one('select gift_card($1,$2,$3,$4) as v', [ctx.child, b.to, b.type, b.grade]).then((r) => r.v); }
   catch (e) {
     throw { code: 400, msg: /daily gift limit/.test(e.message) ? 'сегодня уже подарено 3 карты — завтра можно снова'
-      : /no card/.test(e.message) ? 'этой карты у тебя нет' : 'нельзя' };
+      : /no card/.test(e.message) ? 'этой карты у тебя нет'
+      : /other circle/.test(e.message) ? 'пока нельзя дарить в другой лес' : 'нельзя' };
   }
 },
 'POST /api/card/sell': async (b, ctx) => {
@@ -188,7 +187,11 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
        where s.circle_id=l.circle_id and s.type_id=l.type_id and s.grade=l.grade and s.status='sold') as avg_price
     from card_listings l join card_types t on t.id=l.type_id
     join users u on u.id=l.seller_id join rarities r on r.grade=l.grade
-    where l.circle_id=$2 and l.status='open' order by l.created_at desc`,
+    where l.status='open' and (
+      l.circle_id=$2
+      or exists (select 1 from friendships f
+                  where f.user_id=$1 and f.friend_id=l.seller_id and f.status='accepted')
+    ) order by l.created_at desc`,
     [ctx.child, ctx.circle]),
 'POST /api/card/list': async (b, ctx) => {
   try { return await one('select list_card($1,$2,$3,$4) as v', [ctx.child, b.type, b.grade, parseInt(b.price, 10)]).then((r) => r.v); }
@@ -217,7 +220,7 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
          else greatest(a.current_bid+1, a.current_bid + a.current_bid/10) end as next_bid
     from card_auctions a join card_types t on t.id=a.type_id
     join users u on u.id=a.seller_id left join users lu on lu.id=a.leader_id
-    where a.circle_id=$2 and a.status='live' order by a.ends_at`, [ctx.child, ctx.circle]),
+    where a.status='live' order by a.ends_at`, [ctx.child]),
 'POST /api/card-auction/start': async (b, ctx) => {
   try { return await one('select start_card_auction($1,$2,$3,$4) as v', [ctx.child, b.type, b.grade, parseInt(b.price, 10)]).then((r) => r.v); }
   catch (e) {
@@ -246,7 +249,11 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
     ((select bw.balance from wallets bw where bw.user_id=w.buyer_id) >= w.price) as funded
     from card_wants w join card_types t on t.id=w.type_id
     join users u on u.id=w.buyer_id join rarities r on r.grade=w.grade
-    where w.circle_id=$2 and w.status='open' order by w.created_at desc`,
+    where w.status='open' and (
+      w.circle_id=$2
+      or exists (select 1 from friendships f
+                  where f.user_id=$1 and f.friend_id=w.buyer_id and f.status='accepted')
+    ) order by w.created_at desc`,
     [ctx.child, ctx.circle]),
 'POST /api/want': async (b, ctx) => {
   try { return await one('select create_want($1,$2,$3,$4) as v', [ctx.child, b.type, b.grade, parseInt(b.price, 10)]).then((r) => r.v); }

@@ -547,9 +547,14 @@ async function loadTasks() {
   const tasks = await api('/api/tasks');
   const cont = document.getElementById('taskList'); cont.innerHTML = '';
   if (!Array.isArray(tasks) || !tasks.length) {
-    cont.innerHTML = '<div class="quest-empty">Сегодня дел пока нет — загляни чуть позже</div>';
+    cont.innerHTML = '<div class="quest-empty">Сегодня дел пока нет — шишки ещё в играх и за серию входов</div>';
     return;
   }
+  const tip = document.createElement('div');
+  tip.className = 'quest-empty';
+  tip.style.margin = '0 0 10px';
+  tip.textContent = '6 дел на сегодня. Если ведущего нет — шишки сразу. Ещё можно в играх.';
+  cont.appendChild(tip);
   const redo = tasks.filter((t) => t.status === 'rejected');
   const daily = tasks.filter((t) => t.is_daily && t.status !== 'rejected');
   const other = tasks.filter((t) => !t.is_daily && t.status !== 'rejected');
@@ -568,7 +573,7 @@ async function loadTasks() {
         say('Отправляю фото…', 1);
       }
       const r = await api('/api/task/done', { id: t.id, photo });
-      if (r.ok) { loadTasks(); say('Отправлено ведущему на проверку!', 1); }
+      if (r.ok) { loadTasks(); say(r.approved ? 'Дело засчитано — шишки на дереве!' : 'Отправлено ведущему на проверку!', 1); }
       else say(r.error || 'не получилось');
     };
   };

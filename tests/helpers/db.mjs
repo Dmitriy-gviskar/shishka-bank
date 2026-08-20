@@ -46,12 +46,22 @@ export async function setupDb() {
       status text not null check (status in ('pending','accepted')),
       created_at timestamptz not null default now(),
       primary key (user_id, friend_id), check (user_id <> friend_id));
+    create table if not exists familiars (
+      user_id uuid not null references users(id) on delete cascade,
+      type_id uuid, grade int not null default 1, slot int not null default 1,
+      primary key (user_id, slot));
+    create table if not exists familiar_phrases (category text, phrase text);
+    create table if not exists child_guardians (
+      child_id uuid not null references users(id) on delete cascade,
+      guardian_id uuid not null references users(id) on delete cascade,
+      primary key (child_id, guardian_id));
   `]);
   // cards.sql — часть прод-схемы (карты, лор, рынок, аукцион): /api/state читает familiar_* из неё
   for (const f of ['db/functions.sql', 'db/migration_auth.sql', 'db/cards.sql',
                      'db/migration_referrals.sql', 'db/migration_referral_levels.sql',
-                     'db/migration_referral_l3.sql', 'db/migration_friendships.sql',
-                     'db/migration_reactions.sql', 'db/migration_cross_circle_friends.sql'])
+                     'db/migration_referral_l3.sql',                      'db/migration_friendships.sql',
+                     'db/migration_reactions.sql', 'db/migration_cross_circle_friends.sql',
+                     'db/migration_friend_cards.sql'])
     await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, f)]);
   // child_logins не входит в schema.sql — в проде её создаёт db/seed.sql (см. server-pg.mjs: авторизация ребёнка по коду из этой таблицы)
   await run('psql', ['-q', '-d', DB, '-c',

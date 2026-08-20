@@ -10,7 +10,7 @@
     filter:brightness(.48) saturate(1.15)}
   .cbg::after{content:"";position:absolute;inset:0;
     background:radial-gradient(120% 80% at 50% 12%,rgba(30,44,22,.12),rgba(8,12,6,.86))}
-  .cwrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:14px 12px 0;overflow:hidden}
+  .cwrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:14px 12px 0;overflow:hidden;min-height:0}
   /* коллекция: чипы в одном ряду с .chead — без лишнего padding-top от .has-topbar */
   .cwrap.has-topbar{padding-top:14px !important}
   .chead{display:flex;align-items:center;gap:8px;margin-bottom:10px;
@@ -66,7 +66,7 @@
   .tabs button{flex:1;background:rgba(255,250,240,.85);border:2px solid #d9c39a;border-radius:12px;
     padding:8px;font-weight:900;color:var(--brown);font-size:14px;cursor:pointer}
   .tabs button.on{background:#fff3d6;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
-  .scroll{flex:1;overflow-y:auto;padding-bottom:80px}
+  .scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px}
   /* заголовок категории — резная лесная плашка с разделителем */
   .cat{display:flex;align-items:center;gap:9px;font-weight:900;color:#ffe9b8;font-size:16px;
     margin:14px 2px 10px;text-shadow:0 2px 5px rgba(0,0,0,.7);letter-spacing:.01em}
@@ -359,7 +359,6 @@
     <button data-cat="rastenie">🌿 Растения</button>
     <button data-cat="nasekomoe">🐞 Насекомые</button>
   </div>
-  <div id="newShelf" style="display:none"></div>
   <div class="scroll" id="albumView"></div>
   <div class="scroll" id="marketView" style="display:none"></div>
 </div>

@@ -25,7 +25,7 @@ window.runBoard = function () {
     });
     if (!rows.length) {
       box.innerHTML = scope === 'friends'
-        ? '<div class="empty">Друзей пока нет — добавь по коду с поляны 🌲</div>'
+        ? '<div class="empty">Друзей пока нет — открой «Весь лес» и подай заявку 🌲</div>'
         : '<div class="empty">В лесу пока тихо.</div>';
       return;
     }
@@ -48,6 +48,8 @@ window.runBoard = function () {
           <img src="assets/${p.avatar || 'friend1.webp'}" alt="">
           <div class="nm">${esc(p.name)}${p.mine ? ' · ты' : (scope === 'all' && p.friend ? ' · друг' : '')}</div>
           <div class="sc">${labelOf(scoreOf(p))}</div>
+          ${p.mine || p.friend ? '' : p.pending ? '<div class="wait">ждём ответа</div>'
+            : `<button type="button" class="ask" data-id="${p.id}" data-name="${esc(p.name)}">В друзья</button>`}
         </div>`);
       });
       parts.push('</div>');
@@ -59,12 +61,28 @@ window.runBoard = function () {
         <img src="assets/${p.avatar || 'friend1.webp'}" alt="">
         <div class="nm">${esc(p.name)}${p.mine ? '<span class="you">ты</span>' : (scope === 'all' && p.friend ? '<span class="pal">друг</span>' : '')}</div>
         <div class="sc">${labelOf(scoreOf(p))}</div>
+        ${p.mine || p.friend ? '' : p.pending ? '<div class="wait">ждём</div>'
+          : `<button type="button" class="ask" data-id="${p.id}" data-name="${esc(p.name)}">В друзья</button>`}
       </div>`);
     });
     if (scope === 'friends' && rows.length === 1 && rows[0].mine) {
-      parts.push('<div class="empty" style="margin-top:6px">Добавь друга по коду — и сравнитесь.</div>');
+      parts.push('<div class="empty" style="margin-top:6px">Добавь друга с поляны — и сравнитесь.</div>');
     }
     box.innerHTML = parts.join('');
+    box.querySelectorAll('.ask').forEach((btn) => {
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        btn.disabled = true;
+        const r = await api('/api/friends/request', { to: btn.dataset.id });
+        if (r.error) { alert(r.error); btn.disabled = false; return; }
+        const row = data.rows.find((x) => x.id === btn.dataset.id);
+        if (row) {
+          row.pending = r.status === 'pending';
+          row.friend = r.status === 'accepted';
+        }
+        render();
+      };
+    });
   }
 
   document.getElementById('scopeTabs')?.querySelectorAll('button').forEach((b) => {
