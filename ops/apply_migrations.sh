@@ -11,7 +11,8 @@ for f in db/migration_rls_extended.sql db/migration_fk_indexes.sql db/migration_
          db/migration_referral_l3.sql          db/migration_album_trade_gifts.sql \
          db/migration_friendships.sql \
          db/migration_cross_circle_friends.sql \
-         db/migration_friend_cards.sql; do
+         db/migration_friend_cards.sql \
+         db/migration_forest_mail.sql; do
   echo "=== $f ==="
   psql "$PROD_URL" -v ON_ERROR_STOP=1 -f "$f"
   echo "OK"

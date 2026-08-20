@@ -837,18 +837,13 @@ end $$;
 -- Отправить сообщение (эмодзи/стикер/аудио). Свой круг или принятые друзья (в т.ч. по коду).
 create or replace function send_message(p_from uuid, p_to uuid, p_type text, p_content text, p_reply_to uuid default null)
 returns messages language plpgsql security definer set search_path = public as $$
-declare m messages; c_id uuid; to_circle uuid;
+declare m messages; c_id uuid;
 begin
-  select circle_id into c_id from users where id = p_from;
-  select circle_id into to_circle from users where id = p_to;
-  if c_id is distinct from to_circle then
-    if not exists (
-      select 1 from friendships
-       where user_id = p_from and friend_id = p_to and status = 'accepted'
-    ) then
-      raise exception 'recipient is not in your circle';
-    end if;
+  if p_from = p_to then raise exception 'self message'; end if;
+  if not exists (select 1 from users where id = p_to and role = 'child') then
+    raise exception 'recipient is not in your circle';
   end if;
+  select circle_id into c_id from users where id = p_from;
   if p_reply_to is not null then
     if not exists (
       select 1 from messages

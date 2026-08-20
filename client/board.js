@@ -13,6 +13,17 @@ window.runBoard = function () {
     if (sort === 'cards') return String(n);
     return String(n);
   };
+  const openMail = (id, name) => {
+    try { sessionStorage.setItem('mailOpenChat', JSON.stringify({ id, name })); } catch {}
+    location.href = 'mail.html';
+  };
+  const actsOf = (p) => {
+    if (p.mine) return '';
+    const write = `<button type="button" class="ask write" data-act="write" data-id="${p.id}" data-name="${esc(p.name)}">✉</button>`;
+    if (p.friend) return `<div class="acts">${write}</div>`;
+    if (p.pending) return `<div class="acts">${write}<div class="wait">ждём</div></div>`;
+    return `<div class="acts">${write}<button type="button" class="ask" data-act="ask" data-id="${p.id}" data-name="${esc(p.name)}">В друзья</button></div>`;
+  };
 
   function render() {
     const box = document.getElementById('boardList');
@@ -48,8 +59,7 @@ window.runBoard = function () {
           <img src="assets/${p.avatar || 'friend1.webp'}" alt="">
           <div class="nm">${esc(p.name)}${p.mine ? ' · ты' : (scope === 'all' && p.friend ? ' · друг' : '')}</div>
           <div class="sc">${labelOf(scoreOf(p))}</div>
-          ${p.mine || p.friend ? '' : p.pending ? '<div class="wait">ждём ответа</div>'
-            : `<button type="button" class="ask" data-id="${p.id}" data-name="${esc(p.name)}">В друзья</button>`}
+          ${actsOf(p)}
         </div>`);
       });
       parts.push('</div>');
@@ -61,15 +71,20 @@ window.runBoard = function () {
         <img src="assets/${p.avatar || 'friend1.webp'}" alt="">
         <div class="nm">${esc(p.name)}${p.mine ? '<span class="you">ты</span>' : (scope === 'all' && p.friend ? '<span class="pal">друг</span>' : '')}</div>
         <div class="sc">${labelOf(scoreOf(p))}</div>
-        ${p.mine || p.friend ? '' : p.pending ? '<div class="wait">ждём</div>'
-          : `<button type="button" class="ask" data-id="${p.id}" data-name="${esc(p.name)}">В друзья</button>`}
+        ${actsOf(p)}
       </div>`);
     });
     if (scope === 'friends' && rows.length === 1 && rows[0].mine) {
       parts.push('<div class="empty" style="margin-top:6px">Добавь друга с поляны — и сравнитесь.</div>');
     }
     box.innerHTML = parts.join('');
-    box.querySelectorAll('.ask').forEach((btn) => {
+    box.querySelectorAll('[data-act="write"]').forEach((btn) => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        openMail(btn.dataset.id, btn.dataset.name || '');
+      };
+    });
+    box.querySelectorAll('[data-act="ask"]').forEach((btn) => {
       btn.onclick = async (e) => {
         e.stopPropagation();
         btn.disabled = true;

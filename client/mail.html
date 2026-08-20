@@ -15,7 +15,7 @@
     box-shadow:0 0 0 2px #c9a86a;transition:all .12s}
   .chatRow:active{transform:translateY(1px)}
   .chatRow .ava{position:relative;flex:none}
-  .chatRow img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;display:block}
+  .chatRow img{width:46px;height:46px;border-radius:12px;object-fit:contain;background:#efe4cc;border:2px solid #e0d3b8;display:block}
   .chatRow .ava .dot{position:absolute;bottom:1px;right:1px;width:13px;height:13px;
     background:#6db83a;border:2px solid #fffef9;border-radius:50%}
   .chatRow .info{flex:1;min-width:0}
@@ -142,10 +142,10 @@
   .fRow{display:flex;align-items:center;gap:10px;padding:10px 12px;
     background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:2.5px solid #fff;border-radius:14px;
     box-shadow:0 0 0 2px #c9a86a}
-  .fRow img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;flex:none}
+  .fRow img{width:42px;height:42px;border-radius:12px;object-fit:contain;background:#efe4cc;border:2px solid #e0d3b8;flex:none}
   .fRow .nm{flex:1;min-width:0;font-weight:900;color:#4a3520;font-size:15px;
     font-family:"Fredoka","Nunito",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .fRow .acts{display:flex;gap:5px;flex:none}
+  .fRow .acts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px;flex:none;max-width:58%}
   .fRow .acts button{border:2px solid #fff;border-radius:12px;padding:6px 9px;cursor:pointer;
     font-weight:900;font-size:12px;font-family:"Fredoka","Nunito",sans-serif;
     background:linear-gradient(180deg,#fff8eb,#f0d7a4);color:#5a3a18;
