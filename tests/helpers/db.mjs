@@ -60,8 +60,8 @@ export async function setupDb() {
   for (const f of ['db/functions.sql', 'db/migration_auth.sql', 'db/cards.sql',
                      'db/migration_referrals.sql', 'db/migration_referral_levels.sql',
                      'db/migration_referral_l3.sql',                      'db/migration_friendships.sql',
-                     'db/migration_reactions.sql', 'db/migration_cross_circle_friends.sql',
-                     'db/migration_friend_cards.sql'])
+                     'db/migration_reactions.sql',                      'db/migration_cross_circle_friends.sql',
+                     'db/migration_friend_cards.sql', 'db/migration_forest_mail.sql'])
     await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, f)]);
   // child_logins не входит в schema.sql — в проде её создаёт db/seed.sql (см. server-pg.mjs: авторизация ребёнка по коду из этой таблицы)
   await run('psql', ['-q', '-d', DB, '-c',

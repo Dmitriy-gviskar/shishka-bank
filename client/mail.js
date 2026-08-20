@@ -16,7 +16,7 @@ async function loadChatList() {
   const c = document.getElementById('chatList'); c.innerHTML = '';
   if (list.error) return;
   if (!list.length) {
-    c.innerHTML = '<div class="noChats">Пока нет друзей для переписки.<br>Открой вкладку «Друзья» и добавь по коду с поляны 🌲</div>';
+    c.innerHTML = '<div class="noChats">Пока тихо.<br>Открой «Друзья» и напиши обитателю леса — заявка уйдёт сама 🌲</div>';
     return;
   }
   for (const ch of list) {
@@ -59,7 +59,7 @@ async function loadFriendsHub(opts) {
   if (silent && friendCodeBusy()) return;
   if (hub.error) { pane.innerHTML = `<div class="noChats">${esc(hub.error)}</div>`; return; }
   const parts = [];
-  parts.push(`<div class="fHint">Подай заявку обитателю леса — он примет или нет. Код с поляны тоже подходит.</div>`);
+  parts.push(`<div class="fHint">Напиши обитателю — заявка уйдёт сама. Карты и шишки — после «Принять». Код с поляны тоже подходит.</div>`);
   if (hub.my_code) {
     parts.push(`<div class="fMyCode">Твой код: <b id="myFriendCode">${esc(hub.my_code)}</b><button type="button" id="btnCopyMyCode">Скопировать</button></div>`);
   }
@@ -75,6 +75,7 @@ async function loadFriendsHub(opts) {
     parts.push(`<div class="fSec">Заявки вам · ${hub.pending_in.length}</div>`);
     for (const p of hub.pending_in) {
       parts.push(row(p,
+        `<button type="button" class="go" data-act="chat" data-id="${p.id}" data-name="${esc(p.name)}">Написать</button>` +
         `<button type="button" class="go" data-act="accept" data-id="${p.id}">Принять</button>` +
         `<button type="button" data-act="decline" data-id="${p.id}">Нет</button>`));
     }
@@ -92,19 +93,25 @@ async function loadFriendsHub(opts) {
   if (hub.pending_out?.length) {
     parts.push(`<div class="fSec">Ждём ответа · ${hub.pending_out.length}</div>`);
     for (const p of hub.pending_out) {
-      parts.push(row(p, `<button type="button" disabled>⏳</button>`));
+      parts.push(row(p,
+        `<button type="button" class="go" data-act="chat" data-id="${p.id}" data-name="${esc(p.name)}">Написать</button>` +
+        `<button type="button" disabled>⏳</button>`));
     }
   }
   if (hub.circle?.length) {
     parts.push(`<div class="fSec">В кругу, ещё не друзья · ${hub.circle.length}</div>`);
     for (const p of hub.circle) {
-      parts.push(row(p, `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
+      parts.push(row(p,
+        `<button type="button" class="go" data-act="chat" data-id="${p.id}" data-name="${esc(p.name)}">Написать</button>` +
+        `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
     }
   }
   if (hub.forest?.length) {
     parts.push(`<div class="fSec">Обитатели леса · ${hub.forest.length}</div>`);
     for (const p of hub.forest) {
-      parts.push(row(p, `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
+      parts.push(row(p,
+        `<button type="button" class="go" data-act="chat" data-id="${p.id}" data-name="${esc(p.name)}">Написать</button>` +
+        `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
     }
   }
   pane.innerHTML = parts.join('');
@@ -216,7 +223,7 @@ async function loadChat() {
   // пока ждали сеть — диалог могли закрыть / сменить
   if (chatFriend !== friend) return;
   if (msgs.error) { c.innerHTML = '<div class="emptyChat">Ошибка загрузки</div>'; return; }
-  if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Нет сообщений. Напиши первым! 🌱</div>'; }
+  if (!msgs.length) { c.innerHTML = '<div class="emptyChat">Напиши первым — заявка в друзья уйдёт сама. Карты и шишки откроются после «Принять». 🌱</div>'; }
   for (const m of msgs) appendMsg(c, m);
   lastMsgCount = Array.isArray(msgs) ? msgs.length : 0;
   lastMsgSig = msgs.length ? `${msgs.length}:${msgs[msgs.length - 1].id}` : '0';

@@ -3,12 +3,17 @@
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Поляна леса</title><link rel="stylesheet" href="style.css">
 <style>
+  .wrap{overflow:hidden;min-height:0}
   .hint{font-size:12px;font-weight:700;color:#8a6a48;line-height:1.35;text-align:center;
     padding:0 8px 8px;font-family:"Fredoka","Nunito",sans-serif}
-  .bRow .ask,.pod .ask{margin-top:6px;border:2px solid #fff;border-radius:10px;padding:4px 8px;
+  .acts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:6px}
+  .bRow .acts{flex:none;margin-top:0}
+  .bRow .ask,.pod .ask{margin-top:0;border:2px solid #fff;border-radius:10px;padding:3px 7px;
     background:linear-gradient(180deg,#9ad65f,#6fad45);color:#fff;font-weight:800;font-size:11px;
     font-family:"Fredoka","Nunito",sans-serif;cursor:pointer;box-shadow:0 2px 0 #3f6b2e}
-  .bRow .wait,.pod .wait{margin-top:6px;font-weight:800;font-size:11px;color:#8a6a48}
+  .bRow .ask.write,.pod .ask.write{background:linear-gradient(180deg,#ffe7a0,#f0c14a);
+    color:#6b4f3a;box-shadow:0 2px 0 #b8862a}
+  .bRow .wait,.pod .wait{margin-top:0;font-weight:800;font-size:11px;color:#8a6a48;align-self:center}
   .sortTabs{flex:none;display:flex;gap:6px;margin:0 0 10px;padding:4px;
     background:rgba(255,248,235,.75);border:2.5px solid #fff;border-radius:16px;
     box-shadow:0 0 0 2px #c9a86a}
@@ -24,7 +29,7 @@
   .pod.p1{padding-top:14px;box-shadow:0 0 0 2px #e4b84a,0 4px 0 rgba(180,130,30,.2);
     background:linear-gradient(180deg,#fff4c8,#f3e08a)}
   .pod.mine{box-shadow:0 0 0 2px #6fad45}
-  .pod img{width:46px;height:46px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #fff}
+  .pod img{width:46px;height:46px;border-radius:12px;object-fit:contain;background:#efe4cc;border:2px solid #fff}
   .pod.p1 img{width:56px;height:56px}
   .pod .place{font-size:18px;line-height:1;margin-bottom:2px}
   .pod .nm{font-weight:900;color:#4a3520;font-size:12px;font-family:"Fredoka","Nunito",sans-serif;
@@ -36,7 +41,7 @@
   .bRow.mine{box-shadow:0 0 0 2px #6fad45}
   .bRow .rk{width:28px;text-align:center;font-weight:900;color:#8a6a48;font-size:16px;
     font-family:"Fredoka","Nunito",sans-serif;flex:none}
-  .bRow img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#d5cfbe;border:2px solid #e0d3b8;flex:none}
+  .bRow img{width:42px;height:42px;border-radius:12px;object-fit:contain;background:#efe4cc;border:2px solid #e0d3b8;flex:none}
   .bRow .nm{flex:1;min-width:0;font-weight:900;color:#4a3520;font-size:15px;
     font-family:"Fredoka","Nunito",sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .bRow .you,.bRow .pal{font-size:11px;font-weight:800;margin-left:4px}
@@ -48,7 +53,7 @@
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Поляна леса</div>
-  <div class="hint">Весь лес видит, кто как растёт. Нажми «В друзья» — пусть примет заявку.</div>
+  <div class="hint">Напиши обитателю — заявка уйдёт сама. Карты и шишки откроются, когда примет.</div>
   <div class="sortTabs" id="scopeTabs">
     <button type="button" class="on" data-scope="all">Весь лес</button>
     <button type="button" data-scope="friends">Друзья</button>

@@ -46,6 +46,35 @@ async function areFriends(a, b) {
 async function assertFriend(a, b, msg = 'сначала добавь в друзья') {
   if (!(await areFriends(a, b))) throw { code: 403, msg };
 }
+// Письмо обитателю: заявка уходит сама, дружба не принимается. Карты/шишки по-прежнему после «Принять».
+async function ensureForestTalk(from, to) {
+  if (!to || from === to) throw { code: 400, msg: 'выбери, кому отправить' };
+  const peer = await one("select id, name from users where id=$1 and role='child'", [to]);
+  if (!peer) throw { code: 400, msg: 'друг не найден' };
+  const existing = await one(
+    `select status from friendships where user_id=$1 and friend_id=$2`, [from, to]);
+  if (existing?.status === 'accepted') return { peer, friends: true };
+  const reverse = await one(
+    `select status from friendships where user_id=$1 and friend_id=$2`, [to, from]);
+  if (reverse?.status === 'accepted') {
+    await linkFriends(from, to);
+    return { peer, friends: true };
+  }
+  if (!existing) {
+    const todayN = await one(
+      `select count(*)::int as n from friendships
+        where user_id=$1 and status='pending'
+          and created_at >= date_trunc('day', now() at time zone 'Europe/Moscow') at time zone 'Europe/Moscow'`,
+      [from]);
+    if ((todayN?.n || 0) < 12) {
+      await q(
+        `insert into friendships(user_id, friend_id, status) values ($1,$2,'pending')
+         on conflict (user_id, friend_id) do nothing`,
+        [from, to]);
+    }
+  }
+  return { peer, friends: false };
+}
 async function linkFriends(a, b) {
   if (!a || !b || a === b) return;
   await q(
@@ -1244,9 +1273,9 @@ const api = {
   'POST /api/chat': async (b, ctx) => {
     const withId = b.with;
     if (!withId) throw { code: 400, msg: 'нужен ?with=ID' };
+    if (withId === ctx.child) throw { code: 400, msg: 'это ты сам' };
     const peer = await one("select 1 from users where id=$1 and role='child'", [withId]);
     if (!peer) throw { code: 400, msg: 'друг не найден' };
-    await assertFriend(ctx.child, withId);
     await q(`update messages set read_at=now() where to_user=$1 and from_user=$2 and read_at is null`, [ctx.child, withId]);
     const afterId = b.after_id || null;
     const params = [ctx.child, withId];
@@ -1266,7 +1295,7 @@ const api = {
         order by m.created_at asc`, params);
     return msgs;
   },
-  // Список чатов: только принятые друзья
+  // Список чатов: друзья, заявки и те, с кем уже есть письма
   'POST /api/chat/list': async (b, ctx) => {
     const rows = await q(`select u.id, u.name, u.tree_type, u.last_seen > now() - interval '5 minutes' as online,
         (select content from messages m2 where m2.deliver_at<=now()
@@ -1277,9 +1306,16 @@ const api = {
          order by m2.created_at desc limit 1) as last_at,
         (select count(*) from messages m2 where m2.to_user=$1
          and m2.from_user=u.id and m2.read_at is null and m2.deliver_at<=now()) as unread
-      from friendships f
-      join users u on u.id=f.friend_id
-      where f.user_id=$1 and f.status='accepted' and u.role='child'
+      from users u
+      where u.role='child' and u.id<>$1
+        and (
+          exists (select 1 from friendships f where f.user_id=$1 and f.friend_id=u.id)
+          or exists (select 1 from friendships f where f.user_id=u.id and f.friend_id=$1)
+          or exists (
+            select 1 from messages m
+             where (m.from_user=$1 and m.to_user=u.id) or (m.from_user=u.id and m.to_user=$1)
+          )
+        )
       order by last_at desc nulls last, u.name`, [ctx.child]);
     return rows.map((r, i) => ({ ...r, avatar: treeAvatar(r.tree_type, i) }));
   },
@@ -1291,9 +1327,21 @@ const api = {
     return { ok: true };
   },
   'POST /api/message': async (b, ctx) => {
-    const peer = await one("select 1 from users where id=$1 and role='child' and id<>$2", [b.to, ctx.child]);
-    if (!peer) throw { code: 400, msg: 'выбери, кому отправить' };
-    await assertFriend(ctx.child, b.to);
+    const { friends } = await ensureForestTalk(ctx.child, b.to);
+    if (!friends) {
+      const todayN = await one(
+        `select count(*)::int as n from messages
+          where from_user=$1
+            and created_at >= date_trunc('day', now() at time zone 'Europe/Moscow') at time zone 'Europe/Moscow'
+            and not exists (
+              select 1 from friendships f
+               where f.user_id=$1 and f.friend_id=messages.to_user and f.status='accepted'
+            )`,
+        [ctx.child]);
+      if ((todayN?.n || 0) >= 30) {
+        throw { code: 429, msg: 'сегодня уже много писем незнакомцам — продолжим завтра' };
+      }
+    }
     const type = b.type === 'sticker' ? 'sticker' : b.type === 'audio' ? 'audio' : 'emoji';
     // аудио — путь к файлу, не режем до 80 (иначе URL обрежется); эмодзи/стикер — коротко
     let content;

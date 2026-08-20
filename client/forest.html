@@ -8,7 +8,8 @@
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
   .wrap{overflow-y:auto;min-height:0}
-  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px}
+  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px;
+    max-width:calc(100% - 8px);text-align:center;line-height:1.15}
   .spirit-tip{position:absolute;top:14px;left:12px;z-index:6;width:42px;height:42px;padding:0;
     display:flex;align-items:center;justify-content:center;cursor:pointer;
     background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
@@ -34,7 +35,7 @@
   .tile small{font-weight:700;color:#a1876a;font-size:11px;line-height:1.2}
   .doors .tile{padding:10px 6px 8px}
   .doors .tile img{width:60px;height:60px}
-  .more-forest{margin:4px 2px 8px;flex:1 1 auto;min-height:0;overflow-y:auto}
+  .more-forest{margin:4px 2px 8px;flex:none}
   .more-forest::-webkit-scrollbar{width:0}
   .more-forest > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
     background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:16px;
@@ -76,7 +77,7 @@
   <div class="doors">
     <a class="tile" href="collection.html"><img src="assets/chest_closed.webp" alt=""><span>Коллекция</span><small>альбом существ</small></a>
     <a class="tile" href="games.html"><img src="assets/spirit_scroll.webp" alt=""><span>Игры</span><small>с питомцем</small></a>
-    <a class="tile" href="mail.html#chats"><img src="assets/mail.webp" alt=""><span>Почта</span><small>чаты с друзьями</small></a>
+    <a class="tile" href="mail.html#chats"><img src="assets/mail.webp" alt=""><span>Почта</span><small>написать обитателю</small></a>
     <a class="tile" href="profile.html#grove"><img src="assets/tree5.webp" alt=""><span>Моё дерево</span><small>профиль и код</small></a>
   </div>
   <div class="doors">
