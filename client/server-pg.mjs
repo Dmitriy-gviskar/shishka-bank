@@ -1389,8 +1389,53 @@ const api = {
   // ── Общий котёл ──
   'GET /api/pot': (b, ctx) => q(`select p.id, p.title, p.goal, p.collected, p.status, p.created_by, g.name as guild, coalesce(u.name,'семья') as author
     from pots p left join guilds g on g.id=p.guild_id left join users u on u.id=p.created_by
-    where p.circle_id=$1 and p.status in ('open','reached') order by p.created_at desc`, [ctx.circle])
+    where p.status in ('open','reached')
+      and (p.circle_id=$1 or exists (
+        select 1 from friendships f
+         where f.user_id=$2 and f.friend_id=p.created_by and f.status='accepted'))
+    order by p.created_at desc`, [ctx.circle, ctx.child])
     .then((rows) => rows.map((r) => ({ ...r, mine: r.created_by === ctx.child, created_by: undefined }))),
+  'GET /api/grove-life': async (b, ctx) => {
+    const [pots, proposals, guilds, shops, pending, pals] = await Promise.all([
+      q(`select p.id, p.title, p.collected, p.goal, coalesce(u.name,'семья') as author
+           from pots p left join users u on u.id=p.created_by
+          where p.status in ('open','reached')
+            and (p.circle_id=$2 or exists (
+              select 1 from friendships f
+               where f.user_id=$1 and f.friend_id=p.created_by and f.status='accepted'))
+          order by p.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      q(`select p.id, p.title
+           from proposals p
+          where p.type<>'insurance_claim' and p.status='voting'
+            and (p.circle_id=$2 or exists (
+              select 1 from friendships f join users u on u.id=f.friend_id
+               where f.user_id=$1 and f.status='accepted' and u.circle_id=p.circle_id))
+          order by p.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      q(`select g.id, g.name,
+                (select count(*)::int from guild_members gm where gm.guild_id=g.id) as n
+           from guilds g
+          where g.status in ('open','sleeping')
+            and (g.circle_id=$2 or exists (
+              select 1 from guild_members gm
+              join friendships f on f.friend_id=gm.child_id and f.user_id=$1 and f.status='accepted'
+              where gm.guild_id=g.id))
+          order by g.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      q(`select s.id, s.name,
+                (select count(*)::int from shop_lots l where l.shop_id=s.id and l.is_active) as n
+           from shops s
+          where s.is_active and (
+            s.circle_id=$2 or exists (
+              select 1 from friendships f
+               where f.user_id=$1 and f.friend_id=s.owner_id and f.status='accepted'))
+          order by s.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      one(`select count(*)::int as n from friendships where friend_id=$1 and status='pending'`, [ctx.child]),
+      one(`select count(*)::int as n from friendships where user_id=$1 and status='accepted'`, [ctx.child]),
+    ]);
+    return {
+      pots, proposals, guilds, shops,
+      mail: { pending_in: pending?.n || 0, friends: pals?.n || 0 },
+    };
+  },
   'POST /api/pot/create': async (b, ctx) => {
     const title = String(b.title || '').trim().slice(0, 40);
     const goal = parseInt(b.goal, 10);
@@ -1402,7 +1447,14 @@ const api = {
     return { ok: true, id: p.id };
   },
   'POST /api/pot/contribute': async (b, ctx) => {
-    await assertOwn('select 1 from pots where id=$1 and circle_id=$2', [b.id, ctx.circle], 'нет котла');  // только котёл своей семьи
+    const potRow = await one('select id, circle_id, created_by from pots where id=$1', [b.id]);
+    if (!potRow) throw { code: 400, msg: 'нет котла' };
+    if (potRow.circle_id !== ctx.circle) {
+      const pal = await one(
+        `select 1 from friendships where user_id=$1 and friend_id=$2 and status='accepted'`,
+        [ctx.child, potRow.created_by]);
+      if (!pal) throw { code: 400, msg: 'нет котла' };
+    }
     let pot;
     try { pot = (await rpc('contribute_pot', [ctx.child, b.id, parseInt(b.amount, 10)]))[0]; }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'нет котла' }; }
@@ -1669,11 +1721,25 @@ const api = {
   },
 
   // ── Совет ──
-  'GET /api/proposals': (b, ctx) => q(`select p.id, p.type as kind, p.title, (case when p.status='passed' then 'accepted' else p.status end) as status,
-      (select count(*) from votes where proposal_id=p.id and choice='yes') as yes,
-      (select count(*) from votes where proposal_id=p.id and choice='no') as no,
-      exists(select 1 from votes where proposal_id=p.id and voter_id=$2) as voted
-      from proposals p where p.circle_id=$1 and p.type<>'insurance_claim' order by p.created_at desc`, [ctx.circle, ctx.child]),
+  'GET /api/proposals': async (b, ctx) => {
+    const mine = await q(`select p.id, p.type as kind, p.title, (case when p.status='passed' then 'accepted' else p.status end) as status,
+        (select count(*) from votes where proposal_id=p.id and choice='yes') as yes,
+        (select count(*) from votes where proposal_id=p.id and choice='no') as no,
+        exists(select 1 from votes where proposal_id=p.id and voter_id=$2) as voted,
+        false as guest
+        from proposals p where p.circle_id=$1 and p.type<>'insurance_claim' order by p.created_at desc`, [ctx.circle, ctx.child]);
+    const pals = await q(`select p.id, p.type as kind, p.title, (case when p.status='passed' then 'accepted' else p.status end) as status,
+        (select count(*) from votes where proposal_id=p.id and choice='yes') as yes,
+        (select count(*) from votes where proposal_id=p.id and choice='no') as no,
+        true as voted, true as guest
+        from proposals p
+        join users u on u.id = p.created_by
+       where p.circle_id is distinct from $2 and p.type<>'insurance_claim' and p.status='voting'
+         and exists (select 1 from friendships f
+                      where f.user_id=$1 and f.friend_id=u.id and f.status='accepted')
+       order by p.created_at desc limit 8`, [ctx.child, ctx.circle]);
+    return mine.concat(pals);
+  },
   'POST /api/proposals': async (b, ctx) => {
     const title = String(b.title || '').trim().slice(0, 80);
     if (title.length < 4) throw { code: 400, msg: 'тема слишком короткая' };
@@ -1695,7 +1761,13 @@ const api = {
 
   // ── Гильдия ──
   'GET /api/guilds': async (b, ctx) => {
-    const gs = await q("select g.id, g.name, g.status from guilds g where g.circle_id=$1 and g.status in ('open','sleeping') order by g.created_at", [ctx.circle]);
+    const gs = await q(`select g.id, g.name, g.status from guilds g
+      where g.status in ('open','sleeping')
+        and (g.circle_id=$1 or exists (
+          select 1 from guild_members gm
+          join friendships f on f.friend_id=gm.child_id and f.user_id=$2 and f.status='accepted'
+          where gm.guild_id=g.id))
+      order by g.created_at`, [ctx.circle, ctx.child]);
     const kids = await q("select id, name from users where circle_id=$1 and role='child' order by name", [ctx.circle]);
     const invites = await q(`select gi.guild_id, gi.child_id, u.name
       from guild_invites gi join guilds g on g.id=gi.guild_id
@@ -1732,7 +1804,15 @@ const api = {
     return { ok: true, id: g.id, name };
   },
   'POST /api/guild/join': async (b, ctx) => {
-    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    const g = await one("select id, circle_id, status from guilds where id=$1 and status='open'", [b.id]);
+    if (!g) throw { code: 400, msg: 'нет такой гильдии' };
+    if (g.circle_id !== ctx.circle) {
+      const pal = await one(
+        `select 1 from guild_members gm
+          join friendships f on f.friend_id=gm.child_id and f.user_id=$1 and f.status='accepted'
+         where gm.guild_id=$2`, [ctx.child, b.id]);
+      if (!pal) throw { code: 400, msg: 'нет такой гильдии' };
+    }
     await rpc('join_guild', [b.id, ctx.child]);
     await q('delete from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]).catch(() => {});
     await rpc('bump_guild_activity', [b.id]).catch(() => {});

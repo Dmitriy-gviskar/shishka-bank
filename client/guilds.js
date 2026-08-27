@@ -11,7 +11,7 @@ window.runGuilds = function () {
     const gs = await api('/api/guilds');
     const c = document.getElementById('glist'); c.innerHTML = '';
     if (gs.error) return note(gs.error);
-    if (!gs.length) c.innerHTML = '<div style="text-align:center;padding:10px"><span class="on-art" style="color:#8a7358;font-weight:700">Гильдий пока нет — основай первую!</span></div>';
+    if (!gs.length) c.innerHTML = '<div style="text-align:center;padding:10px"><span class="on-art" style="color:#8a7358;font-weight:700">Гильдий пока нет — основай первую или найди друга со стаей.</span></div>';
     for (const g of gs) {
       const el = document.createElement('div'); el.className = 'card gcard';
       const statusTag = g.status === 'sleeping' ? '<span style="color:#d4953a;font-weight:800;font-size:12px">💤 Спит</span>' : '';

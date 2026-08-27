@@ -987,7 +987,7 @@ if (page === 'pot.html') {
     const list = await api('/api/pot');
     const c = document.getElementById('potList'); c.innerHTML = '';
     if (list.error) return note(list.error);
-    if (!list.length) c.innerHTML = '<div style="text-align:center;padding:8px"><span class="on-art" style="color:#8a7358;font-weight:700">Котлов пока нет — поставь первый!</span></div>';
+    if (!list.length) c.innerHTML = '<div style="text-align:center;padding:8px"><span class="on-art" style="color:#8a7358;font-weight:700">Котлов пока нет — поставь первый или найди друга, у кого уже кипит.</span></div>';
     for (const p of list) {
       const pct = Math.min(100, Math.round(p.collected / p.goal * 100));
       const full = p.collected >= p.goal;
@@ -1182,20 +1182,31 @@ function voteOutcome(status) {
 function renderProps(list) { const c = document.getElementById('props'); c.innerHTML = '';
   for (const p of list) { const el = document.createElement('div'); el.className = 'card prop';
     const resolved = p.status && p.status !== 'voting';
-    el.innerHTML = `<div class="t">${esc(p.title)}</div><div class="row"><span class="tally">За ${p.yes} · Против ${p.no}${!resolved && p.voted ? ' · ты проголосовал' : ''}</span>${resolved ? voteOutcome(p.status) : (p.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}</div>`;
-    if (!resolved && !p.voted) {
+    const guest = !!p.guest;
+    const acts = guest
+      ? '<span class="tally">совет друга · смотри, не голосуешь</span>'
+      : `<span class="tally">За ${p.yes} · Против ${p.no}${!resolved && p.voted ? ' · ты проголосовал' : ''}</span>${resolved ? voteOutcome(p.status) : (p.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}`;
+    el.innerHTML = `<div class="t">${esc(p.title)}</div><div class="row">${acts}</div>`;
+    if (!guest && !resolved && !p.voted) {
       el.querySelector('.yes').onclick = async () => { await api('/api/vote', { id: p.id, choice: 'yes' }); api('/api/proposals').then(renderProps); };
       el.querySelector('.no').onclick = async () => { await api('/api/vote', { id: p.id, choice: 'no' }); api('/api/proposals').then(renderProps); };
     }
     c.appendChild(el); } }
 if (page === 'council.html') {
+  const STARTERS = ['Устроить лесной пикник', 'День без гаджета', 'Общий поход за шишками'];
   const paintProps = (list) => {
     renderProps(Array.isArray(list) ? list : []);
-    if (!Array.isArray(list) || !list.length) {
-      const c = document.getElementById('props');
-      if (c && !c.children.length) {
-        c.innerHTML = '<div class="card prop"><div class="t" style="text-align:center;color:#8a7358;font-size:14px">Пока тишина — предложи тему выше</div></div>';
-      }
+    const c = document.getElementById('props');
+    if (c && (!Array.isArray(list) || !list.length)) {
+      const chips = STARTERS.map((t) => `<button type="button" class="vbtn yes starter" data-t="${esc(t)}" style="margin:4px">${esc(t)}</button>`).join('');
+      c.innerHTML = `<div class="card prop"><div class="t" style="text-align:center">Пока тишина — выбери тему или напиши свою</div>
+        <div class="row" style="flex-wrap:wrap;justify-content:center;margin-top:10px">${chips}</div></div>`;
+      c.querySelectorAll('.starter').forEach((b) => {
+        b.onclick = async () => {
+          const r = await api('/api/proposals', { title: b.dataset.t });
+          if (!r.error) api('/api/proposals').then(paintProps);
+        };
+      });
     }
   };
   api('/api/proposals').then(paintProps);
@@ -1341,6 +1352,45 @@ if (page === 'forest.html') {
       tipPop.classList.add('on');
       tipI += 1;
     };
+  }
+  const lifeBox = document.getElementById('groveLife');
+  if (lifeBox) {
+    const card = (href, title, sub) =>
+      `<a class="glife" href="${href}"><div class="gh">${title}</div><div class="gs">${sub}</div></a>`;
+    api('/api/grove-life').then((d) => {
+      if (!d || d.error) {
+        lifeBox.hidden = false;
+        lifeBox.innerHTML = [
+          card('pot.html', 'Котлы', 'Поставь первый или найди друга'),
+          card('council.html', 'Совет', 'Предложи тему семье'),
+          card('guilds.html', 'Гильдии', 'Оснуй стаю или вступи'),
+          card('market.html', 'Лавки', 'Открой лавку — друзья увидят'),
+          card('mail.html#friends', 'Почта', 'Найди обитателя по имени'),
+        ].join('');
+        return;
+      }
+      const pot = (d.pots && d.pots[0])
+        ? `${d.pots[0].title} · ${d.pots[0].collected}/${d.pots[0].goal}`
+        : 'Поставь первый или найди друга';
+      const prop = (d.proposals && d.proposals[0]) ? d.proposals[0].title : 'Предложи тему семье';
+      const gild = (d.guilds && d.guilds[0])
+        ? `${d.guilds[0].name} · ${d.guilds[0].n}`
+        : 'Оснуй стаю или вступи к другу';
+      const shop = (d.shops && d.shops[0])
+        ? `${d.shops[0].name} · товаров ${d.shops[0].n}`
+        : 'Открой лавку — друзья увидят';
+      const mail = d.mail && d.mail.pending_in
+        ? `Заявки в друзья: ${d.mail.pending_in}`
+        : (d.mail && d.mail.friends ? `Друзей: ${d.mail.friends}` : 'Найди обитателя по имени');
+      lifeBox.hidden = false;
+      lifeBox.innerHTML = [
+        card('pot.html', 'Котлы', pot),
+        card('council.html', 'Совет', prop),
+        card('guilds.html', 'Гильдии', gild),
+        card('market.html', 'Лавки', shop),
+        card('mail.html#friends', 'Почта', mail),
+      ].join('');
+    });
   }
   const gatherBar = document.getElementById('gatherBar');
   const gatherBtn = document.getElementById('gatherBtn');

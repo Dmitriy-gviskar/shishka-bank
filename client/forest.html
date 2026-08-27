@@ -54,6 +54,12 @@
   .fam .ft,.fam .fp{font-weight:700;color:#a1876a;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fam .fp{color:#6b4f3a;font-style:italic}
   .fam-empty{text-align:center;font-weight:700;color:#a1876a;font-size:12px;padding:4px 0 6px}
+  .grove-life{display:grid;grid-template-columns:1fr;gap:8px;margin:0 0 10px}
+  .glife{display:block;text-decoration:none;padding:10px 12px;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 3px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .glife .gh{font-weight:900;color:var(--ink);font-size:14px}
+  .glife .gs{font-weight:700;color:#8a5a20;font-size:12px;margin-top:2px;line-height:1.3}
   .gather-bar{display:none;margin:0 0 8px;padding:9px 12px;text-align:center;
     background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:16px;
     box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
@@ -81,6 +87,7 @@
     .fam,.gather-bar{max-width:none}
     .grove-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
     .grove-top:not(:has(#groveChar:not([hidden]))){grid-template-columns:1fr}
+    .grove-life{grid-template-columns:repeat(2,1fr);gap:10px}
   }
   @media (hover:hover) and (min-width:720px){
     .tile:hover{transform:translateY(-3px);box-shadow:0 0 0 3px #c9a86a,0 8px 0 rgba(107,79,58,.18)}
@@ -101,6 +108,7 @@
   </div>
   <div id="famList"></div>
   </div>
+  <div class="grove-life" id="groveLife" hidden></div>
   <div class="gather-bar" id="gatherBar">
     <div class="gt">Сборщики карт</div>
     <div class="gs" id="gatherSub"></div>
