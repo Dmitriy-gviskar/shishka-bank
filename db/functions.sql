@@ -748,7 +748,7 @@ begin
   return o;
 end $$;
 
--- Покупатель подтверждает получение: шишки уходят продавцу (сделка завершена).
+-- Продавец отметил передачу: товар отдан, ждём «Получил» от покупателя.
 create or replace function hand_order(p_order uuid, p_seller uuid)
 returns orders language plpgsql security definer set search_path = public as $$
 declare o orders;

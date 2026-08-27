@@ -1153,15 +1153,30 @@ const api = {
         join shop_lots l on l.id = o.lot_id
         join users buyer on buyer.id = o.buyer_id
         join users seller on seller.id = o.seller_id
-       where o.status = 'reserved' and (o.buyer_id = $1 or o.seller_id = $1)
+       where o.status in ('reserved','handed') and (o.buyer_id = $1 or o.seller_id = $1)
        order by o.created_at desc`, [ctx.child]),
+  'POST /api/order/hand': async (b, ctx) => {
+    const id = b.id || b.orderId;
+    if (!id) throw { code: 400, msg: 'нет заказа' };
+    const o = await one(
+      `select o.id, o.buyer_id, l.title from orders o join shop_lots l on l.id=o.lot_id
+        where o.id=$1 and o.seller_id=$2 and o.status='reserved'`, [id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'заказ уже закрыт или не твой' };
+    try { await rpc('hand_order', [id, ctx.child]); }
+    catch (e) {
+      console.error('hand_order', e.message || e);
+      throw { code: 400, msg: 'не удалось отметить передачу' };
+    }
+    sendPush(o.buyer_id, '📦 Товар отдали', `«${o.title}» — если он у тебя, жми «Получил»`).catch(() => {});
+    return { ok: true, handed: true };
+  },
   'POST /api/order/confirm': async (b, ctx) => {
     const id = b.id || b.orderId;
     if (!id) throw { code: 400, msg: 'нет заказа' };
     const o = await one(
       `select o.id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
-        where o.id=$1 and o.buyer_id=$2 and o.status='reserved'`, [id, ctx.child]);
-    if (!o) throw { code: 404, msg: 'заказ уже закрыт или не твой' };
+        where o.id=$1 and o.buyer_id=$2 and o.status='handed'`, [id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'сначала продавец должен отдать товар' };
     try { await rpc('confirm_order', [id]); }
     catch (e) {
       console.error('confirm_order', e.message || e);
@@ -1175,9 +1190,11 @@ const api = {
     const id = b.id || b.orderId;
     if (!id) throw { code: 400, msg: 'нет заказа' };
     const o = await one(
-      `select o.id, o.buyer_id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
-        where o.id=$1 and o.status='reserved' and (o.buyer_id=$2 or o.seller_id=$2)`, [id, ctx.child]);
+      `select o.id, o.buyer_id, o.seller_id, o.status, l.title from orders o join shop_lots l on l.id=o.lot_id
+        where o.id=$1 and o.status in ('reserved','handed') and (o.buyer_id=$2 or o.seller_id=$2)`, [id, ctx.child]);
     if (!o) throw { code: 404, msg: 'заказ уже закрыт' };
+    if (o.status === 'handed' && o.buyer_id !== ctx.child)
+      throw { code: 400, msg: 'после «Отдал» отменить может только покупатель' };
     try { await rpc('cancel_order', [id]); }
     catch (e) {
       console.error('cancel_order', e.message || e);
@@ -1250,7 +1267,17 @@ const api = {
         union all
         select 'event', null, 'Событие: ' || e.title, null, e.start_date
           from events e where (e.circle_id=$1 or e.circle_id is null) and (e.end_date is null or e.end_date > now())
-      ) n order by at desc limit 50`, [ctx.circle]);
+        union all
+        select 'buy', u.name, 'Купил «' || t.message || '»', t.amount, t.created_at
+          from transactions t join users u on u.id = t.from_user
+          where t.circle_id=$1 and t.from_user=$2 and t.type='purchase'
+        union all
+        select 'buy', u.name,
+               'Купил в лавке «' || coalesce(nullif(trim(split_part(t.message, ': ', 2)), ''), 'товар') || '»',
+               t.amount, t.created_at
+          from transactions t join users u on u.id = t.from_user
+          where t.circle_id=$1 and t.from_user=$2 and t.type='transfer' and t.message like 'Покупка в лавке%'
+      ) n order by at desc limit 50`, [ctx.circle, ctx.child]);
     return rows;
   },
   'GET /api/album': async (b, ctx) => {
