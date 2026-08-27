@@ -54,6 +54,13 @@
   .fam .ft,.fam .fp{font-weight:700;color:#a1876a;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .fam .fp{color:#6b4f3a;font-style:italic}
   .fam-empty{text-align:center;font-weight:700;color:#a1876a;font-size:12px;padding:4px 0 6px}
+  .gather-bar{display:none;margin:0 0 8px;padding:9px 12px;text-align:center;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .gather-bar.on{display:block}
+  .gather-bar .gt{font-weight:900;color:var(--ink);font-size:14px}
+  .gather-bar .gs{font-weight:700;color:#8a5a20;font-size:12px;margin:3px 0 8px}
+  .gather-bar button{width:100%;font-size:15px}
   .ov{position:absolute;inset:0;z-index:30;background:rgba(20,26,18,.82);display:none;
     align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
   .ov.on{display:flex}
@@ -66,6 +73,11 @@
   <div class="title">Лесная поляна</div>
   <div class="spirit-pop" id="spiritPop"></div>
   <div id="famList"></div>
+  <div class="gather-bar" id="gatherBar">
+    <div class="gt">Сборщики карт</div>
+    <div class="gs" id="gatherSub"></div>
+    <button class="btn btn-sm" id="gatherBtn" type="button">Собрать шишки</button>
+  </div>
   <div class="ov" id="talkOv"><div class="sheet" id="talkSheet" style="max-width:320px;text-align:center">
     <button class="x" id="talkClose">&times;</button>
     <img id="talkImg" src="" style="width:90px;height:120px;object-fit:cover;border-radius:14px;margin-bottom:6px">
