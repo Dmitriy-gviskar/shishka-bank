@@ -286,12 +286,21 @@ async function startCountGame() {
   }, 1000);
 }
 
+function showCountQuestion() {
+  const q = countQuestions[countIdx];
+  if (!q) return;
+  document.getElementById('gameQ').textContent = `${q.a} ${q.op} ${q.b} = ?`;
+  document.getElementById('gameA').value = '';
+  setGameProg(countDuration - Math.max(countLeft, 0), countDuration, `⏱ ${Math.max(countLeft, 0)}с · ${countScore}`);
+  focusGameAnswer();
+}
+
 function endCountGame(reason) {
   clearInterval(countTimer);
   countTimer = null;
   setGameProg(countDuration - Math.max(countLeft, 0), countDuration, `⏱ ${Math.max(countLeft, 0)}с · ${countScore}`);
-  const label = reason === 'wrong' ? 'Ошибка!' : reason === 'done' ? 'Готово!' : 'Время вышло!';
-  const cup = reason === 'wrong' ? '💥' : countScore >= 10 ? '🔥' : '⏱️';
+  const label = reason === 'done' ? 'Готово!' : 'Время вышло!';
+  const cup = countScore >= 10 ? '🔥' : '⏱️';
   showGameDone(`${label} Правильно: ${countScore}`, cup);
 }
 
@@ -305,21 +314,17 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
       flashStage(true);
       document.getElementById('gameMsg').textContent = 'Верно!';
       document.getElementById('gameMsg').style.color = '#5f8e37';
-      countIdx++;
-      if (countIdx >= countQuestions.length || countLeft <= 0) {
-        endCountGame(countLeft <= 0 ? 'time' : 'done');
-        return;
-      }
-      document.getElementById('gameQ').textContent =
-        `${countQuestions[countIdx].a} ${countQuestions[countIdx].op} ${countQuestions[countIdx].b} = ?`;
-      document.getElementById('gameA').value = '';
-      focusGameAnswer();
     } else {
       flashStage(false);
       document.getElementById('gameMsg').textContent = `${q.a} ${q.op} ${q.b} = ${q.answer}`;
       document.getElementById('gameMsg').style.color = '#b3452e';
-      endCountGame('wrong');
     }
+    countIdx++;
+    if (countIdx >= countQuestions.length || countLeft <= 0) {
+      endCountGame(countLeft <= 0 ? 'time' : 'done');
+      return;
+    }
+    showCountQuestion();
     return;
   }
 

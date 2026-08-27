@@ -27,11 +27,14 @@ th{color:#9c99b0;font-weight:700}
 <script>
 async function load() {
   try {
-    const h = {};
+    const pin = sessionStorage.getItem('parentPin') || prompt('PIN кабинета ведущего') || '';
+    if (pin) sessionStorage.setItem('parentPin', pin);
+    const h = { 'x-parent-pin': pin };
     const [s,r] = await Promise.all([
       fetch('/api/parent/state', { headers: h }).then(r => r.json()),
       fetch('/api/parent/report', { headers: h }).then(r => r.json())
     ]);
+    if (s.error || r.error) throw new Error(s.error || r.error);
     document.getElementById('online').textContent = s.online || 0;
     document.getElementById('totalKids').textContent = s.totalKids || 0;
     document.getElementById('txToday').textContent = s.txToday || 0;

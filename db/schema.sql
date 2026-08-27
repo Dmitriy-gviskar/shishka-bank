@@ -79,6 +79,7 @@ create table tasks (
   category    text,
   is_daily    boolean not null default false,
   needs_photo boolean not null default false,
+  kind        text,
   status      text not null default 'open'
               check (status in ('open','pending_review','done','rejected')),
   proof_url   text,
@@ -160,7 +161,9 @@ create table task_templates (
   reward      int  not null check (reward > 0),
   category    text,
   is_daily    boolean not null default false,
-  needs_photo boolean not null default false
+  needs_photo boolean not null default false,
+  pack        text,
+  kind        text
 );
 
 -- Общий котёл: совместная семейная цель (сбор шишек всей семьёй)

@@ -263,6 +263,42 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   try { return await one('select cancel_want($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
   catch (e) { throw { code: 400, msg: 'нельзя снять' }; }
 },
+'GET /api/swaps': (b, ctx) => q(`select s.id, s.offer_grade, s.want_grade, s.created_at,
+    ot.code as offer_code, ot.name as offer_name, wt.code as want_code, wt.name as want_name,
+    u.name as from_name, (s.from_id=$1) as mine
+    from card_swaps s
+    join card_types ot on ot.id = s.offer_type
+    join card_types wt on wt.id = s.want_type
+    join users u on u.id = s.from_id
+    where s.status = 'open' and (
+      s.circle_id = $2
+      or exists (select 1 from friendships f
+                  where f.user_id=$1 and f.friend_id=s.from_id and f.status='accepted')
+      or s.from_id = $1
+    ) order by s.created_at desc`, [ctx.child, ctx.circle]),
+'POST /api/swap': async (b, ctx) => {
+  try {
+    return await one('select create_card_swap($1,$2,$3,$4,$5) as v',
+      [ctx.child, b.offer, parseInt(b.offer_grade, 10), b.want, parseInt(b.want_grade, 10)]).then((r) => r.v);
+  } catch (e) {
+    throw { code: 400, msg: /want higher grade/.test(e.message) ? 'просить можно только равный ранг или ниже'
+      : /same card/.test(e.message) ? 'это та же карта'
+      : /too many/.test(e.message) ? 'уже 3 обмена висят — сними лишний'
+      : /no card/.test(e.message) ? 'этой карты у тебя нет'
+      : /special/.test(e.message) ? 'особые карты так не меняют' : 'нельзя' };
+  }
+},
+'POST /api/swap/cancel': async (b, ctx) => {
+  try { return await one('select cancel_card_swap($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
+  catch (e) { throw { code: 400, msg: 'нельзя снять' }; }
+},
+'POST /api/swap/accept': async (b, ctx) => {
+  try { return await one('select accept_card_swap($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
+  catch (e) {
+    throw { code: 400, msg: /no card/.test(e.message) ? 'у тебя нет той карты, которую просят'
+      : /own swap/.test(e.message) ? 'это твой обмен' : 'обмен недоступен' };
+  }
+},
 'POST /api/want/fill': async (b, ctx) => {
   try { const r = await one('select fill_want($1,$2) as v', [ctx.child, b.id]).then((x) => x.v);
     return { ...r, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance }; }

@@ -5,6 +5,26 @@ window.runParent = function () {
   const esc = window.esc;
 
 const note = (t, ok) => { const n = document.getElementById('note'); n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; };
+const pinNote = (t) => { const n = document.getElementById('pinNote'); if (!n) return; n.style.display = 'block'; n.textContent = t; n.style.color = '#b3452e'; };
+
+function showCabinet(on) {
+  document.getElementById('pinGate').hidden = !!on;
+  document.getElementById('cabinet').hidden = !on;
+}
+
+async function tryPin(pin) {
+  const value = String(pin || '').trim();
+  if (!value) { pinNote('Введи PIN'); return false; }
+  sessionStorage.setItem('parentPin', value);
+  const kids = await api('/api/parent/children');
+  if (kids.error) {
+    sessionStorage.removeItem('parentPin');
+    pinNote(kids.error);
+    return false;
+  }
+  showCabinet(true);
+  return true;
+}
 async function loadKids() {
   const kids = await api('/api/parent/children');
   if (kids.error) { alert('Ошибка загрузки: ' + (kids.error || 'попробуйте позже')); return; }
@@ -24,7 +44,7 @@ async function loadKids() {
         <div class="bal">${k.balance}<small>шишек</small></div>
       </div>
       <div class="give-row">
-        <input class="amt" type="number" min="1" placeholder="сколько" inputmode="numeric">
+        <input class="amt" type="number" min="1" max="100" placeholder="сколько, до 100" inputmode="numeric">
         <button class="mini g add">Начислить</button>
         <button class="mini r sub">Списать</button>
         <button class="mini r del" type="button" title="Удалить игрока">✕</button>
@@ -127,12 +147,17 @@ async function loadGuilds() {
     c.appendChild(el);
   }
 }
-loadGuilds();
+function loadTemplates() {
 api('/api/parent/templates').then((tpls) => {   // библиотека готовых заданий
   if (tpls.error) return;
   const sel = document.getElementById('taskTpl');
   const cats = {};
-  for (const t of tpls) (cats[t.category || 'разное'] = cats[t.category || 'разное'] || []).push(t);
+  for (const t of tpls) {
+    const cat = t.pack === 'bereza'
+      ? (t.kind === 'day' ? 'Берёза · задание дня' : 'Берёза · ежедневки')
+      : (t.category || 'разное');
+    (cats[cat] = cats[cat] || []).push(t);
+  }
   for (const [cat, list] of Object.entries(cats)) {
     const og = document.createElement('optgroup'); og.label = cat;
     for (const t of list) { const o = document.createElement('option');
@@ -148,6 +173,7 @@ api('/api/parent/templates').then((tpls) => {   // библиотека гото
     document.getElementById('taskPhoto').checked = t.photo;
   };
 });
+}
 document.getElementById('addKid').onclick = async () => {
   const r = await api('/api/parent/add-child', { name: document.getElementById('kidName').value, tree: document.getElementById('kidTree').value });
   if (r.error) note(r.error);
@@ -161,7 +187,13 @@ document.getElementById('addPrize').onclick = async () => {
   const r = await api('/api/parent/add-prize', { title: document.getElementById('prizeTitle').value, price: document.getElementById('prizePrice').value });
   if (r.error) note(r.error); else { note('Приз добавлен в магазин!', 1); document.getElementById('prizeTitle').value = ''; document.getElementById('prizePrice').value = ''; }
 };
-document.getElementById('logout').onclick = (e) => { e.preventDefault(); location.href = 'link.html'; };
+document.getElementById('logout').onclick = (e) => {
+  e.preventDefault();
+  sessionStorage.removeItem('parentPin');
+  const pin = document.getElementById('pinInput');
+  if (pin) pin.value = '';
+  showCabinet(false);
+};
 // ── Лесная коллекция: сезон, дедлайн, прогресс детей ──
 async function loadSeason() {
   const d = await api('/api/parent/season');
@@ -251,20 +283,33 @@ async function loadGrant() {
   };
 }
 
-loadKids(); loadPending(); loadPurchases(); loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
-
-// очередь проверки: автообновление + якорь #pending из пуша
-const pendingPoll = setInterval(() => {
-  if (document.hidden) return;
-  loadPending();
-}, 15000);
-(window.__timers || (window.__timers = [])).push(pendingPoll);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { loadPending(); loadPurchases(); }
-});
-if ((location.hash || '') === '#pending') {
-  setTimeout(() => {
-    document.getElementById('pendingTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 200);
+function startCabinet() {
+  loadKids(); loadPending(); loadPurchases(); loadGuilds(); loadTemplates();
+  loadSeason().then(loadMetrics); loadCardLog(); loadGrant();
+  const pendingPoll = setInterval(() => {
+    if (document.hidden || document.getElementById('cabinet').hidden) return;
+    loadPending();
+  }, 15000);
+  (window.__timers || (window.__timers = [])).push(pendingPoll);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !document.getElementById('cabinet').hidden) { loadPending(); loadPurchases(); }
+  });
+  if ((location.hash || '') === '#pending') {
+    setTimeout(() => {
+      document.getElementById('pendingTitle')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 200);
+  }
 }
+
+const pinEnter = document.getElementById('pinEnter');
+const pinInput = document.getElementById('pinInput');
+if (pinEnter) pinEnter.onclick = async () => {
+  if (await tryPin(pinInput.value)) startCabinet();
+};
+if (pinInput) pinInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') pinEnter?.click();
+});
+
+const saved = sessionStorage.getItem('parentPin') || '';
+if (saved) tryPin(saved).then((ok) => { if (ok) startCabinet(); });
 };

@@ -106,17 +106,34 @@ async function copyText(text) {
     return ok;
   } catch { return false; }
 }
+function friendlyError(status, msg) {
+  if (status === 401) return msg || 'Нужен PIN ведущего';
+  if (status === 429) return msg || 'Слишком много попыток — подожди';
+  if (status === 503) return msg || 'Кабинет ведущего закрыт';
+  return msg;
+}
 async function api(path, body, method) {
   const headers = {};
   const token = localStorage.getItem('deviceToken');
   const code = localStorage.getItem('childCode');
   if (token) headers['x-device-token'] = token;                    // основной вход после саморегистрации
   else if (code) headers['x-child-code'] = encodeURIComponent(code); // legacy / запасной код
+  if (path.startsWith('/api/parent/')) {
+    const pin = sessionStorage.getItem('parentPin') || '';
+    if (pin) headers['x-parent-pin'] = pin;
+  }
   const post = body !== undefined || method === 'POST';
   const opt = post ? { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }
                    : { headers };
   try {
     if (!post) {
+      // кабинет ведущего не кэшируем — иначе чужой PIN/сессия могут показать чужих детей
+      if (path.startsWith('/api/parent/')) {
+        const res = await fetch(path, opt);
+        const d = await res.json();
+        if (!res.ok && d.error) d.error = friendlyError(res.status, d.error);
+        return d;
+      }
       // GET — stale-while-revalidate: экран рисуется из кэша МГНОВЕННО, свежее подтягивается фоном.
       // Любое действие (POST) чистит кэш, поэтому свои изменения видны сразу; чужие — в пределах 3 минут.
       const k = 'ac:' + (token || code || '') + ':' + path;
@@ -218,8 +235,8 @@ function capturePhotoFile() {
   return new Promise((res) => {
     const inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = 'image/jpeg,image/png,image/webp,image/*';
-    // явно без capture — иначе WebView может форсить камеру
+    // без image/* и без capture — иначе iOS/WebView сразу открывают камеру
+    inp.accept = '.jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp';
     inp.removeAttribute('capture');
     inp.setAttribute('aria-hidden', 'true');
     inp.style.cssText = 'position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0.01;z-index:9999';
@@ -303,7 +320,11 @@ function capturePhotoChoose() {
     cancel.style.marginBottom = '0';
     const done = (v) => { try { ov.remove(); } catch {} res(v); };
     cam.onclick = () => done('camera');
-    gal.onclick = () => done('gallery');
+    // picker в том же тапе — иначе iOS/WebView теряют user gesture и снова зовут камеру
+    gal.onclick = () => {
+      try { ov.remove(); } catch {}
+      capturePhotoFile().then(res);
+    };
     cancel.onclick = () => done(null);
     ov.onclick = (e) => { if (e.target === ov) done(null); };
     card.appendChild(title); card.appendChild(tip); card.appendChild(cam); card.appendChild(gal); card.appendChild(cancel);
@@ -312,14 +333,10 @@ function capturePhotoChoose() {
   });
 }
 async function capturePhoto() {
-  // Android: сначала выбор — камера на странице (безопасно) или галерея (системный picker)
-  if (isAndroidApp()) {
-    const mode = await capturePhotoChoose();
-    if (mode === 'camera') return capturePhotoLive();
-    if (mode === 'gallery') return capturePhotoFile();
-    return null;
-  }
-  return capturePhotoFile();
+  const mode = await capturePhotoChoose();
+  if (mode === 'camera') return capturePhotoLive();
+  if (typeof mode === 'string' && mode.startsWith('data:')) return mode; // галерея уже в том же тапе
+  return null;
 }
 const page = location.pathname.split('/').pop() || 'index.html';
 const urlParams = new URLSearchParams(location.search);
@@ -553,14 +570,16 @@ async function loadTasks() {
   const tip = document.createElement('div');
   tip.className = 'quest-empty';
   tip.style.margin = '0 0 10px';
-  tip.textContent = '6 дел на сегодня. Если ведущего нет — шишки сразу. Ещё можно в играх.';
+  tip.textContent = 'Ежедневки — недорого и сразу. Задание дня — дороже, каждый день новое.';
   cont.appendChild(tip);
   const redo = tasks.filter((t) => t.status === 'rejected');
-  const daily = tasks.filter((t) => t.is_daily && t.status !== 'rejected');
-  const other = tasks.filter((t) => !t.is_daily && t.status !== 'rejected');
+  const day = tasks.filter((t) => t.kind === 'day' && t.status !== 'rejected');
+  const daily = tasks.filter((t) => t.kind !== 'day' && t.is_daily && t.status !== 'rejected');
+  const other = tasks.filter((t) => t.kind !== 'day' && !t.is_daily && t.status !== 'rejected');
   const sections = [];
   if (redo.length) sections.push(['Вернули — переделай', redo]);
-  if (daily.length) sections.push(['Сегодня', daily]);
+  if (day.length) sections.push(['Задание дня', day]);
+  if (daily.length) sections.push(['Ежедневки', daily]);
   if (other.length) sections.push(['От ведущего', other]);
   const bind = (el, t) => {
     const btn = el.querySelector('button'); if (!btn) return;
@@ -739,14 +758,19 @@ if (page === 'pot.html') {
       const pct = Math.min(100, Math.round(p.collected / p.goal * 100));
       const full = p.collected >= p.goal;
       const el = document.createElement('div'); el.className = 'card pcard';
-      el.innerHTML = `${p.mine ? '<button class="mini potDel" style="float:right;font-size:16px;line-height:1;padding:2px 6px" title="Удалить">×</button>' : ''}${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
+      const ownerBtns = p.mine
+        ? (full
+          ? '<button class="btn btn-sm potFul" type="button" style="margin-top:8px;width:100%">Исполнить цель</button>'
+          : '<button class="btn btn-sm potDel" type="button" style="margin-top:8px;width:100%;background:#c45c4a">Удалить</button>')
+        : (full
+          ? '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута — ждём исполнения!</div>'
+          : '');
+      el.innerHTML = `${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
         <div class="pn">${esc(p.title)}</div><div class="pa">поставил: ${esc(p.author)}</div>
         <div class="scale"><i style="width:${pct}%"></i><span>${p.collected} / ${p.goal}</span></div>
         ${full
-          ? (p.mine
-            ? '<button class="btn btn-sm potFul" type="button" style="margin-top:8px;width:100%">Исполнить цель</button>'
-            : '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута — ждём исполнения!</div>')
-          : `<div class="give"><div class="s sel" data-a="5">5</div><div class="s" data-a="10">10</div><div class="s" data-a="20">20</div>
+          ? ownerBtns
+          : `${ownerBtns}<div class="give"><div class="s sel" data-a="5">5</div><div class="s" data-a="10">10</div><div class="s" data-a="20">20</div>
                   <button class="btn btn-sm">Вложить</button></div>`}`;
       let amt = 5;
       el.querySelectorAll('.give .s').forEach((t) => t.onclick = () => {

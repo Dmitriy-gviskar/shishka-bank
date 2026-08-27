@@ -284,23 +284,21 @@ const STORY_TEMPLATES = [
     return { ok: true, reward: 0, balance: w0.balance, already: true };
   }
 
+  // обещанная награда минус 1 шишка за каждую ошибку — нельзя натыкать кнопки и забрать всё
   let reward = 0;
-  if (game === 'multiply') {
-    const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
-    const level = row?.level || 1;
-    reward = level === 1 ? 3 : level === 2 ? 5 : 8;
-  } else if (game === 'guess') {
-    reward = 5;
-  } else if (game === 'count') {
+  if (game === 'count') {
     reward = score;
-  } else if (game === 'memory') {
-    reward = score >= 6 ? 4 : 0; // награда только за полный забег
-  } else if (game === 'word' || game === 'odd') {
-    reward = score > 0 ? 4 : 0;
-  } else if (game === 'number' || game === 'compare') {
-    reward = score > 0 ? 3 : 0;
-  } else if (game === 'story') {
-    reward = score > 0 ? 5 : 0;
+  } else {
+    let promised = 0;
+    if (game === 'multiply') {
+      const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
+      const level = row?.level || 1;
+      promised = level === 1 ? 3 : level === 2 ? 5 : 8;
+    } else if (game === 'guess' || game === 'story') promised = 5;
+    else if (game === 'memory' || game === 'word' || game === 'odd') promised = 4;
+    else if (game === 'number' || game === 'compare') promised = 3;
+    const wrong = Math.max(0, maxScore - score);
+    reward = Math.max(0, promised - wrong);
   }
 
   if (reward <= 0 && game === 'memory') {
