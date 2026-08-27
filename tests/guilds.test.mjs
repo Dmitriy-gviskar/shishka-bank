@@ -87,3 +87,47 @@ test('гильдия v3: создать, вступить, роли, чат, и�
   const ag = r.body.find((x) => x.id === g.id);
   assert.equal(ag.status, 'open', 'гильдия проснулась');
 });
+
+test('гильдия: позвать с списка и пуш «собираемся» без входа', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const a1 = (p, body) => srv.api(p, { method: body ? 'POST' : 'GET',
+    headers: { 'content-type': 'application/json', 'x-child-code': db.childA1.code },
+    body: body ? JSON.stringify(body) : undefined });
+  const a2 = (p, body) => srv.api(p, { method: body ? 'POST' : 'GET',
+    headers: { 'content-type': 'application/json', 'x-child-code': db.childA2.code },
+    body: body ? JSON.stringify(body) : undefined });
+
+  const created = await a1('/api/guild/create', { name: 'Белки' });
+  const list1 = await a1('/api/guilds');
+  const g = list1.body[0];
+  assert.equal(g.can_invite, true);
+  assert.equal(g.can_gather, true);
+  assert.ok(g.invitees.some((k) => k.id === db.childA2.id), 'второй ребёнок в кандидатах');
+
+  const inv = await a1('/api/guild/invite', { id: g.id, childId: db.childA2.id });
+  assert.equal(inv.status, 200, inv.body.error);
+  const stranger = await a1('/api/guild/invite', { id: g.id, childId: db.childB1.id });
+  assert.equal(stranger.status, 400);
+
+  const list2 = await a2('/api/guilds');
+  const card = list2.body.find((x) => x.id === g.id);
+  assert.equal(card.invited, true);
+  assert.equal(card.mine, false);
+
+  const acc = await a2('/api/guild/invite/accept', { id: g.id });
+  assert.equal(acc.status, 200);
+  const joined = (await a2('/api/guilds')).body.find((x) => x.id === g.id);
+  assert.equal(joined.mine, true);
+
+  const ping = await a1('/api/guild/gather', { id: g.id });
+  assert.equal(ping.status, 200);
+  assert.equal(ping.body.sent, 1);
+  const again = await a1('/api/guild/gather', { id: g.id });
+  assert.equal(again.status, 429);
+
+  const chat = await a1('/api/guild/chat', { id: g.id });
+  assert.ok(chat.body.some((m) => m.content === 'Собираемся!'));
+});

@@ -221,6 +221,7 @@ async function applyBootMigrations() {
     'migration_quest_two_lists.sql',
     'migration_games_wave3.sql',
     'migration_offline_packs.sql',
+    'migration_guild_invites.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
@@ -1557,10 +1558,30 @@ const api = {
   // ── Гильдия ──
   'GET /api/guilds': async (b, ctx) => {
     const gs = await q("select g.id, g.name, g.status from guilds g where g.circle_id=$1 and g.status in ('open','sleeping') order by g.created_at", [ctx.circle]);
+    const kids = await q("select id, name from users where circle_id=$1 and role='child' order by name", [ctx.circle]);
+    const invites = await q(`select gi.guild_id, gi.child_id, u.name
+      from guild_invites gi join guilds g on g.id=gi.guild_id
+      join users u on u.id=gi.child_id
+      where g.circle_id=$1`, [ctx.circle]).catch(() => []);
     const out = [];
     for (const g of gs) {
       const members = await q('select u.id, u.name, gm.share, gm.role from guild_members gm join users u on u.id=gm.child_id where gm.guild_id=$1 order by gm.role asc, gm.share desc, u.name', [g.id]);
-      out.push({ id: g.id, name: g.name, status: g.status, members: members.map((m) => ({ id: m.id, name: m.name, share: m.share, role: m.role, mine: m.id === ctx.child })), mine: members.some((m) => m.id === ctx.child) });
+      const mine = members.some((m) => m.id === ctx.child);
+      const myRole = (members.find((m) => m.id === ctx.child) || {}).role;
+      const memberIds = new Set(members.map((m) => m.id));
+      const invitedMe = invites.some((i) => i.guild_id === g.id && i.child_id === ctx.child);
+      const canInvite = mine && g.status === 'open' && (myRole === 'founder' || myRole === 'herald');
+      const invitees = canInvite
+        ? kids.filter((k) => k.id !== ctx.child && !memberIds.has(k.id)
+          && !invites.some((i) => i.guild_id === g.id && i.child_id === k.id))
+            .map((k) => ({ id: k.id, name: k.name }))
+        : [];
+      out.push({
+        id: g.id, name: g.name, status: g.status,
+        members: members.map((m) => ({ id: m.id, name: m.name, share: m.share, role: m.role, mine: m.id === ctx.child })),
+        mine, invited: invitedMe, can_invite: canInvite, can_gather: mine && g.status === 'open',
+        invitees,
+      });
     }
     return out;
   },
@@ -1575,9 +1596,61 @@ const api = {
   'POST /api/guild/join': async (b, ctx) => {
     await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
     await rpc('join_guild', [b.id, ctx.child]);
+    await q('delete from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]).catch(() => {});
     await rpc('bump_guild_activity', [b.id]).catch(() => {});
     await q('insert into guild_history(guild_id, kind, title) values($1,$2,$3)', [b.id, 'member_joined', (await one('select name from users where id=$1', [ctx.child])).name]);
     return { ok: true };
+  },
+  'POST /api/guild/invite': async (b, ctx) => {
+    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    await assertOwn("select 1 from guild_members where guild_id=$1 and child_id=$2 and role in ('founder','herald')",
+      [b.id, ctx.child], 'позвать может основатель или глашатай');
+    const target = await one("select id, name from users where id=$1 and circle_id=$2 and role='child'", [b.childId, ctx.circle]);
+    if (!target) throw { code: 400, msg: 'нет такого обитателя' };
+    if (target.id === ctx.child) throw { code: 400, msg: 'это ты сам' };
+    const already = await one('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, target.id]);
+    if (already) throw { code: 400, msg: 'уже в гильдии' };
+    await q(`insert into guild_invites(guild_id, child_id, invited_by) values ($1,$2,$3)
+      on conflict (guild_id, child_id) do nothing`, [b.id, target.id, ctx.child]);
+    const g = await one('select name from guilds where id=$1', [b.id]);
+    const who = await one('select name from users where id=$1', [ctx.child]);
+    await q('select notify_child($1,$2)', [target.id, `${who.name} зовёт тебя в гильдию «${g.name}»`]).catch(() => {});
+    sendPush(target.id, 'Тебя зовут в гильдию', `${who.name}: «${g.name}»`, '/guilds.html');
+    return { ok: true };
+  },
+  'POST /api/guild/invite/accept': async (b, ctx) => {
+    const inv = await one('select 1 from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]);
+    if (!inv) throw { code: 400, msg: 'приглашения нет' };
+    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    await rpc('join_guild', [b.id, ctx.child]);
+    await q('delete from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]);
+    await rpc('bump_guild_activity', [b.id]).catch(() => {});
+    await q('insert into guild_history(guild_id, kind, title) values($1,$2,$3)', [b.id, 'member_joined', (await one('select name from users where id=$1', [ctx.child])).name]);
+    return { ok: true };
+  },
+  'POST /api/guild/invite/decline': async (b, ctx) => {
+    await q('delete from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]);
+    return { ok: true };
+  },
+  'POST /api/guild/gather': async (b, ctx) => {
+    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
+    const last = await one(
+      `select created_at from guild_messages where guild_id=$1 and content='Собираемся!'
+        order by created_at desc limit 1`, [b.id]);
+    if (last && Date.now() - new Date(last.created_at).getTime() < 120e3) {
+      throw { code: 429, msg: 'подожди две минуты' };
+    }
+    await q('insert into guild_messages(guild_id, from_user, content) values($1,$2,$3)', [b.id, ctx.child, 'Собираемся!']);
+    await rpc('bump_guild_activity', [b.id]).catch(() => {});
+    const g = await one('select name from guilds where id=$1', [b.id]);
+    const who = await one('select name from users where id=$1', [ctx.child]);
+    const others = await q('select child_id from guild_members where guild_id=$1 and child_id<>$2', [b.id, ctx.child]);
+    for (const m of others) {
+      await q('select notify_child($1,$2)', [m.child_id, `${who.name}: Собираемся! «${g.name}»`]).catch(() => {});
+      sendPush(m.child_id, 'Собираемся!', `${who.name} зовёт гильдию «${g.name}»`, '/guilds.html');
+    }
+    return { ok: true, sent: others.length };
   },
   'POST /api/guild/chat': async (b, ctx) => {   // POST: id в теле (GET-обёртка без параметров)
     await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');

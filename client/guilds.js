@@ -15,10 +15,20 @@ window.runGuilds = function () {
     for (const g of gs) {
       const el = document.createElement('div'); el.className = 'card gcard';
       const statusTag = g.status === 'sleeping' ? '<span style="color:#d4953a;font-weight:800;font-size:12px">💤 Спит</span>' : '';
-      el.innerHTML = `<div class="gn">${esc(g.name)} ${statusTag}</div><div class="gm">${g.members.map((m) => `${esc(m.name)}${m.role ? ' (' + ROLE_NAMES[m.role] + ')' : ''}`).join(', ')}</div>
-        <div class="row">${g.mine
-          ? (g.status === 'sleeping' ? '<button class="btn btn-sm wake" style="background:#d4953a;box-shadow:0 4px 0 #b37a2c">Разбудить</button>' : '<button class="btn btn-sm open">Войти</button>')
-          : (g.status === 'open' ? '<button class="btn btn-sm join" style="background:#e8b64b;box-shadow:0 4px 0 #c79a3c">Вступить</button>' : '')}</div>`;
+      let btns = '';
+      if (g.mine && g.status === 'sleeping') {
+        btns = '<button class="btn btn-sm wake" style="background:#d4953a;box-shadow:0 4px 0 #b37a2c">Разбудить</button>';
+      } else if (g.mine) {
+        btns = '<button class="btn btn-sm open">Войти</button>';
+        if (g.can_gather) btns += '<button class="btn btn-sm gather" style="background:#e8b64b;box-shadow:0 4px 0 #c79a3c">Собираемся!</button>';
+        if (g.can_invite) btns += '<button class="btn btn-sm invite">Позвать</button>';
+      } else if (g.invited) {
+        btns = '<button class="btn btn-sm accept" style="background:#6fad45">Принять</button><button class="btn btn-sm decline" style="background:#fff3d6;color:var(--brown);box-shadow:0 4px 0 #d9c39a">Отказаться</button>';
+      } else if (g.status === 'open') {
+        btns = '<button class="btn btn-sm join" style="background:#e8b64b;box-shadow:0 4px 0 #c79a3c">Вступить</button>';
+      }
+      el.innerHTML = `<div class="gn">${esc(g.name)} ${statusTag}${g.invited && !g.mine ? ' <span style="color:#d4953a;font-size:12px">зовут тебя</span>' : ''}</div><div class="gm">${g.members.map((m) => `${esc(m.name)}${m.role ? ' (' + ROLE_NAMES[m.role] + ')' : ''}`).join(', ')}</div>
+        <div class="row">${btns}</div>`;
       const open = el.querySelector('.open');
       if (open) open.onclick = () => showGuild(g);
       const wake = el.querySelector('.wake');
@@ -30,6 +40,26 @@ window.runGuilds = function () {
       if (join) join.onclick = async () => {
         const r = await api('/api/guild/join', { id: g.id });
         if (r.error) note(r.error); else { note('Ты в гильдии!', 1); loadGuilds(); }
+      };
+      const gather = el.querySelector('.gather');
+      if (gather) gather.onclick = async () => {
+        gather.disabled = true;
+        const r = await api('/api/guild/gather', { id: g.id });
+        gather.disabled = false;
+        if (r.error) note(r.error);
+        else note(r.sent ? `Пуш ушёл ${r.sent} ${r.sent === 1 ? 'другу' : 'друзьям'}` : 'Собираемся! Пока ты один в гильдии', 1);
+      };
+      const invite = el.querySelector('.invite');
+      if (invite) invite.onclick = () => openInvite(g);
+      const acc = el.querySelector('.accept');
+      if (acc) acc.onclick = async () => {
+        const r = await api('/api/guild/invite/accept', { id: g.id });
+        if (r.error) note(r.error); else { note('Ты в гильдии!', 1); loadGuilds(); }
+      };
+      const dec = el.querySelector('.decline');
+      if (dec) dec.onclick = async () => {
+        const r = await api('/api/guild/invite/decline', { id: g.id });
+        if (r.error) note(r.error); else { note('Ок, в другой раз'); loadGuilds(); }
       };
       c.appendChild(el);
     }
@@ -118,6 +148,37 @@ window.runGuilds = function () {
     document.getElementById('listView').style.display = 'flex';
     loadGuilds();
   };
+  function openInvite(g) {
+    const ov = document.getElementById('invOv');
+    const box = document.getElementById('invList');
+    if (!ov || !box) return;
+    box.innerHTML = '';
+    if (!(g.invitees || []).length) {
+      box.innerHTML = '<div style="text-align:center;color:#a1876a;font-weight:700;padding:8px">Все уже в гильдии или их позвали</div>';
+    } else {
+      for (const k of g.invitees) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'gfriend';
+        b.textContent = k.name;
+        b.onclick = async () => {
+          b.disabled = true;
+          const r = await api('/api/guild/invite', { id: g.id, childId: k.id });
+          if (r.error) { b.disabled = false; note(r.error); return; }
+          note(`Позвали ${k.name}`, 1);
+          ov.classList.remove('on');
+          loadGuilds();
+        };
+        box.appendChild(b);
+      }
+    }
+    ov.classList.add('on');
+  }
+  const invClose = document.getElementById('invClose');
+  if (invClose) invClose.onclick = () => document.getElementById('invOv')?.classList.remove('on');
+  const invOv = document.getElementById('invOv');
+  if (invOv) invOv.onclick = (e) => { if (e.target.id === 'invOv') invOv.classList.remove('on'); };
+
   document.getElementById('createG').onclick = async () => {
     const r = await api('/api/guild/create', { name: document.getElementById('gName').value });
     if (r.error) note(r.error);
