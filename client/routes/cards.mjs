@@ -250,7 +250,7 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   catch (e) {
     throw { code: 400, msg: /daily gift limit/.test(e.message) ? 'сегодня уже подарено 3 карты — завтра можно снова'
       : /no card/.test(e.message) ? 'этой карты у тебя нет'
-      : /other circle/.test(e.message) ? 'пока нельзя дарить в другой лес' : 'нельзя' };
+      : /other circle/.test(e.message) ? 'подарить можно только другу' : 'нельзя' };
   }
 },
 'POST /api/card/sell': async (b, ctx) => {

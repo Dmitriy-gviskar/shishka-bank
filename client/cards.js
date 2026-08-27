@@ -509,7 +509,7 @@ window.runCards = function () {
       const bGift = sheet.querySelector('.a-gift');
       if (bGift) bGift.onclick = async () => {
         const friends = await api('/api/friends');
-        if (friends.error || !friends.length) { dnote.textContent = 'в твоём лесу пока нет друзей'; dnote.style.color = '#b3452e'; return; }
+        if (friends.error || !friends.length) { dnote.textContent = 'сначала найди друга — в почте или на поляне'; dnote.style.color = '#b3452e'; return; }
         const gs = document.getElementById('giftSheet');
         gs.innerHTML = `<button class="x">&times;</button><h3>Кому подарить?</h3>
           <div class="sub">«${c.name}» · ${RAR[sel].name}. Подарок бесплатный, но не больше трёх в день.</div>
@@ -1284,7 +1284,7 @@ window.runCards = function () {
   const peekBtnEl = document.getElementById('peekBtn');
   if (peekBtnEl) peekBtnEl.onclick = async () => {
     const friends = await api('/api/friends');
-    if (friends.error || !friends.length) { note('в твоём лесу пока нет друзей'); return; }
+    if (friends.error || !friends.length) { note('сначала найди друга — в почте или на поляне'); return; }
     const gs = document.getElementById('giftSheet');
     gs.innerHTML = `<button class="x">&times;</button><h3>Чей альбом посмотреть?</h3>
       <div class="sub">Зелёным подсветятся карты, которых нет у друга, но есть у тебя — можно подарить или выставить на рынок.</div>

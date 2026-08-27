@@ -21,7 +21,8 @@ begin
   insert into card_gifts(circle_id, from_user, to_user, type_id, grade) values (c_id, p_child, p_to, p_type, p_grade);
 
   select * into t from card_types where id=p_type;
-  perform send_message(p_child, p_to, 'emoji', 'Дарю тебе карту: ' || t.name || '!');
+  insert into messages(circle_id, from_user, to_user, type, content)
+    values (c_id, p_child, p_to, 'emoji', 'Дарю тебе карту: ' || t.name || '!');
   perform check_card_rewards(p_to);
   perform check_achievements(p_to);
   return jsonb_build_object('ok', true, 'left_today', 3 - today_n - 1);
