@@ -86,6 +86,17 @@ test('покупка списывает шишки и не даёт уйти в 
   const over = await srv.api('/api/shop/buy', P(db.childA1.code, { id: dear.id }));
   assert.equal(over.status, 400, 'нельзя купить дороже баланса');
   assert.equal(await bal(srv, db.childA1.code), 10, 'баланс не тронут при неудачной покупке');
+
+  const album = await srv.api('/api/album', H(db.childA1.code));
+  assert.equal(album.status, 200);
+  const bought = (album.body || []).find((e) => e.kind === 'buy' && /Мороженое/.test(e.title));
+  assert.ok(bought, 'в альбоме есть «Купил Мороженое»');
+  assert.match(bought.title, /Купил «Мороженое»/);
+
+  const news = await srv.api('/api/news', H(db.childA1.code));
+  assert.equal(news.status, 200);
+  const feed = (news.body || []).find((e) => e.kind === 'buy' && /Мороженое/.test(e.what));
+  assert.ok(feed, 'в новостях покупателя видно, что купил');
 });
 
 test('перевод: 1:1 без потерь, себе нельзя, больше баланса нельзя', async (t) => {

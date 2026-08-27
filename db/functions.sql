@@ -1210,6 +1210,11 @@ returns jsonb language sql stable security definer set search_path = public as $
         when type = 'transfer' and message = 'Подарок другу' and to_user = p_child then 'Подарок шишками'
         when type = 'transfer' and message = 'Подарок другу' and from_user = p_child then 'Подарок другу'
         when type = 'transfer' and message = 'Шишка-сюрприз' and to_user = p_child then 'Шишка-сюрприз'
+        when type = 'transfer' and message like 'Покупка в лавке%' and from_user = p_child then
+          'Купил в лавке «' || coalesce(nullif(trim(split_part(message, ': ', 2)), ''), 'товар') || '»'
+        when type = 'transfer' and message like 'Покупка в лавке%' and to_user = p_child then
+          'Продал в лавке «' || coalesce(nullif(trim(split_part(message, ': ', 2)), ''), 'товар') || '»'
+        when type = 'purchase' then 'Купил «' || coalesce(nullif(message, ''), 'приз') || '»'
         else coalesce(message, '') end,
       -- покупатель видит полную цену (нетто продавцу + комиссия), без отдельной строки налога
       'amount', case

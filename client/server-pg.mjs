@@ -223,6 +223,7 @@ async function applyBootMigrations() {
     'migration_offline_packs.sql',
     'migration_guild_invites.sql',
     'migration_shop_avito.sql',
+    'migration_shop_feed.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
