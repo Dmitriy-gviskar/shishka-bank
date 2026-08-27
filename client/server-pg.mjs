@@ -48,8 +48,34 @@ async function assertFriend(a, b, msg = 'сначала добавь в друз
   if (!(await areFriends(a, b))) throw { code: 403, msg };
 }
 // Письмо обитателю: заявка уходит сама, дружба не принимается. Карты/шишки по-прежнему после «Принять».
+async function assertChatAge(from, to) {
+  const rows = await q(
+    'select id, age, chat_age_min, chat_age_max from users where id in ($1,$2)',
+    [from, to]).catch(() => []);
+  const a = rows.find((r) => r.id === from);
+  const b = rows.find((r) => r.id === to);
+  if (!a || !b) return;
+  const allows = (me, peer) => {
+    if (me.chat_age_min == null && me.chat_age_max == null) return true;
+    if (peer.age == null) return false;
+    const lo = me.chat_age_min ?? 4;
+    const hi = me.chat_age_max ?? 17;
+    return peer.age >= lo && peer.age <= hi;
+  };
+  if (!allows(a, b)) {
+    throw {
+      code: 403,
+      msg: `родители разрешили писать только с ${a.chat_age_min ?? 4}–${a.chat_age_max ?? 17} лет`,
+    };
+  }
+  if (!allows(b, a)) {
+    throw { code: 403, msg: 'этому обитателю нельзя писать — ограничение родителей' };
+  }
+}
+
 async function ensureForestTalk(from, to) {
   if (!to || from === to) throw { code: 400, msg: 'выбери, кому отправить' };
+  await assertChatAge(from, to);
   const peer = await one("select id, name from users where id=$1 and role='child'", [to]);
   if (!peer) throw { code: 400, msg: 'друг не найден' };
   const existing = await one(
@@ -228,6 +254,7 @@ async function applyBootMigrations() {
     'migration_card_exchange_pick.sql',
     'migration_child_guardians.sql',
     'migration_characters.sql',
+    'migration_chat_ages.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
@@ -1008,6 +1035,7 @@ const api = {
     }
     if (!to) throw { code: 400, msg: 'выбери друга' };
     if (to === ctx.child) throw { code: 400, msg: 'это ты сам' };
+    await assertChatAge(ctx.child, to);
     const peer = await one("select id, name from users where id=$1 and role='child'", [to]);
     if (!peer) throw { code: 400, msg: 'друг с таким кодом не найден' };
     const existing = await one(
@@ -1046,6 +1074,7 @@ const api = {
         where user_id=$1 and friend_id=$2 and status='pending'`,
       [b.from, ctx.child]);
     if (!req) throw { code: 400, msg: 'заявка не найдена' };
+    await assertChatAge(ctx.child, b.from);
     const peer = await one("select id, name from users where id=$1 and role='child'", [b.from]);
     if (!peer) throw { code: 400, msg: 'заявка не найдена' };
     await linkFriends(ctx.child, b.from);

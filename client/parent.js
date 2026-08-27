@@ -50,8 +50,24 @@ async function loadKids() {
         <button class="mini r del" type="button" title="Удалить игрока">✕</button>
       </div>
       <label class="mkt"><input type="checkbox" class="mktbox" ${k.market_allowed ? 'checked' : ''}>
-        Рынок карт: покупка, продажа и торги<span class="mkthint">паки, альбом, слияния и подарки работают всегда</span></label>`;
+        Рынок карт: покупка, продажа и торги<span class="mkthint">паки, альбом, слияния и подарки работают всегда</span></label>
+      <div class="give-row ages">
+        <input class="age" type="number" min="4" max="17" placeholder="лет" inputmode="numeric" value="${k.age || ''}">
+        <input class="amin" type="number" min="4" max="17" placeholder="писать с" inputmode="numeric" value="${k.chatMin || ''}">
+        <input class="amax" type="number" min="4" max="17" placeholder="до" inputmode="numeric" value="${k.chatMax || ''}">
+        <button class="mini g agesave" type="button">Возраст</button>
+      </div>`;
     el.querySelector('.code').onclick = () => { navigator.clipboard?.writeText(k.code); note(`Код ${k.name} скопирован: ${k.code}`, 1); };
+    el.querySelector('.agesave').onclick = async () => {
+      const r = await api('/api/parent/chat-ages', {
+        childId: k.id,
+        age: el.querySelector('.age').value,
+        chatMin: el.querySelector('.amin').value,
+        chatMax: el.querySelector('.amax').value,
+      });
+      if (r.error) return note(r.error);
+      note(`${k.name}: писать можно с ${r.chatMin ?? 'любых'} до ${r.chatMax ?? 'любых'} лет`, 1);
+    };
     el.querySelector('.mktbox').onchange = async (e) => {
       const r = await api('/api/parent/market', { child: k.id, allowed: e.target.checked });
       if (r.error) { e.target.checked = !e.target.checked; return note(r.error); }

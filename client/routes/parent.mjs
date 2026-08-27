@@ -1,3 +1,5 @@
+import { parseChatAges } from './guardian.mjs';
+
 // Кабинет ведущего: /api/parent/*
 const MAX_HOST_CONES = 100; // за одно начисление / списание / выплату / награду задания
 
@@ -31,6 +33,7 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
 'GET /api/parent/children': async () => {
   const kids = await q(
     `select cl.code, u.id, u.name, u.tree_level as level, u.market_allowed, w.balance,
+            u.age, u.chat_age_min as "chatMin", u.chat_age_max as "chatMax",
             u.created_at, c.name as circle_name
        from child_logins cl
        join users u on u.id=cl.child_id
@@ -45,6 +48,15 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
         where g.child_id = $1 order by u.name`, [k.id])).map((x) => x.name);
   }
   return kids;
+},
+'POST /api/parent/chat-ages': async (b) => {
+  const kid = await one("select id from users where id=$1 and role='child'", [b.childId]);
+  if (!kid) throw { code: 400, msg: 'нет такого ребёнка' };
+  const { age, chatMin, chatMax } = parseChatAges(b);
+  await q(
+    'update users set age=$2, chat_age_min=$3, chat_age_max=$4 where id=$1',
+    [kid.id, age, chatMin, chatMax]);
+  return { ok: true, age, chatMin, chatMax };
 },
 'POST /api/parent/link-guardian': async (b) => {
   const child = await one("select id, name, circle_id from users where id=$1 and role='child'", [b.childId]);

@@ -3,6 +3,24 @@ const MAX_FAMILY_TASKS = 5;
 const MAX_FAMILY_REWARD = 15;
 const MAX_WARDS = 5;
 
+export function parseChatAges(b) {
+  const year = (raw, label) => {
+    if (raw == null || raw === '') return null;
+    const n = parseInt(raw, 10);
+    if (!(n >= 4 && n <= 17)) throw { code: 400, msg: `${label} от 4 до 17` };
+    return n;
+  };
+  const age = year(b.age, 'возраст');
+  let chatMin = year(b.chatMin, 'нижняя граница');
+  let chatMax = year(b.chatMax, 'верхняя граница');
+  if (chatMin != null && chatMax == null) chatMax = 17;
+  if (chatMax != null && chatMin == null) chatMin = 4;
+  if (chatMin != null && chatMax != null && chatMin > chatMax) {
+    throw { code: 400, msg: 'нижняя граница больше верхней' };
+  }
+  return { age, chatMin, chatMax };
+}
+
 function familyReward(raw) {
   const amount = parseInt(raw, 10);
   if (!(amount > 0)) throw { code: 400, msg: 'укажи награду' };
@@ -25,7 +43,7 @@ export function routesGuardian({ q, one, rpc, sendPush }) {
   return {
 'GET /api/guardian/family': async (b, ctx) => {
   const kids = await q(
-    `select u.id, u.name,
+    `select u.id, u.name, u.age, u.chat_age_min as "chatMin", u.chat_age_max as "chatMax",
             (select count(*)::int from tasks t
               where t.child_id = u.id and t.kind = 'family'
                 and t.created_by = $1
@@ -66,6 +84,15 @@ export function routesGuardian({ q, one, rpc, sendPush }) {
     'insert into child_guardians(child_id, guardian_id) values($1,$2) on conflict do nothing',
     [kid.id, ctx.child]);
   return { ok: true, name: kid.name, childId: kid.id };
+},
+
+'POST /api/guardian/chat-ages': async (b, ctx) => {
+  await assertWard(one, ctx.child, b.childId);
+  const { age, chatMin, chatMax } = parseChatAges(b);
+  await q(
+    'update users set age=$2, chat_age_min=$3, chat_age_max=$4 where id=$1',
+    [b.childId, age, chatMin, chatMax]);
+  return { ok: true, age, chatMin, chatMax };
 },
 
 'POST /api/guardian/unlink': async (b, ctx) => {

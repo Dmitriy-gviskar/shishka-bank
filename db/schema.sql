@@ -40,7 +40,10 @@ create table users (
   longest_streak  int not null default 0,      -- дерево растёт по МАКСИМУМУ и не деградирует
   streak_freezes  int not null default 0,      -- «дождики»-защитники серии (покупаются + авто раз в неделю)
   last_freeze_grant date,                       -- когда последний раз выдали авто-freeze (раз в 7 дней)
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  age          int check (age is null or (age >= 4 and age <= 17)),
+  chat_age_min int check (chat_age_min is null or (chat_age_min >= 4 and chat_age_min <= 17)),
+  chat_age_max int check (chat_age_max is null or (chat_age_max >= 4 and chat_age_max <= 17))
 );
 create index on users(circle_id);
 

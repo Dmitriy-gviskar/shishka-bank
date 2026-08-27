@@ -701,7 +701,13 @@ function renderFamilyBox(cont, family) {
       </div>`).join('') : ''}
     ${kids.length ? kids.map((k) =>
       `<div class="kid-chip"><span>${esc(k.name)}</span>
-        <button type="button" data-unlink="${k.id}">отвязать</button></div>`).join('') : ''}
+        <button type="button" data-unlink="${k.id}">отвязать</button></div>
+       <div class="age-row" data-age="${k.id}">
+         <label>лет <input type="number" min="4" max="17" inputmode="numeric" value="${k.age || ''}" placeholder="8"></label>
+         <label>писать с <input type="number" min="4" max="17" inputmode="numeric" value="${k.chatMin || ''}" placeholder="—"></label>
+         <label>до <input type="number" min="4" max="17" inputmode="numeric" value="${k.chatMax || ''}" placeholder="—"></label>
+         <button type="button" class="go sec" data-agesave="${k.id}">Ок</button>
+       </div>`).join('') : ''}
     ${kids.length ? `<select id="famKid">${kidOpts}</select>
       <select id="famTpl"><option value="">Каталог дел…</option>${tplOpts}</select>
       <input id="famTitle" placeholder="Своё дело" maxlength="60">
@@ -740,6 +746,18 @@ function renderFamilyBox(cont, family) {
   box.querySelector('#famLink')?.addEventListener('click', linkKid);
   box.querySelector('#famCode')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); linkKid(); }
+  });
+  box.querySelectorAll('[data-agesave]').forEach((btn) => {
+    btn.onclick = async () => {
+      const row = btn.closest('.age-row');
+      const ins = row.querySelectorAll('input');
+      const r = await api('/api/guardian/chat-ages', {
+        childId: btn.getAttribute('data-agesave'),
+        age: ins[0].value, chatMin: ins[1].value, chatMax: ins[2].value,
+      });
+      if (r.error) return questNote(r.error, false);
+      questNote('Кто может писать — сохранено', true);
+    };
   });
   box.querySelectorAll('[data-unlink]').forEach((btn) => {
     btn.onclick = async () => {

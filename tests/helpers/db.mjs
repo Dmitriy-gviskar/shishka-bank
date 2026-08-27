@@ -76,7 +76,7 @@ export async function setupDb() {
                      'db/migration_offline_packs.sql', 'db/migration_guild_invites.sql',
                      'db/migration_shop_avito.sql', 'db/migration_shop_feed.sql',
                      'db/migration_card_gather.sql', 'db/migration_card_exchange_pick.sql',
-                     'db/migration_characters.sql'])
+                     'db/migration_characters.sql', 'db/migration_chat_ages.sql'])
     await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, f)]);
   // child_logins не входит в schema.sql — в проде её создаёт db/seed.sql (см. server-pg.mjs: авторизация ребёнка по коду из этой таблицы)
   await run('psql', ['-q', '-d', DB, '-c',
