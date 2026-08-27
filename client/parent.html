@@ -61,7 +61,19 @@
 </style></head><body data-no-nav>
 <div class="phone"><div class="wrap">
   <div class="title">Кабинет ведущего</div>
-  <div class="scroll">
+  <div id="pinGate" class="scroll">
+    <div class="card" style="margin-top:18px;padding:16px">
+      <div style="font-weight:900;color:var(--ink);font-size:16px;margin-bottom:8px">Вход по PIN</div>
+      <p style="color:#8a7358;font-weight:700;font-size:13px;line-height:1.4;margin:0 0 12px">
+        С общей ссылки кабинет не открывается. Нужен PIN ведущего — без него начислить или удалить никого нельзя.
+      </p>
+      <input id="pinInput" type="password" inputmode="numeric" autocomplete="one-time-code" placeholder="PIN" maxlength="32"
+        style="width:100%;box-sizing:border-box;background:#fffaf0;border:3px solid #d9c39a;border-radius:12px;padding:9px;font-size:18px;font-weight:800;color:var(--ink);outline:none;margin-bottom:8px;text-align:center;letter-spacing:2px">
+      <button class="btn btn-lg" id="pinEnter" type="button">Войти</button>
+    </div>
+    <div id="pinNote" style="display:none;text-align:center;font-weight:800;margin-top:10px;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px"></div>
+  </div>
+  <div id="cabinet" class="scroll" hidden>
     <h3>Мои дети</h3>
     <div id="kids"></div>
     <details class="form"><summary>Добавить ребёнка</summary>
@@ -94,11 +106,14 @@
     <h3>Обещания из магазина</h3>
     <div id="purchases"></div>
 
-    <details class="form"><summary>Выдать задание</summary>
+    <details class="form"><summary>Выдать лагерное задание</summary>
+      <p style="color:#8a7358;font-weight:700;font-size:12px;line-height:1.35;margin:0 0 8px">
+        Семейные дела (3–5 штук) родители выдают сами в приложении, на экране заданий. Здесь — только лагерь.
+      </p>
       <select id="taskKid"></select>
       <select id="taskTpl"><option value="">Библиотека заданий (50 готовых)…</option></select>
       <input id="taskTitle" placeholder="Что нужно сделать" maxlength="60">
-      <input id="taskReward" type="number" min="1" placeholder="Награда в шишках">
+      <input id="taskReward" type="number" min="1" max="100" placeholder="Награда, до 100">
       <label><input type="checkbox" id="taskPhoto"> нужно подтвердить фото</label>
       <button class="btn btn-lg" id="createTask">Выдать задание</button>
     </details>

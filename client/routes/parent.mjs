@@ -1,4 +1,13 @@
-// Кабинет родителя: /api/parent/*
+// Кабинет ведущего: /api/parent/*
+const MAX_HOST_CONES = 100; // за одно начисление / списание / выплату / награду задания
+
+function hostAmount(raw, label = 'сумму') {
+  const amount = parseInt(raw, 10);
+  if (!(amount > 0)) throw { code: 400, msg: `укажи ${label}` };
+  if (amount > MAX_HOST_CONES) throw { code: 400, msg: `не больше ${MAX_HOST_CONES} шишек за раз` };
+  return amount;
+}
+
 export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, sendPush, genLoginCode }) {
   return {
 'GET /api/parent/state': async () => {
@@ -99,8 +108,12 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
 },
 'POST /api/parent/create-task': async (b) => {
   const ch = await one('select circle_id from users where id=$1', [b.childId]); if (!ch) throw { code: 400, msg: 'нет ребёнка' };
-  const title = String(b.title || '').trim().slice(0, 60); const reward = parseInt(b.reward, 10);
-  if (!title) throw { code: 400, msg: 'укажи задание' }; if (!(reward > 0)) throw { code: 400, msg: 'укажи награду' };
+  const title = String(b.title || '').trim().slice(0, 60); const reward = hostAmount(b.reward, 'награду');
+  if (!title) throw { code: 400, msg: 'укажи задание' };
+  const dup = await one(
+    `select id from tasks where child_id=$1 and lower(title)=lower($2)
+        and status in ('open','pending_review') limit 1`, [b.childId, title]);
+  if (dup) throw { code: 400, msg: 'такое задание уже висит — не плодим двойников' };
   await q('insert into tasks(circle_id,child_id,title,reward,category,needs_photo) values($1,$2,$3,$4,$5,$6)', [ch.circle_id, b.childId, title, reward, 'family', !!b.photo]);
   return { ok: true };
 },
@@ -110,13 +123,13 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
   return gs;
 },
 'POST /api/parent/guild-payout': async (b) => {
-  const amount = parseInt(b.amount, 10); if (!(amount > 0)) throw { code: 400, msg: 'укажи сумму' };
+  const amount = hostAmount(b.amount);
   const paid = (await rpc('guild_payout', [b.id, amount, 'Заказ гильдии выполнен']))[0].r;
   return { ok: true, paid };
 },
 'POST /api/parent/guild-task': async (b) => {
-  const title = String(b.title || '').trim().slice(0, 60); const reward = parseInt(b.reward, 10);
-  if (!title) throw { code: 400, msg: 'укажи задание' }; if (!(reward > 0)) throw { code: 400, msg: 'укажи награду' };
+  const title = String(b.title || '').trim().slice(0, 60); const reward = hostAmount(b.reward, 'награду');
+  if (!title) throw { code: 400, msg: 'укажи задание' };
   const g = await one("select circle_id, created_by from guilds where id=$1 and status in ('open','sleeping')", [b.guildId]);
   if (!g) throw { code: 400, msg: 'гильдия не найдена' };
   const kids = await q('select child_id from guild_members where guild_id=$1', [b.guildId]);
@@ -129,8 +142,18 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
   return { ok: true, kids: kids.length };
 },
 'GET /api/parent/templates': () => memoGet('templates', 6e5, () =>
-  q('select id,title,reward,category,needs_photo from task_templates order by category nulls last, reward, title')),
-'GET /api/parent/pending': () => q("select t.id, t.title, t.reward, t.proof_url as photo, u.name as \"childName\" from tasks t join users u on u.id=t.child_id where t.status='pending_review' order by t.created_at"),
+  q(`select id,title,reward,category,needs_photo,pack,kind
+       from task_templates
+      order by case when pack = 'bereza' then 0 else 1 end, category nulls last, reward, title`)),
+'GET /api/parent/pending': async () => {
+  const stale = await q(`select id from tasks
+    where status='pending_review' and is_daily and not needs_photo and reward <= 10
+      and created_at < now() - interval '1 day' limit 80`);
+  for (const t of stale) {
+    try { await rpc('approve_task', [t.id]); } catch { /* уже закрыто */ }
+  }
+  return q("select t.id, t.title, t.reward, t.proof_url as photo, u.name as \"childName\" from tasks t join users u on u.id=t.child_id where t.status='pending_review' and coalesce(t.kind,'') <> 'family' order by t.created_at");
+},
 'GET /api/parent/purchases': async () => {
   const list = await q(`
     select p.id, p.price, p.created_at, u.name as "childName", i.title, p.child_id
@@ -222,7 +245,7 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
 },
 'POST /api/parent/topup': async (b) => {
   const ch = await one('select circle_id from users where id=$1', [b.childId]); if (!ch) throw { code: 400, msg: 'нет ребёнка' };
-  const amount = parseInt(b.amount, 10); if (!(amount > 0)) throw { code: 400, msg: 'укажи сумму' };
+  const amount = hostAmount(b.amount);
   await q('update wallets set balance=balance+$1, total_earned=total_earned+$1 where user_id=$2', [amount, b.childId]);
   await q("insert into transactions(circle_id,from_user,to_user,amount,type,message) values($1,null,$2,$3,'reward',$4)", [ch.circle_id, b.childId, amount, b.reason || 'Начисление от ведущего']);
   return { ok: true, balance: (await one('select balance from wallets where user_id=$1', [b.childId])).balance };
@@ -230,7 +253,7 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
 // корректировка вниз (штраф/списание) — не уводит баланс в минус
 'POST /api/parent/deduct': async (b) => {
   const ch = await one('select circle_id from users where id=$1', [b.childId]); if (!ch) throw { code: 400, msg: 'нет ребёнка' };
-  const amount = parseInt(b.amount, 10); if (!(amount > 0)) throw { code: 400, msg: 'укажи сумму' };
+  const amount = hostAmount(b.amount);
   const w = await one('select balance from wallets where user_id=$1', [b.childId]);
   const take = Math.min(amount, w.balance);   // не в минус
   if (take > 0) {

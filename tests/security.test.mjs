@@ -22,6 +22,62 @@ test('почта: угловые скобки и длина режутся на 
   assert.ok(msg.content.length <= 80, `длина ограничена 80 (было ${msg.content.length})`);
 });
 
+test('кабинет без PIN закрыт: дети, начисление и удаление недоступны', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const kids = await srv.api('/api/parent/children');
+  assert.equal(kids.status, 401, 'список детей без PIN');
+
+  const topup = await srv.api('/api/parent/topup', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ childId: db.childA1.id, amount: 100000000 }),
+  });
+  assert.equal(topup.status, 401, 'шишкомёт без PIN');
+  assert.equal(topup.body.error, 'нужен PIN ведущего');
+
+  const del = await srv.api('/api/parent/remove-child', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ childId: db.childA1.id, confirm: 'Ребёнок A1' }),
+  });
+  assert.equal(del.status, 401, 'удаление без PIN');
+});
+
+test('без PARENT_PIN в env кабинет закрыт даже с заголовком', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url, { PARENT_PIN: '' });
+  t.after(() => srv.stop());
+
+  const r = await srv.api('/api/parent/children', { headers: { 'x-parent-pin': 'anything' } });
+  assert.equal(r.status, 503);
+  assert.equal(r.body.error, 'кабинет ведущего закрыт');
+});
+
+test('начисление ведущим не больше 100 шишек за раз, даже с PIN', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const huge = await srv.api('/api/parent/topup', {
+    method: 'POST',
+    headers: { 'x-parent-pin': 'testpin', 'content-type': 'application/json' },
+    body: JSON.stringify({ childId: db.childA1.id, amount: 100000000 }),
+  });
+  assert.equal(huge.status, 400);
+  assert.match(huge.body.error, /не больше 100/);
+
+  const ok = await srv.api('/api/parent/topup', {
+    method: 'POST',
+    headers: { 'x-parent-pin': 'testpin', 'content-type': 'application/json' },
+    body: JSON.stringify({ childId: db.childA1.id, amount: 100 }),
+  });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.balance, 130);
+});
+
 test('PIN-кабинет: 10 неверных попыток с IP → лок (429)', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);

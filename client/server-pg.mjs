@@ -16,6 +16,7 @@ import { makeAuth } from './lib/auth.mjs';
 import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 import { routesGames } from './routes/games.mjs';
 import { routesParent } from './routes/parent.mjs';
+import { routesGuardian } from './routes/guardian.mjs';
 import { routesCards } from './routes/cards.mjs';
 
 // Код входа ребёнка: криптослучайный, из алфавита без двусмысленных символов (нет 0/O/1/I/L).
@@ -285,7 +286,8 @@ function forestChronicle({ name, tree_type, planted_month, planted_year, tree_ti
 }
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const treeAvatar = (treeType, i = 0) => TREE[treeType] || FRIEND_AV[i % 3];
-const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
+const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN кабинета ведущего (обязателен в проде)
+if (!PARENT_PIN) console.warn('PARENT_PIN не задан — кабинет ведущего закрыт, начисления и удаления недоступны');
 const PUBLIC = new Set([
   'POST /api/link', 'POST /api/signup', 'GET /api/signup/hint', 'POST /api/recover', 'GET /api/ping',
 ]); // роуты без кода ребёнка
@@ -468,6 +470,7 @@ async function sendPush(userId, title, body, url) {
 const api = {
   ...routesGames({ q, one, rpc }),
   ...routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, sendPush, genLoginCode }),
+  ...routesGuardian({ q, one, rpc, sendPush }),
   ...routesCards({ q, one, rpc, assertOwn, assertFriend }),
   'POST /api/push/subscribe': async (b, ctx) => {
     const sub = b.subscription;
@@ -514,7 +517,7 @@ const api = {
     if (name.length < 2) throw { code: 400, msg: 'напиши имя дерева' };
     const ip = clientIp(req || { headers: {}, socket: {} });
     if (!ip || ip === 'x') throw { code: 400, msg: 'не удалось проверить устройство' };
-    const row = await one(
+    let row = await one(
       `select u.id, u.name, u.circle_id, cl.code
          from users u
          join child_logins cl on cl.child_id=u.id
@@ -522,7 +525,17 @@ const api = {
           and u.signup_ip=$2
           and u.created_at > now() - interval '7 days'
         order by u.created_at desc limit 1`, [name, ip]);
-    if (!row) throw { code: 404, msg: 'Не нашли такое дерево с этого телефона. Проверь имя или зайди по коду.' };
+    if (!row) {
+      // другое устройство: если имя дерева за месяц одно — отдаём его (иначе нужен код)
+      const uniq = await q(
+        `select u.id, u.name, u.circle_id, cl.code
+           from users u join child_logins cl on cl.child_id=u.id
+          where u.role='child' and lower(u.name)=lower($1)
+            and u.created_at > now() - interval '30 days'
+          order by u.created_at desc`, [name]);
+      if (uniq.length === 1) row = uniq[0];
+    }
+    if (!row) throw { code: 404, msg: 'Не нашли такое дерево. Проверь имя или зайди по коду с того экрана, где сажал.' };
     let raw = null;
     try {
       raw = auth.newToken();
@@ -651,11 +664,12 @@ const api = {
 
   'GET /api/state': async (b, ctx) => {
     const TREE_NAME = { 1: 'Саженец', 2: 'Дубок', 3: 'Деревце', 4: 'Крепкое', 5: 'Могучее' };
-    const [u, w] = await Promise.all([
+    const [u, w, login] = await Promise.all([
       one(`select name,tree_level,tree_type,avatar_skin,current_streak,coalesce(streak_freezes,0) as streak_freezes,
             (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily
            from users where id=$1`, [ctx.child]),
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
+      one('select code from child_logins where child_id=$1', [ctx.child]).catch(() => null),
     ]);
     // питомцы на поляне: массив (до 5), каждый с фразой
     const familiars = await q(`select f.type_id as type, t.code, t.name, t.category, f.grade, l.title, r.color,
@@ -675,7 +689,8 @@ const api = {
              tree_type: u.tree_type, balance: w.balance,
              total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
              streak: u.current_streak, streak_freezes: u.streak_freezes || 0,
-             can_claim_daily: u.can_claim_daily, familiars };
+             can_claim_daily: u.can_claim_daily, familiars,
+             login_code: login?.code || null };
   },
   'POST /api/freeze/buy': async (b, ctx) => {
     try { await rpc('buy_streak_freeze', [ctx.child]); }
@@ -695,49 +710,75 @@ const api = {
     try { await rpc('ensure_daily_tasks', [ctx.child]); }
     catch (e) { console.error('ensure_daily_tasks', e.message); }
     // open / на проверке / вернули на доработку; done только у сегодняшних daily
-    return (await q(`select id,title,reward,needs_photo,status,is_daily,category,created_at
+    const rows = (await q(`select id,title,reward,needs_photo,status,is_daily,category,created_at,
+             coalesce(kind, case when is_daily then 'daily' else 'host' end) as kind
       from tasks where child_id=$1
       and (
         status in ('open','pending_review','rejected')
         or (status = 'done' and is_daily and created_at::date = (now() at time zone 'Europe/Moscow')::date)
       )
       order by case status when 'rejected' then 0 when 'open' then 1 when 'pending_review' then 2 else 3 end,
-               is_daily desc, created_at`, [ctx.child]))
+               case coalesce(kind, '') when 'day' then 0 else 1 end,
+               is_daily desc, created_at desc`, [ctx.child]))
       .map((t) => ({
         id: t.id, title: t.title, reward: t.reward, needs_photo: t.needs_photo,
-        is_daily: !!t.is_daily, category: t.category || '',
+        is_daily: !!t.is_daily, category: t.category || '', kind: t.kind || (t.is_daily ? 'daily' : 'host'),
         status: t.status === 'pending_review' ? 'submitted' : t.status,
       }));
+    // без простыни: один заголовок один раз, не больше 10 открытых лесных дел;
+    // семейные (от родителя) в этот лимит не входят — у них свой потолок 5
+    const seen = new Set();
+    const slim = [];
+    let openLeft = 10;
+    for (const t of rows) {
+      const key = String(t.title || '').trim().toLowerCase();
+      const family = t.kind === 'family';
+      if (t.status === 'open' && seen.has(key)) continue;
+      if (t.status === 'open') {
+        if (!family) {
+          if (openLeft <= 0) continue;
+          openLeft--;
+        }
+        seen.add(key);
+      }
+      slim.push(t);
+    }
+    return slim;
   },
   'POST /api/task/done': async (b, ctx) => {
-    const t = await one('select id, title, needs_photo, status from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);
+    const t = await one('select id, title, needs_photo, status, is_daily, reward, kind from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);
     if (!t || t.status === 'done' || t.status === 'pending_review') throw { code: 400, msg: 'задание недоступно' };
     let proof = null;
     if (t.needs_photo) proof = await savePhoto(b.photo, 'task_' + b.id);
     await rpc('submit_task', [b.id, proof]);
     const me = await one('select name from users where id=$1', [ctx.child]);
-    // ведущий + опекуны — как при покупке в магазине (иначе дело висит «на проверке» незамеченным)
+    const family = t.kind === 'family';
+    // семейное — только опекунам; лесное — ведущему круга + опекунам
     let notify = [];
-    try {
-      notify = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
-    } catch (e) { console.error('task notify parent', e.message); }
+    if (!family) {
+      try {
+        notify = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
+      } catch (e) { console.error('task notify parent', e.message); }
+    }
     try {
       const g = await q('select guardian_id as id from child_guardians where child_id=$1', [ctx.child]);
       notify = notify.concat(g);
     } catch (e) { console.error('task notify guardians', e.message); }
     let approved = false;
-    if (!notify.length) {
-      // свой лес без ведущего (приглашённый друг) — иначе дела висят навсегда
+    const cheapDaily = !!t.is_daily && !t.needs_photo && (t.reward || 0) <= 10;
+    if ((!family && (!notify.length || cheapDaily)) || (family && !notify.length)) {
+      // без проверяющего или дешёвая ежедневка без фото — не копим очередь
       try { await rpc('approve_task', [b.id]); approved = true; }
       catch (e) { console.error('auto-approve', e.message); }
     }
     if (!approved) {
+      const openUrl = family ? '/quests.html' : '/parent.html#pending';
       for (const p of notify) {
         sendPush(
           p.id,
           '📋 На проверку!',
           `${me?.name || 'Ребёнок'} сдал «${t.title}»`,
-          '/parent.html#pending',
+          openUrl,
         ).catch(() => {});
       }
     }
@@ -1683,9 +1724,10 @@ const server = createServer(async (req, res) => {
     try {
       if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
       if (!guarded && !childRateCheck(ip)) throw { code: 429, msg: 'Слишком много запросов — подожди полминуты.' };
-      // родительский контур: PIN опционален (проверка только если PARENT_PIN задан)
+      // кабинет ведущего: без PIN закрыт (пустой PARENT_PIN ≠ «открыто для всех»)
       if (isParent) {
-        if (PARENT_PIN && (req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN родителя' }; }
+        if (!PARENT_PIN) throw { code: 503, msg: 'кабинет ведущего закрыт' };
+        if ((req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN ведущего' }; }
         okTry(ip);
       }
       const ctx = await auth.resolve(req);

@@ -507,3 +507,31 @@ test('особые карты: не выпадают, не торгуются, �
     assert.equal(total.n, all.n - specials.n, 'счёт коллекции не включает особые карты');
   } finally { await f.pool.end(); }
 });
+
+test('обмен картами: нельзя просить ранг выше, равный и ниже — можно, карты меняются', async () => {
+  const f = await fixture();
+  try {
+    const a = f.childA1.id, b = f.childA2.id;
+    await f.give(a, 'lisa', 3, 1);
+    await f.give(b, 'sova', 1, 1);
+    await f.give(b, 'sova', 4, 1);
+    const lisa = await f.typeId('lisa'), sova = await f.typeId('sova');
+
+    await assert.rejects(
+      () => f.q('select create_card_swap($1,$2,3,$3,4)', [a, lisa, sova]),
+      /want higher grade/);
+
+    const okLow = (await f.one('select create_card_swap($1,$2,3,$3,1) as v', [a, lisa, sova])).v;
+    assert.equal(okLow.ok, true);
+    const held = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=3', [a, lisa]);
+    assert.equal(held, null, 'карта ушла в заявку');
+
+    const swap = await f.one("select id from card_swaps where from_id=$1 and status='open'", [a]);
+    const took = (await f.one('select accept_card_swap($1,$2) as v', [b, swap.id])).v;
+    assert.equal(took.ok, true);
+    const aGot = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [a, sova]);
+    const bGot = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=3', [b, lisa]);
+    assert.equal(aGot.qty, 1);
+    assert.equal(bGot.qty, 1);
+  } finally { await f.pool.end(); }
+});

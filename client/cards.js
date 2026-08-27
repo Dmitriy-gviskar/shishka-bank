@@ -13,7 +13,7 @@ window.runCards = function () {
   const thumb = (code, grade) => cardUrl(code, grade, 'thumb');  // сетки
   const md = (code, grade) => cardUrl(code, grade, 'md');        // модалки / средний превью
   let RAR = {}, DATA = null, OWN = null, PEEK = null;
-  let LOTS = [], WANTS = [], AUCS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
+  let LOTS = [], WANTS = [], AUCS = [], SWAPS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
   const note = (t) => {   // всплывающая подсказка поверх экрана
     const el = document.createElement('div'); el.textContent = t;
     el.style.cssText = 'position:absolute;left:50%;bottom:90px;transform:translateX(-50%);z-index:50;background:#fffaf0;border:2px solid #d9c39a;border-radius:12px;padding:9px 16px;font-weight:800;color:#b3452e;box-shadow:0 4px 12px rgba(0,0,0,.3);max-width:80%;text-align:center';
@@ -376,6 +376,7 @@ window.runCards = function () {
         const isFam = FAM.some((f) => f.type === c.id && f.grade === sel);
         acts += `<button class="a-fam">${isFam ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`;
         acts += `<button class="a-gift">🎁 Подарить другу</button>`;
+        if (!isSpecial) acts += `<button class="a-swap">🔄 Обменять · равный или ниже</button>`;
       } else {
         acts = `<div class="sub">Этой карты у тебя ещё нет — ${MARKET ? 'открывай паки или найди на рынке' : 'открывай паки'}.</div>`;
       }
@@ -432,6 +433,8 @@ window.runCards = function () {
         if (r2.error) { dnote.textContent = r2.error; dnote.style.color = '#b3452e'; }
         else { dnote.textContent = '🔨 Торги начались! Смотри на вкладке «Рынок»'; dnote.style.color = '#5f8e37'; setTimeout(reload, 900); }
       };
+      const bSwap = sheet.querySelector('.a-swap');
+      if (bSwap) bSwap.onclick = () => openSwapPicker(c, sel, dnote);
       const bGift = sheet.querySelector('.a-gift');
       if (bGift) bGift.onclick = async () => {
         const friends = await api('/api/friends');
@@ -805,10 +808,12 @@ window.runCards = function () {
 
   // лоты и заявки круга — в кэш, чтобы деталь карты сразу знала, где её купить
   async function fetchMarket() {
-    const [lots, wants, aucs] = await Promise.all([api('/api/market'), api('/api/wants'), api('/api/card-auctions')]);
+    const [lots, wants, aucs, swaps] = await Promise.all([
+      api('/api/market'), api('/api/wants'), api('/api/card-auctions'), api('/api/swaps')]);
     LOTS = Array.isArray(lots) ? lots : [];
     WANTS = Array.isArray(wants) ? wants : [];
     AUCS = Array.isArray(aucs) ? aucs : [];
+    SWAPS = Array.isArray(swaps) ? swaps : [];
   }
   async function loadMarket() { await fetchMarket(); renderMarket(); }
 
@@ -926,6 +931,78 @@ window.runCards = function () {
       };
       view.appendChild(el);
     }
+
+    const sec3 = document.createElement('div'); sec3.className = 'msec'; sec3.textContent = '🔄 Обмены';
+    view.appendChild(sec3);
+    if (!SWAPS.length) {
+      const e = document.createElement('div'); e.className = 'empty3';
+      e.innerHTML = 'Обменов нет.<br>Со своей карты можно попросить равный ранг или ниже.';
+      view.appendChild(e);
+    }
+    for (const s of SWAPS) {
+      const el = document.createElement('div'); el.className = 'lot'; el.style.setProperty('--rc', col(s.want_grade));
+      const offerR = (RAR[s.offer_grade] || {}).name || s.offer_grade;
+      const wantR = (RAR[s.want_grade] || {}).name || s.want_grade;
+      el.innerHTML = `<img src="${thumb(s.want_code, s.want_grade)}" loading="lazy">
+        <div class="li"><div class="lt">${esc(s.want_name)} · ${wantR}</div>
+          <div class="ls">${s.mine ? 'ты отдаёшь' : 'от ' + esc(s.from_name)}: ${esc(s.offer_name)} · ${offerR}</div></div>
+        <button class="${s.mine ? 'cancel' : 'buy'}">${s.mine ? 'Снять' : 'Меняться'}</button>`;
+      el.querySelector('button').onclick = async () => {
+        if (s.mine) {
+          const r = await api('/api/swap/cancel', { id: s.id });
+          if (r.error) note(r.error); else reload();
+          return;
+        }
+        if (!await ask('Обменяться?', `Отдашь «${s.want_name}» (${wantR}), получишь «${s.offer_name}» (${offerR}).`, 'Меняться')) return;
+        const r = await api('/api/swap/accept', { id: s.id });
+        if (r.error) { note(r.error); reload(); return; }
+        note(`Обмен закрыт: у тебя «${r.got}»`);
+        reload();
+      };
+      view.appendChild(el);
+    }
+  }
+
+  function openSwapPicker(card, offerGrade, dnote) {
+    const gs = document.getElementById('giftSheet');
+    const maxG = offerGrade;
+    const pool = (DATA.cards || []).filter((x) => x.category !== 'special');
+    gs.innerHTML = `<button class="x">&times;</button><h3>Что хочешь взамен?</h3>
+      <div class="sub">Отдаёшь «${esc(card.name)}» · ${(RAR[offerGrade] || {}).name}. Просить можно только этот ранг или ниже.</div>
+      <input id="swapQ" placeholder="Имя существа" maxlength="24"
+        style="width:100%;box-sizing:border-box;background:#fffaf0;border:3px solid #d9c39a;border-radius:12px;padding:9px;font-weight:800;margin:6px 0">
+      <div id="swapHits" style="max-height:220px;overflow-y:auto"></div>
+      <div class="note2" id="gnote"></div>`;
+    gs.querySelector('.x').onclick = () => document.getElementById('giftOv').classList.remove('on');
+    const hits = gs.querySelector('#swapHits');
+    const paint = () => {
+      const q = (gs.querySelector('#swapQ').value || '').trim().toLowerCase();
+      const list = pool.filter((x) => !q || x.name.toLowerCase().includes(q)).slice(0, 20);
+      hits.innerHTML = list.map((x) => {
+        const grades = [];
+        for (let g = 1; g <= maxG; g++) {
+          if (x.id === card.id && g === offerGrade) continue;
+          grades.push(`<button class="gfriend" data-id="${x.id}" data-g="${g}">${esc(x.name)} · ${(RAR[g] || {}).name}</button>`);
+        }
+        return grades.join('');
+      }).join('') || '<div class="sub">Никого не нашли</div>';
+      hits.querySelectorAll('.gfriend').forEach((btn) => btn.onclick = async () => {
+        const wantName = btn.textContent;
+        if (!await ask('Оставить обмен?', `Отдаёшь «${card.name}» (${(RAR[offerGrade] || {}).name}), просишь ${wantName}. Карта пока отойдёт в заявку.`, 'Оставить')) return;
+        btn.disabled = true;
+        const r = await api('/api/swap', {
+          offer: card.id, offer_grade: offerGrade, want: btn.dataset.id, want_grade: +btn.dataset.g,
+        });
+        const gn = gs.querySelector('#gnote');
+        if (r.error) { btn.disabled = false; gn.textContent = r.error; gn.style.color = '#b3452e'; return; }
+        document.getElementById('giftOv').classList.remove('on');
+        note('🔄 Обмен висит на рынке — кто откликнется, поменяется');
+        reload();
+      });
+    };
+    gs.querySelector('#swapQ').oninput = paint;
+    paint();
+    document.getElementById('giftOv').classList.add('on');
   }
 
   // плашка отмены сделки на 5 минут после покупки
