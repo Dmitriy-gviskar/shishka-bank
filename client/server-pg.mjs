@@ -222,6 +222,7 @@ async function applyBootMigrations() {
     'migration_games_wave3.sql',
     'migration_offline_packs.sql',
     'migration_guild_invites.sql',
+    'migration_shop_avito.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
@@ -1135,10 +1136,10 @@ const api = {
     try { [o] = await rpc('reserve_lot', [ctx.child, b.id]); }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /own shop|cannot buy/.test(e.message) ? 'это твоя лавка' : 'нет такого лота' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
-    sendPush(o.seller_id, '🛒 Заказ в лавке!', 'Кто-то купил твой товар — отдай его и жди подтверждения').catch(() => {});
+    sendPush(o.seller_id, '🛒 Заказ в лавке!', 'Отдай товар и жми «Отдал» — шишки ещё заморожены').catch(() => {});
     return { ok: true, balance: w.balance, order_id: o.id };
   },
-  // Активные сделки лавок (эскроу): покупатель подтверждает получение → продавец получает шишки
+  // Сделки лавок: резерв → продавец «Отдал» → покупатель «Получил» → выплата
   'GET /api/orders': async (b, ctx) => q(`
       select o.id, o.price, o.status, o.created_at,
              l.title, l.photo,

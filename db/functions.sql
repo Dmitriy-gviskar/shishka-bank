@@ -749,13 +749,28 @@ begin
 end $$;
 
 -- Покупатель подтверждает получение: шишки уходят продавцу (сделка завершена).
-create or replace function confirm_order(p_order uuid)
+create or replace function hand_order(p_order uuid, p_seller uuid)
 returns orders language plpgsql security definer set search_path = public as $$
-declare o orders; c_id uuid;
+declare o orders;
 begin
   select * into o from orders where id = p_order for update;
   if not found then raise exception 'order not found'; end if;
-  if o.status <> 'reserved' then raise exception 'order not reservable (status=%)', o.status; end if;
+  if o.seller_id <> p_seller then raise exception 'not the seller'; end if;
+  if o.status <> 'reserved' then raise exception 'order not reserved (status=%)', o.status; end if;
+  update orders set status = 'handed', handed_at = now() where id = p_order
+    returning * into o;
+  return o;
+end $$;
+
+-- Покупатель подтверждает получение: шишки уходят продавцу (сделка завершена).
+-- Только после передачи — иначе продавец ещё не отдал товар.
+create or replace function confirm_order(p_order uuid)
+returns orders language plpgsql security definer set search_path = public as $$
+declare o orders; c_id uuid; lot_title text;
+begin
+  select * into o from orders where id = p_order for update;
+  if not found then raise exception 'order not found'; end if;
+  if o.status <> 'handed' then raise exception 'order not handed (status=%)', o.status; end if;
 
   update wallets set balance = balance + o.price, total_earned = total_earned + o.price
     where user_id = o.seller_id;                       -- продавец получает доход
@@ -764,8 +779,10 @@ begin
   update orders set status = 'delivered', confirmed_at = now() where id = p_order;
 
   select circle_id into c_id from users where id = o.buyer_id;
+  select title into lot_title from shop_lots where id = o.lot_id;
   insert into transactions(circle_id, from_user, to_user, amount, type, ref_id, message)
-    values (c_id, o.buyer_id, o.seller_id, o.price, 'transfer', p_order, 'Покупка в лавке');
+    values (c_id, o.buyer_id, o.seller_id, o.price, 'transfer', p_order,
+            'Покупка в лавке: ' || coalesce(lot_title, 'товар'));
 
   perform check_achievements(o.seller_id);   -- продажи (Акула Бизнеса)
   perform check_achievements(o.buyer_id);
@@ -773,13 +790,14 @@ begin
 end $$;
 
 -- Отмена заказа: эскроу-шишки возвращаются покупателю.
+-- Можно до выплаты: и из резерва, и после «Отдал» (покупатель не получил).
 create or replace function cancel_order(p_order uuid)
 returns orders language plpgsql security definer set search_path = public as $$
 declare o orders;
 begin
   select * into o from orders where id = p_order for update;
   if not found then raise exception 'order not found'; end if;
-  if o.status <> 'reserved' then raise exception 'only reserved orders can be canceled'; end if;
+  if o.status not in ('reserved', 'handed') then raise exception 'only open orders can be canceled'; end if;
   update wallets set balance = balance + o.price where user_id = o.buyer_id;  -- вернуть эскроу
   update orders set status = 'canceled' where id = p_order;
   return o;

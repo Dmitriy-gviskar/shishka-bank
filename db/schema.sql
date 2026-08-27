@@ -223,8 +223,9 @@ create table orders (
   buyer_id   uuid not null references users(id) on delete cascade,
   seller_id  uuid not null references users(id) on delete cascade,
   price      int  not null check (price > 0),   -- фиксируем цену на момент резерва
-  status     text not null default 'reserved' check (status in ('reserved','delivered','canceled')),
+  status     text not null default 'reserved' check (status in ('reserved','handed','delivered','canceled')),
   created_at   timestamptz not null default now(),
+  handed_at    timestamptz,
   confirmed_at timestamptz
 );
 create index on orders(seller_id, status);
