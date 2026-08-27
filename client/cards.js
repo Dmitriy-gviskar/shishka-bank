@@ -14,6 +14,7 @@ window.runCards = function () {
   const md = (code, grade) => cardUrl(code, grade, 'md');        // модалки / средний превью
   const NEW_BATCH = 10;   // новинки альбома — пачками, не все сразу (T17)
   let newShown = NEW_BATCH;
+  let openNewAfterPack = false;
   let RAR = {}, DATA = null, OWN = null, PEEK = null;
   let LOTS = [], WANTS = [], AUCS = [], SWAPS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
   const note = (t) => {   // всплывающая подсказка поверх экрана
@@ -125,13 +126,18 @@ window.runCards = function () {
     const albumTools = document.getElementById('albumTools');
     if (albumTools) albumTools.style.display = PEEK ? 'none' : '';
     const av = document.getElementById('albumView'); av.innerHTML = '';
+    const nv = document.getElementById('newView');
+    if (nv) nv.innerHTML = '';
     const allCards = d.cards.filter((c) => c.category !== 'special');
-    if (!PEEK) renderNewShelf(d.cards, av);
+    if (!PEEK) renderNewShelf(d.cards, nv || av);
+    else paintNewTab(0);
     renderGroups(allCards, av);
     // Категорийные табы: показать + скролл по клику
     const catTabs = document.getElementById('catTabs');
     if (catTabs) {
-      catTabs.style.display = 'flex';
+      const onAlbum = !document.getElementById('tabNew')?.classList.contains('on')
+        && !document.getElementById('tabMarket')?.classList.contains('on');
+      catTabs.style.display = onAlbum ? 'flex' : 'none';
       catTabs.querySelectorAll('button').forEach((btn) => {
         btn.onclick = () => {
           const cat = btn.dataset.cat;
@@ -170,6 +176,10 @@ window.runCards = function () {
         box.appendChild(el);
       }
       av.appendChild(box);
+    }
+    if (openNewAfterPack) {
+      openNewAfterPack = false;
+      if (!PEEK && listUnseen(d.cards).length) showTab('new');
     }
   }
 
@@ -229,10 +239,40 @@ window.runCards = function () {
     return card;
   }
 
+  function paintNewTab(n) {
+    const tab = document.getElementById('tabNew');
+    if (!tab) return;
+    tab.hidden = !!PEEK;
+    tab.textContent = n > 0 ? `Новые · ${n}` : 'Новые';
+    if (PEEK && tab.classList.contains('on')) showTab('album');
+  }
+
+  function showTab(which) {
+    const tabA = document.getElementById('tabAlbum');
+    const tabN = document.getElementById('tabNew');
+    const tabM = document.getElementById('tabMarket');
+    const viewA = document.getElementById('albumView');
+    const viewN = document.getElementById('newView');
+    const viewM = document.getElementById('marketView');
+    const catTabs = document.getElementById('catTabs');
+    tabA?.classList.toggle('on', which === 'album');
+    tabN?.classList.toggle('on', which === 'new');
+    tabM?.classList.toggle('on', which === 'market');
+    if (viewA) viewA.style.display = which === 'album' ? '' : 'none';
+    if (viewN) viewN.style.display = which === 'new' ? '' : 'none';
+    if (viewM) viewM.style.display = which === 'market' ? '' : 'none';
+    if (catTabs) catTabs.style.display = which === 'album' ? 'flex' : 'none';
+  }
+
   function renderNewShelf(cards, host) {
     if (!host) return;
     const items = listUnseen(cards);
-    if (!items.length) { newShown = NEW_BATCH; return; }
+    paintNewTab(items.length);
+    if (!items.length) {
+      newShown = NEW_BATCH;
+      host.innerHTML = '<div class="empty2">Пока нет новинок — открой пак</div>';
+      return;
+    }
     const n = items.length;
     const shown = Math.min(Math.max(NEW_BATCH, newShown), n);
     newShown = shown;
@@ -244,7 +284,7 @@ window.runCards = function () {
         <button type="button" class="nok" id="newShelfOk">Скрыть все</button>
       </div>
       <div class="newshelf-row" id="newShelfRow"></div>`;
-    host.prepend(el);
+    host.appendChild(el);
     const row = el.querySelector('#newShelfRow');
     items.slice(0, shown).forEach((it) => row.appendChild(paintNewCard(it)));
     el.querySelector('#newShelfOk').onclick = (e) => { e.stopPropagation(); newShown = NEW_BATCH; markSeenAll(); };
@@ -612,10 +652,7 @@ window.runCards = function () {
     closeDetail();
     render(d);
     // альбом, не рынок
-    document.getElementById('tabAlbum')?.classList.add('on');
-    document.getElementById('tabMarket')?.classList.remove('on');
-    document.getElementById('albumView').style.display = '';
-    document.getElementById('marketView').style.display = 'none';
+    showTab('album');
   }
 
   // ── Обменная полка: 5 дублей одного ранга → 1 недостающая; или 1 высший → 1 низший ──
@@ -972,15 +1009,18 @@ window.runCards = function () {
     done.onclick = () => {
       ov.classList.remove('on');
       box.querySelectorAll('img').forEach((img) => img.removeAttribute('src'));
+      openNewAfterPack = true;
       reload();
     };
   };
 
   // вкладки
-  const tabA = document.getElementById('tabAlbum'), tabM = document.getElementById('tabMarket');
-  const viewA = document.getElementById('albumView'), viewM = document.getElementById('marketView');
-  tabA.onclick = () => { tabA.classList.add('on'); tabM.classList.remove('on'); viewA.style.display = ''; viewM.style.display = 'none'; };
-  tabM.onclick = () => { tabM.classList.add('on'); tabA.classList.remove('on'); viewM.style.display = ''; viewA.style.display = 'none'; loadMarket(); };
+  const tabA = document.getElementById('tabAlbum');
+  const tabN = document.getElementById('tabNew');
+  const tabM = document.getElementById('tabMarket');
+  if (tabA) tabA.onclick = () => showTab('album');
+  if (tabN) tabN.onclick = () => showTab('new');
+  if (tabM) tabM.onclick = () => { showTab('market'); loadMarket(); };
 
   // лоты и заявки круга — в кэш, чтобы деталь карты сразу знала, где её купить
   async function fetchMarket() {

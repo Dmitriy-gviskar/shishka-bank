@@ -115,6 +115,7 @@
     color:#ffe9b8;font-weight:800;font-size:11px;border-radius:999px;padding:4px 10px;cursor:pointer}
   .newshelf-h .nok:active{transform:scale(.96)}
   .newshelf-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px 6px}
+  #newView .newshelf{min-height:0}
   .newshelf .nmore{display:block;width:100%;margin-top:8px;background:rgba(255,255,255,.12);
     border:1.5px solid rgba(255,220,150,.35);color:#ffe9b8;font-weight:800;font-size:13px;
     border-radius:12px;padding:8px;cursor:pointer;font-family:"Fredoka","Nunito",sans-serif}
@@ -254,6 +255,17 @@
   .evo .jp-tap{opacity:0;animation:jpLabel .4s ease 1.7s forwards,pulseHint 1.2s ease-in-out 2.1s infinite}
   @media(prefers-reduced-motion:reduce){
     .evo-src,.evo-flash,.evo-new,.evo-label,.evo-rays{animation-duration:.15s;animation-delay:0s}}
+  /* ноут: коллекция шире, вкладка «Новые» сама крутится внутри экрана (T28) */
+  @media (min-width:720px){
+    .phone{width:min(960px,96vw);max-height:none;height:100dvh;
+      box-shadow:0 0 0 4px #c9a86a,0 16px 48px rgba(0,0,0,.35)}
+    .cwrap{padding:18px 20px 0}
+    .newshelf-row{grid-template-columns:repeat(8,minmax(0,1fr));gap:10px 8px}
+    .ncard .nl{font-size:11px}
+    .scroll{scrollbar-width:thin;scrollbar-color:rgba(255,220,150,.45) transparent}
+    .scroll::-webkit-scrollbar{width:8px}
+    .scroll::-webkit-scrollbar-thumb{background:rgba(255,220,150,.4);border-radius:8px}
+  }
   /* награды альбома */
   .rewards{display:flex;flex-direction:column;gap:8px;margin-top:6px;align-items:center}
   .rw{background:linear-gradient(135deg,#fff3d6,#ffd062);border:3px solid #e0a52e;border-radius:14px;
@@ -367,13 +379,18 @@
     <div class="ps" id="peekSub"></div>
     <button class="btn btn-sm pback" id="peekBack" type="button">← К своему альбому</button>
   </div>
-  <div class="tabs"><button id="tabAlbum" class="on">Альбом</button><button id="tabMarket">Рынок</button></div>
+  <div class="tabs">
+    <button id="tabAlbum" class="on">Альбом</button>
+    <button id="tabNew">Новые</button>
+    <button id="tabMarket">Рынок</button>
+  </div>
   <div class="tabs" id="catTabs" style="display:none;margin-top:-4px">
     <button data-cat="zver">🦊 Звери</button>
     <button data-cat="rastenie">🌿 Растения</button>
     <button data-cat="nasekomoe">🐞 Насекомые</button>
   </div>
   <div class="scroll" id="albumView"></div>
+  <div class="scroll" id="newView" style="display:none"></div>
   <div class="scroll" id="marketView" style="display:none"></div>
 </div>
 
