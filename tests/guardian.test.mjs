@@ -13,6 +13,22 @@ const H = (code) => ({ headers: { 'x-child-code': code, 'content-type': 'applica
 const P = (code, body) => ({ method: 'POST', ...H(code), body: JSON.stringify(body || {}) });
 const bal = async (srv, code) => (await srv.api('/api/state', { headers: { 'x-child-code': code } })).body.balance;
 
+test('кириллический код дерева привязывает ребёнка', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  const pp = openPool(db.url);
+  t.after(async () => { srv.stop(); await pp.end(); });
+
+  await pp.q('update child_logins set code=$1 where child_id=$2', ['ТАЯ-01', db.childA1.id]);
+  const link = await srv.api('/api/guardian/link', P(db.childA2.code, { code: 'тая-01' }));
+  assert.equal(link.status, 200);
+  assert.equal(link.body.name, 'Ребёнок A1');
+
+  const dash = await srv.api('/api/guardian/link', P(db.childB1.code, { code: 'ТАЯ\u201301' }));
+  assert.equal(dash.status, 200);
+  assert.equal(dash.body.name, 'Ребёнок A1');
+});
+
 test('родитель привязывает ребёнка по коду и выдаёт семейное дело', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);

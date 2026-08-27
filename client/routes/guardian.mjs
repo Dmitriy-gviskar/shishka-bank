@@ -51,7 +51,8 @@ export function routesGuardian({ q, one, rpc, sendPush }) {
 },
 
 'POST /api/guardian/link': async (b, ctx) => {
-  const code = String(b.code || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').trim();
+  // как /api/link: кириллица в коде (ТАЯ-01) должна остаться. Тире из мессенджеров → ASCII.
+  const code = String(b.code || '').toUpperCase().replace(/[\u2010-\u2015\u2212]/g, '-').trim();
   if (!code) throw { code: 400, msg: 'введи код дерева ребёнка' };
   const kid = await one(
     `select u.id, u.name
