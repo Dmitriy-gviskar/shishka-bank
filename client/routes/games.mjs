@@ -57,10 +57,12 @@ const GAME_LABELS = {
   number: 'Мини-игра: диктант чисел',
   compare: 'Мини-игра: тропинка сравнения',
   story: 'Мини-игра: лесные задачи',
+  quiz: 'Мини-игра: викторина 10–14',
+  logic: 'Мини-игра: задачи 10–14',
 };
 const GAME_MAX = {
   multiply: 10, guess: 5, count: 30, memory: 6, word: 5, odd: 6,
-  number: 8, compare: 8, story: 5,
+  number: 8, compare: 8, story: 5, quiz: 8, logic: 5,
 };
 const RU_ONES = ['ноль', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
 const RU_TEENS = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать',
@@ -84,6 +86,42 @@ const STORY_TEMPLATES = [
   { t: 'На ветке сидело {a} птиц, улетело {b}. Сколько осталось?', op: '-' },
   { t: 'Белка спрятала {a} орехов и потеряла {b}. Сколько осталось?', op: '-' },
   { t: 'В дупле было {a} шишек, принесли ещё {b}. Сколько теперь?', op: '+' },
+];
+// Викторина 10–14: факты школьной программы, не выдумки. Пул большой — за забег 8 случайных.
+const QUIZ_BANK = [
+  { q: 'Чем дышат рыбы?', options: ['жабрами', 'лёгкими', 'кожей', 'носом'], answer: 'жабрами' },
+  { q: 'Сколько ног у насекомого?', options: ['6', '8', '4', '10'], answer: '6' },
+  { q: 'Как называется процесс, которым растение делает пищу из света?', options: ['фотосинтез', 'дыхание', 'брожение', 'испарение'], answer: 'фотосинтез' },
+  { q: 'Какое дерево с белым стволом и чёрными чёрточками?', options: ['берёза', 'дуб', 'ель', 'сосна'], answer: 'берёза' },
+  { q: 'Самое глубокое озеро на Земле?', options: ['Байкал', 'Виктория', 'Ладога', 'Каспийское море'], answer: 'Байкал' },
+  { q: 'Столица России?', options: ['Москва', 'Санкт-Петербург', 'Казань', 'Новосибирск'], answer: 'Москва' },
+  { q: 'Куда впадает Волга?', options: ['в Каспийское море', 'в Чёрное море', 'в Балтийское море', 'в Байкал'], answer: 'в Каспийское море' },
+  { q: 'Какой материк самый большой?', options: ['Евразия', 'Африка', 'Северная Америка', 'Австралия'], answer: 'Евразия' },
+  { q: 'Сколько будет 25% от 80?', options: ['20', '25', '40', '15'], answer: '20' },
+  { q: 'Чему равны 3/4 от 20?', options: ['15', '12', '16', '10'], answer: '15' },
+  { q: 'Сколько градусов в прямом угле?', options: ['90', '45', '180', '60'], answer: '90' },
+  { q: 'Сколько планет в Солнечной системе?', options: ['8', '9', '7', '10'], answer: '8' },
+  { q: 'При какой температуре кипит вода на уровне моря?', options: ['100 °C', '90 °C', '80 °C', '0 °C'], answer: '100 °C' },
+  { q: 'Вокруг чего Земля делает оборот за год?', options: ['вокруг Солнца', 'вокруг Луны', 'вокруг Юпитера', 'вокруг своей оси'], answer: 'вокруг Солнца' },
+  { q: 'Кто чаще всего опыляет цветы?', options: ['пчёлы', 'кроты', 'рыбы', 'совы'], answer: 'пчёлы' },
+  { q: 'Какое из этих деревьев хвойное?', options: ['ель', 'берёза', 'дуб', 'клён'], answer: 'ель' },
+  { q: 'Сколько суток в невисокосном году?', options: ['365', '366', '360', '364'], answer: '365' },
+  { q: 'Сколько примерно весит литр воды?', options: ['1 кг', '100 г', '10 кг', '1 г'], answer: '1 кг' },
+  { q: 'Если сегодня среда, какой день будет послезавтра?', options: ['пятница', 'четверг', 'суббота', 'вторник'], answer: 'пятница' },
+  { q: '7 × 8 + 6 = ?', options: ['62', '56', '68', '54'], answer: '62' },
+  { q: 'Полярный день бывает', options: ['за полярным кругом', 'на экваторе', 'в любой пустыне', 'только зимой везде'], answer: 'за полярным кругом' },
+  { q: 'У паука ног', options: ['8', '6', '4', '10'], answer: '8' },
+  { q: 'Грибы — это', options: ['отдельное царство', 'растения', 'животные', 'камни'], answer: 'отдельное царство' },
+  { q: '0,5 + 0,5 = ?', options: ['1', '0', '2', '0,25'], answer: '1' },
+];
+const LOGIC_TEMPLATES = [
+  { kind: 'mul', t: 'В паке {a} шишек. Купили {b} паков. Сколько шишек всего?' },
+  { kind: 'div', t: 'У {name} {a} шишек. Разделила поровну на {b} друзей. По сколько каждому?' },
+  { kind: 'pct', t: 'Число {a}. Чему равны {p}% от него?' },
+  { kind: 'stock', t: '{name} собрала {a} орехов — это {p}% запаса. Каков весь запас?' },
+  { kind: 'left', t: 'Купили {a} пачек по {b} шишек и потратили {c}. Сколько осталось?' },
+  { kind: 'speed', t: 'Шли {b} часов со скоростью {a} км/ч. Какой путь в километрах?' },
+  { kind: 'pack', t: 'В корзине {a} ягод, в банку кладут по {b}. Сколько полных банок?' },
 ];
 
   return {
@@ -265,6 +303,66 @@ const STORY_TEMPLATES = [
     on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { questions, reward: 5 };
 },
+'POST /api/game/quiz/start': async (b, ctx) => {
+  const picked = shuffleArr(QUIZ_BANK).slice(0, 8);
+  const questions = picked.map((row) => ({
+    q: row.q,
+    options: shuffleArr(row.options.slice()),
+    answer: row.answer,
+  }));
+  await q(`insert into mini_games(child_id, game, last_played) values ($1,'quiz',current_date)
+    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  return { questions, reward: 6 };
+},
+'POST /api/game/quiz/answer': async (b, ctx) => {
+  const expected = String(b.expected || '').trim();
+  const correct = String(b.answer || '').trim() === expected;
+  return { correct, expected };
+},
+'POST /api/game/logic/start': async (b, ctx) => {
+  const names = await q(
+    `select name from card_types where code = any($1::text[]) order by random() limit 8`, [GAME_EASY]);
+  const namePool = names.map((r) => r.name).filter((n) => !/[\s-]/.test(n));
+  const tpls = shuffleArr(LOGIC_TEMPLATES).slice(0, 5);
+  const questions = tpls.map((tpl, i) => {
+    const name = namePool[i % (namePool.length || 1)] || 'Белка';
+    let a, n, p, c, answer, text;
+    if (tpl.kind === 'mul' || tpl.kind === 'speed') {
+      a = Math.floor(Math.random() * 8) + 3;
+      n = Math.floor(Math.random() * 6) + 2;
+      answer = a * n;
+      text = tpl.t.replace('{name}', name).replace('{a}', String(a)).replace('{b}', String(n));
+    } else if (tpl.kind === 'div' || tpl.kind === 'pack') {
+      n = Math.floor(Math.random() * 5) + 2;
+      answer = Math.floor(Math.random() * 8) + 3;
+      a = n * answer + (tpl.kind === 'pack' ? Math.floor(Math.random() * (n - 1)) : 0);
+      if (tpl.kind === 'div') a = n * answer;
+      text = tpl.t.replace('{name}', name).replace('{a}', String(a)).replace('{b}', String(n));
+    } else if (tpl.kind === 'pct') {
+      p = [10, 20, 25, 50][Math.floor(Math.random() * 4)];
+      answer = Math.floor(Math.random() * 9) + 2;
+      a = answer * (100 / p);
+      text = tpl.t.replace('{a}', String(a)).replace('{p}', String(p));
+    } else if (tpl.kind === 'stock') {
+      p = [10, 20, 25, 50][Math.floor(Math.random() * 4)];
+      a = (Math.floor(Math.random() * 8) + 2) * (p === 10 ? 1 : p === 20 ? 2 : p === 25 ? 1 : 5);
+      answer = (a * 100) / p;
+      text = tpl.t.replace('{name}', name).replace('{a}', String(a)).replace('{p}', String(p));
+    } else {
+      a = Math.floor(Math.random() * 5) + 2;
+      n = Math.floor(Math.random() * 8) + 3;
+      c = Math.floor(Math.random() * 10) + 1;
+      const total = a * n;
+      if (c >= total) c = total - 1;
+      answer = total - c;
+      text = tpl.t.replace('{a}', String(a)).replace('{b}', String(n)).replace('{c}', String(c));
+    }
+    return { text, answer };
+  });
+  await q(`insert into mini_games(child_id, game, last_played) values ($1,'logic',current_date)
+    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  return { questions, reward: 6 };
+},
 'POST /api/game/finish': async (b, ctx) => {
   const game = String(b.game || 'multiply');
   if (!GAME_LABELS[game]) throw { code: 400, msg: 'неизвестная игра' };
@@ -294,7 +392,8 @@ const STORY_TEMPLATES = [
       const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
       const level = row?.level || 1;
       promised = level === 1 ? 3 : level === 2 ? 5 : 8;
-    } else if (game === 'guess' || game === 'story') promised = 5;
+    }     else if (game === 'quiz' || game === 'logic') promised = 6;
+    else if (game === 'guess' || game === 'story') promised = 5;
     else if (game === 'memory' || game === 'word' || game === 'odd') promised = 4;
     else if (game === 'number' || game === 'compare') promised = 3;
     const wrong = Math.max(0, maxScore - score);
