@@ -65,6 +65,98 @@ if (!window.__cardMemHook) {
   });
 }
 
+// Офлайн-коллекция: снимок альбома/достижений + очередь паков и слияний (T13).
+function offWho() {
+  return localStorage.getItem('deviceToken') || localStorage.getItem('childCode') || '';
+}
+function offSnap(path) {
+  try { return JSON.parse(localStorage.getItem('off:' + offWho() + ':' + path) || 'null'); } catch { return null; }
+}
+function offSnapSet(path, d) {
+  if (!d || d.error) return;
+  try { localStorage.setItem('off:' + offWho() + ':' + path, JSON.stringify(d)); } catch {}
+}
+function offQ() {
+  try { return JSON.parse(localStorage.getItem('offq:' + offWho()) || '[]'); } catch { return []; }
+}
+function offQSet(items) {
+  try { localStorage.setItem('offq:' + offWho(), JSON.stringify(items)); } catch {}
+}
+function offEnqueue(path, body) {
+  const q = offQ();
+  q.push({ path, body });
+  offQSet(q);
+}
+let _offLib;
+async function offCardsLib() {
+  if (!_offLib) _offLib = await import('./lib/offline-cards.mjs');
+  return _offLib;
+}
+async function flushOfflineQueue(headers) {
+  const q = offQ();
+  if (!q.length) return;
+  const left = [];
+  for (let i = 0; i < q.length; i++) {
+    const item = q[i];
+    try {
+      const res = await fetch(item.path, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(item.body || {}),
+      });
+      if (res.status >= 500) { left.push(...q.slice(i)); break; }
+    } catch {
+      left.push(...q.slice(i));
+      break;
+    }
+  }
+  offQSet(left);
+}
+async function offlineAction(path, body) {
+  const lib = await offCardsLib().catch(() => null);
+  if (!lib) return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' };
+  if (path === '/api/card/merge') {
+    const data = offSnap('/api/cards');
+    const r = lib.applyMerge(data, body.type, parseInt(body.grade, 10));
+    if (r.error) return r;
+    offSnapSet('/api/cards', data);
+    offEnqueue('/api/card/merge', { type: body.type, grade: parseInt(body.grade, 10) });
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k);
+    return r;
+  }
+  if (path === '/api/pack/open') {
+    const data = offSnap('/api/cards');
+    const state = offSnap('/api/state') || {};
+    if ((state.balance ?? 0) < lib.PACK_PRICE) return { error: 'не хватает шишек на пак' };
+    const rolled = lib.rollPack(data);
+    if (rolled.error) return rolled;
+    const cards = lib.applyPackToAlbum(data, rolled.drawn);
+    state.balance = (state.balance || 0) - lib.PACK_PRICE;
+    offSnapSet('/api/cards', data);
+    offSnapSet('/api/state', state);
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k);
+    window.__balAt = 0;
+    const nonce = (crypto.randomUUID ? crypto.randomUUID() : ('n' + Date.now() + Math.random())).replace(/-/g, '').slice(0, 32);
+    offEnqueue('/api/pack/offline', {
+      nonce,
+      cards: rolled.drawn.map((d) => ({ type: d.type, grade: d.grade })),
+    });
+    return { cards, rewards: [], balance: state.balance, offline: true };
+  }
+  return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' };
+}
+if (!window.__offOnlineHook) {
+  window.__offOnlineHook = true;
+  window.addEventListener('online', () => {
+    const token = localStorage.getItem('deviceToken');
+    const code = localStorage.getItem('childCode');
+    const headers = {};
+    if (token) headers['x-device-token'] = token;
+    else if (code) headers['x-child-code'] = encodeURIComponent(code);
+    flushOfflineQueue(headers).catch(() => {});
+  });
+}
+
 function runApp() {
 function hasSession() {
   return !!(localStorage.getItem('deviceToken') || localStorage.getItem('childCode'));
@@ -125,6 +217,7 @@ async function api(path, body, method) {
   const post = body !== undefined || method === 'POST';
   const opt = post ? { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }
                    : { headers };
+  const snapOk = (p) => p === '/api/cards' || p === '/api/achievements' || p === '/api/state';
   try {
     if (!post) {
       // кабинет ведущего не кэшируем — иначе чужой PIN/сессия могут показать чужих детей
@@ -140,10 +233,14 @@ async function api(path, body, method) {
       const hit = JSON.parse(sessionStorage.getItem(k) || 'null');
       const age = hit ? Date.now() - hit.t : Infinity;
       const load = async () => {
+        await flushOfflineQueue(headers);
         const res = await fetch(path, opt);
         const d = await res.json();
         if (!res.ok && d.error) d.error = friendlyError(res.status, d.error);
-        if (d && !d.error) try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), d })); } catch {}
+        if (d && !d.error) {
+          try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), d })); } catch {}
+          if (snapOk(path)) offSnapSet(path, d);
+        }
         return d;
       };
       if (age < 20e3) return hit.d;                               // только что смотрели — сеть не трогаем
@@ -159,7 +256,15 @@ async function api(path, body, method) {
     }
     return r;
   }
-  catch { return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' }; }
+  catch {
+    if (!post) {
+      const stale = offSnap(path);
+      if (stale) return stale;
+    } else if (path === '/api/pack/open' || path === '/api/card/merge') {
+      return offlineAction(path, body || {});
+    }
+    return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' };
+  }
 }
 // экранирование пользовательских строк перед вставкой в innerHTML (защита от stored XSS)
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -569,7 +674,9 @@ function questNote(t2, ok) {
 }
 
 function renderFamilyBox(cont, family) {
-  if (!family || family.error) return;
+  if (!family) return;
+  const loadErr = family.error;
+  if (loadErr) family = { kids: [], pending: [], templates: [], maxTasks: 5, maxReward: 15 };
   const kids = Array.isArray(family.kids) ? family.kids : [];
   const pending = Array.isArray(family.pending) ? family.pending : [];
   const tpls = Array.isArray(family.templates) ? family.templates : [];
@@ -583,6 +690,7 @@ function renderFamilyBox(cont, family) {
     `<option value="${t.id}" data-title="${esc(t.title)}" data-reward="${t.reward}" data-photo="${t.needs_photo ? 1 : 0}">${esc(t.title)} · ${t.reward}</option>`).join('');
   box.innerHTML = `<summary>Я родитель — дела для своих</summary>
     <p class="hint">До ${family.maxTasks || 5} своих дел на ребёнка, награда не больше ${maxR} шишек. Своё название или строка из каталога — и «Выдать дело».</p>
+    ${loadErr ? `<p class="hint">${esc(loadErr)}</p>` : ''}
     ${pending.length ? pending.map((p) => `
       <div class="ward-row" data-id="${p.id}">
         <div class="t">${esc(p.title)}</div>
@@ -623,11 +731,15 @@ function renderFamilyBox(cont, family) {
     questNote(`Дело «${r.title}» выдано · +${r.reward}`, true);
     loadTasks();
   });
-  box.querySelector('#famLink')?.addEventListener('click', async () => {
+  const linkKid = async () => {
     const r = await api('/api/guardian/link', { code: box.querySelector('#famCode').value });
     if (r.error) return questNote(r.error, false);
     questNote(`${r.name} привязан — можно выдавать дела`, true);
     loadTasks();
+  };
+  box.querySelector('#famLink')?.addEventListener('click', linkKid);
+  box.querySelector('#famCode')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); linkKid(); }
   });
   box.querySelectorAll('[data-unlink]').forEach((btn) => {
     btn.onclick = async () => {
@@ -808,6 +920,7 @@ if (page === 'shop.html') loadShop();
 // ── Достижения (витрина) ──
 async function loadAch() {
   const list = await api('/api/achievements');
+  if (!Array.isArray(list)) return;
   const unlocked = list.filter((a) => a.unlocked).length;
   document.getElementById('achCount').textContent = `Открыто ${unlocked} из ${list.length}`;
   const g = document.getElementById('achList'); g.innerHTML = '';
@@ -1170,7 +1283,7 @@ if (page === 'surprises.html') {
 if (page === 'forest.html') {
   const FOREST_TIPS = [
     'Четыре двери — главное. Остальное спрятано в «Ещё в лесу».',
-    'Коллекция — альбом существ. Карту можно взять питомцем.',
+    'Коллекция — альбом существ. Дубль можно поселить собирать шишки.',
     'В играх питомец помогает копить шишки.',
     'Почта — напиши обитателю леса. Другом станет, когда примет заявку.',
     'Моё дерево — грамота, паспорт и твой код поляны.',
@@ -1184,6 +1297,30 @@ if (page === 'forest.html') {
       tipPop.textContent = FOREST_TIPS[tipI % FOREST_TIPS.length];
       tipPop.classList.add('on');
       tipI += 1;
+    };
+  }
+  const gatherBar = document.getElementById('gatherBar');
+  const gatherBtn = document.getElementById('gatherBtn');
+  const gatherSub = document.getElementById('gatherSub');
+  if (gatherBar) {
+    const paintGather = async () => {
+      const g = await api('/api/gather');
+      if (!g || g.error || !(g.gatherers || []).length) { gatherBar.classList.remove('on'); return; }
+      gatherBar.classList.add('on');
+      const n = g.gatherers.length, ready = g.ready || 0;
+      gatherSub.textContent = ready
+        ? `${n} ${n === 1 ? 'карта' : 'карт'} · можно собрать ${ready}🌰`
+        : `${n} ${n === 1 ? 'карта собирает' : 'карт собирают'} · 1🌰 в день, сегодня уже забрали`;
+      if (gatherBtn) gatherBtn.hidden = !ready;
+    };
+    paintGather();
+    if (gatherBtn) gatherBtn.onclick = async () => {
+      gatherBtn.disabled = true;
+      const r = await api('/api/gather/claim', {});
+      gatherBtn.disabled = false;
+      if (r.error) { gatherSub.textContent = r.error; return; }
+      if (r.gained) { gatherSub.textContent = `Собрали ${r.gained}🌰`; refreshBalance(); }
+      paintGather();
     };
   }
   api('/api/state').then((s) => {

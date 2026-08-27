@@ -220,6 +220,7 @@ async function applyBootMigrations() {
     'migration_card_swaps.sql',
     'migration_quest_two_lists.sql',
     'migration_games_wave3.sql',
+    'migration_offline_packs.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
