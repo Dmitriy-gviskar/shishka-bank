@@ -50,10 +50,15 @@
   .bRow .sc{font-weight:900;color:#5f8e37;font-size:16px;flex:none}
   .empty{text-align:center;color:var(--brown);font-weight:800;padding:24px 16px;font-size:15px;
     background:#fffaf0;border:2px solid #e0d3b8;border-radius:16px;line-height:1.5}
+  .bFind{flex:none;margin:0 0 8px}
+  .bFind input{width:100%;box-sizing:border-box;border:2px solid #d9c39a;border-radius:12px;
+    padding:8px 10px;font-weight:700;font-size:14px;outline:none;font-family:inherit;color:var(--ink);
+    background:rgba(255,248,235,.9)}
 </style></head><body>
 <div class="phone"><div class="wrap">
   <div class="title">Поляна леса</div>
-  <div class="hint">Напиши обитателю — заявка уйдёт сама. Карты и шишки откроются, когда примет.</div>
+  <div class="hint">Найди обитателя по имени и попроси в друзья. Код из мессенджера не нужен.</div>
+  <div class="bFind"><input id="boardFind" type="search" placeholder="Найти по имени" maxlength="24" autocomplete="off"></div>
   <div class="sortTabs" id="scopeTabs">
     <button type="button" class="on" data-scope="all">Весь лес</button>
     <button type="button" data-scope="friends">Друзья</button>

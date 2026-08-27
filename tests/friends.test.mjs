@@ -186,6 +186,42 @@ test('приглашение сразу делает друзьями', async (t
   assert.ok(friends.body.some((f) => f.id === db.childA1.id), 'зовущий сразу в друзьях');
 });
 
+test('поиск обитателей по имени, без кода из мессенджера', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const short = await srv.api('/api/friends/search', P(db.childA1.code, { q: 'Р' }));
+  assert.equal(short.status, 200);
+  assert.deepEqual(short.body, []);
+
+  const miss = await srv.api('/api/friends/search', P(db.childA1.code, { q: 'Неттакого' }));
+  assert.equal(miss.status, 200);
+  assert.equal(miss.body.length, 0);
+
+  const found = await srv.api('/api/friends/search', P(db.childA1.code, { q: 'Ребёнок B' }));
+  assert.equal(found.status, 200);
+  assert.ok(found.body.some((p) => p.id === db.childB1.id), 'нашли обитателя другого леса по имени');
+  assert.ok(found.body.some((p) => p.id === db.childB2.id));
+  assert.ok(!found.body.some((p) => p.id === db.childA1.id), 'себя в выдаче нет');
+
+  const req = await srv.api('/api/friends/request', P(db.childA1.code, { to: db.childB1.id }));
+  assert.equal(req.status, 200);
+  assert.equal(req.body.status, 'pending');
+
+  const after = await srv.api('/api/friends/search', P(db.childA1.code, { q: 'Ребёнок B1' }));
+  const row = after.body.find((p) => p.id === db.childB1.id);
+  assert.ok(row);
+  assert.equal(row.pending, true);
+  assert.equal(row.friend, false);
+
+  const acc = await srv.api('/api/friends/accept', P(db.childB1.code, { from: db.childA1.id }));
+  assert.equal(acc.status, 200);
+  const pals = await srv.api('/api/friends/search', P(db.childA1.code, { q: 'Ребёнок B1' }));
+  const pal = pals.body.find((p) => p.id === db.childB1.id);
+  assert.equal(pal.friend, true);
+});
+
 test('лесная грамота собирается из породы, имени и роста', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);

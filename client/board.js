@@ -6,6 +6,8 @@ window.runBoard = function () {
   let sort = 'cones';
   let scope = 'all';
   let data = null;
+  let findQ = '';
+  let findTimer = null;
 
   const scoreOf = (row) => Number(row[sort] || 0);
   const labelOf = (n) => {
@@ -28,16 +30,23 @@ window.runBoard = function () {
   function render() {
     const box = document.getElementById('boardList');
     if (!box || !data) return;
-    const pool = (data.rows || []).filter((r) => scope === 'all' || r.friend || r.mine);
+    const qn = findQ.trim().toLowerCase();
+    const pool = (data.rows || []).filter((r) => {
+      if (scope === 'friends' && !r.friend && !r.mine) return false;
+      if (qn && !(r.name || '').toLowerCase().includes(qn)) return false;
+      return true;
+    });
     const rows = [...pool].sort((a, b) => {
       const d = scoreOf(b) - scoreOf(a);
       if (d) return d;
       return String(a.name).localeCompare(String(b.name), 'ru');
     });
     if (!rows.length) {
-      box.innerHTML = scope === 'friends'
-        ? '<div class="empty">Друзей пока нет — открой «Весь лес» и подай заявку 🌲</div>'
-        : '<div class="empty">В лесу пока тихо.</div>';
+      box.innerHTML = qn
+        ? '<div class="empty">Никого с таким именем нет.</div>'
+        : scope === 'friends'
+          ? '<div class="empty">Друзей пока нет — открой «Весь лес» и подай заявку 🌲</div>'
+          : '<div class="empty">В лесу пока тихо.</div>';
       return;
     }
     const top = rows.slice(0, 3);
@@ -113,6 +122,27 @@ window.runBoard = function () {
       document.querySelectorAll('#sortTabs button').forEach((x) => x.classList.toggle('on', x === b));
       render();
     });
+  });
+
+  document.getElementById('boardFind')?.addEventListener('input', (e) => {
+    findQ = e.target.value || '';
+    render();
+    clearTimeout(findTimer);
+    const q = findQ.trim();
+    if (q.length < 2 || !data) return;
+    findTimer = setTimeout(async () => {
+      const hits = await api('/api/friends/search', { q });
+      if ((document.getElementById('boardFind')?.value || '').trim() !== q) return;
+      for (const h of (Array.isArray(hits) ? hits : [])) {
+        if (data.rows.some((r) => r.id === h.id)) continue;
+        data.rows.push({
+          id: h.id, name: h.name, avatar: h.avatar, mine: false,
+          friend: !!h.friend, pending: !!h.pending, online: false,
+          cones: 0, tasks: 0, cards: 0,
+        });
+      }
+      render();
+    }, 280);
   });
 
   api('/api/board').then((d) => {

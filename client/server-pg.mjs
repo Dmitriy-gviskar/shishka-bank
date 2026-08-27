@@ -1028,6 +1028,39 @@ const api = {
       forest: av(forest),
     };
   },
+  'POST /api/friends/search': async (b, ctx) => {
+    const raw = String(b.q || '').trim().slice(0, 24);
+    const needle = raw.replace(/[%_\\]/g, '');
+    if (needle.length < 2) return [];
+    const rows = await q(
+      `select u.id, u.name, u.tree_type,
+              exists (
+                select 1 from friendships f
+                 where f.user_id=$1 and f.friend_id=u.id and f.status='accepted'
+              ) as friend,
+              exists (
+                select 1 from friendships f
+                 where f.user_id=$1 and f.friend_id=u.id and f.status='pending'
+              ) as pending_out,
+              exists (
+                select 1 from friendships f
+                 where f.user_id=u.id and f.friend_id=$1 and f.status='pending'
+              ) as pending_in
+         from users u
+        where u.role='child' and u.id<>$1
+          and u.name ilike $2
+        order by u.name
+        limit 20`,
+      [ctx.child, '%' + needle + '%']);
+    return rows.map((r, i) => ({
+      id: r.id,
+      name: r.name,
+      avatar: treeAvatar(r.tree_type, i),
+      friend: !!r.friend,
+      pending: !!r.pending_out,
+      pending_in: !!r.pending_in,
+    }));
+  },
   'POST /api/friends/request': async (b, ctx) => {
     let to = b.to;
     if (!to && b.code) {
