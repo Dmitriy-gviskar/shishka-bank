@@ -560,11 +560,110 @@ function questIcon(category) {
   return 'assets/quest/' + (map[category] || 'quest_ic_home.webp');
 }
 
+function questNote(t2, ok) {
+  const n = document.getElementById('note');
+  if (!n) return;
+  n.style.display = 'block';
+  n.textContent = t2;
+  n.style.color = ok ? '#5f8e37' : '#b3452e';
+}
+
+function renderFamilyBox(cont, family) {
+  if (!family || family.error) return;
+  const kids = Array.isArray(family.kids) ? family.kids : [];
+  const pending = Array.isArray(family.pending) ? family.pending : [];
+  const tpls = Array.isArray(family.templates) ? family.templates : [];
+  const maxR = family.maxReward || 15;
+  const box = document.createElement('details');
+  box.className = 'family-box';
+  if (kids.length || pending.length) box.open = true;
+  const kidOpts = kids.map((k) =>
+    `<option value="${k.id}">${esc(k.name)} · ${k.hanging || 0}/${family.maxTasks || 5}</option>`).join('');
+  const tplOpts = tpls.map((t) =>
+    `<option value="${t.id}" data-title="${esc(t.title)}" data-reward="${t.reward}" data-photo="${t.needs_photo ? 1 : 0}">${esc(t.title)} · ${t.reward}</option>`).join('');
+  box.innerHTML = `<summary>Я родитель — дела для своих</summary>
+    <p class="hint">До ${family.maxTasks || 5} своих дел на ребёнка, награда не больше ${maxR} шишек. Своё название или строка из каталога — и «Выдать дело».</p>
+    ${pending.length ? pending.map((p) => `
+      <div class="ward-row" data-id="${p.id}">
+        <div class="t">${esc(p.title)}</div>
+        <div class="who">${esc(p.childName)} · +${p.reward} шишек</div>
+        ${p.photo ? `<img src="/${String(p.photo).replace(/^\/+/, '')}" alt="" style="width:100%;border-radius:10px;margin-top:6px;border:2px solid #d9c39a">` : ''}
+        <div class="acts"><button class="ok" type="button">Ок</button>
+          <button class="no" type="button">Вернуть</button></div>
+      </div>`).join('') : ''}
+    ${kids.length ? kids.map((k) =>
+      `<div class="kid-chip"><span>${esc(k.name)}</span>
+        <button type="button" data-unlink="${k.id}">отвязать</button></div>`).join('') : ''}
+    ${kids.length ? `<select id="famKid">${kidOpts}</select>
+      <select id="famTpl"><option value="">Каталог дел…</option>${tplOpts}</select>
+      <input id="famTitle" placeholder="Своё дело" maxlength="60">
+      <input id="famReward" type="number" min="1" max="${maxR}" placeholder="Награда, до ${maxR}">
+      <label><input type="checkbox" id="famPhoto"> нужно фото</label>
+      <button class="go" id="famGive" type="button">Выдать дело</button>` : ''}
+    <input id="famCode" placeholder="Код дерева ребёнка" maxlength="16" autocomplete="off">
+    <button class="go sec" id="famLink" type="button">Привязать ребёнка</button>`;
+  const tplSel = box.querySelector('#famTpl');
+  if (tplSel) tplSel.onchange = () => {
+    const o = tplSel.selectedOptions[0];
+    if (!o || !o.value) return;
+    box.querySelector('#famTitle').value = o.dataset.title || '';
+    box.querySelector('#famReward').value = o.dataset.reward || '';
+    box.querySelector('#famPhoto').checked = o.dataset.photo === '1';
+  };
+  box.querySelector('#famGive')?.addEventListener('click', async () => {
+    const tpl = box.querySelector('#famTpl')?.value || '';
+    const r = await api('/api/guardian/task', {
+      childId: box.querySelector('#famKid').value,
+      title: box.querySelector('#famTitle').value,
+      reward: box.querySelector('#famReward').value,
+      photo: box.querySelector('#famPhoto').checked,
+      templateId: tpl || undefined,
+    });
+    if (r.error) return questNote(r.error, false);
+    questNote(`Дело «${r.title}» выдано · +${r.reward}`, true);
+    loadTasks();
+  });
+  box.querySelector('#famLink')?.addEventListener('click', async () => {
+    const r = await api('/api/guardian/link', { code: box.querySelector('#famCode').value });
+    if (r.error) return questNote(r.error, false);
+    questNote(`${r.name} привязан — можно выдавать дела`, true);
+    loadTasks();
+  });
+  box.querySelectorAll('[data-unlink]').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('Отвязать этого ребёнка?')) return;
+      const r = await api('/api/guardian/unlink', { childId: btn.getAttribute('data-unlink') });
+      if (r.error) return questNote(r.error, false);
+      loadTasks();
+    };
+  });
+  box.querySelectorAll('.ward-row').forEach((row) => {
+    const id = row.getAttribute('data-id');
+    row.querySelector('.ok').onclick = async () => {
+      const r = await api('/api/guardian/approve', { id });
+      if (r.error) return questNote(r.error, false);
+      questNote('Одобрено, шишки начислены', true);
+      loadTasks();
+    };
+    row.querySelector('.no').onclick = async () => {
+      const r = await api('/api/guardian/reject', { id });
+      if (r.error) return questNote(r.error, false);
+      questNote('Вернули на доработку', true);
+      loadTasks();
+    };
+  });
+  cont.appendChild(box);
+}
+
 async function loadTasks() {
-  const tasks = await api('/api/tasks');
+  const [tasks, family] = await Promise.all([api('/api/tasks'), api('/api/guardian/family')]);
   const cont = document.getElementById('taskList'); cont.innerHTML = '';
+  renderFamilyBox(cont, family);
   if (!Array.isArray(tasks) || !tasks.length) {
-    cont.innerHTML = '<div class="quest-empty">Сегодня дел пока нет — шишки ещё в играх и за серию входов</div>';
+    const empty = document.createElement('div');
+    empty.className = 'quest-empty';
+    empty.textContent = 'Сегодня дел пока нет — шишки ещё в играх и за серию входов';
+    cont.appendChild(empty);
     return;
   }
   const tip = document.createElement('div');
@@ -574,26 +673,30 @@ async function loadTasks() {
   cont.appendChild(tip);
   const redo = tasks.filter((t) => t.status === 'rejected');
   const day = tasks.filter((t) => t.kind === 'day' && t.status !== 'rejected');
-  const daily = tasks.filter((t) => t.kind !== 'day' && t.is_daily && t.status !== 'rejected');
-  const other = tasks.filter((t) => t.kind !== 'day' && !t.is_daily && t.status !== 'rejected');
+  const daily = tasks.filter((t) => t.kind !== 'day' && t.kind !== 'family' && t.is_daily && t.status !== 'rejected');
+  const familyTasks = tasks.filter((t) => t.kind === 'family' && t.status !== 'rejected');
+  const other = tasks.filter((t) => t.kind !== 'day' && t.kind !== 'family' && !t.is_daily && t.status !== 'rejected');
   const sections = [];
   if (redo.length) sections.push(['Вернули — переделай', redo]);
+  if (familyTasks.length) sections.push(['От родителей', familyTasks]);
   if (day.length) sections.push(['Задание дня', day]);
   if (daily.length) sections.push(['Ежедневки', daily]);
   if (other.length) sections.push(['От ведущего', other]);
   const bind = (el, t) => {
     const btn = el.querySelector('button'); if (!btn) return;
     btn.onclick = async () => {
-      const say = (t2, ok) => { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t2; n.style.color = ok ? '#5f8e37' : '#b3452e'; } };
       let photo;
       if (t.needs_photo) {
         photo = await capturePhoto();
-        if (!photo) { say('Не удалось сделать фото — разреши камеру и попробуй ещё раз', 0); return; }
-        say('Отправляю фото…', 1);
+        if (!photo) { questNote('Не удалось сделать фото — разреши камеру и попробуй ещё раз', 0); return; }
+        questNote('Отправляю фото…', 1);
       }
       const r = await api('/api/task/done', { id: t.id, photo });
-      if (r.ok) { loadTasks(); say(r.approved ? 'Дело засчитано — шишки на дереве!' : 'Отправлено ведущему на проверку!', 1); }
-      else say(r.error || 'не получилось');
+      if (r.ok) {
+        loadTasks();
+        const wait = t.kind === 'family' ? 'Отправлено родителям на проверку!' : 'Отправлено ведущему на проверку!';
+        questNote(r.approved ? 'Дело засчитано — шишки на дереве!' : wait, 1);
+      } else questNote(r.error || 'не получилось');
     };
   };
   const statusHtml = (t) => {

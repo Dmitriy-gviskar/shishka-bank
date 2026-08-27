@@ -152,7 +152,7 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
   for (const t of stale) {
     try { await rpc('approve_task', [t.id]); } catch { /* уже закрыто */ }
   }
-  return q("select t.id, t.title, t.reward, t.proof_url as photo, u.name as \"childName\" from tasks t join users u on u.id=t.child_id where t.status='pending_review' order by t.created_at");
+  return q("select t.id, t.title, t.reward, t.proof_url as photo, u.name as \"childName\" from tasks t join users u on u.id=t.child_id where t.status='pending_review' and coalesce(t.kind,'') <> 'family' order by t.created_at");
 },
 'GET /api/parent/purchases': async () => {
   const list = await q(`

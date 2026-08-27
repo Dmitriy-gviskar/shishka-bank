@@ -16,6 +16,7 @@ import { makeAuth } from './lib/auth.mjs';
 import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 import { routesGames } from './routes/games.mjs';
 import { routesParent } from './routes/parent.mjs';
+import { routesGuardian } from './routes/guardian.mjs';
 import { routesCards } from './routes/cards.mjs';
 
 // Код входа ребёнка: криптослучайный, из алфавита без двусмысленных символов (нет 0/O/1/I/L).
@@ -469,6 +470,7 @@ async function sendPush(userId, title, body, url) {
 const api = {
   ...routesGames({ q, one, rpc }),
   ...routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, sendPush, genLoginCode }),
+  ...routesGuardian({ q, one, rpc, sendPush }),
   ...routesCards({ q, one, rpc, assertOwn, assertFriend }),
   'POST /api/push/subscribe': async (b, ctx) => {
     const sub = b.subscription;
@@ -723,16 +725,20 @@ const api = {
         is_daily: !!t.is_daily, category: t.category || '', kind: t.kind || (t.is_daily ? 'daily' : 'host'),
         status: t.status === 'pending_review' ? 'submitted' : t.status,
       }));
-    // без простыни: один заголовок один раз, не больше 10 открытых дел
+    // без простыни: один заголовок один раз, не больше 10 открытых лесных дел;
+    // семейные (от родителя) в этот лимит не входят — у них свой потолок 5
     const seen = new Set();
     const slim = [];
     let openLeft = 10;
     for (const t of rows) {
       const key = String(t.title || '').trim().toLowerCase();
+      const family = t.kind === 'family';
       if (t.status === 'open' && seen.has(key)) continue;
       if (t.status === 'open') {
-        if (openLeft <= 0) continue;
-        openLeft--;
+        if (!family) {
+          if (openLeft <= 0) continue;
+          openLeft--;
+        }
         seen.add(key);
       }
       slim.push(t);
@@ -740,35 +746,39 @@ const api = {
     return slim;
   },
   'POST /api/task/done': async (b, ctx) => {
-    const t = await one('select id, title, needs_photo, status, is_daily, reward from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);
+    const t = await one('select id, title, needs_photo, status, is_daily, reward, kind from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);
     if (!t || t.status === 'done' || t.status === 'pending_review') throw { code: 400, msg: 'задание недоступно' };
     let proof = null;
     if (t.needs_photo) proof = await savePhoto(b.photo, 'task_' + b.id);
     await rpc('submit_task', [b.id, proof]);
     const me = await one('select name from users where id=$1', [ctx.child]);
-    // ведущий + опекуны — как при покупке в магазине (иначе дело висит «на проверке» незамеченным)
+    const family = t.kind === 'family';
+    // семейное — только опекунам; лесное — ведущему круга + опекунам
     let notify = [];
-    try {
-      notify = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
-    } catch (e) { console.error('task notify parent', e.message); }
+    if (!family) {
+      try {
+        notify = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
+      } catch (e) { console.error('task notify parent', e.message); }
+    }
     try {
       const g = await q('select guardian_id as id from child_guardians where child_id=$1', [ctx.child]);
       notify = notify.concat(g);
     } catch (e) { console.error('task notify guardians', e.message); }
     let approved = false;
     const cheapDaily = !!t.is_daily && !t.needs_photo && (t.reward || 0) <= 10;
-    if (!notify.length || cheapDaily) {
-      // без ведущего или дешёвая ежедневка без фото — не копим очередь из 300 проверок
+    if ((!family && (!notify.length || cheapDaily)) || (family && !notify.length)) {
+      // без проверяющего или дешёвая ежедневка без фото — не копим очередь
       try { await rpc('approve_task', [b.id]); approved = true; }
       catch (e) { console.error('auto-approve', e.message); }
     }
     if (!approved) {
+      const openUrl = family ? '/quests.html' : '/parent.html#pending';
       for (const p of notify) {
         sendPush(
           p.id,
           '📋 На проверку!',
           `${me?.name || 'Ребёнок'} сдал «${t.title}»`,
-          '/parent.html#pending',
+          openUrl,
         ).catch(() => {});
       }
     }
