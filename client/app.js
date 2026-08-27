@@ -1195,7 +1195,7 @@ if (page === 'council.html') {
 function skinNote(t, ok) { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; } }
 async function loadSkins() {
   const list = await api('/api/skins');
-  const g = document.getElementById('skinList'); g.innerHTML = '';
+  const g = document.getElementById('skinList'); if (!g) return; g.innerHTML = '';
   const rarName = { base: '', seasonal: 'сезон', rare: 'редкий', epic: 'эпик' };
   for (const s of list) {
     const el = document.createElement('div'); el.className = 'skin rar ' + s.rarity + (s.equipped ? ' on' : '');
@@ -1208,6 +1208,21 @@ async function loadSkins() {
     const buy = el.querySelector('.buy'); if (buy) buy.onclick = async () => { const r = await api('/api/skin/buy', { id: s.id }); if (r.error) skinNote(r.error); else { loadSkins(); refreshBalance(); } };
     const eq = el.querySelector('.eq'); if (eq) eq.onclick = async () => { await api('/api/skin/equip', { id: s.id }); loadSkins(); };
     g.appendChild(el);
+  }
+  const chars = await api('/api/characters');
+  const box = document.getElementById('charList'); if (!box || !Array.isArray(chars)) return;
+  box.innerHTML = '';
+  for (const s of chars) {
+    const el = document.createElement('div'); el.className = 'skin rar ' + s.rarity + (s.equipped ? ' on' : '');
+    let ctrl;
+    if (s.equipped) ctrl = '<span class="st on">На поляне</span>';
+    else if (s.owned) ctrl = '<button class="btn btn-sm eq">Поселить</button>';
+    else if (s.album) ctrl = '<span class="st on">За альбом</span>';
+    else ctrl = `<button class="btn btn-sm buy">Купить · ${s.price}</button>`;
+    el.innerHTML = `${rarName[s.rarity] ? `<b>${rarName[s.rarity]}</b>` : ''}<div class="mark">${s.mark || '🌲'}</div><div class="t">${esc(s.title)}</div>${ctrl}`;
+    const buy = el.querySelector('.buy'); if (buy) buy.onclick = async () => { const r = await api('/api/character/buy', { id: s.id }); if (r.error) skinNote(r.error); else { loadSkins(); refreshBalance(); } };
+    const eq = el.querySelector('.eq'); if (eq) eq.onclick = async () => { await api('/api/character/equip', { id: s.id }); loadSkins(); };
+    box.appendChild(el);
   }
 }
 if (page === 'skins.html') loadSkins();
@@ -1324,6 +1339,14 @@ if (page === 'forest.html') {
     };
   }
   api('/api/state').then((s) => {
+    const grove = document.getElementById('groveChar');
+    if (grove) {
+      if (s && s.grove) {
+        grove.hidden = false;
+        grove.querySelector('.fn').textContent = s.grove.name;
+        grove.querySelector('.mark').textContent = s.grove.mark || '🌲';
+      } else grove.hidden = true;
+    }
     const cont = document.getElementById('famList');
     if (!cont) return;
     const fams = s && s.familiars;

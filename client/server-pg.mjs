@@ -227,6 +227,7 @@ async function applyBootMigrations() {
     'migration_card_gather.sql',
     'migration_card_exchange_pick.sql',
     'migration_child_guardians.sql',
+    'migration_characters.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
@@ -697,7 +698,7 @@ const api = {
   'GET /api/state': async (b, ctx) => {
     const TREE_NAME = { 1: 'Саженец', 2: 'Дубок', 3: 'Деревце', 4: 'Крепкое', 5: 'Могучее' };
     const [u, w, login] = await Promise.all([
-      one(`select name,tree_level,tree_type,avatar_skin,current_streak,coalesce(streak_freezes,0) as streak_freezes,
+      one(`select name,tree_level,tree_type,avatar_skin,grove_character,current_streak,coalesce(streak_freezes,0) as streak_freezes,
             (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily
            from users where id=$1`, [ctx.child]),
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
@@ -716,12 +717,19 @@ const api = {
       const sk = await one('select title from shop_items where id=$1', [u.avatar_skin]);
       if (sk && SKIN_ASSET[sk.title] && SKIN_ASSET[sk.title] !== 'base') { tree_asset = SKIN_ASSET[sk.title] + '.png'; skin_on = true; }
     }
+    let grove = null;
+    if (u.grove_character) {
+      const ch = await one(
+        "select title, sku from shop_items where type='character' and sku=$1",
+        [u.grove_character]);
+      if (ch) grove = { sku: ch.sku, name: ch.title, mark: CHAR_MARK[ch.sku] || '🌲' };
+    }
     const lvl = Math.min(5, Math.max(1, u.tree_level || 1));
     return { name: u.name, tree_level: lvl, tree_title: TREE_NAME[lvl] || 'Саженец',
              tree_type: u.tree_type, balance: w.balance,
              total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
              streak: u.current_streak, streak_freezes: u.streak_freezes || 0,
-             can_claim_daily: u.can_claim_daily, familiars,
+             can_claim_daily: u.can_claim_daily, familiars, grove,
              login_code: login?.code || null };
   },
   'POST /api/freeze/buy': async (b, ctx) => {
@@ -1376,6 +1384,40 @@ const api = {
     catch (e) { throw { code: 400, msg: /not owned/.test(e.message) ? 'сначала купи' : 'нет наряда' }; }
     return { ok: true };
   },
+  'GET /api/characters': async (b, ctx) => {
+    const done = await one(
+      `select 1 from user_cards where user_id=$1 group by type_id having count(*) filter (where qty > 0) >= 6 limit 1`,
+      [ctx.child]);
+    if (done) {
+      const bird = await one("select id from shop_items where type='character' and sku='vorobey'");
+      if (bird) {
+        await q('insert into user_skins(user_id, skin_id) values($1,$2) on conflict do nothing',
+          [ctx.child, bird.id]);
+      }
+    }
+    const u = await one('select grove_character from users where id=$1', [ctx.child]);
+    return q(`select s.id, s.title, s.price, s.rarity, s.sku, s.category,
+        exists(select 1 from user_skins us where us.user_id=$1 and us.skin_id=s.id) as owned,
+        (s.sku = $2) as equipped
+        from shop_items s where s.type='character' order by s.price, s.title`,
+      [ctx.child, u.grove_character || ''])
+      .then((rows) => rows.map((r) => ({
+        id: r.id, title: r.title, price: r.price, rarity: r.rarity, sku: r.sku,
+        category: r.category, owned: r.owned, equipped: r.equipped,
+        mark: CHAR_MARK[r.sku] || '🌲',
+        album: r.sku === 'vorobey' && !!done,
+      })));
+  },
+  'POST /api/character/buy': async (b, ctx) => {
+    try { await rpc('purchase_character', [ctx.child, b.id]); }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /owned/.test(e.message) ? 'уже есть' : 'нет обитателя' }; }
+    return { ok: true, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance };
+  },
+  'POST /api/character/equip': async (b, ctx) => {
+    try { await rpc('equip_character', [ctx.child, b.id || null]); }
+    catch (e) { throw { code: 400, msg: /not owned/.test(e.message) ? 'сначала купи или собери существо' : 'нет обитателя' }; }
+    return { ok: true };
+  },
 
   // Голосовое сообщение: загрузка аудио
   'POST /api/audio': async (b, ctx) => {
@@ -1821,6 +1863,13 @@ const api = {
 };
 // ── Push-уведомления ──
 const SKIN_ASSET = { 'Обычное дерево': 'base', 'Осеннее дерево': 'skin_autumn', 'Зимнее дерево': 'skin_winter', 'Золотое дерево': 'skin_gold', 'Светящееся дерево': 'skin_glow', 'Радужное дерево': 'skin_rainbow' };
+const CHAR_MARK = {
+  vorobey: '🐦', golub: '🕊️', lastochka: '🪶', skvorets: '🐦', zyablik: '🐦', tryasoguzka: '🪶',
+  chayka: '🪶', chomga: '🪶', kulik: '🪶', caplya: '🪶', utka: '🦆', gus: '🪿',
+  zhuravl: '🐦', lebed: '🦢', teterev: '🪶', kuropatka: '🪶', valdshnep: '🪶',
+  sokol: '🦅', yastreb: '🦅', koryushka: '🐟', sudak: '🐟', forel: '🐠',
+  moroshka: '🫐', klyukva: '🍒', mozhzhevelnik: '🌿', openok: '🍄', syroezhka: '🍄', podberezovik: '🍄',
+};
 
 const MAX_BODY = 10 * 1024 * 1024;
 

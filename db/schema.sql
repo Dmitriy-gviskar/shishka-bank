@@ -93,7 +93,7 @@ create table shop_items (
   id         uuid primary key default gen_random_uuid(),
   circle_id  uuid references circles(id) on delete cascade,  -- null = глобальный шаблон
   type       text not null default 'impression'
-             check (type in ('impression','skin')),
+             check (type in ('impression','skin','character')),
   title      text not null,
   price      int  not null check (price > 0),
   category   text,
