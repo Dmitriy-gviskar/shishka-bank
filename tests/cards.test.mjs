@@ -122,6 +122,31 @@ test('обменная полка: 5 излишков → недостающая
   } finally { await f.pool.end(); }
 });
 
+test('обменная полка: сам выбираешь, какие дубли отдать', async () => {
+  const f = await fixture();
+  try {
+    const kid = f.childA1.id;
+    await f.give(kid, 'lisa', 1, 4);
+    await f.give(kid, 'sova', 1, 3);
+    await f.give(kid, 'zayac', 1, 2);
+    const lisa = await f.typeId('lisa');
+    const sova = await f.typeId('sova');
+    const zayac = await f.typeId('zayac');
+
+    await assert.rejects(
+      () => f.q('select exchange_cards_pick($1,$2,$3::uuid[])', [kid, 1, [lisa, lisa, lisa, lisa, sova]]),
+      /last copy/);
+
+    const r = (await f.one('select exchange_cards_pick($1,$2,$3::uuid[]) as v',
+      [kid, 1, [lisa, lisa, lisa, sova, sova]])).v;
+    assert.equal(r.card.grade, 1);
+    assert.ok(!['lisa', 'sova'].includes(r.card.code));
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, lisa])).qty, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, sova])).qty, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, zayac])).qty, 2);
+  } finally { await f.pool.end(); }
+});
+
 test('подарок: карта переходит другу, больше трёх в день нельзя', async () => {
   const f = await fixture();
   try {
@@ -399,7 +424,8 @@ test('о событиях рынка и торгов приходит весто
 
     const l = (await f.one('select list_card($1,$2,4,44) as v', [seller, lisa])).v;
     await f.q('select buy_listing($1,$2)', [buyer, l.listing]);
-    assert.ok((await inbox(seller)).some((m) => /купили на рынке/.test(m.content)), 'продавцу сообщили о покупке');
+    // при цене ≥10 текст другой: «Карту купили за N. Тебе … — банк взял …»
+    assert.ok((await inbox(seller)).some((m) => /купили/.test(m.content)), 'продавцу сообщили о покупке');
 
     const a = (await f.one('select start_card_auction($1,$2,6,700) as v', [seller, sova])).v;
     await f.q('select bid_card_auction($1,$2,700)', [buyer, a.auction]);
@@ -408,7 +434,8 @@ test('о событиях рынка и торгов приходит весто
     await f.q("update card_auctions set ends_at = now() - interval '1 minute' where id=$1", [a.auction]);
     await f.q('select close_card_auction($1)', [a.auction]);
     assert.ok((await inbox(buyer)).some((m) => /выиграл торги/.test(m.content)), 'победителю сообщили');
-    assert.ok((await inbox(seller)).some((m) => /ушла с молотка/.test(m.content)), 'продавцу сообщили об итоге');
+    // при ставке ≥10 текст: «ушла за N. Тебе … — банк взял …», без «с молотка»
+    assert.ok((await inbox(seller)).some((m) => /ушла/.test(m.content)), 'продавцу сообщили об итоге');
   } finally { await f.pool.end(); }
 });
 
