@@ -7,7 +7,7 @@ import cluster from 'node:cluster';
 import { WebSocketServer } from 'ws';
 
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import pg from 'pg';
@@ -211,6 +211,30 @@ if (!process.env.DATABASE_URL) { console.error('нет DATABASE_URL в окру�
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 0, keepAlive: true });
 setInterval(() => pool.query('select 1').catch(() => {}), 240e3);  // пинг: Supabase-пулер не должен резать idle-соединение
 pool.query('select 1').catch(() => {});                            // прогрев на старте — первый экран не ждёт TLS-коннект
+// деплой везёт только client/* — SQL с корня репо на VPS не попадает. Накатываем при старте, без ssh/root.
+async function applyBootMigrations() {
+  const dir = join(DIR, 'migrations');
+  const files = [
+    'migration_quest_daily10.sql',
+    'migration_bereza_quests.sql',
+    'migration_card_swaps.sql',
+    'migration_quest_two_lists.sql',
+  ];
+  await pool.query('select pg_advisory_lock(87236401)');
+  try {
+    for (const f of files) {
+      const sql = await readFile(join(dir, f), 'utf8').catch(() => '');
+      if (!sql.trim()) continue;
+      await pool.query(sql);
+      console.log('migration ok:', f);
+    }
+  } catch (e) {
+    console.error('migration fail:', e.message);
+  } finally {
+    await pool.query('select pg_advisory_unlock(87236401)').catch(() => {});
+  }
+}
+await applyBootMigrations();
 const q = (sql, p = []) => pool.query(sql, p).then((r) => r.rows);
 const one = (sql, p = []) => q(sql, p).then((r) => r[0] || null);
 const rpc = (fn, args = []) => q(`select * from ${fn}(${args.map((_, i) => '$' + (i + 1)).join(',')}) as r`, args);
