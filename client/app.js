@@ -799,7 +799,7 @@ async function loadTasks() {
   const tip = document.createElement('div');
   tip.className = 'quest-empty';
   tip.style.margin = '0 0 10px';
-  tip.textContent = 'Ежедневки — недорого и сразу. Задание дня — дороже, каждый день новое.';
+  tip.textContent = 'Ежедневки и задание дня без фото — сразу на дерево. Фото и дела от родителей ждут проверку.';
   cont.appendChild(tip);
   const redo = tasks.filter((t) => t.status === 'rejected');
   const day = tasks.filter((t) => t.kind === 'day' && t.status !== 'rejected');

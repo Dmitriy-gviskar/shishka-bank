@@ -256,6 +256,7 @@ async function applyBootMigrations() {
     'migration_characters.sql',
     'migration_chat_ages.sql',
     'migration_card_rank_down.sql',
+    'migration_forest_welcome.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
@@ -833,9 +834,9 @@ const api = {
       notify = notify.concat(g);
     } catch (e) { console.error('task notify guardians', e.message); }
     let approved = false;
-    const cheapDaily = !!t.is_daily && !t.needs_photo && (t.reward || 0) <= 10;
-    if ((!family && (!notify.length || cheapDaily)) || (family && !notify.length)) {
-      // без проверяющего или дешёвая ежедневка без фото — не копим очередь
+    // лесные ежедневки и задание дня без фото — сразу, не копим очередь у ведущего
+    const forestSelf = !family && !!t.is_daily && !t.needs_photo;
+    if (forestSelf || (!family && !notify.length) || (family && !notify.length)) {
       try { await rpc('approve_task', [b.id]); approved = true; }
       catch (e) { console.error('auto-approve', e.message); }
     }
