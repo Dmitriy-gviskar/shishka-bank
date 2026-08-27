@@ -33,6 +33,26 @@ function ask(title, text, okText = 'Да', cancelText = 'Отмена') {
   });
 }
 
+function askInput(title, value, okText = 'Сохранить') {
+  return new Promise((resolve) => {
+    const ov = document.getElementById('askOv');
+    const sheet = document.getElementById('askSheet');
+    if (!ov || !sheet) { resolve(window.prompt(title, value)); return; }
+    sheet.innerHTML = `<h3>${esc(title)}</h3>
+      <input id="askIn" type="text" maxlength="24" value="${esc(value || '')}" autocomplete="off">
+      <div class="acts"><button type="button" class="a-ok">${esc(okText)}</button>
+      <button type="button" class="a-no">Отмена</button></div>`;
+    const inp = sheet.querySelector('#askIn');
+    const close = (v) => { ov.classList.remove('on'); ov.onclick = null; resolve(v); };
+    sheet.querySelector('.a-ok').onclick = () => close(inp.value.trim() || null);
+    sheet.querySelector('.a-no').onclick = () => close(null);
+    ov.onclick = (e) => { if (e.target.id === 'askOv') close(null); };
+    inp.onkeydown = (e) => { if (e.key === 'Enter') sheet.querySelector('.a-ok').click(); };
+    ov.classList.add('on');
+    setTimeout(() => { inp.focus(); inp.select(); }, 40);
+  });
+}
+
 async function loadOrders() {
   const box = document.getElementById('ordersBox'); if (!box) return;
   const list = await api('/api/orders');
@@ -40,16 +60,42 @@ async function loadOrders() {
   box.hidden = false;
   box.innerHTML = '<h3>Мои сделки</h3>' + list.map((o) => {
     const buy = o.role === 'buy';
-    const meta = buy
-      ? `У ${esc(o.seller_name)} · ${o.price} 🌰 · шишки заморожены`
-      : `От ${esc(o.buyer_name)} · ${o.price} 🌰 · отдай товар и жди «Получил»`;
-    const acts = buy
-      ? `<button class="btn btn-sm conf" type="button" data-id="${o.id}">Получил</button>
-         <button class="cancel" type="button" data-id="${o.id}">Отмена</button>`
-      : `<button class="cancel" type="button" data-id="${o.id}">Отменить</button>`;
+    const handed = o.status === 'handed';
+    let meta, acts;
+    if (buy && !handed) {
+      meta = `У ${esc(o.seller_name)} · ${o.price} 🌰 · жду, когда отдадут`;
+      acts = `<button class="cancel" type="button" data-id="${o.id}">Отмена</button>`;
+    } else if (buy && handed) {
+      meta = `У ${esc(o.seller_name)} · ${o.price} 🌰 · продавец отдал`;
+      acts = `<button class="btn btn-sm conf" type="button" data-id="${o.id}">Получил</button>
+         <button class="cancel" type="button" data-id="${o.id}">Не получил</button>`;
+    } else if (!buy && !handed) {
+      meta = `От ${esc(o.buyer_name)} · ${o.price} 🌰 · отдай и жми «Отдал»`;
+      acts = `<button class="btn btn-sm hand" type="button" data-id="${o.id}">Отдал</button>
+         <button class="cancel" type="button" data-id="${o.id}">Отменить</button>`;
+    } else {
+      meta = `От ${esc(o.buyer_name)} · ${o.price} 🌰 · ждём «Получил»`;
+      acts = '';
+    }
     return `<div class="ord-row"><div class="info"><div class="t">${esc(o.title)}</div><div class="m">${meta}</div></div>
       <div class="acts">${acts}</div></div>`;
   }).join('');
+  box.querySelectorAll('.hand').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!await ask('Товар отдал?', 'Покупатель сможет нажать «Получил». Шишки ещё заморожены.', 'Отдал', 'Ещё нет')) return;
+      btn.disabled = true;
+      btn.textContent = '…';
+      const r = await api('/api/order/hand', { id: btn.dataset.id });
+      if (r.error) {
+        marketNote(r.error, false);
+        btn.disabled = false;
+        btn.textContent = 'Отдал';
+        return;
+      }
+      marketNote('Отметили: товар отдан. Ждём «Получил».', true);
+      loadMarket();
+    };
+  });
   box.querySelectorAll('.conf').forEach((btn) => {
     btn.onclick = async () => {
       if (!await ask('Товар у тебя?', 'Если да — шишки сразу уйдут продавцу.', 'Получил', 'Ещё нет')) return;
@@ -95,6 +141,10 @@ async function loadMarket() {
     return;
   }
   for (const s of shops) {
+    if (typeof s.lots === 'string') {
+      try { s.lots = JSON.parse(s.lots); } catch { s.lots = []; }
+    }
+    if (!Array.isArray(s.lots)) s.lots = [];
     const art = s.photo
       ? ('/' + String(s.photo).replace(/^\/+/, ''))
       : ('assets/' + (s.avatar || 'friend1.webp'));
@@ -104,9 +154,9 @@ async function loadMarket() {
       <div class="stall"><img class="${artClass.trim()}" src="${art}" alt=""></div>
       <div class="shop-name">${esc(s.name)}</div>
       ${s.mine ? `<div class="shop-mgmt">
-          <button class="mini rename" type="button">✏️ Имя</button>
-          <button class="mini logo" type="button">🖼 Фото</button>
-          <button class="mini close" type="button">Закрыть</button>
+          <button class="mini rename" type="button">Имя</button>
+          <button class="mini logo" type="button">Фото</button>
+          <button class="mini close" type="button">Удалить</button>
         </div>` : ''}
       <div class="lots"></div>
       ${s.mine ? `<div class="lotForm">
@@ -115,7 +165,9 @@ async function loadMarket() {
             <button class="btn btn-sm lPhoto" type="button">📷</button></div>
           <button class="btn btn-lg lSave" type="button" style="margin-top:2px">Сохранить</button>
         </div>
-        <div class="addLotBtn"><button class="btn btn-sm addLot" type="button">+ Добавить товар</button></div>` : ''}`;
+        ${(s.lots || []).length < 8
+          ? `<div class="addLotBtn"><button class="btn btn-sm addLot" type="button">+ Ещё товар · ${(s.lots || []).length}/8</button></div>`
+          : `<div class="addLotBtn"><span class="lot-empty">Витрина полная · 8/8</span></div>`}` : ''}`;
 
     const lots = el.querySelector('.lots');
     if (!s.lots.length) {
@@ -147,12 +199,12 @@ async function loadMarket() {
       } else {
         row.querySelector('.shop-buy').onclick = async () => {
           if (!await ask('Заказать?',
-            `«${l.title}» за ${l.price} 🌰.\nШишки заморозятся, пока не нажмёшь «Получил».`,
+            `«${l.title}» за ${l.price} 🌰.\nШишки заморозятся. Продавец жмёт «Отдал», ты — «Получил».`,
             'Заказать', 'Не сейчас')) return;
           const r = await api('/api/lot/buy', { id: l.id });
           if (r.error) marketNote(r.error, false);
           else {
-            marketNote('Заказано у ' + s.name + '! Когда получишь товар — жми «Получил» выше.', true);
+            marketNote('Заказано у ' + s.name + '! Жди, когда отдадут товар.', true);
             refreshBalance(); loadMarket();
           }
         };
@@ -162,8 +214,9 @@ async function loadMarket() {
 
     if (s.mine) {
       el.querySelector('.rename').onclick = async () => {
-        const name = prompt('Новое название лавки:', s.name); if (!name) return;
-        const r = await api('/api/shop/rename', { name: name.trim() });
+        const name = await askInput('Название лавки', s.name);
+        if (!name) return;
+        const r = await api('/api/shop/rename', { name });
         if (r.error) marketNote(r.error, false); else loadMarket();
       };
       el.querySelector('.logo').onclick = async () => {
@@ -172,21 +225,25 @@ async function loadMarket() {
         if (r.error) marketNote(r.error, false); else loadMarket();
       };
       el.querySelector('.close').onclick = async () => {
-        if (!await ask('Закрыть лавку?', 'Все товары уйдут с витрины.', 'Закрыть', 'Оставить')) return;
+        if (!await ask('Удалить лавку?', 'Товары снимутся с витрины. Открытые сделки сначала закрой.', 'Удалить', 'Оставить')) return;
         const r = await api('/api/shop/close', {});
-        if (r.error) marketNote(r.error, false); else loadMarket();
+        if (r.error) marketNote(r.error, false);
+        else { marketNote('Лавка удалена с ярмарки', true); loadMarket(); }
       };
       const form = el.querySelector('.lotForm');
       let photoBuf = null, editId = null;
-      el.querySelector('.addLot').onclick = () => openLotForm(el, null);
+      const addBtn = el.querySelector('.addLot');
+      if (addBtn) addBtn.onclick = () => openLotForm(el, null);
       function openLotForm(card, lot) {
         editId = lot ? lot.id : null; photoBuf = null;
         card.querySelector('.lTitle').value = lot ? lot.title : '';
         card.querySelector('.lPrice').value = lot ? lot.price : '';
         card.querySelector('.lPhoto').textContent = '📷';
+        card.querySelector('.lSave').textContent = lot ? 'Сохранить' : 'Добавить на витрину';
         card.querySelector('.lotForm').style.display = 'block';
         card.querySelector('.lTitle').focus();
       }
+      if (!s.lots.length) openLotForm(el, null);
       form.querySelector('.lPhoto').onclick = async () => {
         const p = await capturePhoto(); if (!p) return;
         photoBuf = p; form.querySelector('.lPhoto').textContent = '📷 ✓';

@@ -1721,7 +1721,7 @@ const api = {
     return { ok: true };
   },
   'POST /api/shop/create': async (b, ctx) => {
-    const name = String(b.name || '').trim(), lot = String(b.lot || '').trim(), price = parseInt(b.price, 10);
+    const name = String(b.name || '').replace(/[<>]/g, '').trim(), lot = String(b.lot || '').replace(/[<>]/g, '').trim(), price = parseInt(b.price, 10);
     if (!name || !lot) throw { code: 400, msg: 'заполни название лавки и товар' };
     if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
     try { await rpc('open_shop', [ctx.child, name.slice(0, 24), null]); }
@@ -1737,8 +1737,14 @@ const api = {
     return { ok: true };
   },
   'POST /api/shop/close': async (b, ctx) => {
-    await assertOwn('select 1 from shops where owner_id=$1', [ctx.child], 'нет лавки');
-    await q('update shops set is_active=false where owner_id=$1', [ctx.child]);
+    const s = await one('select id from shops where owner_id=$1', [ctx.child]);
+    if (!s) throw { code: 400, msg: 'нет лавки' };
+    const busy = await one(
+      `select 1 from orders o join shop_lots l on l.id=o.lot_id
+        where l.shop_id=$1 and o.status in ('reserved','handed')`, [s.id]);
+    if (busy) throw { code: 400, msg: 'сначала закрой сделки' };
+    await q('update shop_lots set is_active=false where shop_id=$1', [s.id]);
+    await q('update shops set is_active=false where id=$1', [s.id]);
     return { ok: true };
   },
   'POST /api/shop/photo': async (b, ctx) => {
@@ -1748,9 +1754,13 @@ const api = {
     return { ok: true, photo };
   },
   'POST /api/lot/add': async (b, ctx) => {
-    const title = String(b.title || '').trim().slice(0, 24), price = parseInt(b.price, 10);
+    const title = String(b.title || '').replace(/[<>]/g, '').trim().slice(0, 24), price = parseInt(b.price, 10);
     if (!title) throw { code: 400, msg: 'укажи название товара' };
     if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
+    const shop = await one('select id from shops where owner_id=$1 and is_active', [ctx.child]);
+    if (!shop) throw { code: 400, msg: 'сначала открой лавку' };
+    const hanging = await one('select count(*)::int as c from shop_lots where shop_id=$1 and is_active', [shop.id]);
+    if ((hanging?.c || 0) >= 8) throw { code: 400, msg: 'не больше 8 товаров' };
     let lot;
     try { [lot] = await rpc('add_lot', [ctx.child, title, 'goods', price]); }
     catch (e) { throw { code: 400, msg: /open a shop/.test(e.message) ? 'сначала открой лавку' : 'не удалось' }; }
@@ -1758,7 +1768,7 @@ const api = {
     return { ok: true };
   },
   'POST /api/lot/edit': async (b, ctx) => {
-    const title = String(b.title || '').trim().slice(0, 24), price = parseInt(b.price, 10);
+    const title = String(b.title || '').replace(/[<>]/g, '').trim().slice(0, 24), price = parseInt(b.price, 10);
     if (!title) throw { code: 400, msg: 'укажи название товара' };
     if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
     await assertOwn('select 1 from shop_lots l join shops s on s.id=l.shop_id where l.id=$1 and s.owner_id=$2', [b.id, ctx.child], 'нет такого товара');
