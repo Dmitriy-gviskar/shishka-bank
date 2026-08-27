@@ -12,6 +12,8 @@ window.runCards = function () {
   const asset = (code, grade) => cardUrl(code, grade, 'full');   // крупный показ / evo / jackpot
   const thumb = (code, grade) => cardUrl(code, grade, 'thumb');  // сетки
   const md = (code, grade) => cardUrl(code, grade, 'md');        // модалки / средний превью
+  const NEW_BATCH = 10;   // новинки альбома — пачками, не все сразу (T17)
+  let newShown = NEW_BATCH;
   let RAR = {}, DATA = null, OWN = null, PEEK = null;
   let LOTS = [], WANTS = [], AUCS = [], SWAPS = [], LORE = {}, FAM = null, FACTS = {}, HIST = {}, SEASONS = [], MARKET = true;
   const note = (t) => {   // всплывающая подсказка поверх экрана
@@ -103,7 +105,8 @@ window.runCards = function () {
         const guar = !d.pity ? '' : d.pity.to_top <= d.pity.to_new
           ? ` · через ${d.pity.to_top} ${plural(d.pity.to_top, 'пак', 'пака', 'паков')} — Эпическая+, которой нет`
           : ` · через ${d.pity.to_new} ${plural(d.pity.to_new, 'пак', 'пака', 'паков')} — новая карта точно`;
-        pityEl.textContent = `Встречено ${met} из ${beingsTotal} · полных ${complete}${guar}`;
+        pityEl.textContent = `Встречено ${met} из ${beingsTotal} · полных ${complete}${guar}`
+          + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' · без сети: пак и прокачка сохранятся' : '');
       }
     }
     const peekBar = document.getElementById('peekBar');
@@ -208,34 +211,60 @@ window.runCards = function () {
     if (DATA) render(DATA);
   }
 
+  function paintNewCard({ c, gr }) {
+    const rc = (RAR[gr.grade] || {}).color || '#ff5a4d';
+    const rn = (RAR[gr.grade] || {}).name || '';
+    const card = document.createElement('div');
+    card.className = 'ncard';
+    card.dataset.type = c.id;
+    card.dataset.grade = String(gr.grade);
+    card.style.setProperty('--gc', rc);
+    card.innerHTML = `<div class="nf"><img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy"><div class="gnew">NEW</div></div>
+      <div class="nl">${esc(c.name)}</div>
+      <div class="ng">${esc(rn)}</div>`;
+    card.onclick = () => {
+      const found = (DATA.cards || []).find((x) => x.id === card.dataset.type);
+      if (found) openDetail(found, +card.dataset.grade);
+    };
+    return card;
+  }
+
   function renderNewShelf(cards, host) {
     if (!host) return;
     const items = listUnseen(cards);
-    if (!items.length) return;
+    if (!items.length) { newShown = NEW_BATCH; return; }
     const n = items.length;
+    const shown = Math.min(Math.max(NEW_BATCH, newShown), n);
+    newShown = shown;
+    const rest = n - shown;
     const el = document.createElement('div');
     el.className = 'newshelf';
     el.innerHTML = `<div class="newshelf-h">
-        <span class="nt">✨ Новинки · ${n}</span>
+        <span class="nt">✨ Новинки · ${shown}/${n}</span>
         <button type="button" class="nok" id="newShelfOk">Скрыть все</button>
       </div>
-      <div class="newshelf-row">${items.map(({ c, gr }) => {
-        const rc = (RAR[gr.grade] || {}).color || '#ff5a4d';
-        const rn = (RAR[gr.grade] || {}).name || '';
-        return `<div class="ncard" data-type="${c.id}" data-grade="${gr.grade}" style="--gc:${rc}">
-          <div class="nf"><img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy"><div class="gnew">NEW</div></div>
-          <div class="nl">${esc(c.name)}</div>
-          <div class="ng">${esc(rn)}</div>
-        </div>`;
-      }).join('')}</div>`;
+      <div class="newshelf-row" id="newShelfRow"></div>`;
     host.prepend(el);
-    el.querySelector('#newShelfOk').onclick = (e) => { e.stopPropagation(); markSeenAll(); };
-    el.querySelectorAll('.ncard').forEach((card) => {
-      card.onclick = () => {
-        const c = (DATA.cards || []).find((x) => x.id === card.dataset.type);
-        if (c) openDetail(c, +card.dataset.grade);
+    const row = el.querySelector('#newShelfRow');
+    items.slice(0, shown).forEach((it) => row.appendChild(paintNewCard(it)));
+    el.querySelector('#newShelfOk').onclick = (e) => { e.stopPropagation(); newShown = NEW_BATCH; markSeenAll(); };
+    if (rest) {
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'nmore';
+      more.textContent = `Ещё ${Math.min(NEW_BATCH, rest)}`;
+      more.onclick = (e) => {
+        e.stopPropagation();
+        const from = newShown;
+        newShown = Math.min(n, newShown + NEW_BATCH);
+        items.slice(from, newShown).forEach((it) => row.appendChild(paintNewCard(it)));
+        el.querySelector('.nt').textContent = `✨ Новинки · ${newShown}/${n}`;
+        const left = n - newShown;
+        if (!left) more.remove();
+        else more.textContent = `Ещё ${Math.min(NEW_BATCH, left)}`;
       };
-    });
+      el.appendChild(more);
+    }
   }
 
   function renderGroups(cards, host) {
@@ -373,6 +402,8 @@ window.runCards = function () {
           if (MARKET) acts += sel >= 6 ? `<button class="a-auc">🔨 На аукцион · 24 часа</button>`
                                         : `<button class="a-list">🏷 Выставить на рынок</button>`;
         }
+        if (gr.gathering) acts += `<div class="evoprog">🌲 Собирает шишки · 1🌰 в день</div>`;
+        else if (gr.qty >= 2 && !isSpecial) acts += `<button class="a-gather">🌲 Поселить собирать · 1 дубль</button>`;
         const isFam = FAM.some((f) => f.type === c.id && f.grade === sel);
         acts += `<button class="a-fam">${isFam ? '⭐ Снять с поляны' : '⭐ Сделать питомцем'}</button>`;
         acts += `<button class="a-gift">🎁 Подарить другу</button>`;
@@ -484,6 +515,18 @@ window.runCards = function () {
         showRewards(r2.rewards);
         reload();
       };
+      const bGather = sheet.querySelector('.a-gather');
+      if (bGather) bGather.onclick = async () => {
+        if (!await ask('Поселить собирать?',
+          `Один дубль «${c.name}» уйдёт — карта останется в альбоме и будет приносить 1🌰 в день. Это не эволюция.`,
+          'Поселить')) return;
+        bGather.disabled = true;
+        const r2 = await api('/api/gather/train', { type: c.id, grade: sel });
+        if (r2.error) { bGather.disabled = false; dnote.textContent = r2.error; dnote.style.color = '#b3452e'; return; }
+        dnote.textContent = 'Поселился! Зайди на поляну — собери шишки.';
+        dnote.style.color = '#5f8e37';
+        setTimeout(reload, 700);
+      };
       const bFam = sheet.querySelector('.a-fam');
       if (bFam) bFam.onclick = async () => {
         const isFam = FAM.some((f) => f.type === c.id && f.grade === sel);
@@ -575,37 +618,75 @@ window.runCards = function () {
     document.getElementById('marketView').style.display = 'none';
   }
 
-  // ── Обменная полка: 5 лишних карт одного ранга → 1 недостающая того же ранга ──
+  // ── Обменная полка: сам выбираешь 5 дублей одного ранга → 1 недостающая ──
   function openExchange() {
     if (!DATA) return;
     const sheet = document.getElementById('exchSheet');
-    const spare = (g) => (DATA.cards || []).reduce((s, c) => {
-      const q = (c.grades.find((x) => x.grade === g) || {}).qty || 0; return s + Math.max(0, q - 1); }, 0);
-    const draw = () => {
+    const spareOf = (c, g) => Math.max(0, ((c.grades.find((x) => x.grade === g) || {}).qty || 0) - 1);
+    const spare = (g) => (DATA.cards || []).reduce((s, c) => s + spareOf(c, g), 0);
+    const extras = (g) => (DATA.cards || []).filter((c) => spareOf(c, g) > 0);
+    const drawRanks = () => {
       const rows = DATA.rarities.map((r) => {
         const n = spare(r.grade);
         return `<div class="exrow" style="--gc:${r.color}"><span class="dot"></span>
           <span class="en">${r.name}</span><span class="es">лишних: ${n}</span>
-          <button data-g="${r.grade}" ${n >= 5 ? '' : 'disabled'}>Обменять 5</button></div>`;
+          <button data-g="${r.grade}" ${n >= 5 ? '' : 'disabled'}>Выбрать 5</button></div>`;
       }).join('');
       sheet.innerHTML = `<button class="x">&times;</button>
         <h3>Обменная полка</h3>
-        <div class="sub">Отдай 5 лишних карт одного ранга — получишь одну того же ранга, которой у тебя ещё нет.
-          Карты из альбома не пострадают: в обмен уходят только дубли.</div>
+        <div class="sub">Отдай 5 лишних карт одного ранга — получишь одну того же ранга, которой ещё нет.
+          Сам отметь, какие дубли уходят. Последняя карта ячейки останется.</div>
         ${rows}<div class="note2" id="exnote"></div>`;
       sheet.querySelector('.x').onclick = () => document.getElementById('exchOv').classList.remove('on');
-      sheet.querySelectorAll('.exrow button').forEach((btn) => btn.onclick = async () => {
-        btn.disabled = true;
-        const r = await api('/api/card/exchange', { grade: +btn.dataset.g });
-        const note2 = sheet.querySelector('#exnote');
-        if (r.error) { note2.textContent = r.error; note2.style.color = '#b3452e'; return; }
-        document.getElementById('exchOv').classList.remove('on');
-        await revealCard(r.card);           // новая карта — с той же подачей, что в паке
-        showRewards(r.rewards);
-        await reload(); openExchange();     // полка остаётся открытой: можно менять дальше
+      sheet.querySelectorAll('.exrow button').forEach((btn) => {
+        btn.onclick = () => drawPick(+btn.dataset.g);
       });
     };
-    draw();
+    const drawPick = (grade) => {
+      const r = DATA.rarities.find((x) => x.grade === grade) || {};
+      const picked = [];
+      const paint = () => {
+        const left = extras(grade);
+        const cards = left.map((c) => {
+          const max = spareOf(c, grade);
+          const n = picked.filter((id) => id === c.id).length;
+          return `<button type="button" class="expick${n ? ' on' : ''}${n >= max ? ' full' : ''}" data-id="${c.id}" ${n >= max ? 'disabled' : ''}>
+            <img src="${thumb(c.code, grade)}" alt="">
+            <span class="en">${esc(c.name)}</span>
+            <span class="es">${n}/${max}</span></button>`;
+        }).join('');
+        sheet.innerHTML = `<button class="x">&times;</button>
+          <h3>${esc(r.name || 'Обмен')}</h3>
+          <div class="sub">Выбери 5 дублей · отмечено ${picked.length}/5</div>
+          <div class="expicks">${cards || '<div class="sub">Нет лишних</div>'}</div>
+          <button type="button" class="btn btn-sm" id="exDo" ${picked.length === 5 ? '' : 'disabled'} style="width:100%;margin-top:8px">Обменять выбранные</button>
+          <button type="button" class="exback" id="exBack">← К рангам</button>
+          <div class="note2" id="exnote"></div>`;
+        sheet.querySelector('.x').onclick = () => document.getElementById('exchOv').classList.remove('on');
+        sheet.querySelector('#exBack').onclick = drawRanks;
+        sheet.querySelectorAll('.expick').forEach((el) => {
+          el.onclick = () => {
+            if (picked.length >= 5) return;
+            picked.push(el.dataset.id);
+            paint();
+          };
+        });
+        const go = sheet.querySelector('#exDo');
+        go.onclick = async () => {
+          if (picked.length !== 5) return;
+          go.disabled = true;
+          const res = await api('/api/card/exchange', { grade, types: picked });
+          const note2 = sheet.querySelector('#exnote');
+          if (res.error) { note2.textContent = res.error; note2.style.color = '#b3452e'; go.disabled = false; return; }
+          document.getElementById('exchOv').classList.remove('on');
+          await revealCard(res.card);
+          showRewards(res.rewards);
+          await reload(); openExchange();
+        };
+      };
+      paint();
+    };
+    drawRanks();
     document.getElementById('exchOv').classList.add('on');
   }
   document.getElementById('exchBtn').onclick = openExchange;
