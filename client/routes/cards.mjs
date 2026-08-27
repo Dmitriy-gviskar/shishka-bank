@@ -227,6 +227,22 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
   return { ...r, rewards };
 },
+'POST /api/card/exchange-down': async (b, ctx) => {   // 1 дубль высшего ранга → 1 недостающая ниже
+  if (!b.offer || !b.want) throw { code: 400, msg: 'выбери карты' };
+  let r;
+  try {
+    r = await one('select exchange_rank_down($1,$2,$3,$4,$5) as v',
+      [ctx.child, b.offer, b.offer_grade, b.want, b.want_grade]).then((x) => x.v);
+  } catch (e) {
+    throw { code: 400, msg: /need spare/.test(e.message) ? 'нужен дубль — последнюю карту отдать нельзя'
+      : /already have/.test(e.message) ? 'эта карта у тебя уже есть'
+      : /want not lower/.test(e.message) ? 'нужен ранг ниже'
+      : /bad grade/.test(e.message) ? 'не тот ранг'
+      : /no types/.test(e.message) ? 'нет такой карты' : 'нельзя' };
+  }
+  const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+  return { ...r, rewards };
+},
 'POST /api/card/gift': async (b, ctx) => {   // подарок карты другу: лимит 3 в день, лог у ведущего
   if (!b.to || b.to === ctx.child) throw { code: 400, msg: 'выбери, кому подарить' };
   await assertFriend(ctx.child, b.to, 'нет такого друга');

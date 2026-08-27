@@ -255,6 +255,7 @@ async function applyBootMigrations() {
     'migration_child_guardians.sql',
     'migration_characters.sql',
     'migration_chat_ages.sql',
+    'migration_card_rank_down.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {

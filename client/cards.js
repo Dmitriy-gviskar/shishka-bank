@@ -618,13 +618,30 @@ window.runCards = function () {
     document.getElementById('marketView').style.display = 'none';
   }
 
-  // ── Обменная полка: сам выбираешь 5 дублей одного ранга → 1 недостающая ──
+  // ── Обменная полка: 5 дублей одного ранга → 1 недостающая; или 1 высший → 1 низший ──
   function openExchange() {
     if (!DATA) return;
     const sheet = document.getElementById('exchSheet');
-    const spareOf = (c, g) => Math.max(0, ((c.grades.find((x) => x.grade === g) || {}).qty || 0) - 1);
-    const spare = (g) => (DATA.cards || []).reduce((s, c) => s + spareOf(c, g), 0);
-    const extras = (g) => (DATA.cards || []).filter((c) => spareOf(c, g) > 0);
+    const album = () => (DATA.cards || []).filter((c) => c.category !== 'special');
+    const qtyOf = (c, g) => ((c.grades.find((x) => x.grade === g) || {}).qty || 0);
+    const spareOf = (c, g) => Math.max(0, qtyOf(c, g) - 1);
+    const spare = (g) => album().reduce((s, c) => s + spareOf(c, g), 0);
+    const extras = (g) => album().filter((c) => spareOf(c, g) > 0);
+    const holes = (g) => album().filter((c) => qtyOf(c, g) <= 0);
+    const closeEx = () => document.getElementById('exchOv').classList.remove('on');
+    const downOffers = () => {
+      const out = [];
+      for (const c of album()) {
+        for (const r of DATA.rarities) {
+          if (r.grade < 2) continue;
+          const n = spareOf(c, r.grade);
+          if (n > 0 && DATA.rarities.some((w) => w.grade < r.grade && holes(w.grade).length)) {
+            out.push({ c, grade: r.grade, n, rar: r });
+          }
+        }
+      }
+      return out;
+    };
     const drawRanks = () => {
       const rows = DATA.rarities.map((r) => {
         const n = spare(r.grade);
@@ -632,14 +649,92 @@ window.runCards = function () {
           <span class="en">${r.name}</span><span class="es">лишних: ${n}</span>
           <button data-g="${r.grade}" ${n >= 5 ? '' : 'disabled'}>Выбрать 5</button></div>`;
       }).join('');
+      const canDown = downOffers().length > 0;
       sheet.innerHTML = `<button class="x">&times;</button>
         <h3>Обменная полка</h3>
         <div class="sub">Отдай 5 лишних карт одного ранга — получишь одну того же ранга, которой ещё нет.
           Сам отметь, какие дубли уходят. Последняя карта ячейки останется.</div>
-        ${rows}<div class="note2" id="exnote"></div>`;
-      sheet.querySelector('.x').onclick = () => document.getElementById('exchOv').classList.remove('on');
-      sheet.querySelectorAll('.exrow button').forEach((btn) => {
+        ${rows}
+        <div class="sub" style="margin-top:10px">Или один дубль высшего ранга — на одну недостающую рангом ниже.</div>
+        <div class="exrow" style="--gc:#c9a227"><span class="dot"></span>
+          <span class="en">1 высший → 1 низший</span>
+          <button type="button" id="exDown" ${canDown ? '' : 'disabled'}>Выбрать</button></div>
+        <div class="note2" id="exnote"></div>`;
+      sheet.querySelector('.x').onclick = closeEx;
+      sheet.querySelectorAll('.exrow button[data-g]').forEach((btn) => {
         btn.onclick = () => drawPick(+btn.dataset.g);
+      });
+      const down = sheet.querySelector('#exDown');
+      if (down && !down.disabled) down.onclick = drawDownOffer;
+    };
+    const drawDownOffer = () => {
+      const offers = downOffers();
+      const cards = offers.map((o) => `<button type="button" class="expick" data-id="${o.c.id}" data-g="${o.grade}">
+          <img src="${thumb(o.c.code, o.grade)}" alt="">
+          <span class="en">${esc(o.c.name)}</span>
+          <span class="es">${esc(o.rar.name)} · ${o.n}</span></button>`).join('');
+      sheet.innerHTML = `<button class="x">&times;</button>
+        <h3>Что отдаёшь</h3>
+        <div class="sub">Дубль высшего ранга. Последняя карта ячейки останется.</div>
+        <div class="expicks">${cards || '<div class="sub">Нет дублей</div>'}</div>
+        <button type="button" class="exback" id="exBack">← К полке</button>
+        <div class="note2" id="exnote"></div>`;
+      sheet.querySelector('.x').onclick = closeEx;
+      sheet.querySelector('#exBack').onclick = drawRanks;
+      sheet.querySelectorAll('.expick').forEach((el) => {
+        el.onclick = () => {
+          const offer = offers.find((o) => o.c.id === el.dataset.id && o.grade === +el.dataset.g);
+          if (offer) drawDownRanks(offer);
+        };
+      });
+    };
+    const drawDownRanks = (offer) => {
+      const rows = DATA.rarities.filter((r) => r.grade < offer.grade).map((r) => {
+        const n = holes(r.grade).length;
+        return `<div class="exrow" style="--gc:${r.color}"><span class="dot"></span>
+          <span class="en">${r.name}</span><span class="es">дыр: ${n}</span>
+          <button data-g="${r.grade}" ${n ? '' : 'disabled'}>Выбрать</button></div>`;
+      }).join('');
+      sheet.innerHTML = `<button class="x">&times;</button>
+        <h3>Какой ранг взять</h3>
+        <div class="sub">Отдаёшь ${esc(offer.c.name)} · ${esc(offer.rar.name)}. Выбери ранг ниже.</div>
+        ${rows}
+        <button type="button" class="exback" id="exBack">← К дублям</button>
+        <div class="note2" id="exnote"></div>`;
+      sheet.querySelector('.x').onclick = closeEx;
+      sheet.querySelector('#exBack').onclick = drawDownOffer;
+      sheet.querySelectorAll('.exrow button[data-g]').forEach((btn) => {
+        btn.onclick = () => drawDownWant(offer, +btn.dataset.g);
+      });
+    };
+    const drawDownWant = (offer, wantGrade) => {
+      const r = DATA.rarities.find((x) => x.grade === wantGrade) || {};
+      const left = holes(wantGrade);
+      const cards = left.map((c) => `<button type="button" class="expick" data-id="${c.id}">
+          <img src="${thumb(c.code, wantGrade)}" alt="">
+          <span class="en">${esc(c.name)}</span>
+          <span class="es">нет</span></button>`).join('');
+      sheet.innerHTML = `<button class="x">&times;</button>
+        <h3>${esc(r.name || 'Кому')}</h3>
+        <div class="sub">Какой карты ещё нет — её и получишь.</div>
+        <div class="expicks">${cards || '<div class="sub">Дыр нет</div>'}</div>
+        <button type="button" class="exback" id="exBack">← К рангам</button>
+        <div class="note2" id="exnote"></div>`;
+      sheet.querySelector('.x').onclick = closeEx;
+      sheet.querySelector('#exBack').onclick = () => drawDownRanks(offer);
+      sheet.querySelectorAll('.expick').forEach((el) => {
+        el.onclick = async () => {
+          el.disabled = true;
+          const res = await api('/api/card/exchange-down', {
+            offer: offer.c.id, offer_grade: offer.grade, want: el.dataset.id, want_grade: wantGrade,
+          });
+          const note2 = sheet.querySelector('#exnote');
+          if (res.error) { note2.textContent = res.error; note2.style.color = '#b3452e'; el.disabled = false; return; }
+          closeEx();
+          await revealCard(res.card);
+          showRewards(res.rewards);
+          await reload(); openExchange();
+        };
       });
     };
     const drawPick = (grade) => {

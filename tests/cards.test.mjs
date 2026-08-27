@@ -147,6 +147,49 @@ test('обменная полка: сам выбираешь, какие дуб�
   } finally { await f.pool.end(); }
 });
 
+test('обменная полка: 1 высший ранг → 1 недостающая ниже', async () => {
+  const f = await fixture();
+  try {
+    const kid = f.childA1.id;
+    const before = await f.balance(kid);
+    await f.give(kid, 'lisa', 3, 2);
+    await f.give(kid, 'zayac', 1, 1);
+    const lisa = await f.typeId('lisa');
+    const sova = await f.typeId('sova');
+    const zayac = await f.typeId('zayac');
+    const spec = await f.typeId('special_ng_shishka');
+
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 3, zayac, 1]),
+      /already have/);
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 3, sova, 3]),
+      /want not lower/);
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 1, sova, 1]),
+      /bad grade/);
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, spec, 3, sova, 1]),
+      /no types/);
+
+    const r = (await f.one('select exchange_rank_down($1,$2,$3,$4,$5) as v',
+      [kid, lisa, 3, sova, 1])).v;
+    assert.equal(r.ok, true);
+    assert.equal(r.spent.code, 'lisa');
+    assert.equal(r.spent.grade, 3);
+    assert.equal(r.card.code, 'sova');
+    assert.equal(r.card.grade, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=3', [kid, lisa])).qty, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, sova])).qty, 1);
+    assert.equal(await f.balance(kid), before);
+
+    const volk = await f.typeId('volk');
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 3, volk, 1]),
+      /need spare/);
+  } finally { await f.pool.end(); }
+});
+
 test('подарок: карта переходит другу, больше трёх в день нельзя', async () => {
   const f = await fixture();
   try {
