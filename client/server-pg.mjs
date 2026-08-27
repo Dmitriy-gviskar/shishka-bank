@@ -258,6 +258,7 @@ async function applyBootMigrations() {
     'migration_card_rank_down.sql',
     'migration_forest_welcome.sql',
     'migration_friend_trade.sql',
+    'migration_forest_tasks_pack.sql',
   ];
   await pool.query('select pg_advisory_lock(87236401)');
   try {
