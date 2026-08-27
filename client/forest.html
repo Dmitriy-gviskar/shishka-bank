@@ -64,6 +64,28 @@
   .ov{position:absolute;inset:0;z-index:30;background:rgba(20,26,18,.82);display:none;
     align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
   .ov.on{display:flex}
+  .more-head{display:none}
+  @media (min-width:720px){
+    .phone{width:min(960px,96vw);max-height:none;height:100dvh;
+      box-shadow:0 0 0 4px #c9a86a,0 16px 48px rgba(0,0,0,.35)}
+    .wrap{padding:22px 22px 0}
+    .doors{grid-template-columns:repeat(4,1fr);gap:12px;padding:4px 0 10px}
+    .doors .tile{padding:16px 8px 12px}
+    .doors .tile img{width:72px;height:72px}
+    .tile span{font-size:16px}
+    .tile small{font-size:12px}
+    .more-grid{grid-template-columns:repeat(4,1fr);gap:12px;padding:2px 0 8px}
+    .more-forest > summary{display:none}
+    .more-head{display:block;font-weight:900;color:#5a3a18;text-align:center;
+      font-family:"Fredoka","Nunito",sans-serif;font-size:15px;margin:6px 0 10px}
+    .fam,.gather-bar{max-width:none}
+    .grove-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+    .grove-top:not(:has(#groveChar:not([hidden]))){grid-template-columns:1fr}
+  }
+  @media (hover:hover) and (min-width:720px){
+    .tile:hover{transform:translateY(-3px);box-shadow:0 0 0 3px #c9a86a,0 8px 0 rgba(107,79,58,.18)}
+    .fam:hover{transform:translateY(-1px)}
+  }
 </style></head><body>
 <div class="phone">
   <button class="spirit-tip" id="spiritTip" type="button" aria-label="Подсказка о поляне">
@@ -105,8 +127,9 @@
     <a class="tile" href="council.html"><img src="assets/spirit_scroll.webp" alt=""><span>Совет</span><small>лесные идеи</small></a>
   </div>
 
-  <details class="more-forest">
+  <details class="more-forest" id="moreForest">
     <summary>Ещё в лесу</summary>
+    <div class="more-head">Ещё в лесу</div>
     <div class="more-grid">
       <a class="tile" href="board.html"><img src="assets/badge1.webp" alt=""><span>Поляна</span></a>
       <a class="tile" href="deposit.html"><img src="assets/tree.webp" alt=""><span>Дупло</span></a>

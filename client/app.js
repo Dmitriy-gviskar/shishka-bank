@@ -1314,13 +1314,23 @@ if (page === 'surprises.html') {
 
 // ── Питомцы на поляне: до 5 карт, каждая с фразой + диалог ──
 if (page === 'forest.html') {
+  const wideGrove = window.matchMedia('(min-width: 720px)');
+  const moreForest = document.getElementById('moreForest');
+  const syncGroveWide = () => { if (moreForest) moreForest.open = wideGrove.matches; };
+  syncGroveWide();
+  if (wideGrove.addEventListener) wideGrove.addEventListener('change', syncGroveWide);
+  else wideGrove.addListener(syncGroveWide);
   const FOREST_TIPS = [
-    'Четыре двери — главное. Остальное спрятано в «Ещё в лесу».',
+    wideGrove.matches
+      ? 'На ноуте двери в ряд: коллекция, игры, почта, дерево — и ещё лес ниже.'
+      : 'Четыре двери — главное. Остальное спрятано в «Ещё в лесу».',
     'Коллекция — альбом существ. Дубль можно поселить собирать шишки.',
     'В играх питомец помогает копить шишки.',
     'Почта — найди обитателя по имени и напиши. Другом станет, когда примет заявку.',
     'Моё дерево — грамота, паспорт и твой код поляны.',
-    'В «Ещё» — поляна леса, дупло и награды. Лавки уже на дверях.',
+    wideGrove.matches
+      ? 'Поляна друзей, дупло и награды — в нижнем ряду, без пряток.'
+      : 'В «Ещё» — поляна леса, дупло и награды. Лавки уже на дверях.',
   ];
   const tipBtn = document.getElementById('spiritTip');
   const tipPop = document.getElementById('spiritPop');
