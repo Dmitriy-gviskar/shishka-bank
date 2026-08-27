@@ -181,7 +181,7 @@ function isInAppBrowser() {
     || /\bInstagram\b/i.test(ua) || /\bLine\//i.test(ua) || /\bVKApp\b|\bVKAndroidApp\b/i.test(ua);
 }
 function recoverLink(code) {
-  return location.origin + '/link.html?code=' + encodeURIComponent(String(code || '').toUpperCase());
+  return location.origin + '/?code=' + encodeURIComponent(String(code || '').toUpperCase());
 }
 async function copyText(text) {
   try {
@@ -502,8 +502,13 @@ if (page === 'link.html') {
       if (!open) document.getElementById('codeInput')?.focus();
     };
   }
-  // с лендинга: link.html?open=code
-  if (urlParams.get('open') === 'code') openCodeBox();
+  // с лендинга: link.html?open=code или link.html#code
+  if (urlParams.get('open') === 'code' || location.hash === '#code') openCodeBox();
+  if (urlCode) {
+    const inp = document.getElementById('codeInput');
+    if (inp) inp.value = urlCode;
+    openCodeBox();
+  }
   // тот же телефон уже сажал (часто: Telegram → потом Safari) — сразу предложить код / имя
   api('/api/signup/hint').then((h) => {
     if (!h || !h.recent) return;
@@ -546,7 +551,7 @@ if (page === 'link.html') {
     const r = await api('/api/link', { code });
     const n = document.getElementById('note'); n.style.display = 'block';
     if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { saveSession({ token: r.token, code: r.code || code }); location.href = 'onboard.html'; }
+    else { saveSession({ token: r.token, code: r.code || code }); location.href = 'index.html'; }
   };
 }
 
