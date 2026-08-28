@@ -13,6 +13,31 @@ const H = (code) => ({ headers: { 'x-child-code': code, 'content-type': 'applica
 const P = (code, body) => ({ method: 'POST', ...H(code), body: JSON.stringify(body || {}) });
 const bal = async (srv, code) => (await srv.api('/api/state', { headers: { 'x-child-code': code } })).body.balance;
 
+test('второй опекун привязывает того же ребёнка по коду поляны и по имени', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url);
+  t.after(() => srv.stop());
+
+  const mom = await srv.api('/api/guardian/link', P(db.childA2.code, { code: db.childA1.code }));
+  assert.equal(mom.status, 200);
+
+  const grandma = await srv.api('/api/guardian/link', P(db.childB1.code, { code: db.childA1.ref }));
+  assert.equal(grandma.status, 200);
+  assert.equal(grandma.body.name, 'Ребёнок A1');
+  assert.ok(!grandma.body.already);
+
+  const again = await srv.api('/api/guardian/link', P(db.childB1.code, { code: 'ребёнок a1' }));
+  assert.equal(again.status, 200);
+  assert.equal(again.body.already, true);
+
+  const home = await srv.api('/api/guardian/family', H(db.childB1.code));
+  assert.equal(home.body.kids.length, 1);
+  assert.equal(home.body.kids[0].name, 'Ребёнок A1');
+
+  const momHome = await srv.api('/api/guardian/family', H(db.childA2.code));
+  assert.equal(momHome.body.kids.length, 1);
+});
+
 test('кириллический код дерева привязывает ребёнка', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
@@ -36,7 +61,7 @@ test('родитель привязывает ребёнка по коду и в
 
   const self = await srv.api('/api/guardian/link', P(db.childA2.code, { code: db.childA2.code }));
   assert.equal(self.status, 400);
-  assert.match(self.body.error, /себя/);
+  assert.match(self.body.error, /твоё дерево/);
 
   const link = await srv.api('/api/guardian/link', P(db.childA2.code, { code: db.childA1.code }));
   assert.equal(link.status, 200);

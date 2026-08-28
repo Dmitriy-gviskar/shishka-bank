@@ -28,6 +28,33 @@ function familyReward(raw) {
   return amount;
 }
 
+function normalizeAttachCode(raw) {
+  return String(raw || '').replace(/[\u2010-\u2015\u2212]/g, '-').trim();
+}
+
+async function findChildToAttach(q, one, raw) {
+  const typed = normalizeAttachCode(raw);
+  if (!typed) throw { code: 400, msg: 'введи код' };
+  const code = typed.toUpperCase();
+  const kid = await one(
+    `select u.id, u.name
+       from child_logins cl join users u on u.id = cl.child_id
+      where upper(cl.code) = $1 and u.role = 'child'`, [code]);
+  if (kid) return kid;
+  const byGrove = await one(
+    `select id, name from users where upper(coalesce(referral_code,'')) = $1 and role = 'child'`,
+    [code]);
+  if (byGrove) return byGrove;
+  const byName = await q(
+    `select id, name from users where role = 'child' and lower(name) = lower($1)`,
+    [typed]);
+  if (byName.length === 1) return byName[0];
+  if (byName.length > 1) {
+    throw { code: 400, msg: `несколько «${byName[0].name}» — нужен код` };
+  }
+  throw { code: 400, msg: 'нет такого кода' };
+}
+
 async function assertWard(one, guardianId, childId) {
   const row = await one(
     `select u.id, u.name, u.circle_id
@@ -69,15 +96,14 @@ export function routesGuardian({ q, one, rpc, sendPush }) {
 },
 
 'POST /api/guardian/link': async (b, ctx) => {
-  // как /api/link: кириллица в коде (ТАЯ-01) должна остаться. Тире из мессенджеров → ASCII.
-  const code = String(b.code || '').toUpperCase().replace(/[\u2010-\u2015\u2212]/g, '-').trim();
-  if (!code) throw { code: 400, msg: 'введи код дерева ребёнка' };
-  const kid = await one(
-    `select u.id, u.name
-       from child_logins cl join users u on u.id = cl.child_id
-      where cl.code = $1 and u.role = 'child'`, [code]);
-  if (!kid) throw { code: 400, msg: 'код не найден' };
-  if (kid.id === ctx.child) throw { code: 400, msg: 'нельзя привязать себя' };
+  const kid = await findChildToAttach(q, one, b.code);
+  if (kid.id === ctx.child) {
+    throw { code: 400, msg: 'это твоё дерево' };
+  }
+  const already = await one(
+    'select 1 as x from child_guardians where child_id=$1 and guardian_id=$2',
+    [kid.id, ctx.child]);
+  if (already) return { ok: true, name: kid.name, childId: kid.id, already: true };
   const n = await one('select count(*)::int as c from child_guardians where guardian_id=$1', [ctx.child]);
   if ((n?.c || 0) >= MAX_WARDS) throw { code: 400, msg: `не больше ${MAX_WARDS} детей` };
   await q(

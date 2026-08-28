@@ -694,7 +694,7 @@ function renderFamilyBox(cont, family) {
   const tplOpts = tpls.map((t) =>
     `<option value="${t.id}" data-title="${esc(t.title)}" data-reward="${t.reward}" data-photo="${t.needs_photo ? 1 : 0}">${esc(t.title)} · ${t.reward}</option>`).join('');
   box.innerHTML = `<summary>Я родитель — дела для своих</summary>
-    <p class="hint">До ${family.maxTasks || 5} своих дел на ребёнка, награда не больше ${maxR} шишек. Своё название или строка из каталога — и «Выдать дело».</p>
+    <p class="hint">До ${family.maxTasks || 5} дел, до ${maxR} шишек.</p>
     ${loadErr ? `<p class="hint">${esc(loadErr)}</p>` : ''}
     ${pending.length ? pending.map((p) => `
       <div class="ward-row" data-id="${p.id}">
@@ -719,8 +719,8 @@ function renderFamilyBox(cont, family) {
       <input id="famReward" type="number" min="1" max="${maxR}" placeholder="Награда, до ${maxR}">
       <label><input type="checkbox" id="famPhoto"> нужно фото</label>
       <button class="go" id="famGive" type="button">Выдать дело</button>` : ''}
-    <input id="famCode" placeholder="Код дерева ребёнка" maxlength="16" autocomplete="off">
-    <button class="go sec" id="famLink" type="button">Привязать ребёнка</button>`;
+    <input id="famCode" placeholder="Код ребёнка" maxlength="40" autocomplete="off">
+    <button class="go sec" id="famLink" type="button">Привязать</button>`;
   const tplSel = box.querySelector('#famTpl');
   if (tplSel) tplSel.onchange = () => {
     const o = tplSel.selectedOptions[0];
@@ -745,7 +745,7 @@ function renderFamilyBox(cont, family) {
   const linkKid = async () => {
     const r = await api('/api/guardian/link', { code: box.querySelector('#famCode').value });
     if (r.error) return questNote(r.error, false);
-    questNote(`${r.name} привязан — можно выдавать дела`, true);
+    questNote(`${r.name} в семье`, true);
     loadTasks();
   };
   box.querySelector('#famLink')?.addEventListener('click', linkKid);

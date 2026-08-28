@@ -62,9 +62,9 @@ export function routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, send
   const child = await one("select id, name, circle_id from users where id=$1 and role='child'", [b.childId]);
   if (!child) throw { code: 400, msg: 'нет такого ребёнка' };
   const g = await one(
-    "select id, name from users where id=$1 and role='child' and circle_id=$2",
-    [b.guardianId, child.circle_id]);
-  if (!g) throw { code: 400, msg: 'опекун должен быть в том же кругу' };
+    "select id, name from users where id=$1 and role='child'",
+    [b.guardianId]);
+  if (!g) throw { code: 400, msg: 'нет такого опекуна' };
   if (g.id === child.id) throw { code: 400, msg: 'нельзя привязать к себе' };
   await q(
     'insert into child_guardians(child_id, guardian_id) values($1,$2) on conflict do nothing',
