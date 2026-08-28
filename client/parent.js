@@ -317,15 +317,6 @@ function startCabinet() {
   }
 }
 
-const pinEnter = document.getElementById('pinEnter');
-const pinInput = document.getElementById('pinInput');
-if (pinEnter) pinEnter.onclick = async () => {
-  if (await tryPin(pinInput.value)) startCabinet();
-};
-if (pinInput) pinInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') pinEnter?.click();
-});
-
-const saved = sessionStorage.getItem('parentPin') || '';
-if (saved) tryPin(saved).then((ok) => { if (ok) startCabinet(); });
+showCabinet(true);
+startCabinet();
 };

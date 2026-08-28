@@ -350,8 +350,7 @@ function forestChronicle({ name, tree_type, planted_month, planted_year, tree_ti
 }
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const treeAvatar = (treeType, i = 0) => TREE[treeType] || FRIEND_AV[i % 3];
-const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN кабинета ведущего (обязателен в проде)
-if (!PARENT_PIN) console.warn('PARENT_PIN не задан — кабинет ведущего закрыт, начисления и удаления недоступны');
+const PARENT_PIN = process.env.PARENT_PIN || '';                  // больше не калитка; оставлен для совместимости заголовка
 const PUBLIC = new Set([
   'POST /api/link', 'POST /api/signup', 'GET /api/signup/hint', 'POST /api/recover', 'GET /api/ping',
 ]); // роуты без кода ребёнка
@@ -2060,12 +2059,8 @@ const server = createServer(async (req, res) => {
     try {
       if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
       if (!guarded && !childRateCheck(ip)) throw { code: 429, msg: 'Слишком много запросов — подожди полминуты.' };
-      // кабинет ведущего: без PIN закрыт (пустой PARENT_PIN ≠ «открыто для всех»)
-      if (isParent) {
-        if (!PARENT_PIN) throw { code: 503, msg: 'кабинет ведущего закрыт' };
-        if ((req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN ведущего' }; }
-        okTry(ip);
-      }
+      // кабинет ведущего: PIN снят — ведущий заходит без калитки
+      if (isParent) okTry(ip);
       const ctx = await auth.resolve(req);
       // детские endpoint'ы требуют валидный код/токен (иначе 401, а не 500/пустота)
       if (!ctx.child && !PUBLIC.has(route) && !isParent) throw { code: 401, msg: 'нужен код входа' };
