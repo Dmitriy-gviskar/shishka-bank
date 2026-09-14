@@ -40,7 +40,7 @@
     min-height:100vh;min-height:100dvh;
     display:flex;flex-direction:column;
     justify-content:flex-end;
-    padding:28px 22px 36px;
+    padding:28px 22px 56px;
     isolation:isolate;
   }
   .hero-bg{
@@ -110,7 +110,25 @@
     display:inline-flex;align-items:center;min-height:48px;padding:10px 16px;
     font-weight:800;font-size:15px;text-decoration:underline;
     text-underline-offset:3px;color:rgba(238,244,230,.9);
+    background:none;border:0;cursor:pointer;font-family:"Manrope",system-ui,sans-serif;
   }
+  .code-box{
+    display:none;width:100%;max-width:380px;margin-top:12px;
+    opacity:0;animation:rise .8s ease .5s forwards;
+  }
+  .code-box.on{display:block}
+  .code-row{display:flex;gap:8px;align-items:stretch}
+  .code-in{
+    flex:1;min-width:0;box-sizing:border-box;min-height:48px;padding:10px 12px;
+    border-radius:16px;border:2px solid rgba(238,244,230,.45);
+    background:rgba(20,30,16,.55);color:#fff8eb;
+    font-family:"Fredoka","Manrope",sans-serif;font-weight:700;font-size:16px;
+    letter-spacing:.08em;text-transform:uppercase;text-align:center;outline:none;
+  }
+  .code-in::placeholder{letter-spacing:0;text-transform:none;color:rgba(238,244,230,.45)}
+  .code-in:focus{border-color:var(--amber)}
+  .code-go{flex:none;margin:0;min-height:48px;padding:10px 16px;font-size:16px;cursor:pointer}
+  .code-note{display:none;margin-top:8px;font-weight:800;font-size:13px}
   .hero-art{
     position:absolute;right:-4%;bottom:12%;width:min(42vw,280px);pointer-events:none;
     filter:drop-shadow(0 16px 28px rgba(0,0,0,.4));
@@ -130,8 +148,9 @@
     to{opacity:1;transform:translateY(0)}
   }
   @media (max-width:720px){
-    .hero-art{width:min(46vw,170px);bottom:38%;right:2%;opacity:.85}
-    .hero{padding-bottom:28px}
+    .hero-art{width:min(46vw,170px);bottom:42%;right:2%;opacity:.85}
+    .hero{padding-bottom:48px}
+    .code-row{flex-direction:column}
   }
 
   /* ── Sections ── */
@@ -176,6 +195,47 @@
   .parents-inner{max-width:920px;margin:0 auto;padding:72px 22px}
   .parents .cta{margin-top:8px}
 
+  .shots{
+    background:linear-gradient(180deg,#1a2414,#141c10);
+  }
+  .shot-grid{
+    display:grid;gap:16px;
+    grid-template-columns:1fr;
+  }
+  @media (min-width:720px){
+    .shot-grid{grid-template-columns:repeat(2,1fr)}
+  }
+  .shot{
+    border:2px solid rgba(238,244,230,.18);
+    border-radius:18px;overflow:hidden;
+    background:rgba(20,30,16,.5);
+  }
+  .shot img{display:block;width:100%;height:auto}
+  .shot figcaption{
+    padding:10px 12px;font-size:13px;font-weight:800;
+    color:rgba(238,244,230,.75);
+  }
+
+  .lead-form{
+    margin-top:20px;display:grid;gap:10px;max-width:420px;
+  }
+  .lead-form label{
+    display:grid;gap:4px;font-size:13px;font-weight:800;
+    color:rgba(238,244,230,.7);
+  }
+  .lead-form input,.lead-form select,.lead-form textarea{
+    min-height:44px;padding:10px 12px;border-radius:14px;
+    border:2px solid rgba(238,244,230,.35);
+    background:rgba(20,30,16,.55);color:#fff8eb;
+    font-family:"Manrope",system-ui,sans-serif;font-weight:700;font-size:15px;
+    outline:none;
+  }
+  .lead-form textarea{min-height:88px;resize:vertical}
+  .lead-form input:focus,.lead-form select:focus,.lead-form textarea:focus{
+    border-color:var(--amber);
+  }
+  .lead-note{margin-top:10px;font-size:13px;font-weight:700;color:rgba(238,244,230,.55)}
+
   .foot{
     padding:28px 22px 40px;text-align:center;
     background:#141c10;color:rgba(238,244,230,.55);
@@ -201,11 +261,19 @@
     </div>
     <div class="hero-main">
       <h1 class="brand">Шишка<br><span>Банк</span></h1>
-      <p class="tagline">Лесная экономика для детей: шишки за реальные дела, своё дерево и приключения в браузере.</p>
+      <p class="tagline">Цифровой слой детской финграмотности: шишки за реальные дела, своё дерево и приключения в браузере.</p>
       <div class="cta-row">
         <a class="cta" id="ctaPlay" href="link.html">Посадить дерево</a>
-        <a class="cta-ghost" id="ctaCode" href="link.html#code">У меня уже есть код</a>
+        <button type="button" class="cta-ghost" id="ctaCode">У меня уже есть код</button>
       </div>
+      <form class="code-box" id="homeCodeBox" autocomplete="off">
+        <div class="code-row">
+          <input class="code-in" id="homeCode" name="code" maxlength="12" autocapitalize="characters"
+            autocomplete="off" inputmode="text" placeholder="Код с другого телефона" aria-label="Код входа">
+          <button class="cta code-go" id="homeCodeBtn" type="submit">Войти</button>
+        </div>
+        <div class="code-note" id="homeCodeNote"></div>
+      </form>
     </div>
   </header>
 
@@ -231,18 +299,66 @@
     </div>
   </section>
 
-  <section class="parents">
+
+  <section class="shots section" id="product">
+    <h2>Как выглядит лес</h2>
+    <p class="lead">Реальные экраны приложения: кошелёк, дела, магазин, рынок.</p>
+    <div class="shot-grid">
+      <figure class="shot">
+        <img src="assets/landing/wallet.jpg" alt="Кошелёк с шишками" loading="lazy" width="1200" height="800">
+        <figcaption>Кошелёк — баланс шишек и дерево</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/landing/quests.jpg" alt="Задания" loading="lazy" width="1200" height="800">
+        <figcaption>Дела — шишки за реальные поступки</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/landing/shop.jpg" alt="Магазин" loading="lazy" width="1200" height="800">
+        <figcaption>Магазин впечатлений</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/landing/market.jpg" alt="Рынок карт" loading="lazy" width="1200" height="800">
+        <figcaption>Рынок и коллекционные карты</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="parents" id="hosts">
     <div class="parents-inner">
       <h2>Для ведущих и родителей</h2>
-      <p class="lead">Кабинет: задания на проверку, начисления, рынок карт и удаление лишних аккаунтов.</p>
-      <a class="cta" href="parent.html">Открыть кабинет →</a>
+      <p class="lead">Кабинет: задания на проверку, начисления, рынок карт. Уже есть аккаунт — зайдите в кабинет. Хотите запустить квест / смену — оставьте заявку.</p>
+      <a class="cta" href="parent.html">Открыть кабинет</a>
+      <form class="lead-form" id="leadForm">
+        <label>Имя
+          <input name="name" id="leadName" required maxlength="80" placeholder="Как к вам обращаться">
+        </label>
+        <label>Роль
+          <select name="role" id="leadRole">
+            <option value="организатор">Организатор квеста / лагеря</option>
+            <option value="родитель">Родитель</option>
+            <option value="другое">Другое</option>
+          </select>
+        </label>
+        <label>Контакт (телефон / Telegram / email)
+          <input name="contact" id="leadContact" required maxlength="120" placeholder="@telegram или +7…">
+        </label>
+        <label>Коротко: что нужно
+          <textarea name="note" id="leadNote" maxlength="500" placeholder="Смена на N детей, даты, город…"></textarea>
+        </label>
+        <button class="cta" type="submit">Заявка на запуск</button>
+        <p class="lead-note">Откроется письмо на Dibrov527@gmail.com. Отвечаем в течение 24 часов в рабочие дни.</p>
+      </form>
     </div>
   </section>
 
   <footer class="foot">
     <div class="name">Шишка Банк</div>
     <div>Детский лес · elka-kvest-2026.ru</div>
-    <div style="margin-top:8px"><a href="link.html" id="footPlay">Войти в игру</a></div>
+    <div style="margin-top:8px">
+      <a href="link.html" id="footPlay">Войти в игру</a>
+      · <a href="#hosts">Заявка</a>
+      · <a href="#product">Экраны</a>
+    </div>
   </footer>
 
 <script>
@@ -274,9 +390,60 @@
     foot.href = hasSession ? appHome : plant;
     if (hasSession) foot.textContent = 'Открыть мой лес';
   }
+  const box = document.getElementById('homeCodeBox');
+  const input = document.getElementById('homeCode');
+  const note = document.getElementById('homeCodeNote');
+  const openCode = () => {
+    if (!box) return;
+    box.classList.add('on');
+    input?.focus();
+  };
+  const saveSession = (token, code) => {
+    if (token) try { localStorage.setItem('deviceToken', token); } catch {}
+    if (code) try { localStorage.setItem('childCode', String(code).toUpperCase()); } catch {}
+  };
+  const enterByCode = async (raw) => {
+    const code = String(raw || '').toUpperCase().replace(/[\u2010-\u2015\u2212]/g, '-').trim();
+    if (!code) {
+      if (note) { note.style.display = 'block'; note.style.color = '#ffd0a8'; note.textContent = 'Вставь код с того телефона, где уже растёт дерево.'; }
+      return;
+    }
+    if (note) { note.style.display = 'block'; note.style.color = 'rgba(238,244,230,.8)'; note.textContent = 'Открываем лес…'; }
+    let r;
+    try {
+      const res = await fetch('/api/link', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      r = await res.json();
+    } catch {
+      if (note) { note.style.color = '#ffb4a8'; note.textContent = 'нет сети — попробуй ещё раз'; }
+      return;
+    }
+    if (r.error) {
+      if (note) { note.style.color = '#ffb4a8'; note.textContent = r.error; }
+      return;
+    }
+    saveSession(r.token, r.code || code);
+    location.href = withQ('index.html');
+  };
   if (codeL) {
-    if (hasSession) codeL.style.display = 'none';
-    else codeL.href = withQ('link.html', { open: 'code' });
+    if (hasSession) {
+      codeL.style.display = 'none';
+      if (box) box.style.display = 'none';
+    } else {
+      openCode();
+      codeL.onclick = (e) => { e.preventDefault(); openCode(); };
+    }
+  } else if (!hasSession) {
+    openCode();
+  }
+  if (box) {
+    box.addEventListener('submit', (e) => {
+      e.preventDefault();
+      enterByCode(input && input.value);
+    });
   }
   // проброс ref/code в storage на случай прямого захода с рекламы/рефки
   const p = new URLSearchParams(location.search);
@@ -285,8 +452,32 @@
   if (ref) {
     try { sessionStorage.setItem('refCode', ref); localStorage.setItem('refCode', ref); } catch {}
   }
-  if (code) {
-    try { localStorage.setItem('childCode', code); } catch {}
+  if (!hasSession && (code || p.get('open') === 'code' || location.hash === '#code')) {
+    openCode();
+    if (input && code) input.value = code;
+    if (code) enterByCode(code);
+  }
+
+  // воронка заявок → mailto
+  const lead = document.getElementById('leadForm');
+  if (lead) {
+    lead.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = (document.getElementById('leadName')?.value || '').trim();
+      const role = (document.getElementById('leadRole')?.value || '').trim();
+      const contact = (document.getElementById('leadContact')?.value || '').trim();
+      const note = (document.getElementById('leadNote')?.value || '').trim();
+      if (!name || !contact) return;
+      const subject = encodeURIComponent('Шишка Банк — заявка: ' + role);
+      const body = encodeURIComponent(
+        'Имя: ' + name + '\n' +
+        'Роль: ' + role + '\n' +
+        'Контакт: ' + contact + '\n' +
+        'Запрос:\n' + note + '\n\n' +
+        'Источник: elka-kvest-2026.ru лендинг\n'
+      );
+      location.href = 'mailto:Dibrov527@gmail.com?subject=' + subject + '&body=' + body;
+    });
   }
 })();
 </script>
