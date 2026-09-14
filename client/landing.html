@@ -195,6 +195,47 @@
   .parents-inner{max-width:920px;margin:0 auto;padding:72px 22px}
   .parents .cta{margin-top:8px}
 
+  .shots{
+    background:linear-gradient(180deg,#1a2414,#141c10);
+  }
+  .shot-grid{
+    display:grid;gap:16px;
+    grid-template-columns:1fr;
+  }
+  @media (min-width:720px){
+    .shot-grid{grid-template-columns:repeat(2,1fr)}
+  }
+  .shot{
+    border:2px solid rgba(238,244,230,.18);
+    border-radius:18px;overflow:hidden;
+    background:rgba(20,30,16,.5);
+  }
+  .shot img{display:block;width:100%;height:auto}
+  .shot figcaption{
+    padding:10px 12px;font-size:13px;font-weight:800;
+    color:rgba(238,244,230,.75);
+  }
+
+  .lead-form{
+    margin-top:20px;display:grid;gap:10px;max-width:420px;
+  }
+  .lead-form label{
+    display:grid;gap:4px;font-size:13px;font-weight:800;
+    color:rgba(238,244,230,.7);
+  }
+  .lead-form input,.lead-form select,.lead-form textarea{
+    min-height:44px;padding:10px 12px;border-radius:14px;
+    border:2px solid rgba(238,244,230,.35);
+    background:rgba(20,30,16,.55);color:#fff8eb;
+    font-family:"Manrope",system-ui,sans-serif;font-weight:700;font-size:15px;
+    outline:none;
+  }
+  .lead-form textarea{min-height:88px;resize:vertical}
+  .lead-form input:focus,.lead-form select:focus,.lead-form textarea:focus{
+    border-color:var(--amber);
+  }
+  .lead-note{margin-top:10px;font-size:13px;font-weight:700;color:rgba(238,244,230,.55)}
+
   .foot{
     padding:28px 22px 40px;text-align:center;
     background:#141c10;color:rgba(238,244,230,.55);
@@ -220,7 +261,7 @@
     </div>
     <div class="hero-main">
       <h1 class="brand">Шишка<br><span>Банк</span></h1>
-      <p class="tagline">Лесная экономика для детей: шишки за реальные дела, своё дерево и приключения в браузере.</p>
+      <p class="tagline">Цифровой слой детской финграмотности: шишки за реальные дела, своё дерево и приключения в браузере.</p>
       <div class="cta-row">
         <a class="cta" id="ctaPlay" href="link.html">Посадить дерево</a>
         <button type="button" class="cta-ghost" id="ctaCode">У меня уже есть код</button>
@@ -258,10 +299,65 @@
     </div>
   </section>
 
+  <section class="shots section" id="product">
+    <h2>Как выглядит лес</h2>
+    <p class="lead">Реальные экраны приложения: кошелёк, дела, магазин, рынок.</p>
+    <div class="shot-grid">
+      <figure class="shot">
+        <img src="assets/landing/wallet.jpg" alt="Кошелёк с шишками" loading="lazy" width="1200" height="800">
+        <figcaption>Кошелёк — баланс шишек и дерево</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/landing/quests.jpg" alt="Задания" loading="lazy" width="1200" height="800">
+        <figcaption>Дела — шишки за реальные поступки</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/landing/shop.jpg" alt="Магазин" loading="lazy" width="1200" height="800">
+        <figcaption>Магазин впечатлений</figcaption>
+      </figure>
+      <figure class="shot">
+        <img src="assets/landing/market.jpg" alt="Рынок карт" loading="lazy" width="1200" height="800">
+        <figcaption>Рынок и коллекционные карты</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="parents" id="hosts">
+    <div class="parents-inner">
+      <h2>Для ведущих и родителей</h2>
+      <p class="lead">Кабинет: задания на проверку, начисления, рынок карт. Уже есть аккаунт — зайдите в кабинет. Хотите запустить квест / смену — оставьте заявку.</p>
+      <a class="cta" href="parent.html">Открыть кабинет</a>
+      <form class="lead-form" id="leadForm">
+        <label>Имя
+          <input name="name" id="leadName" required maxlength="80" placeholder="Как к вам обращаться">
+        </label>
+        <label>Роль
+          <select name="role" id="leadRole">
+            <option value="организатор">Организатор квеста / лагеря</option>
+            <option value="родитель">Родитель</option>
+            <option value="другое">Другое</option>
+          </select>
+        </label>
+        <label>Контакт (телефон / Telegram / email)
+          <input name="contact" id="leadContact" required maxlength="120" placeholder="@telegram или +7…">
+        </label>
+        <label>Коротко: что нужно
+          <textarea name="note" id="leadNote" maxlength="500" placeholder="Смена на N детей, даты, город…"></textarea>
+        </label>
+        <button class="cta" type="submit">Заявка на запуск</button>
+        <p class="lead-note">Откроется письмо на Dibrov527@gmail.com. Отвечаем в течение 24 часов в рабочие дни.</p>
+      </form>
+    </div>
+  </section>
+
   <footer class="foot">
     <div class="name">Шишка Банк</div>
     <div>Детский лес · elka-kvest-2026.ru</div>
-    <div style="margin-top:8px"><a href="link.html" id="footPlay">Войти в игру</a></div>
+    <div style="margin-top:8px">
+      <a href="link.html" id="footPlay">Войти в игру</a>
+      · <a href="#hosts">Заявка</a>
+      · <a href="#product">Экраны</a>
+    </div>
   </footer>
 
 <script>
@@ -359,6 +455,28 @@
     openCode();
     if (input && code) input.value = code;
     if (code) enterByCode(code);
+  }
+
+  // воронка заявок → mailto
+  const lead = document.getElementById('leadForm');
+  if (lead) {
+    lead.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = (document.getElementById('leadName')?.value || '').trim();
+      const role = (document.getElementById('leadRole')?.value || '').trim();
+      const contact = (document.getElementById('leadContact')?.value || '').trim();
+      const note = (document.getElementById('leadNote')?.value || '').trim();
+      if (!name || !contact) return;
+      const subject = encodeURIComponent('Шишка Банк — заявка: ' + role);
+      const body = encodeURIComponent(
+        'Имя: ' + name + '\n' +
+        'Роль: ' + role + '\n' +
+        'Контакт: ' + contact + '\n' +
+        'Запрос:\n' + note + '\n\n' +
+        'Источник: elka-kvest-2026.ru лендинг\n'
+      );
+      location.href = 'mailto:Dibrov527@gmail.com?subject=' + subject + '&body=' + body;
+    });
   }
 })();
 </script>
