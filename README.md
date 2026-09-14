@@ -36,7 +36,7 @@ npm test
 | Переменная | Назначение | По умолчанию |
 |-----------|-----------|-------------|
 | `DATABASE_URL` | Строка подключения PostgreSQL | обязательно |
-| `PARENT_PIN` | PIN родительского кабинета | опционально (если не задан — вход без пароля) |
+| `PARENT_PIN` | PIN кабинета ведущего | обязательно (без него кабинет закрыт) |
 | `PORT` | Порт сервера | 3777 |
 | `TELEGRAM_BOT_TOKEN` | Токен бота для алертов | — |
 | `TELEGRAM_CHAT_ID` | ID чата для алертов | — |
@@ -93,20 +93,13 @@ ssh root@VPS 'systemctl restart shishka'
 ```
 
 ### Автоматический (GitHub Actions)
-Push в `main` → `.github/workflows/deploy.yml` → rsync на VPS → restart.
-Требует секретов: `VPS_SSH_KEY`, `VPS_HOST`.
+Push в `main` → `.github/workflows/deploy.yml` копирует `client/` на VPS и делает `systemctl restart shishka`.
+Секреты: `VPS_SSH_KEY`, `VPS_HOST`. Пароль root не нужен — ключ уже в GitHub.
 
 ## Применение миграций
 
-```bash
-# На VPS:
-cd /opt/shishka
-source /root/shishka-local-db.env
-PROD_URL=$(echo "$LOCAL_URL" | sed 's|/shishka$|/shishka_prod|')
-psql "$PROD_URL" -f db/migration_xxx.sql
-```
-
-Или одним скриптом: `bash ops/apply_migrations.sh`
+Новые SQL клади в `client/migrations/` (деплой везёт только `client/*`). Сервер накатывает их при старте.
+Не ходи на VPS по ssh и не гоняй `psql` с мака.
 
 ## Мониторинг
 

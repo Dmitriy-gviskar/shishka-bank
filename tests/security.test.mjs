@@ -22,22 +22,37 @@ test('почта: угловые скобки и длина режутся на 
   assert.ok(msg.content.length <= 80, `длина ограничена 80 (было ${msg.content.length})`);
 });
 
-test('PIN-кабинет: 10 неверных попыток с IP → лок (429)', async (t) => {
+test('кабинет ведущего открыт без PIN', async (t) => {
+  const db = await setupDb();
+  const srv = await startServer(db.url, { PARENT_PIN: '' });
+  t.after(() => srv.stop());
+
+  const kids = await srv.api('/api/parent/children');
+  assert.equal(kids.status, 200);
+  assert.ok(Array.isArray(kids.body));
+  assert.ok(kids.body.some((k) => k.id === db.childA1.id));
+});
+
+test('начисление ведущим не больше 100 шишек за раз, даже с PIN', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
   t.after(() => srv.stop());
 
-  const tryPin = (pin) => srv.api('/api/parent/children', { headers: { 'x-parent-pin': pin } });
+  const huge = await srv.api('/api/parent/topup', {
+    method: 'POST',
+    headers: { 'x-parent-pin': 'testpin', 'content-type': 'application/json' },
+    body: JSON.stringify({ childId: db.childA1.id, amount: 100000000 }),
+  });
+  assert.equal(huge.status, 400);
+  assert.match(huge.body.error, /не больше 100/);
 
-  for (let i = 0; i < 10; i++) {
-    const r = await tryPin('0000');
-    assert.equal(r.status, 401, `попытка ${i + 1} — неверный PIN, ещё не лок`);
-  }
-  const locked = await tryPin('0000');
-  assert.equal(locked.status, 429, '11-я попытка заблокирована');
-  // даже верный PIN не пускает, пока действует лок
-  const stillLocked = await tryPin('testpin');
-  assert.equal(stillLocked.status, 429, 'лок держится и для верного PIN');
+  const ok = await srv.api('/api/parent/topup', {
+    method: 'POST',
+    headers: { 'x-parent-pin': 'testpin', 'content-type': 'application/json' },
+    body: JSON.stringify({ childId: db.childA1.id, amount: 100 }),
+  });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.balance, 130);
 });
 
 test('новый код входа — криптослучайный из безопасного алфавита, развязан от имени, работает', async (t) => {

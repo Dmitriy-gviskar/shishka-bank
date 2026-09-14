@@ -40,7 +40,10 @@ create table users (
   longest_streak  int not null default 0,      -- дерево растёт по МАКСИМУМУ и не деградирует
   streak_freezes  int not null default 0,      -- «дождики»-защитники серии (покупаются + авто раз в неделю)
   last_freeze_grant date,                       -- когда последний раз выдали авто-freeze (раз в 7 дней)
-  created_at   timestamptz not null default now()
+  created_at   timestamptz not null default now(),
+  age          int check (age is null or (age >= 4 and age <= 17)),
+  chat_age_min int check (chat_age_min is null or (chat_age_min >= 4 and chat_age_min <= 17)),
+  chat_age_max int check (chat_age_max is null or (chat_age_max >= 4 and chat_age_max <= 17))
 );
 create index on users(circle_id);
 
@@ -79,6 +82,7 @@ create table tasks (
   category    text,
   is_daily    boolean not null default false,
   needs_photo boolean not null default false,
+  kind        text,
   status      text not null default 'open'
               check (status in ('open','pending_review','done','rejected')),
   proof_url   text,
@@ -92,7 +96,7 @@ create table shop_items (
   id         uuid primary key default gen_random_uuid(),
   circle_id  uuid references circles(id) on delete cascade,  -- null = глобальный шаблон
   type       text not null default 'impression'
-             check (type in ('impression','skin')),
+             check (type in ('impression','skin','character')),
   title      text not null,
   price      int  not null check (price > 0),
   category   text,
@@ -160,7 +164,9 @@ create table task_templates (
   reward      int  not null check (reward > 0),
   category    text,
   is_daily    boolean not null default false,
-  needs_photo boolean not null default false
+  needs_photo boolean not null default false,
+  pack        text,
+  kind        text
 );
 
 -- Общий котёл: совместная семейная цель (сбор шишек всей семьёй)
@@ -220,8 +226,9 @@ create table orders (
   buyer_id   uuid not null references users(id) on delete cascade,
   seller_id  uuid not null references users(id) on delete cascade,
   price      int  not null check (price > 0),   -- фиксируем цену на момент резерва
-  status     text not null default 'reserved' check (status in ('reserved','delivered','canceled')),
+  status     text not null default 'reserved' check (status in ('reserved','handed','delivered','canceled')),
   created_at   timestamptz not null default now(),
+  handed_at    timestamptz,
   confirmed_at timestamptz
 );
 create index on orders(seller_id, status);

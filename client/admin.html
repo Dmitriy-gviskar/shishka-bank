@@ -32,6 +32,7 @@ async function load() {
       fetch('/api/parent/state', { headers: h }).then(r => r.json()),
       fetch('/api/parent/report', { headers: h }).then(r => r.json())
     ]);
+    if (s.error || r.error) throw new Error(s.error || r.error);
     document.getElementById('online').textContent = s.online || 0;
     document.getElementById('totalKids').textContent = s.totalKids || 0;
     document.getElementById('txToday').textContent = s.txToday || 0;

@@ -7,7 +7,7 @@ import cluster from 'node:cluster';
 import { WebSocketServer } from 'ws';
 
 
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import pg from 'pg';
@@ -16,6 +16,7 @@ import { makeAuth } from './lib/auth.mjs';
 import { SEC, serveStatic, readBody, json, logError } from './lib/http.mjs';
 import { routesGames } from './routes/games.mjs';
 import { routesParent } from './routes/parent.mjs';
+import { routesGuardian } from './routes/guardian.mjs';
 import { routesCards } from './routes/cards.mjs';
 
 // Код входа ребёнка: криптослучайный, из алфавита без двусмысленных символов (нет 0/O/1/I/L).
@@ -47,8 +48,34 @@ async function assertFriend(a, b, msg = 'сначала добавь в друз
   if (!(await areFriends(a, b))) throw { code: 403, msg };
 }
 // Письмо обитателю: заявка уходит сама, дружба не принимается. Карты/шишки по-прежнему после «Принять».
+async function assertChatAge(from, to) {
+  const rows = await q(
+    'select id, age, chat_age_min, chat_age_max from users where id in ($1,$2)',
+    [from, to]).catch(() => []);
+  const a = rows.find((r) => r.id === from);
+  const b = rows.find((r) => r.id === to);
+  if (!a || !b) return;
+  const allows = (me, peer) => {
+    if (me.chat_age_min == null && me.chat_age_max == null) return true;
+    if (peer.age == null) return false;
+    const lo = me.chat_age_min ?? 4;
+    const hi = me.chat_age_max ?? 17;
+    return peer.age >= lo && peer.age <= hi;
+  };
+  if (!allows(a, b)) {
+    throw {
+      code: 403,
+      msg: `родители разрешили писать только с ${a.chat_age_min ?? 4}–${a.chat_age_max ?? 17} лет`,
+    };
+  }
+  if (!allows(b, a)) {
+    throw { code: 403, msg: 'этому обитателю нельзя писать — ограничение родителей' };
+  }
+}
+
 async function ensureForestTalk(from, to) {
   if (!to || from === to) throw { code: 400, msg: 'выбери, кому отправить' };
+  await assertChatAge(from, to);
   const peer = await one("select id, name from users where id=$1 and role='child'", [to]);
   if (!peer) throw { code: 400, msg: 'друг не найден' };
   const existing = await one(
@@ -210,6 +237,44 @@ if (!process.env.DATABASE_URL) { console.error('нет DATABASE_URL в окру�
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false }, max: 5, idleTimeoutMillis: 0, keepAlive: true });
 setInterval(() => pool.query('select 1').catch(() => {}), 240e3);  // пинг: Supabase-пулер не должен резать idle-соединение
 pool.query('select 1').catch(() => {});                            // прогрев на старте — первый экран не ждёт TLS-коннект
+// деплой везёт только client/* — SQL с корня репо на VPS не попадает. Накатываем при старте, без ssh/root.
+async function applyBootMigrations() {
+  const dir = join(DIR, 'migrations');
+  const files = [
+    'migration_quest_daily10.sql',
+    'migration_bereza_quests.sql',
+    'migration_card_swaps.sql',
+    'migration_quest_two_lists.sql',
+    'migration_games_wave3.sql',
+    'migration_offline_packs.sql',
+    'migration_guild_invites.sql',
+    'migration_shop_avito.sql',
+    'migration_shop_feed.sql',
+    'migration_card_gather.sql',
+    'migration_card_exchange_pick.sql',
+    'migration_child_guardians.sql',
+    'migration_characters.sql',
+    'migration_chat_ages.sql',
+    'migration_card_rank_down.sql',
+    'migration_forest_welcome.sql',
+    'migration_friend_trade.sql',
+    'migration_forest_tasks_pack.sql',
+  ];
+  await pool.query('select pg_advisory_lock(87236401)');
+  try {
+    for (const f of files) {
+      const sql = await readFile(join(dir, f), 'utf8').catch(() => '');
+      if (!sql.trim()) continue;
+      await pool.query(sql);
+      console.log('migration ok:', f);
+    }
+  } catch (e) {
+    console.error('migration fail:', e.message);
+  } finally {
+    await pool.query('select pg_advisory_unlock(87236401)').catch(() => {});
+  }
+}
+await applyBootMigrations();
 const q = (sql, p = []) => pool.query(sql, p).then((r) => r.rows);
 const one = (sql, p = []) => q(sql, p).then((r) => r[0] || null);
 const rpc = (fn, args = []) => q(`select * from ${fn}(${args.map((_, i) => '$' + (i + 1)).join(',')}) as r`, args);
@@ -285,7 +350,7 @@ function forestChronicle({ name, tree_type, planted_month, planted_year, tree_ti
 }
 const FRIEND_AV = ['friend1.webp', 'friend2.webp', 'friend3.webp'];
 const treeAvatar = (treeType, i = 0) => TREE[treeType] || FRIEND_AV[i % 3];
-const PARENT_PIN = process.env.PARENT_PIN || '';                  // PIN родительского кабинета (опционально)
+const PARENT_PIN = process.env.PARENT_PIN || '';                  // больше не калитка; оставлен для совместимости заголовка
 const PUBLIC = new Set([
   'POST /api/link', 'POST /api/signup', 'GET /api/signup/hint', 'POST /api/recover', 'GET /api/ping',
 ]); // роуты без кода ребёнка
@@ -468,6 +533,7 @@ async function sendPush(userId, title, body, url) {
 const api = {
   ...routesGames({ q, one, rpc }),
   ...routesParent({ q, one, rpc, auth, assertOwn, memoGet, memo, sendPush, genLoginCode }),
+  ...routesGuardian({ q, one, rpc, sendPush }),
   ...routesCards({ q, one, rpc, assertOwn, assertFriend }),
   'POST /api/push/subscribe': async (b, ctx) => {
     const sub = b.subscription;
@@ -514,7 +580,7 @@ const api = {
     if (name.length < 2) throw { code: 400, msg: 'напиши имя дерева' };
     const ip = clientIp(req || { headers: {}, socket: {} });
     if (!ip || ip === 'x') throw { code: 400, msg: 'не удалось проверить устройство' };
-    const row = await one(
+    let row = await one(
       `select u.id, u.name, u.circle_id, cl.code
          from users u
          join child_logins cl on cl.child_id=u.id
@@ -522,7 +588,17 @@ const api = {
           and u.signup_ip=$2
           and u.created_at > now() - interval '7 days'
         order by u.created_at desc limit 1`, [name, ip]);
-    if (!row) throw { code: 404, msg: 'Не нашли такое дерево с этого телефона. Проверь имя или зайди по коду.' };
+    if (!row) {
+      // другое устройство: если имя дерева за месяц одно — отдаём его (иначе нужен код)
+      const uniq = await q(
+        `select u.id, u.name, u.circle_id, cl.code
+           from users u join child_logins cl on cl.child_id=u.id
+          where u.role='child' and lower(u.name)=lower($1)
+            and u.created_at > now() - interval '30 days'
+          order by u.created_at desc`, [name]);
+      if (uniq.length === 1) row = uniq[0];
+    }
+    if (!row) throw { code: 404, msg: 'Не нашли такое дерево. Проверь имя или зайди по коду с того экрана, где сажал.' };
     let raw = null;
     try {
       raw = auth.newToken();
@@ -651,11 +727,12 @@ const api = {
 
   'GET /api/state': async (b, ctx) => {
     const TREE_NAME = { 1: 'Саженец', 2: 'Дубок', 3: 'Деревце', 4: 'Крепкое', 5: 'Могучее' };
-    const [u, w] = await Promise.all([
-      one(`select name,tree_level,tree_type,avatar_skin,current_streak,coalesce(streak_freezes,0) as streak_freezes,
+    const [u, w, login] = await Promise.all([
+      one(`select name,tree_level,tree_type,avatar_skin,grove_character,current_streak,coalesce(streak_freezes,0) as streak_freezes,
             (last_visit is distinct from (now() at time zone 'Europe/Moscow')::date) as can_claim_daily
            from users where id=$1`, [ctx.child]),
       one('select balance,total_earned,total_spent from wallets where user_id=$1', [ctx.child]),
+      one('select code from child_logins where child_id=$1', [ctx.child]).catch(() => null),
     ]);
     // питомцы на поляне: массив (до 5), каждый с фразой
     const familiars = await q(`select f.type_id as type, t.code, t.name, t.category, f.grade, l.title, r.color,
@@ -670,12 +747,20 @@ const api = {
       const sk = await one('select title from shop_items where id=$1', [u.avatar_skin]);
       if (sk && SKIN_ASSET[sk.title] && SKIN_ASSET[sk.title] !== 'base') { tree_asset = SKIN_ASSET[sk.title] + '.png'; skin_on = true; }
     }
+    let grove = null;
+    if (u.grove_character) {
+      const ch = await one(
+        "select title, sku from shop_items where type='character' and sku=$1",
+        [u.grove_character]);
+      if (ch) grove = { sku: ch.sku, name: ch.title, mark: CHAR_MARK[ch.sku] || '🌲' };
+    }
     const lvl = Math.min(5, Math.max(1, u.tree_level || 1));
     return { name: u.name, tree_level: lvl, tree_title: TREE_NAME[lvl] || 'Саженец',
              tree_type: u.tree_type, balance: w.balance,
              total_earned: w.total_earned, total_spent: w.total_spent, tree_asset, skin_on,
              streak: u.current_streak, streak_freezes: u.streak_freezes || 0,
-             can_claim_daily: u.can_claim_daily, familiars };
+             can_claim_daily: u.can_claim_daily, familiars, grove,
+             login_code: login?.code || null };
   },
   'POST /api/freeze/buy': async (b, ctx) => {
     try { await rpc('buy_streak_freeze', [ctx.child]); }
@@ -695,49 +780,75 @@ const api = {
     try { await rpc('ensure_daily_tasks', [ctx.child]); }
     catch (e) { console.error('ensure_daily_tasks', e.message); }
     // open / на проверке / вернули на доработку; done только у сегодняшних daily
-    return (await q(`select id,title,reward,needs_photo,status,is_daily,category,created_at
+    const rows = (await q(`select id,title,reward,needs_photo,status,is_daily,category,created_at,
+             coalesce(kind, case when is_daily then 'daily' else 'host' end) as kind
       from tasks where child_id=$1
       and (
         status in ('open','pending_review','rejected')
         or (status = 'done' and is_daily and created_at::date = (now() at time zone 'Europe/Moscow')::date)
       )
       order by case status when 'rejected' then 0 when 'open' then 1 when 'pending_review' then 2 else 3 end,
-               is_daily desc, created_at`, [ctx.child]))
+               case coalesce(kind, '') when 'day' then 0 else 1 end,
+               is_daily desc, created_at desc`, [ctx.child]))
       .map((t) => ({
         id: t.id, title: t.title, reward: t.reward, needs_photo: t.needs_photo,
-        is_daily: !!t.is_daily, category: t.category || '',
+        is_daily: !!t.is_daily, category: t.category || '', kind: t.kind || (t.is_daily ? 'daily' : 'host'),
         status: t.status === 'pending_review' ? 'submitted' : t.status,
       }));
+    // без простыни: один заголовок один раз, не больше 10 открытых лесных дел;
+    // семейные (от родителя) в этот лимит не входят — у них свой потолок 5
+    const seen = new Set();
+    const slim = [];
+    let openLeft = 10;
+    for (const t of rows) {
+      const key = String(t.title || '').trim().toLowerCase();
+      const family = t.kind === 'family';
+      if (t.status === 'open' && seen.has(key)) continue;
+      if (t.status === 'open') {
+        if (!family) {
+          if (openLeft <= 0) continue;
+          openLeft--;
+        }
+        seen.add(key);
+      }
+      slim.push(t);
+    }
+    return slim;
   },
   'POST /api/task/done': async (b, ctx) => {
-    const t = await one('select id, title, needs_photo, status from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);
+    const t = await one('select id, title, needs_photo, status, is_daily, reward, kind from tasks where id=$1 and child_id=$2', [b.id, ctx.child]);
     if (!t || t.status === 'done' || t.status === 'pending_review') throw { code: 400, msg: 'задание недоступно' };
     let proof = null;
     if (t.needs_photo) proof = await savePhoto(b.photo, 'task_' + b.id);
     await rpc('submit_task', [b.id, proof]);
     const me = await one('select name from users where id=$1', [ctx.child]);
-    // ведущий + опекуны — как при покупке в магазине (иначе дело висит «на проверке» незамеченным)
+    const family = t.kind === 'family';
+    // семейное — только опекунам; лесное — ведущему круга + опекунам
     let notify = [];
-    try {
-      notify = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
-    } catch (e) { console.error('task notify parent', e.message); }
+    if (!family) {
+      try {
+        notify = await q("select id from users where circle_id=$1 and role='parent'", [ctx.circle]);
+      } catch (e) { console.error('task notify parent', e.message); }
+    }
     try {
       const g = await q('select guardian_id as id from child_guardians where child_id=$1', [ctx.child]);
       notify = notify.concat(g);
     } catch (e) { console.error('task notify guardians', e.message); }
     let approved = false;
-    if (!notify.length) {
-      // свой лес без ведущего (приглашённый друг) — иначе дела висят навсегда
+    // лесные ежедневки и задание дня без фото — сразу, не копим очередь у ведущего
+    const forestSelf = !family && !!t.is_daily && !t.needs_photo;
+    if (forestSelf || (!family && !notify.length) || (family && !notify.length)) {
       try { await rpc('approve_task', [b.id]); approved = true; }
       catch (e) { console.error('auto-approve', e.message); }
     }
     if (!approved) {
+      const openUrl = family ? '/quests.html' : '/parent.html#pending';
       for (const p of notify) {
         sendPush(
           p.id,
           '📋 На проверку!',
           `${me?.name || 'Ребёнок'} сдал «${t.title}»`,
-          '/parent.html#pending',
+          openUrl,
         ).catch(() => {});
       }
     }
@@ -918,6 +1029,39 @@ const api = {
       forest: av(forest),
     };
   },
+  'POST /api/friends/search': async (b, ctx) => {
+    const raw = String(b.q || '').trim().slice(0, 24);
+    const needle = raw.replace(/[%_\\]/g, '');
+    if (needle.length < 2) return [];
+    const rows = await q(
+      `select u.id, u.name, u.tree_type,
+              exists (
+                select 1 from friendships f
+                 where f.user_id=$1 and f.friend_id=u.id and f.status='accepted'
+              ) as friend,
+              exists (
+                select 1 from friendships f
+                 where f.user_id=$1 and f.friend_id=u.id and f.status='pending'
+              ) as pending_out,
+              exists (
+                select 1 from friendships f
+                 where f.user_id=u.id and f.friend_id=$1 and f.status='pending'
+              ) as pending_in
+         from users u
+        where u.role='child' and u.id<>$1
+          and u.name ilike $2
+        order by u.name
+        limit 20`,
+      [ctx.child, '%' + needle + '%']);
+    return rows.map((r, i) => ({
+      id: r.id,
+      name: r.name,
+      avatar: treeAvatar(r.tree_type, i),
+      friend: !!r.friend,
+      pending: !!r.pending_out,
+      pending_in: !!r.pending_in,
+    }));
+  },
   'POST /api/friends/request': async (b, ctx) => {
     let to = b.to;
     if (!to && b.code) {
@@ -927,6 +1071,7 @@ const api = {
     }
     if (!to) throw { code: 400, msg: 'выбери друга' };
     if (to === ctx.child) throw { code: 400, msg: 'это ты сам' };
+    await assertChatAge(ctx.child, to);
     const peer = await one("select id, name from users where id=$1 and role='child'", [to]);
     if (!peer) throw { code: 400, msg: 'друг с таким кодом не найден' };
     const existing = await one(
@@ -965,6 +1110,7 @@ const api = {
         where user_id=$1 and friend_id=$2 and status='pending'`,
       [b.from, ctx.child]);
     if (!req) throw { code: 400, msg: 'заявка не найдена' };
+    await assertChatAge(ctx.child, b.from);
     const peer = await one("select id, name from users where id=$1 and role='child'", [b.from]);
     if (!peer) throw { code: 400, msg: 'заявка не найдена' };
     await linkFriends(ctx.child, b.from);
@@ -1067,10 +1213,10 @@ const api = {
     try { [o] = await rpc('reserve_lot', [ctx.child, b.id]); }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /own shop|cannot buy/.test(e.message) ? 'это твоя лавка' : 'нет такого лота' }; }
     const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
-    sendPush(o.seller_id, '🛒 Заказ в лавке!', 'Кто-то купил твой товар — отдай его и жди подтверждения').catch(() => {});
+    sendPush(o.seller_id, '🛒 Заказ в лавке!', 'Отдай товар и жми «Отдал» — шишки ещё заморожены').catch(() => {});
     return { ok: true, balance: w.balance, order_id: o.id };
   },
-  // Активные сделки лавок (эскроу): покупатель подтверждает получение → продавец получает шишки
+  // Сделки лавок: резерв → продавец «Отдал» → покупатель «Получил» → выплата
   'GET /api/orders': async (b, ctx) => q(`
       select o.id, o.price, o.status, o.created_at,
              l.title, l.photo,
@@ -1080,15 +1226,30 @@ const api = {
         join shop_lots l on l.id = o.lot_id
         join users buyer on buyer.id = o.buyer_id
         join users seller on seller.id = o.seller_id
-       where o.status = 'reserved' and (o.buyer_id = $1 or o.seller_id = $1)
+       where o.status in ('reserved','handed') and (o.buyer_id = $1 or o.seller_id = $1)
        order by o.created_at desc`, [ctx.child]),
+  'POST /api/order/hand': async (b, ctx) => {
+    const id = b.id || b.orderId;
+    if (!id) throw { code: 400, msg: 'нет заказа' };
+    const o = await one(
+      `select o.id, o.buyer_id, l.title from orders o join shop_lots l on l.id=o.lot_id
+        where o.id=$1 and o.seller_id=$2 and o.status='reserved'`, [id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'заказ уже закрыт или не твой' };
+    try { await rpc('hand_order', [id, ctx.child]); }
+    catch (e) {
+      console.error('hand_order', e.message || e);
+      throw { code: 400, msg: 'не удалось отметить передачу' };
+    }
+    sendPush(o.buyer_id, '📦 Товар отдали', `«${o.title}» — если он у тебя, жми «Получил»`).catch(() => {});
+    return { ok: true, handed: true };
+  },
   'POST /api/order/confirm': async (b, ctx) => {
     const id = b.id || b.orderId;
     if (!id) throw { code: 400, msg: 'нет заказа' };
     const o = await one(
       `select o.id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
-        where o.id=$1 and o.buyer_id=$2 and o.status='reserved'`, [id, ctx.child]);
-    if (!o) throw { code: 404, msg: 'заказ уже закрыт или не твой' };
+        where o.id=$1 and o.buyer_id=$2 and o.status='handed'`, [id, ctx.child]);
+    if (!o) throw { code: 404, msg: 'сначала продавец должен отдать товар' };
     try { await rpc('confirm_order', [id]); }
     catch (e) {
       console.error('confirm_order', e.message || e);
@@ -1102,9 +1263,11 @@ const api = {
     const id = b.id || b.orderId;
     if (!id) throw { code: 400, msg: 'нет заказа' };
     const o = await one(
-      `select o.id, o.buyer_id, o.seller_id, l.title from orders o join shop_lots l on l.id=o.lot_id
-        where o.id=$1 and o.status='reserved' and (o.buyer_id=$2 or o.seller_id=$2)`, [id, ctx.child]);
+      `select o.id, o.buyer_id, o.seller_id, o.status, l.title from orders o join shop_lots l on l.id=o.lot_id
+        where o.id=$1 and o.status in ('reserved','handed') and (o.buyer_id=$2 or o.seller_id=$2)`, [id, ctx.child]);
     if (!o) throw { code: 404, msg: 'заказ уже закрыт' };
+    if (o.status === 'handed' && o.buyer_id !== ctx.child)
+      throw { code: 400, msg: 'после «Отдал» отменить может только покупатель' };
     try { await rpc('cancel_order', [id]); }
     catch (e) {
       console.error('cancel_order', e.message || e);
@@ -1177,7 +1340,17 @@ const api = {
         union all
         select 'event', null, 'Событие: ' || e.title, null, e.start_date
           from events e where (e.circle_id=$1 or e.circle_id is null) and (e.end_date is null or e.end_date > now())
-      ) n order by at desc limit 50`, [ctx.circle]);
+        union all
+        select 'buy', u.name, 'Купил «' || t.message || '»', t.amount, t.created_at
+          from transactions t join users u on u.id = t.from_user
+          where t.circle_id=$1 and t.from_user=$2 and t.type='purchase'
+        union all
+        select 'buy', u.name,
+               'Купил в лавке «' || coalesce(nullif(trim(split_part(t.message, ': ', 2)), ''), 'товар') || '»',
+               t.amount, t.created_at
+          from transactions t join users u on u.id = t.from_user
+          where t.circle_id=$1 and t.from_user=$2 and t.type='transfer' and t.message like 'Покупка в лавке%'
+      ) n order by at desc limit 50`, [ctx.circle, ctx.child]);
     return rows;
   },
   'GET /api/album': async (b, ctx) => {
@@ -1217,8 +1390,53 @@ const api = {
   // ── Общий котёл ──
   'GET /api/pot': (b, ctx) => q(`select p.id, p.title, p.goal, p.collected, p.status, p.created_by, g.name as guild, coalesce(u.name,'семья') as author
     from pots p left join guilds g on g.id=p.guild_id left join users u on u.id=p.created_by
-    where p.circle_id=$1 and p.status in ('open','reached') order by p.created_at desc`, [ctx.circle])
+    where p.status in ('open','reached')
+      and (p.circle_id=$1 or exists (
+        select 1 from friendships f
+         where f.user_id=$2 and f.friend_id=p.created_by and f.status='accepted'))
+    order by p.created_at desc`, [ctx.circle, ctx.child])
     .then((rows) => rows.map((r) => ({ ...r, mine: r.created_by === ctx.child, created_by: undefined }))),
+  'GET /api/grove-life': async (b, ctx) => {
+    const [pots, proposals, guilds, shops, pending, pals] = await Promise.all([
+      q(`select p.id, p.title, p.collected, p.goal, coalesce(u.name,'семья') as author
+           from pots p left join users u on u.id=p.created_by
+          where p.status in ('open','reached')
+            and (p.circle_id=$2 or exists (
+              select 1 from friendships f
+               where f.user_id=$1 and f.friend_id=p.created_by and f.status='accepted'))
+          order by p.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      q(`select p.id, p.title
+           from proposals p
+          where p.type<>'insurance_claim' and p.status='voting'
+            and (p.circle_id=$2 or exists (
+              select 1 from friendships f join users u on u.id=f.friend_id
+               where f.user_id=$1 and f.status='accepted' and u.circle_id=p.circle_id))
+          order by p.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      q(`select g.id, g.name,
+                (select count(*)::int from guild_members gm where gm.guild_id=g.id) as n
+           from guilds g
+          where g.status in ('open','sleeping')
+            and (g.circle_id=$2 or exists (
+              select 1 from guild_members gm
+              join friendships f on f.friend_id=gm.child_id and f.user_id=$1 and f.status='accepted'
+              where gm.guild_id=g.id))
+          order by g.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      q(`select s.id, s.name,
+                (select count(*)::int from shop_lots l where l.shop_id=s.id and l.is_active) as n
+           from shops s
+          where s.is_active and (
+            s.circle_id=$2 or exists (
+              select 1 from friendships f
+               where f.user_id=$1 and f.friend_id=s.owner_id and f.status='accepted'))
+          order by s.created_at desc limit 3`, [ctx.child, ctx.circle]),
+      one(`select count(*)::int as n from friendships where friend_id=$1 and status='pending'`, [ctx.child]),
+      one(`select count(*)::int as n from friendships where user_id=$1 and status='accepted'`, [ctx.child]),
+    ]);
+    return {
+      pots, proposals, guilds, shops,
+      mail: { pending_in: pending?.n || 0, friends: pals?.n || 0 },
+    };
+  },
   'POST /api/pot/create': async (b, ctx) => {
     const title = String(b.title || '').trim().slice(0, 40);
     const goal = parseInt(b.goal, 10);
@@ -1230,7 +1448,14 @@ const api = {
     return { ok: true, id: p.id };
   },
   'POST /api/pot/contribute': async (b, ctx) => {
-    await assertOwn('select 1 from pots where id=$1 and circle_id=$2', [b.id, ctx.circle], 'нет котла');  // только котёл своей семьи
+    const potRow = await one('select id, circle_id, created_by from pots where id=$1', [b.id]);
+    if (!potRow) throw { code: 400, msg: 'нет котла' };
+    if (potRow.circle_id !== ctx.circle) {
+      const pal = await one(
+        `select 1 from friendships where user_id=$1 and friend_id=$2 and status='accepted'`,
+        [ctx.child, potRow.created_by]);
+      if (!pal) throw { code: 400, msg: 'нет котла' };
+    }
     let pot;
     try { pot = (await rpc('contribute_pot', [ctx.child, b.id, parseInt(b.amount, 10)]))[0]; }
     catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : 'нет котла' }; }
@@ -1274,6 +1499,40 @@ const api = {
   'POST /api/skin/equip': async (b, ctx) => {
     try { await rpc('equip_skin', [ctx.child, b.id]); }
     catch (e) { throw { code: 400, msg: /not owned/.test(e.message) ? 'сначала купи' : 'нет наряда' }; }
+    return { ok: true };
+  },
+  'GET /api/characters': async (b, ctx) => {
+    const done = await one(
+      `select 1 from user_cards where user_id=$1 group by type_id having count(*) filter (where qty > 0) >= 6 limit 1`,
+      [ctx.child]);
+    if (done) {
+      const bird = await one("select id from shop_items where type='character' and sku='vorobey'");
+      if (bird) {
+        await q('insert into user_skins(user_id, skin_id) values($1,$2) on conflict do nothing',
+          [ctx.child, bird.id]);
+      }
+    }
+    const u = await one('select grove_character from users where id=$1', [ctx.child]);
+    return q(`select s.id, s.title, s.price, s.rarity, s.sku, s.category,
+        exists(select 1 from user_skins us where us.user_id=$1 and us.skin_id=s.id) as owned,
+        (s.sku = $2) as equipped
+        from shop_items s where s.type='character' order by s.price, s.title`,
+      [ctx.child, u.grove_character || ''])
+      .then((rows) => rows.map((r) => ({
+        id: r.id, title: r.title, price: r.price, rarity: r.rarity, sku: r.sku,
+        category: r.category, owned: r.owned, equipped: r.equipped,
+        mark: CHAR_MARK[r.sku] || '🌲',
+        album: r.sku === 'vorobey' && !!done,
+      })));
+  },
+  'POST /api/character/buy': async (b, ctx) => {
+    try { await rpc('purchase_character', [ctx.child, b.id]); }
+    catch (e) { throw { code: 400, msg: /not enough/.test(e.message) ? 'не хватает шишек' : /owned/.test(e.message) ? 'уже есть' : 'нет обитателя' }; }
+    return { ok: true, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance };
+  },
+  'POST /api/character/equip': async (b, ctx) => {
+    try { await rpc('equip_character', [ctx.child, b.id || null]); }
+    catch (e) { throw { code: 400, msg: /not owned/.test(e.message) ? 'сначала купи или собери существо' : 'нет обитателя' }; }
     return { ok: true };
   },
 
@@ -1463,11 +1722,25 @@ const api = {
   },
 
   // ── Совет ──
-  'GET /api/proposals': (b, ctx) => q(`select p.id, p.type as kind, p.title, (case when p.status='passed' then 'accepted' else p.status end) as status,
-      (select count(*) from votes where proposal_id=p.id and choice='yes') as yes,
-      (select count(*) from votes where proposal_id=p.id and choice='no') as no,
-      exists(select 1 from votes where proposal_id=p.id and voter_id=$2) as voted
-      from proposals p where p.circle_id=$1 and p.type<>'insurance_claim' order by p.created_at desc`, [ctx.circle, ctx.child]),
+  'GET /api/proposals': async (b, ctx) => {
+    const mine = await q(`select p.id, p.type as kind, p.title, (case when p.status='passed' then 'accepted' else p.status end) as status,
+        (select count(*) from votes where proposal_id=p.id and choice='yes') as yes,
+        (select count(*) from votes where proposal_id=p.id and choice='no') as no,
+        exists(select 1 from votes where proposal_id=p.id and voter_id=$2) as voted,
+        false as guest
+        from proposals p where p.circle_id=$1 and p.type<>'insurance_claim' order by p.created_at desc`, [ctx.circle, ctx.child]);
+    const pals = await q(`select p.id, p.type as kind, p.title, (case when p.status='passed' then 'accepted' else p.status end) as status,
+        (select count(*) from votes where proposal_id=p.id and choice='yes') as yes,
+        (select count(*) from votes where proposal_id=p.id and choice='no') as no,
+        true as voted, true as guest
+        from proposals p
+        join users u on u.id = p.created_by
+       where p.circle_id is distinct from $2 and p.type<>'insurance_claim' and p.status='voting'
+         and exists (select 1 from friendships f
+                      where f.user_id=$1 and f.friend_id=u.id and f.status='accepted')
+       order by p.created_at desc limit 8`, [ctx.child, ctx.circle]);
+    return mine.concat(pals);
+  },
   'POST /api/proposals': async (b, ctx) => {
     const title = String(b.title || '').trim().slice(0, 80);
     if (title.length < 4) throw { code: 400, msg: 'тема слишком короткая' };
@@ -1489,11 +1762,37 @@ const api = {
 
   // ── Гильдия ──
   'GET /api/guilds': async (b, ctx) => {
-    const gs = await q("select g.id, g.name, g.status from guilds g where g.circle_id=$1 and g.status in ('open','sleeping') order by g.created_at", [ctx.circle]);
+    const gs = await q(`select g.id, g.name, g.status from guilds g
+      where g.status in ('open','sleeping')
+        and (g.circle_id=$1 or exists (
+          select 1 from guild_members gm
+          join friendships f on f.friend_id=gm.child_id and f.user_id=$2 and f.status='accepted'
+          where gm.guild_id=g.id))
+      order by g.created_at`, [ctx.circle, ctx.child]);
+    const kids = await q("select id, name from users where circle_id=$1 and role='child' order by name", [ctx.circle]);
+    const invites = await q(`select gi.guild_id, gi.child_id, u.name
+      from guild_invites gi join guilds g on g.id=gi.guild_id
+      join users u on u.id=gi.child_id
+      where g.circle_id=$1`, [ctx.circle]).catch(() => []);
     const out = [];
     for (const g of gs) {
       const members = await q('select u.id, u.name, gm.share, gm.role from guild_members gm join users u on u.id=gm.child_id where gm.guild_id=$1 order by gm.role asc, gm.share desc, u.name', [g.id]);
-      out.push({ id: g.id, name: g.name, status: g.status, members: members.map((m) => ({ id: m.id, name: m.name, share: m.share, role: m.role, mine: m.id === ctx.child })), mine: members.some((m) => m.id === ctx.child) });
+      const mine = members.some((m) => m.id === ctx.child);
+      const myRole = (members.find((m) => m.id === ctx.child) || {}).role;
+      const memberIds = new Set(members.map((m) => m.id));
+      const invitedMe = invites.some((i) => i.guild_id === g.id && i.child_id === ctx.child);
+      const canInvite = mine && g.status === 'open' && (myRole === 'founder' || myRole === 'herald');
+      const invitees = canInvite
+        ? kids.filter((k) => k.id !== ctx.child && !memberIds.has(k.id)
+          && !invites.some((i) => i.guild_id === g.id && i.child_id === k.id))
+            .map((k) => ({ id: k.id, name: k.name }))
+        : [];
+      out.push({
+        id: g.id, name: g.name, status: g.status,
+        members: members.map((m) => ({ id: m.id, name: m.name, share: m.share, role: m.role, mine: m.id === ctx.child })),
+        mine, invited: invitedMe, can_invite: canInvite, can_gather: mine && g.status === 'open',
+        invitees,
+      });
     }
     return out;
   },
@@ -1506,11 +1805,71 @@ const api = {
     return { ok: true, id: g.id, name };
   },
   'POST /api/guild/join': async (b, ctx) => {
-    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    const g = await one("select id, circle_id, status from guilds where id=$1 and status='open'", [b.id]);
+    if (!g) throw { code: 400, msg: 'нет такой гильдии' };
+    if (g.circle_id !== ctx.circle) {
+      const pal = await one(
+        `select 1 from guild_members gm
+          join friendships f on f.friend_id=gm.child_id and f.user_id=$1 and f.status='accepted'
+         where gm.guild_id=$2`, [ctx.child, b.id]);
+      if (!pal) throw { code: 400, msg: 'нет такой гильдии' };
+    }
     await rpc('join_guild', [b.id, ctx.child]);
+    await q('delete from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]).catch(() => {});
     await rpc('bump_guild_activity', [b.id]).catch(() => {});
     await q('insert into guild_history(guild_id, kind, title) values($1,$2,$3)', [b.id, 'member_joined', (await one('select name from users where id=$1', [ctx.child])).name]);
     return { ok: true };
+  },
+  'POST /api/guild/invite': async (b, ctx) => {
+    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    await assertOwn("select 1 from guild_members where guild_id=$1 and child_id=$2 and role in ('founder','herald')",
+      [b.id, ctx.child], 'позвать может основатель или глашатай');
+    const target = await one("select id, name from users where id=$1 and circle_id=$2 and role='child'", [b.childId, ctx.circle]);
+    if (!target) throw { code: 400, msg: 'нет такого обитателя' };
+    if (target.id === ctx.child) throw { code: 400, msg: 'это ты сам' };
+    const already = await one('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, target.id]);
+    if (already) throw { code: 400, msg: 'уже в гильдии' };
+    await q(`insert into guild_invites(guild_id, child_id, invited_by) values ($1,$2,$3)
+      on conflict (guild_id, child_id) do nothing`, [b.id, target.id, ctx.child]);
+    const g = await one('select name from guilds where id=$1', [b.id]);
+    const who = await one('select name from users where id=$1', [ctx.child]);
+    await q('select notify_child($1,$2)', [target.id, `${who.name} зовёт тебя в гильдию «${g.name}»`]).catch(() => {});
+    sendPush(target.id, 'Тебя зовут в гильдию', `${who.name}: «${g.name}»`, '/guilds.html');
+    return { ok: true };
+  },
+  'POST /api/guild/invite/accept': async (b, ctx) => {
+    const inv = await one('select 1 from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]);
+    if (!inv) throw { code: 400, msg: 'приглашения нет' };
+    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    await rpc('join_guild', [b.id, ctx.child]);
+    await q('delete from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]);
+    await rpc('bump_guild_activity', [b.id]).catch(() => {});
+    await q('insert into guild_history(guild_id, kind, title) values($1,$2,$3)', [b.id, 'member_joined', (await one('select name from users where id=$1', [ctx.child])).name]);
+    return { ok: true };
+  },
+  'POST /api/guild/invite/decline': async (b, ctx) => {
+    await q('delete from guild_invites where guild_id=$1 and child_id=$2', [b.id, ctx.child]);
+    return { ok: true };
+  },
+  'POST /api/guild/gather': async (b, ctx) => {
+    await assertOwn("select 1 from guilds where id=$1 and circle_id=$2 and status='open'", [b.id, ctx.circle], 'нет такой гильдии');
+    await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
+    const last = await one(
+      `select created_at from guild_messages where guild_id=$1 and content='Собираемся!'
+        order by created_at desc limit 1`, [b.id]);
+    if (last && Date.now() - new Date(last.created_at).getTime() < 120e3) {
+      throw { code: 429, msg: 'подожди две минуты' };
+    }
+    await q('insert into guild_messages(guild_id, from_user, content) values($1,$2,$3)', [b.id, ctx.child, 'Собираемся!']);
+    await rpc('bump_guild_activity', [b.id]).catch(() => {});
+    const g = await one('select name from guilds where id=$1', [b.id]);
+    const who = await one('select name from users where id=$1', [ctx.child]);
+    const others = await q('select child_id from guild_members where guild_id=$1 and child_id<>$2', [b.id, ctx.child]);
+    for (const m of others) {
+      await q('select notify_child($1,$2)', [m.child_id, `${who.name}: Собираемся! «${g.name}»`]).catch(() => {});
+      sendPush(m.child_id, 'Собираемся!', `${who.name} зовёт гильдию «${g.name}»`, '/guilds.html');
+    }
+    return { ok: true, sent: others.length };
   },
   'POST /api/guild/chat': async (b, ctx) => {   // POST: id в теле (GET-обёртка без параметров)
     await assertOwn('select 1 from guild_members where guild_id=$1 and child_id=$2', [b.id, ctx.child], 'ты не в этой гильдии');
@@ -1581,7 +1940,7 @@ const api = {
     return { ok: true };
   },
   'POST /api/shop/create': async (b, ctx) => {
-    const name = String(b.name || '').trim(), lot = String(b.lot || '').trim(), price = parseInt(b.price, 10);
+    const name = String(b.name || '').replace(/[<>]/g, '').trim(), lot = String(b.lot || '').replace(/[<>]/g, '').trim(), price = parseInt(b.price, 10);
     if (!name || !lot) throw { code: 400, msg: 'заполни название лавки и товар' };
     if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
     try { await rpc('open_shop', [ctx.child, name.slice(0, 24), null]); }
@@ -1597,8 +1956,14 @@ const api = {
     return { ok: true };
   },
   'POST /api/shop/close': async (b, ctx) => {
-    await assertOwn('select 1 from shops where owner_id=$1', [ctx.child], 'нет лавки');
-    await q('update shops set is_active=false where owner_id=$1', [ctx.child]);
+    const s = await one('select id from shops where owner_id=$1', [ctx.child]);
+    if (!s) throw { code: 400, msg: 'нет лавки' };
+    const busy = await one(
+      `select 1 from orders o join shop_lots l on l.id=o.lot_id
+        where l.shop_id=$1 and o.status in ('reserved','handed')`, [s.id]);
+    if (busy) throw { code: 400, msg: 'сначала закрой сделки' };
+    await q('update shop_lots set is_active=false where shop_id=$1', [s.id]);
+    await q('update shops set is_active=false where id=$1', [s.id]);
     return { ok: true };
   },
   'POST /api/shop/photo': async (b, ctx) => {
@@ -1608,9 +1973,13 @@ const api = {
     return { ok: true, photo };
   },
   'POST /api/lot/add': async (b, ctx) => {
-    const title = String(b.title || '').trim().slice(0, 24), price = parseInt(b.price, 10);
+    const title = String(b.title || '').replace(/[<>]/g, '').trim().slice(0, 24), price = parseInt(b.price, 10);
     if (!title) throw { code: 400, msg: 'укажи название товара' };
     if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
+    const shop = await one('select id from shops where owner_id=$1 and is_active', [ctx.child]);
+    if (!shop) throw { code: 400, msg: 'сначала открой лавку' };
+    const hanging = await one('select count(*)::int as c from shop_lots where shop_id=$1 and is_active', [shop.id]);
+    if ((hanging?.c || 0) >= 8) throw { code: 400, msg: 'не больше 8 товаров' };
     let lot;
     try { [lot] = await rpc('add_lot', [ctx.child, title, 'goods', price]); }
     catch (e) { throw { code: 400, msg: /open a shop/.test(e.message) ? 'сначала открой лавку' : 'не удалось' }; }
@@ -1618,7 +1987,7 @@ const api = {
     return { ok: true };
   },
   'POST /api/lot/edit': async (b, ctx) => {
-    const title = String(b.title || '').trim().slice(0, 24), price = parseInt(b.price, 10);
+    const title = String(b.title || '').replace(/[<>]/g, '').trim().slice(0, 24), price = parseInt(b.price, 10);
     if (!title) throw { code: 400, msg: 'укажи название товара' };
     if (!(price > 0)) throw { code: 400, msg: 'укажи цену больше 0' };
     await assertOwn('select 1 from shop_lots l join shops s on s.id=l.shop_id where l.id=$1 and s.owner_id=$2', [b.id, ctx.child], 'нет такого товара');
@@ -1639,6 +2008,13 @@ const api = {
 };
 // ── Push-уведомления ──
 const SKIN_ASSET = { 'Обычное дерево': 'base', 'Осеннее дерево': 'skin_autumn', 'Зимнее дерево': 'skin_winter', 'Золотое дерево': 'skin_gold', 'Светящееся дерево': 'skin_glow', 'Радужное дерево': 'skin_rainbow' };
+const CHAR_MARK = {
+  vorobey: '🐦', golub: '🕊️', lastochka: '🪶', skvorets: '🐦', zyablik: '🐦', tryasoguzka: '🪶',
+  chayka: '🪶', chomga: '🪶', kulik: '🪶', caplya: '🪶', utka: '🦆', gus: '🪿',
+  zhuravl: '🐦', lebed: '🦢', teterev: '🪶', kuropatka: '🪶', valdshnep: '🪶',
+  sokol: '🦅', yastreb: '🦅', koryushka: '🐟', sudak: '🐟', forel: '🐠',
+  moroshka: '🫐', klyukva: '🍒', mozhzhevelnik: '🌿', openok: '🍄', syroezhka: '🍄', podberezovik: '🍄',
+};
 
 const MAX_BODY = 10 * 1024 * 1024;
 
@@ -1683,11 +2059,8 @@ const server = createServer(async (req, res) => {
     try {
       if (guarded && isLocked(ip)) throw { code: 429, msg: 'Слишком много попыток — подожди 10 минут.' };
       if (!guarded && !childRateCheck(ip)) throw { code: 429, msg: 'Слишком много запросов — подожди полминуты.' };
-      // родительский контур: PIN опционален (проверка только если PARENT_PIN задан)
-      if (isParent) {
-        if (PARENT_PIN && (req.headers['x-parent-pin'] || '') !== PARENT_PIN) { badTry(ip); throw { code: 401, msg: 'нужен PIN родителя' }; }
-        okTry(ip);
-      }
+      // кабинет ведущего: PIN снят — ведущий заходит без калитки
+      if (isParent) okTry(ip);
       const ctx = await auth.resolve(req);
       // детские endpoint'ы требуют валидный код/токен (иначе 401, а не 500/пустота)
       if (!ctx.child && !PUBLIC.has(route) && !isParent) throw { code: 401, msg: 'нужен код входа' };

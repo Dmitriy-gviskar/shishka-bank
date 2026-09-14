@@ -65,6 +65,98 @@ if (!window.__cardMemHook) {
   });
 }
 
+// Офлайн-коллекция: снимок альбома/достижений + очередь паков и слияний (T13).
+function offWho() {
+  return localStorage.getItem('deviceToken') || localStorage.getItem('childCode') || '';
+}
+function offSnap(path) {
+  try { return JSON.parse(localStorage.getItem('off:' + offWho() + ':' + path) || 'null'); } catch { return null; }
+}
+function offSnapSet(path, d) {
+  if (!d || d.error) return;
+  try { localStorage.setItem('off:' + offWho() + ':' + path, JSON.stringify(d)); } catch {}
+}
+function offQ() {
+  try { return JSON.parse(localStorage.getItem('offq:' + offWho()) || '[]'); } catch { return []; }
+}
+function offQSet(items) {
+  try { localStorage.setItem('offq:' + offWho(), JSON.stringify(items)); } catch {}
+}
+function offEnqueue(path, body) {
+  const q = offQ();
+  q.push({ path, body });
+  offQSet(q);
+}
+let _offLib;
+async function offCardsLib() {
+  if (!_offLib) _offLib = await import('./lib/offline-cards.mjs');
+  return _offLib;
+}
+async function flushOfflineQueue(headers) {
+  const q = offQ();
+  if (!q.length) return;
+  const left = [];
+  for (let i = 0; i < q.length; i++) {
+    const item = q[i];
+    try {
+      const res = await fetch(item.path, {
+        method: 'POST',
+        headers: { ...headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify(item.body || {}),
+      });
+      if (res.status >= 500) { left.push(...q.slice(i)); break; }
+    } catch {
+      left.push(...q.slice(i));
+      break;
+    }
+  }
+  offQSet(left);
+}
+async function offlineAction(path, body) {
+  const lib = await offCardsLib().catch(() => null);
+  if (!lib) return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' };
+  if (path === '/api/card/merge') {
+    const data = offSnap('/api/cards');
+    const r = lib.applyMerge(data, body.type, parseInt(body.grade, 10));
+    if (r.error) return r;
+    offSnapSet('/api/cards', data);
+    offEnqueue('/api/card/merge', { type: body.type, grade: parseInt(body.grade, 10) });
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k);
+    return r;
+  }
+  if (path === '/api/pack/open') {
+    const data = offSnap('/api/cards');
+    const state = offSnap('/api/state') || {};
+    if ((state.balance ?? 0) < lib.PACK_PRICE) return { error: 'не хватает шишек на пак' };
+    const rolled = lib.rollPack(data);
+    if (rolled.error) return rolled;
+    const cards = lib.applyPackToAlbum(data, rolled.drawn);
+    state.balance = (state.balance || 0) - lib.PACK_PRICE;
+    offSnapSet('/api/cards', data);
+    offSnapSet('/api/state', state);
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('ac:')) sessionStorage.removeItem(k);
+    window.__balAt = 0;
+    const nonce = (crypto.randomUUID ? crypto.randomUUID() : ('n' + Date.now() + Math.random())).replace(/-/g, '').slice(0, 32);
+    offEnqueue('/api/pack/offline', {
+      nonce,
+      cards: rolled.drawn.map((d) => ({ type: d.type, grade: d.grade })),
+    });
+    return { cards, rewards: [], balance: state.balance, offline: true };
+  }
+  return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' };
+}
+if (!window.__offOnlineHook) {
+  window.__offOnlineHook = true;
+  window.addEventListener('online', () => {
+    const token = localStorage.getItem('deviceToken');
+    const code = localStorage.getItem('childCode');
+    const headers = {};
+    if (token) headers['x-device-token'] = token;
+    else if (code) headers['x-child-code'] = encodeURIComponent(code);
+    flushOfflineQueue(headers).catch(() => {});
+  });
+}
+
 function runApp() {
 function hasSession() {
   return !!(localStorage.getItem('deviceToken') || localStorage.getItem('childCode'));
@@ -89,7 +181,7 @@ function isInAppBrowser() {
     || /\bInstagram\b/i.test(ua) || /\bLine\//i.test(ua) || /\bVKApp\b|\bVKAndroidApp\b/i.test(ua);
 }
 function recoverLink(code) {
-  return location.origin + '/link.html?code=' + encodeURIComponent(String(code || '').toUpperCase());
+  return location.origin + '/?code=' + encodeURIComponent(String(code || '').toUpperCase());
 }
 async function copyText(text) {
   try {
@@ -106,27 +198,49 @@ async function copyText(text) {
     return ok;
   } catch { return false; }
 }
+function friendlyError(status, msg) {
+  if (status === 401) return msg || 'Нужен PIN ведущего';
+  if (status === 429) return msg || 'Слишком много попыток — подожди';
+  if (status === 503) return msg || 'Кабинет ведущего закрыт';
+  return msg;
+}
 async function api(path, body, method) {
   const headers = {};
   const token = localStorage.getItem('deviceToken');
   const code = localStorage.getItem('childCode');
   if (token) headers['x-device-token'] = token;                    // основной вход после саморегистрации
   else if (code) headers['x-child-code'] = encodeURIComponent(code); // legacy / запасной код
+  if (path.startsWith('/api/parent/')) {
+    const pin = sessionStorage.getItem('parentPin') || '';
+    if (pin) headers['x-parent-pin'] = pin;
+  }
   const post = body !== undefined || method === 'POST';
   const opt = post ? { method: 'POST', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }
                    : { headers };
+  const snapOk = (p) => p === '/api/cards' || p === '/api/achievements' || p === '/api/state';
   try {
     if (!post) {
+      // кабинет ведущего не кэшируем — иначе чужой PIN/сессия могут показать чужих детей
+      if (path.startsWith('/api/parent/')) {
+        const res = await fetch(path, opt);
+        const d = await res.json();
+        if (!res.ok && d.error) d.error = friendlyError(res.status, d.error);
+        return d;
+      }
       // GET — stale-while-revalidate: экран рисуется из кэша МГНОВЕННО, свежее подтягивается фоном.
       // Любое действие (POST) чистит кэш, поэтому свои изменения видны сразу; чужие — в пределах 3 минут.
       const k = 'ac:' + (token || code || '') + ':' + path;
       const hit = JSON.parse(sessionStorage.getItem(k) || 'null');
       const age = hit ? Date.now() - hit.t : Infinity;
       const load = async () => {
+        await flushOfflineQueue(headers);
         const res = await fetch(path, opt);
         const d = await res.json();
         if (!res.ok && d.error) d.error = friendlyError(res.status, d.error);
-        if (d && !d.error) try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), d })); } catch {}
+        if (d && !d.error) {
+          try { sessionStorage.setItem(k, JSON.stringify({ t: Date.now(), d })); } catch {}
+          if (snapOk(path)) offSnapSet(path, d);
+        }
         return d;
       };
       if (age < 20e3) return hit.d;                               // только что смотрели — сеть не трогаем
@@ -142,7 +256,15 @@ async function api(path, body, method) {
     }
     return r;
   }
-  catch { return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' }; }
+  catch {
+    if (!post) {
+      const stale = offSnap(path);
+      if (stale) return stale;
+    } else if (path === '/api/pack/open' || path === '/api/card/merge') {
+      return offlineAction(path, body || {});
+    }
+    return { error: 'Нет связи с лесом — проверь интернет и попробуй ещё раз' };
+  }
 }
 // экранирование пользовательских строк перед вставкой в innerHTML (защита от stored XSS)
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -218,8 +340,8 @@ function capturePhotoFile() {
   return new Promise((res) => {
     const inp = document.createElement('input');
     inp.type = 'file';
-    inp.accept = 'image/jpeg,image/png,image/webp,image/*';
-    // явно без capture — иначе WebView может форсить камеру
+    // без image/* и без capture — иначе iOS/WebView сразу открывают камеру
+    inp.accept = '.jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp';
     inp.removeAttribute('capture');
     inp.setAttribute('aria-hidden', 'true');
     inp.style.cssText = 'position:fixed;left:-100px;top:0;width:1px;height:1px;opacity:0.01;z-index:9999';
@@ -303,7 +425,11 @@ function capturePhotoChoose() {
     cancel.style.marginBottom = '0';
     const done = (v) => { try { ov.remove(); } catch {} res(v); };
     cam.onclick = () => done('camera');
-    gal.onclick = () => done('gallery');
+    // picker в том же тапе — иначе iOS/WebView теряют user gesture и снова зовут камеру
+    gal.onclick = () => {
+      try { ov.remove(); } catch {}
+      capturePhotoFile().then(res);
+    };
     cancel.onclick = () => done(null);
     ov.onclick = (e) => { if (e.target === ov) done(null); };
     card.appendChild(title); card.appendChild(tip); card.appendChild(cam); card.appendChild(gal); card.appendChild(cancel);
@@ -312,14 +438,10 @@ function capturePhotoChoose() {
   });
 }
 async function capturePhoto() {
-  // Android: сначала выбор — камера на странице (безопасно) или галерея (системный picker)
-  if (isAndroidApp()) {
-    const mode = await capturePhotoChoose();
-    if (mode === 'camera') return capturePhotoLive();
-    if (mode === 'gallery') return capturePhotoFile();
-    return null;
-  }
-  return capturePhotoFile();
+  const mode = await capturePhotoChoose();
+  if (mode === 'camera') return capturePhotoLive();
+  if (typeof mode === 'string' && mode.startsWith('data:')) return mode; // галерея уже в том же тапе
+  return null;
 }
 const page = location.pathname.split('/').pop() || 'index.html';
 const urlParams = new URLSearchParams(location.search);
@@ -380,8 +502,13 @@ if (page === 'link.html') {
       if (!open) document.getElementById('codeInput')?.focus();
     };
   }
-  // с лендинга: link.html?open=code
-  if (urlParams.get('open') === 'code') openCodeBox();
+  // с лендинга: link.html?open=code или link.html#code
+  if (urlParams.get('open') === 'code' || location.hash === '#code') openCodeBox();
+  if (urlCode) {
+    const inp = document.getElementById('codeInput');
+    if (inp) inp.value = urlCode;
+    openCodeBox();
+  }
   // тот же телефон уже сажал (часто: Telegram → потом Safari) — сразу предложить код / имя
   api('/api/signup/hint').then((h) => {
     if (!h || !h.recent) return;
@@ -424,7 +551,7 @@ if (page === 'link.html') {
     const r = await api('/api/link', { code });
     const n = document.getElementById('note'); n.style.display = 'block';
     if (r.error) { n.textContent = r.error; n.style.color = '#b3452e'; }
-    else { saveSession({ token: r.token, code: r.code || code }); location.href = 'onboard.html'; }
+    else { saveSession({ token: r.token, code: r.code || code }); location.href = 'index.html'; }
   };
 }
 
@@ -543,38 +670,168 @@ function questIcon(category) {
   return 'assets/quest/' + (map[category] || 'quest_ic_home.webp');
 }
 
+function questNote(t2, ok) {
+  const n = document.getElementById('note');
+  if (!n) return;
+  n.style.display = 'block';
+  n.textContent = t2;
+  n.style.color = ok ? '#5f8e37' : '#b3452e';
+}
+
+function renderFamilyBox(cont, family) {
+  if (!family) return;
+  const loadErr = family.error;
+  if (loadErr) family = { kids: [], pending: [], templates: [], maxTasks: 5, maxReward: 15 };
+  const kids = Array.isArray(family.kids) ? family.kids : [];
+  const pending = Array.isArray(family.pending) ? family.pending : [];
+  const tpls = Array.isArray(family.templates) ? family.templates : [];
+  const maxR = family.maxReward || 15;
+  const box = document.createElement('details');
+  box.className = 'family-box';
+  if (kids.length || pending.length) box.open = true;
+  const kidOpts = kids.map((k) =>
+    `<option value="${k.id}">${esc(k.name)} · ${k.hanging || 0}/${family.maxTasks || 5}</option>`).join('');
+  const tplOpts = tpls.map((t) =>
+    `<option value="${t.id}" data-title="${esc(t.title)}" data-reward="${t.reward}" data-photo="${t.needs_photo ? 1 : 0}">${esc(t.title)} · ${t.reward}</option>`).join('');
+  box.innerHTML = `<summary>Я родитель — дела для своих</summary>
+    <p class="hint">До ${family.maxTasks || 5} дел, до ${maxR} шишек.</p>
+    ${loadErr ? `<p class="hint">${esc(loadErr)}</p>` : ''}
+    ${pending.length ? pending.map((p) => `
+      <div class="ward-row" data-id="${p.id}">
+        <div class="t">${esc(p.title)}</div>
+        <div class="who">${esc(p.childName)} · +${p.reward} шишек</div>
+        ${p.photo ? `<img src="/${String(p.photo).replace(/^\/+/, '')}" alt="" style="width:100%;border-radius:10px;margin-top:6px;border:2px solid #d9c39a">` : ''}
+        <div class="acts"><button class="ok" type="button">Ок</button>
+          <button class="no" type="button">Вернуть</button></div>
+      </div>`).join('') : ''}
+    ${kids.length ? kids.map((k) =>
+      `<div class="kid-chip"><span>${esc(k.name)}</span>
+        <button type="button" data-unlink="${k.id}">отвязать</button></div>
+       <div class="age-row" data-age="${k.id}">
+         <label>лет <input type="number" min="4" max="17" inputmode="numeric" value="${k.age || ''}" placeholder="8"></label>
+         <label>писать с <input type="number" min="4" max="17" inputmode="numeric" value="${k.chatMin || ''}" placeholder="—"></label>
+         <label>до <input type="number" min="4" max="17" inputmode="numeric" value="${k.chatMax || ''}" placeholder="—"></label>
+         <button type="button" class="go sec" data-agesave="${k.id}">Ок</button>
+       </div>`).join('') : ''}
+    ${kids.length ? `<select id="famKid">${kidOpts}</select>
+      <select id="famTpl"><option value="">Каталог дел…</option>${tplOpts}</select>
+      <input id="famTitle" placeholder="Своё дело" maxlength="60">
+      <input id="famReward" type="number" min="1" max="${maxR}" placeholder="Награда, до ${maxR}">
+      <label><input type="checkbox" id="famPhoto"> нужно фото</label>
+      <button class="go" id="famGive" type="button">Выдать дело</button>` : ''}
+    <input id="famCode" placeholder="Код ребёнка" maxlength="40" autocomplete="off">
+    <button class="go sec" id="famLink" type="button">Привязать</button>`;
+  const tplSel = box.querySelector('#famTpl');
+  if (tplSel) tplSel.onchange = () => {
+    const o = tplSel.selectedOptions[0];
+    if (!o || !o.value) return;
+    box.querySelector('#famTitle').value = o.dataset.title || '';
+    box.querySelector('#famReward').value = o.dataset.reward || '';
+    box.querySelector('#famPhoto').checked = o.dataset.photo === '1';
+  };
+  box.querySelector('#famGive')?.addEventListener('click', async () => {
+    const tpl = box.querySelector('#famTpl')?.value || '';
+    const r = await api('/api/guardian/task', {
+      childId: box.querySelector('#famKid').value,
+      title: box.querySelector('#famTitle').value,
+      reward: box.querySelector('#famReward').value,
+      photo: box.querySelector('#famPhoto').checked,
+      templateId: tpl || undefined,
+    });
+    if (r.error) return questNote(r.error, false);
+    questNote(`Дело «${r.title}» выдано · +${r.reward}`, true);
+    loadTasks();
+  });
+  const linkKid = async () => {
+    const r = await api('/api/guardian/link', { code: box.querySelector('#famCode').value });
+    if (r.error) return questNote(r.error, false);
+    questNote(`${r.name} в семье`, true);
+    loadTasks();
+  };
+  box.querySelector('#famLink')?.addEventListener('click', linkKid);
+  box.querySelector('#famCode')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); linkKid(); }
+  });
+  box.querySelectorAll('[data-agesave]').forEach((btn) => {
+    btn.onclick = async () => {
+      const row = btn.closest('.age-row');
+      const ins = row.querySelectorAll('input');
+      const r = await api('/api/guardian/chat-ages', {
+        childId: btn.getAttribute('data-agesave'),
+        age: ins[0].value, chatMin: ins[1].value, chatMax: ins[2].value,
+      });
+      if (r.error) return questNote(r.error, false);
+      questNote('Кто может писать — сохранено', true);
+    };
+  });
+  box.querySelectorAll('[data-unlink]').forEach((btn) => {
+    btn.onclick = async () => {
+      if (!confirm('Отвязать этого ребёнка?')) return;
+      const r = await api('/api/guardian/unlink', { childId: btn.getAttribute('data-unlink') });
+      if (r.error) return questNote(r.error, false);
+      loadTasks();
+    };
+  });
+  box.querySelectorAll('.ward-row').forEach((row) => {
+    const id = row.getAttribute('data-id');
+    row.querySelector('.ok').onclick = async () => {
+      const r = await api('/api/guardian/approve', { id });
+      if (r.error) return questNote(r.error, false);
+      questNote('Одобрено, шишки начислены', true);
+      loadTasks();
+    };
+    row.querySelector('.no').onclick = async () => {
+      const r = await api('/api/guardian/reject', { id });
+      if (r.error) return questNote(r.error, false);
+      questNote('Вернули на доработку', true);
+      loadTasks();
+    };
+  });
+  cont.appendChild(box);
+}
+
 async function loadTasks() {
-  const tasks = await api('/api/tasks');
+  const [tasks, family] = await Promise.all([api('/api/tasks'), api('/api/guardian/family')]);
   const cont = document.getElementById('taskList'); cont.innerHTML = '';
+  renderFamilyBox(cont, family);
   if (!Array.isArray(tasks) || !tasks.length) {
-    cont.innerHTML = '<div class="quest-empty">Сегодня дел пока нет — шишки ещё в играх и за серию входов</div>';
+    const empty = document.createElement('div');
+    empty.className = 'quest-empty';
+    empty.textContent = 'Сегодня дел пока нет — шишки ещё в играх и за серию входов';
+    cont.appendChild(empty);
     return;
   }
   const tip = document.createElement('div');
   tip.className = 'quest-empty';
   tip.style.margin = '0 0 10px';
-  tip.textContent = '6 дел на сегодня. Если ведущего нет — шишки сразу. Ещё можно в играх.';
+  tip.textContent = 'Ежедневки и задание дня без фото — сразу на дерево. Фото и дела от родителей ждут проверку.';
   cont.appendChild(tip);
   const redo = tasks.filter((t) => t.status === 'rejected');
-  const daily = tasks.filter((t) => t.is_daily && t.status !== 'rejected');
-  const other = tasks.filter((t) => !t.is_daily && t.status !== 'rejected');
+  const day = tasks.filter((t) => t.kind === 'day' && t.status !== 'rejected');
+  const daily = tasks.filter((t) => t.kind !== 'day' && t.kind !== 'family' && t.is_daily && t.status !== 'rejected');
+  const familyTasks = tasks.filter((t) => t.kind === 'family' && t.status !== 'rejected');
+  const other = tasks.filter((t) => t.kind !== 'day' && t.kind !== 'family' && !t.is_daily && t.status !== 'rejected');
   const sections = [];
   if (redo.length) sections.push(['Вернули — переделай', redo]);
-  if (daily.length) sections.push(['Сегодня', daily]);
+  if (familyTasks.length) sections.push(['От родителей', familyTasks]);
+  if (day.length) sections.push(['Задание дня', day]);
+  if (daily.length) sections.push(['Ежедневки', daily]);
   if (other.length) sections.push(['От ведущего', other]);
   const bind = (el, t) => {
     const btn = el.querySelector('button'); if (!btn) return;
     btn.onclick = async () => {
-      const say = (t2, ok) => { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t2; n.style.color = ok ? '#5f8e37' : '#b3452e'; } };
       let photo;
       if (t.needs_photo) {
         photo = await capturePhoto();
-        if (!photo) { say('Не удалось сделать фото — разреши камеру и попробуй ещё раз', 0); return; }
-        say('Отправляю фото…', 1);
+        if (!photo) { questNote('Не удалось сделать фото — разреши камеру и попробуй ещё раз', 0); return; }
+        questNote('Отправляю фото…', 1);
       }
       const r = await api('/api/task/done', { id: t.id, photo });
-      if (r.ok) { loadTasks(); say(r.approved ? 'Дело засчитано — шишки на дереве!' : 'Отправлено ведущему на проверку!', 1); }
-      else say(r.error || 'не получилось');
+      if (r.ok) {
+        loadTasks();
+        const wait = t.kind === 'family' ? 'Отправлено родителям на проверку!' : 'Отправлено ведущему на проверку!';
+        questNote(r.approved ? 'Дело засчитано — шишки на дереве!' : wait, 1);
+      } else questNote(r.error || 'не получилось');
     };
   };
   const statusHtml = (t) => {
@@ -686,6 +943,7 @@ if (page === 'shop.html') loadShop();
 // ── Достижения (витрина) ──
 async function loadAch() {
   const list = await api('/api/achievements');
+  if (!Array.isArray(list)) return;
   const unlocked = list.filter((a) => a.unlocked).length;
   document.getElementById('achCount').textContent = `Открыто ${unlocked} из ${list.length}`;
   const g = document.getElementById('achList'); g.innerHTML = '';
@@ -734,19 +992,24 @@ if (page === 'pot.html') {
     const list = await api('/api/pot');
     const c = document.getElementById('potList'); c.innerHTML = '';
     if (list.error) return note(list.error);
-    if (!list.length) c.innerHTML = '<div style="text-align:center;padding:8px"><span class="on-art" style="color:#8a7358;font-weight:700">Котлов пока нет — поставь первый!</span></div>';
+    if (!list.length) c.innerHTML = '<div style="text-align:center;padding:8px"><span class="on-art" style="color:#8a7358;font-weight:700">Котлов пока нет — поставь первый или найди друга, у кого уже кипит.</span></div>';
     for (const p of list) {
       const pct = Math.min(100, Math.round(p.collected / p.goal * 100));
       const full = p.collected >= p.goal;
       const el = document.createElement('div'); el.className = 'card pcard';
-      el.innerHTML = `${p.mine ? '<button class="mini potDel" style="float:right;font-size:16px;line-height:1;padding:2px 6px" title="Удалить">×</button>' : ''}${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
+      const ownerBtns = p.mine
+        ? (full
+          ? '<button class="btn btn-sm potFul" type="button" style="margin-top:8px;width:100%">Исполнить цель</button>'
+          : '<button class="btn btn-sm potDel" type="button" style="margin-top:8px;width:100%;background:#c45c4a">Удалить</button>')
+        : (full
+          ? '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута — ждём исполнения!</div>'
+          : '');
+      el.innerHTML = `${p.guild ? `<span class="tag">${esc(p.guild)}</span>` : ''}
         <div class="pn">${esc(p.title)}</div><div class="pa">поставил: ${esc(p.author)}</div>
         <div class="scale"><i style="width:${pct}%"></i><span>${p.collected} / ${p.goal}</span></div>
         ${full
-          ? (p.mine
-            ? '<button class="btn btn-sm potFul" type="button" style="margin-top:8px;width:100%">Исполнить цель</button>'
-            : '<div class="pa" style="color:#5f8e37;font-weight:800;margin-top:6px">Цель достигнута — ждём исполнения!</div>')
-          : `<div class="give"><div class="s sel" data-a="5">5</div><div class="s" data-a="10">10</div><div class="s" data-a="20">20</div>
+          ? ownerBtns
+          : `${ownerBtns}<div class="give"><div class="s sel" data-a="5">5</div><div class="s" data-a="10">10</div><div class="s" data-a="20">20</div>
                   <button class="btn btn-sm">Вложить</button></div>`}`;
       let amt = 5;
       el.querySelectorAll('.give .s').forEach((t) => t.onclick = () => {
@@ -924,20 +1187,31 @@ function voteOutcome(status) {
 function renderProps(list) { const c = document.getElementById('props'); c.innerHTML = '';
   for (const p of list) { const el = document.createElement('div'); el.className = 'card prop';
     const resolved = p.status && p.status !== 'voting';
-    el.innerHTML = `<div class="t">${esc(p.title)}</div><div class="row"><span class="tally">За ${p.yes} · Против ${p.no}${!resolved && p.voted ? ' · ты проголосовал' : ''}</span>${resolved ? voteOutcome(p.status) : (p.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}</div>`;
-    if (!resolved && !p.voted) {
+    const guest = !!p.guest;
+    const acts = guest
+      ? '<span class="tally">совет друга · смотри, не голосуешь</span>'
+      : `<span class="tally">За ${p.yes} · Против ${p.no}${!resolved && p.voted ? ' · ты проголосовал' : ''}</span>${resolved ? voteOutcome(p.status) : (p.voted ? '' : '<button class="vbtn yes">За</button><button class="vbtn no">Против</button>')}`;
+    el.innerHTML = `<div class="t">${esc(p.title)}</div><div class="row">${acts}</div>`;
+    if (!guest && !resolved && !p.voted) {
       el.querySelector('.yes').onclick = async () => { await api('/api/vote', { id: p.id, choice: 'yes' }); api('/api/proposals').then(renderProps); };
       el.querySelector('.no').onclick = async () => { await api('/api/vote', { id: p.id, choice: 'no' }); api('/api/proposals').then(renderProps); };
     }
     c.appendChild(el); } }
 if (page === 'council.html') {
+  const STARTERS = ['Устроить лесной пикник', 'День без гаджета', 'Общий поход за шишками'];
   const paintProps = (list) => {
     renderProps(Array.isArray(list) ? list : []);
-    if (!Array.isArray(list) || !list.length) {
-      const c = document.getElementById('props');
-      if (c && !c.children.length) {
-        c.innerHTML = '<div class="card prop"><div class="t" style="text-align:center;color:#8a7358;font-size:14px">Пока тишина — предложи тему выше</div></div>';
-      }
+    const c = document.getElementById('props');
+    if (c && (!Array.isArray(list) || !list.length)) {
+      const chips = STARTERS.map((t) => `<button type="button" class="vbtn yes starter" data-t="${esc(t)}" style="margin:4px">${esc(t)}</button>`).join('');
+      c.innerHTML = `<div class="card prop"><div class="t" style="text-align:center">Пока тишина — выбери тему или напиши свою</div>
+        <div class="row" style="flex-wrap:wrap;justify-content:center;margin-top:10px">${chips}</div></div>`;
+      c.querySelectorAll('.starter').forEach((b) => {
+        b.onclick = async () => {
+          const r = await api('/api/proposals', { title: b.dataset.t });
+          if (!r.error) api('/api/proposals').then(paintProps);
+        };
+      });
     }
   };
   api('/api/proposals').then(paintProps);
@@ -955,7 +1229,7 @@ if (page === 'council.html') {
 function skinNote(t, ok) { const n = document.getElementById('note'); if (n) { n.style.display = 'block'; n.textContent = t; n.style.color = ok ? '#5f8e37' : '#b3452e'; } }
 async function loadSkins() {
   const list = await api('/api/skins');
-  const g = document.getElementById('skinList'); g.innerHTML = '';
+  const g = document.getElementById('skinList'); if (!g) return; g.innerHTML = '';
   const rarName = { base: '', seasonal: 'сезон', rare: 'редкий', epic: 'эпик' };
   for (const s of list) {
     const el = document.createElement('div'); el.className = 'skin rar ' + s.rarity + (s.equipped ? ' on' : '');
@@ -968,6 +1242,21 @@ async function loadSkins() {
     const buy = el.querySelector('.buy'); if (buy) buy.onclick = async () => { const r = await api('/api/skin/buy', { id: s.id }); if (r.error) skinNote(r.error); else { loadSkins(); refreshBalance(); } };
     const eq = el.querySelector('.eq'); if (eq) eq.onclick = async () => { await api('/api/skin/equip', { id: s.id }); loadSkins(); };
     g.appendChild(el);
+  }
+  const chars = await api('/api/characters');
+  const box = document.getElementById('charList'); if (!box || !Array.isArray(chars)) return;
+  box.innerHTML = '';
+  for (const s of chars) {
+    const el = document.createElement('div'); el.className = 'skin rar ' + s.rarity + (s.equipped ? ' on' : '');
+    let ctrl;
+    if (s.equipped) ctrl = '<span class="st on">На поляне</span>';
+    else if (s.owned) ctrl = '<button class="btn btn-sm eq">Поселить</button>';
+    else if (s.album) ctrl = '<span class="st on">За альбом</span>';
+    else ctrl = `<button class="btn btn-sm buy">Купить · ${s.price}</button>`;
+    el.innerHTML = `${rarName[s.rarity] ? `<b>${rarName[s.rarity]}</b>` : ''}<div class="mark">${s.mark || '🌲'}</div><div class="t">${esc(s.title)}</div>${ctrl}`;
+    const buy = el.querySelector('.buy'); if (buy) buy.onclick = async () => { const r = await api('/api/character/buy', { id: s.id }); if (r.error) skinNote(r.error); else { loadSkins(); refreshBalance(); } };
+    const eq = el.querySelector('.eq'); if (eq) eq.onclick = async () => { await api('/api/character/equip', { id: s.id }); loadSkins(); };
+    box.appendChild(el);
   }
 }
 if (page === 'skins.html') loadSkins();
@@ -1041,13 +1330,23 @@ if (page === 'surprises.html') {
 
 // ── Питомцы на поляне: до 5 карт, каждая с фразой + диалог ──
 if (page === 'forest.html') {
+  const wideGrove = window.matchMedia('(min-width: 720px)');
+  const moreForest = document.getElementById('moreForest');
+  const syncGroveWide = () => { if (moreForest) moreForest.open = wideGrove.matches; };
+  syncGroveWide();
+  if (wideGrove.addEventListener) wideGrove.addEventListener('change', syncGroveWide);
+  else wideGrove.addListener(syncGroveWide);
   const FOREST_TIPS = [
-    'Четыре двери — главное. Остальное спрятано в «Ещё в лесу».',
-    'Коллекция — альбом существ. Карту можно взять питомцем.',
+    wideGrove.matches
+      ? 'На ноуте двери в ряд: коллекция, игры, почта, дерево — и ещё лес ниже.'
+      : 'Четыре двери — главное. Остальное спрятано в «Ещё в лесу».',
+    'Коллекция — альбом существ. Дубль можно поселить собирать шишки.',
     'В играх питомец помогает копить шишки.',
-    'Почта — напиши обитателю леса. Другом станет, когда примет заявку.',
+    'Почта — найди обитателя по имени и напиши. Другом станет, когда примет заявку.',
     'Моё дерево — грамота, паспорт и твой код поляны.',
-    'В «Ещё» — поляна леса, дупло и награды. Лавки уже на дверях.',
+    wideGrove.matches
+      ? 'Поляна друзей, дупло и награды — в нижнем ряду, без пряток.'
+      : 'В «Ещё» — поляна леса, дупло и награды. Лавки уже на дверях.',
   ];
   const tipBtn = document.getElementById('spiritTip');
   const tipPop = document.getElementById('spiritPop');
@@ -1059,7 +1358,78 @@ if (page === 'forest.html') {
       tipI += 1;
     };
   }
+  const lifeBox = document.getElementById('groveLife');
+  if (lifeBox) {
+    const card = (href, title, sub) =>
+      `<a class="glife" href="${href}"><div class="gh">${title}</div><div class="gs">${sub}</div></a>`;
+    api('/api/grove-life').then((d) => {
+      if (!d || d.error) {
+        lifeBox.hidden = false;
+        lifeBox.innerHTML = [
+          card('pot.html', 'Котлы', 'Поставь первый или найди друга'),
+          card('council.html', 'Совет', 'Предложи тему семье'),
+          card('guilds.html', 'Гильдии', 'Оснуй стаю или вступи'),
+          card('market.html', 'Лавки', 'Открой лавку — друзья увидят'),
+          card('mail.html#friends', 'Почта', 'Найди обитателя по имени'),
+        ].join('');
+        return;
+      }
+      const pot = (d.pots && d.pots[0])
+        ? `${d.pots[0].title} · ${d.pots[0].collected}/${d.pots[0].goal}`
+        : 'Поставь первый или найди друга';
+      const prop = (d.proposals && d.proposals[0]) ? d.proposals[0].title : 'Предложи тему семье';
+      const gild = (d.guilds && d.guilds[0])
+        ? `${d.guilds[0].name} · ${d.guilds[0].n}`
+        : 'Оснуй стаю или вступи к другу';
+      const shop = (d.shops && d.shops[0])
+        ? `${d.shops[0].name} · товаров ${d.shops[0].n}`
+        : 'Открой лавку — друзья увидят';
+      const mail = d.mail && d.mail.pending_in
+        ? `Заявки в друзья: ${d.mail.pending_in}`
+        : (d.mail && d.mail.friends ? `Друзей: ${d.mail.friends}` : 'Найди обитателя по имени');
+      lifeBox.hidden = false;
+      lifeBox.innerHTML = [
+        card('pot.html', 'Котлы', pot),
+        card('council.html', 'Совет', prop),
+        card('guilds.html', 'Гильдии', gild),
+        card('market.html', 'Лавки', shop),
+        card('mail.html#friends', 'Почта', mail),
+      ].join('');
+    });
+  }
+  const gatherBar = document.getElementById('gatherBar');
+  const gatherBtn = document.getElementById('gatherBtn');
+  const gatherSub = document.getElementById('gatherSub');
+  if (gatherBar) {
+    const paintGather = async () => {
+      const g = await api('/api/gather');
+      if (!g || g.error || !(g.gatherers || []).length) { gatherBar.classList.remove('on'); return; }
+      gatherBar.classList.add('on');
+      const n = g.gatherers.length, ready = g.ready || 0;
+      gatherSub.textContent = ready
+        ? `${n} ${n === 1 ? 'карта' : 'карт'} · можно собрать ${ready}🌰`
+        : `${n} ${n === 1 ? 'карта собирает' : 'карт собирают'} · 1🌰 в день, сегодня уже забрали`;
+      if (gatherBtn) gatherBtn.hidden = !ready;
+    };
+    paintGather();
+    if (gatherBtn) gatherBtn.onclick = async () => {
+      gatherBtn.disabled = true;
+      const r = await api('/api/gather/claim', {});
+      gatherBtn.disabled = false;
+      if (r.error) { gatherSub.textContent = r.error; return; }
+      if (r.gained) { gatherSub.textContent = `Собрали ${r.gained}🌰`; refreshBalance(); }
+      paintGather();
+    };
+  }
   api('/api/state').then((s) => {
+    const grove = document.getElementById('groveChar');
+    if (grove) {
+      if (s && s.grove) {
+        grove.hidden = false;
+        grove.querySelector('.fn').textContent = s.grove.name;
+        grove.querySelector('.mark').textContent = s.grove.mark || '🌲';
+      } else grove.hidden = true;
+    }
     const cont = document.getElementById('famList');
     if (!cont) return;
     const fams = s && s.familiars;

@@ -23,6 +23,19 @@ if (location.hash === '#grove') {
 api('/api/state').then((s) => {
   const h = document.querySelector('.hero img'); if (h && s.skin_on) h.src = 'assets/' + s.tree_asset;
   const fc = document.getElementById('freezeCount'); if (fc) fc.textContent = s.streak_freezes || 0;
+  const code = s.login_code || localStorage.getItem('childCode') || '';
+  if (code) try { localStorage.setItem('childCode', code); } catch {}
+  const el = document.getElementById('loginCode');
+  if (el && code) el.textContent = code;
+  const copy = document.getElementById('copyLoginBtn');
+  if (copy && code) {
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(code);
+        copy.textContent = 'Код скопирован';
+      } catch { copy.textContent = code; }
+    };
+  }
 });
 const buyFz = document.getElementById('buyFreezeBtn');
 if (buyFz) buyFz.onclick = async () => {

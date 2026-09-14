@@ -50,23 +50,28 @@ function friendCodeBusy() {
   if (!el) return false;
   return document.activeElement === el || !!(el.value || '').trim();
 }
+function friendFindBusy() {
+  const el = document.getElementById('forestFind');
+  if (!el) return false;
+  return document.activeElement === el || !!(el.value || '').trim();
+}
+let friendFindTimer = null;
 async function loadFriendsHub(opts) {
   const silent = !!(opts && opts.silent);
-  if (silent && friendCodeBusy()) return;
+  if (silent && (friendCodeBusy() || friendFindBusy())) return;
   const pane = document.getElementById('friendsPane');
   if (!pane) return;
+  const keepQ = opts && opts.q != null ? String(opts.q) : (document.getElementById('forestFind')?.value || '');
   const hub = await api('/api/friends/hub');
-  if (silent && friendCodeBusy()) return;
+  if (silent && (friendCodeBusy() || friendFindBusy())) return;
   if (hub.error) { pane.innerHTML = `<div class="noChats">${esc(hub.error)}</div>`; return; }
   const parts = [];
-  parts.push(`<div class="fHint">Напиши обитателю — заявка уйдёт сама. Карты и шишки — после «Принять». Код с поляны тоже подходит.</div>`);
+  parts.push(`<div class="fHint">Найди обитателя по имени и попроси в друзья. Код из мессенджера не нужен — он на всякий случай ниже.</div>`);
+  parts.push(`<div class="fFind"><input id="forestFind" placeholder="Найти по имени" maxlength="24" autocomplete="off" value="${esc(keepQ)}"></div>`);
   if (hub.my_code) {
     parts.push(`<div class="fMyCode">Твой код: <b id="myFriendCode">${esc(hub.my_code)}</b><button type="button" id="btnCopyMyCode">Скопировать</button></div>`);
   }
-  parts.push(`<div class="fAdd"><input id="friendCode" placeholder="Код друга" maxlength="12" autocomplete="off" autocapitalize="characters"><button type="button" id="btnAddFriend">Добавить</button></div>`);
-  if ((hub.forest?.length || 0) + (hub.circle?.length || 0) > 6) {
-    parts.push(`<div class="fFind"><input id="forestFind" placeholder="Найти по имени" maxlength="24" autocomplete="off"></div>`);
-  }
+  parts.push(`<div class="fAdd"><input id="friendCode" placeholder="Код друга, если есть" maxlength="12" autocomplete="off" autocapitalize="characters"><button type="button" id="btnAddFriend">Добавить</button></div>`);
 
   const row = (p, actsHtml) =>
     `<div class="fRow" data-name="${esc((p.name || '').toLowerCase())}"><img src="assets/${p.avatar || 'tree.webp'}" alt=""><div class="nm">${esc(p.name)}</div><div class="acts">${actsHtml}</div></div>`;
@@ -88,7 +93,7 @@ async function loadFriendsHub(opts) {
         `<button type="button" data-act="gift" data-id="${p.id}" data-name="${esc(p.name)}">🎁</button>`));
     }
   } else {
-    parts.push(`<div class="noChats" style="margin:0">Друзей пока нет — выбери кого-нибудь из леса ниже или введи код.</div>`);
+    parts.push(`<div class="noChats" style="margin:0">Друзей пока нет — найди обитателя по имени.</div>`);
   }
   if (hub.pending_out?.length) {
     parts.push(`<div class="fSec">Ждём ответа · ${hub.pending_out.length}</div>`);
@@ -98,7 +103,25 @@ async function loadFriendsHub(opts) {
         `<button type="button" disabled>⏳</button>`));
     }
   }
-  if (hub.circle?.length) {
+  const qn = keepQ.trim();
+  let hits = [];
+  if (qn.length >= 2) {
+    const found = await api('/api/friends/search', { q: qn });
+    hits = Array.isArray(found) ? found : [];
+    parts.push(`<div class="fSec">Нашли · ${hits.length}</div>`);
+    if (!hits.length) {
+      parts.push(`<div class="noChats" style="margin:0">Никого с таким именем нет. Попробуй другое или код.</div>`);
+    }
+    for (const p of hits) {
+      let acts = `<button type="button" class="go" data-act="chat" data-id="${p.id}" data-name="${esc(p.name)}">Написать</button>`;
+      if (p.friend) acts += `<button type="button" disabled>друг</button>`;
+      else if (p.pending_in) acts += `<button type="button" class="go" data-act="accept" data-id="${p.id}">Принять</button>`;
+      else if (p.pending) acts += `<button type="button" disabled>⏳</button>`;
+      else acts += `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`;
+      parts.push(row(p, acts));
+    }
+  }
+  if (qn.length < 2 && hub.circle?.length) {
     parts.push(`<div class="fSec">В кругу, ещё не друзья · ${hub.circle.length}</div>`);
     for (const p of hub.circle) {
       parts.push(row(p,
@@ -106,7 +129,7 @@ async function loadFriendsHub(opts) {
         `<button type="button" class="go" data-act="request" data-id="${p.id}">В друзья</button>`));
     }
   }
-  if (hub.forest?.length) {
+  if (qn.length < 2 && hub.forest?.length) {
     parts.push(`<div class="fSec">Обитатели леса · ${hub.forest.length}</div>`);
     for (const p of hub.forest) {
       parts.push(row(p,
@@ -126,12 +149,19 @@ async function loadFriendsHub(opts) {
     else if (r.status === 'accepted') alert(`${r.name || 'Друг'} теперь в друзьях — можно писать`);
     loadFriendsHub();
   };
-  pane.querySelector('#forestFind')?.addEventListener('input', () => {
-    const q = (pane.querySelector('#forestFind')?.value || '').trim().toLowerCase();
-    pane.querySelectorAll('.fRow').forEach((el) => {
-      el.style.display = !q || (el.dataset.name || '').includes(q) ? '' : 'none';
+  const find = pane.querySelector('#forestFind');
+  if (find) {
+    find.addEventListener('input', () => {
+      clearTimeout(friendFindTimer);
+      friendFindTimer = setTimeout(() => {
+        loadFriendsHub({ q: find.value });
+      }, 280);
     });
-  });
+    if (qn) {
+      find.focus();
+      try { find.setSelectionRange(qn.length, qn.length); } catch {}
+    }
+  }
   pane.querySelector('#btnAddFriend')?.addEventListener('click', addByCode);
   pane.querySelector('#friendCode')?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') { e.preventDefault(); addByCode(); }

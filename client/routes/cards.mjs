@@ -1,9 +1,11 @@
 // Лесная коллекция: карты, питомцы, рынок, аукционы, wants.
+import { PACK_PRICE, PACK_SIZE } from '../lib/offline-cards.mjs';
+
 export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   return {
 // ── Лесная коллекция (карточки) ──
 'GET /api/cards': async (b, ctx) => {
-  const [types, rar, owned, lore, seasons, packs, fam, history, facts] = await Promise.all([
+  const [types, rar, owned, lore, seasons, packs, fam, history, facts, gathers] = await Promise.all([
     q('select id, code, name, category, sort, season, occasion from card_types order by sort'),
     q('select grade, code, name, color, price, quicksell, weight from rarities order by grade'),
     q('select type_id, grade, qty, merged, seen_at from user_cards where user_id=$1', [ctx.child]),
@@ -18,16 +20,20 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
     q(`select f.code, f.fact from card_facts f join card_types t on t.code=f.code
        where (select count(distinct uc.grade) from user_cards uc
               where uc.user_id=$1 and uc.type_id=t.id and uc.qty>0) = 6`, [ctx.child]),
+    q(`select type_id, grade, last_claim from card_gatherers where user_id=$1`, [ctx.child]).catch(() => []),
   ]);
   const own = {};   // type_id → {grade: {qty, merged, unseen}}
   for (const r of owned) {
     (own[r.type_id] ||= {})[r.grade] = { qty: r.qty, merged: r.merged, unseen: !r.seen_at };
   }
+  const gathering = {};
+  for (const g of gathers || []) gathering[g.type_id + ':' + g.grade] = true;
   const cards = types.map((t) => {
     const have = own[t.id] || {};
     const grades = rar.map((g) => {
       const h = have[g.grade] || {};
-      return { grade: g.grade, qty: h.qty || 0, merged: h.merged || 0, unseen: !!h.unseen };
+      return { grade: g.grade, qty: h.qty || 0, merged: h.merged || 0, unseen: !!h.unseen,
+               gathering: !!gathering[t.id + ':' + g.grade] };
     });
     const best = grades.filter((g) => g.qty > 0).reduce((m, g) => Math.max(m, g.grade), 0);
     return { id: t.id, code: t.code, name: t.name, category: t.category, season: t.season,
@@ -138,6 +144,55 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
   return { cards: r.v, rewards, balance: (await one('select balance from wallets where user_id=$1', [ctx.child])).balance };
 },
+'POST /api/pack/offline': async (b, ctx) => {
+  const nonce = String(b.nonce || '');
+  if (!/^[a-zA-Z0-9_-]{8,80}$/.test(nonce)) throw { code: 400, msg: 'неверный пак' };
+  const claimed = await one('select 1 as x from offline_pack_claims where child_id=$1 and nonce=$2', [ctx.child, nonce]);
+  if (claimed) {
+    const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+    return { ok: true, already: true, cards: [], rewards: [], balance: w.balance };
+  }
+  const today = await one(
+    `select count(*)::int as n from offline_pack_claims
+      where child_id=$1 and (created_at at time zone 'Europe/Moscow')::date
+            = (now() at time zone 'Europe/Moscow')::date`, [ctx.child]);
+  if ((today?.n || 0) >= 5) throw { code: 429, msg: 'сегодня хватит офлайн-паков — открой остальные по сети' };
+  const items = Array.isArray(b.cards) ? b.cards : [];
+  if (items.length !== PACK_SIZE) throw { code: 400, msg: 'в паке 7 карт' };
+  let rare = 0;
+  const resolved = [];
+  for (const it of items) {
+    const g = parseInt(it.grade, 10);
+    if (g < 1 || g > 6) throw { code: 400, msg: 'не тот ранг' };
+    if (g >= 5) rare++;
+    const t = await one(
+      `select id, code, name, category, pack_drop from card_types where id=$1`, [it.type]);
+    if (!t || t.pack_drop === false) throw { code: 400, msg: 'так карта не выпадает' };
+    resolved.push({ ...t, grade: g });
+  }
+  if (rare > 3) throw { code: 400, msg: 'слишком редкий пак' };
+  const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+  if (!w || w.balance < PACK_PRICE) throw { code: 400, msg: 'не хватает шишек на пак' };
+  await q('insert into offline_pack_claims(child_id, nonce) values ($1,$2)', [ctx.child, nonce]);
+  await q('update wallets set balance=balance-$2, total_spent=total_spent+$2 where user_id=$1',
+    [ctx.child, PACK_PRICE]);
+  await q('update users set packs_opened = packs_opened + 1 where id=$1', [ctx.child]);
+  await q("insert into transactions(circle_id, from_user, to_user, amount, type, message) select circle_id, $1, null, $2, 'purchase', 'Лесной пак' from users where id=$1",
+    [ctx.child, PACK_PRICE]);
+  const out = [];
+  for (const t of resolved) {
+    const had = await one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=$3',
+      [ctx.child, t.id, t.grade]);
+    await q(`insert into user_cards(user_id, type_id, grade, qty) values ($1,$2,$3,1)
+      on conflict (user_id, type_id, grade) do update set qty = user_cards.qty + 1`,
+      [ctx.child, t.id, t.grade]);
+    out.push({ code: t.code, name: t.name, category: t.category, grade: t.grade, is_new: !had || had.qty <= 0 });
+  }
+  await rpc('check_achievements', [ctx.child]).catch(() => {});
+  const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+  const bal = await one('select balance from wallets where user_id=$1', [ctx.child]);
+  return { cards: out, rewards, balance: bal.balance, offline: true };
+},
 'POST /api/card/merge': async (b, ctx) => {
   let r;
   try { r = await one('select merge_cards($1,$2,$3) as v', [ctx.child, b.type, b.grade]).then((x) => x.v); }
@@ -159,10 +214,32 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
   return { ...r, rewards };
 },
-'POST /api/card/exchange': async (b, ctx) => {   // 5 лишних одного ранга → 1 недостающая того же ранга
+'POST /api/card/exchange': async (b, ctx) => {   // 5 выбранных дублей одного ранга → 1 недостающая
+  const types = Array.isArray(b.types) ? b.types.filter(Boolean) : [];
+  if (types.length !== 5) throw { code: 400, msg: 'выбери 5 карт, которые отдаёшь' };
   let r;
-  try { r = await one('select exchange_cards($1,$2) as v', [ctx.child, b.grade]).then((x) => x.v); }
-  catch (e) { throw { code: 400, msg: /need 5 spare/.test(e.message) ? 'нужно 5 лишних карт этого ранга' : 'нельзя' }; }
+  try { r = await one('select exchange_cards_pick($1,$2,$3::uuid[]) as v', [ctx.child, b.grade, types]).then((x) => x.v); }
+  catch (e) {
+    throw { code: 400, msg: /need 5/.test(e.message) ? 'выбери 5 карт, которые отдаёшь'
+      : /last copy/.test(e.message) ? 'последнюю карту из альбома отдать нельзя'
+      : /unknown type/.test(e.message) ? 'нет такой карты' : 'нельзя' };
+  }
+  const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
+  return { ...r, rewards };
+},
+'POST /api/card/exchange-down': async (b, ctx) => {   // 1 дубль высшего ранга → 1 недостающая ниже
+  if (!b.offer || !b.want) throw { code: 400, msg: 'выбери карты' };
+  let r;
+  try {
+    r = await one('select exchange_rank_down($1,$2,$3,$4,$5) as v',
+      [ctx.child, b.offer, b.offer_grade, b.want, b.want_grade]).then((x) => x.v);
+  } catch (e) {
+    throw { code: 400, msg: /need spare/.test(e.message) ? 'нужен дубль — последнюю карту отдать нельзя'
+      : /already have/.test(e.message) ? 'эта карта у тебя уже есть'
+      : /want not lower/.test(e.message) ? 'нужен ранг ниже'
+      : /bad grade/.test(e.message) ? 'не тот ранг'
+      : /no types/.test(e.message) ? 'нет такой карты' : 'нельзя' };
+  }
   const rewards = (await one('select check_card_rewards($1) as v', [ctx.child])).v;
   return { ...r, rewards };
 },
@@ -173,7 +250,7 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
   catch (e) {
     throw { code: 400, msg: /daily gift limit/.test(e.message) ? 'сегодня уже подарено 3 карты — завтра можно снова'
       : /no card/.test(e.message) ? 'этой карты у тебя нет'
-      : /other circle/.test(e.message) ? 'пока нельзя дарить в другой лес' : 'нельзя' };
+      : /other circle/.test(e.message) ? 'подарить можно только другу' : 'нельзя' };
   }
 },
 'POST /api/card/sell': async (b, ctx) => {
@@ -262,6 +339,72 @@ export function routesCards({ q, one, rpc, assertOwn, assertFriend }) {
 'POST /api/want/cancel': async (b, ctx) => {
   try { return await one('select cancel_want($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
   catch (e) { throw { code: 400, msg: 'нельзя снять' }; }
+},
+'GET /api/swaps': (b, ctx) => q(`select s.id, s.offer_grade, s.want_grade, s.created_at,
+    ot.code as offer_code, ot.name as offer_name, wt.code as want_code, wt.name as want_name,
+    u.name as from_name, (s.from_id=$1) as mine
+    from card_swaps s
+    join card_types ot on ot.id = s.offer_type
+    join card_types wt on wt.id = s.want_type
+    join users u on u.id = s.from_id
+    where s.status = 'open' and (
+      s.circle_id = $2
+      or exists (select 1 from friendships f
+                  where f.user_id=$1 and f.friend_id=s.from_id and f.status='accepted')
+      or s.from_id = $1
+    ) order by s.created_at desc`, [ctx.child, ctx.circle]),
+'POST /api/swap': async (b, ctx) => {
+  try {
+    return await one('select create_card_swap($1,$2,$3,$4,$5) as v',
+      [ctx.child, b.offer, parseInt(b.offer_grade, 10), b.want, parseInt(b.want_grade, 10)]).then((r) => r.v);
+  } catch (e) {
+    throw { code: 400, msg: /want higher grade/.test(e.message) ? 'просить можно только равный ранг или ниже'
+      : /same card/.test(e.message) ? 'это та же карта'
+      : /too many/.test(e.message) ? 'уже 3 обмена висят — сними лишний'
+      : /no card/.test(e.message) ? 'этой карты у тебя нет'
+      : /special/.test(e.message) ? 'особые карты так не меняют' : 'нельзя' };
+  }
+},
+'POST /api/swap/cancel': async (b, ctx) => {
+  try { return await one('select cancel_card_swap($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
+  catch (e) { throw { code: 400, msg: 'нельзя снять' }; }
+},
+'POST /api/swap/accept': async (b, ctx) => {
+  try { return await one('select accept_card_swap($1,$2) as v', [ctx.child, b.id]).then((r) => r.v); }
+  catch (e) {
+    throw { code: 400, msg: /no card/.test(e.message) ? 'у тебя нет той карты, которую просят'
+      : /own swap/.test(e.message) ? 'это твой обмен' : 'обмен недоступен' };
+  }
+},
+'GET /api/gather': async (b, ctx) => {
+  const today = await one("select (timezone('Europe/Moscow', now()))::date as d");
+  const rows = await q(`
+    select g.type_id as type, g.grade, t.code, t.name,
+           (g.last_claim is distinct from $2::date) as ready
+      from card_gatherers g
+      join card_types t on t.id = g.type_id
+      join user_cards uc on uc.user_id=g.user_id and uc.type_id=g.type_id and uc.grade=g.grade and uc.qty>0
+     where g.user_id=$1
+     order by g.trained_at`, [ctx.child, today.d]).catch(() => []);
+  return { gatherers: rows, ready: rows.filter((r) => r.ready).length };
+},
+'POST /api/gather/train': async (b, ctx) => {
+  try { await one('select train_gatherer($1,$2,$3) as v', [ctx.child, b.type, b.grade]); }
+  catch (e) {
+    throw { code: 400, msg: /duplicate/.test(e.message) ? 'нужен дубль — одна карта остаётся в альбоме'
+      : /already/.test(e.message) ? 'эта карта уже собирает'
+      : /max 5/.test(e.message) ? 'не больше 5 сборщиков'
+      : /special/.test(e.message) ? 'особые карты не селят'
+      : 'нельзя поселить' };
+  }
+  return { ok: true };
+},
+'POST /api/gather/claim': async (b, ctx) => {
+  let r;
+  try { r = (await one('select claim_gatherers($1) as v', [ctx.child])).v; }
+  catch (e) { throw { code: 400, msg: 'не удалось собрать' }; }
+  const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
+  return { ok: true, gained: r.gained || 0, balance: w.balance };
 },
 'POST /api/want/fill': async (b, ctx) => {
   try { const r = await one('select fill_want($1,$2) as v', [ctx.child, b.id]).then((x) => x.v);

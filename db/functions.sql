@@ -131,28 +131,40 @@ begin
   return c;
 end $$;
 
--- Ежедневные задания: 6 случайных daily-шаблонов при первом заходе ребёнка за день.
+-- Два списка: 5 дешёвых ежедневок + 1 дорогое задание дня из полного пула.
 create or replace function ensure_daily_tasks(p_child uuid)
 returns void language plpgsql security definer set search_path = public as $$
 declare
   c_id uuid;
   cnt  int;
+  days int;
 begin
   select circle_id into c_id from users where id = p_child and role = 'child';
   if c_id is null then return; end if;
 
   select count(*) into cnt from tasks
-    where child_id = p_child
-      and is_daily
+    where child_id = p_child and is_daily and coalesce(kind, 'daily') = 'daily'
       and created_at::date = (now() at time zone 'Europe/Moscow')::date;
-  if cnt > 0 then return; end if;
+  if cnt = 0 then
+    insert into tasks(circle_id, child_id, title, reward, category, needs_photo, is_daily, kind)
+      select c_id, p_child, t.title, t.reward, coalesce(t.category, 'дом'), t.needs_photo, true, 'daily'
+      from task_templates t
+      where t.kind = 'daily'
+      order by random()
+      limit 5;
+  end if;
 
-  insert into tasks(circle_id, child_id, title, reward, category, needs_photo, is_daily)
-    select c_id, p_child, t.title, t.reward, coalesce(t.category, 'дом'), t.needs_photo, true
-    from task_templates t
-    where t.is_daily
-    order by random()
-    limit 6;
+  select count(*) into days from tasks
+    where child_id = p_child and coalesce(kind, '') = 'day'
+      and created_at::date = (now() at time zone 'Europe/Moscow')::date;
+  if days = 0 then
+    insert into tasks(circle_id, child_id, title, reward, category, needs_photo, is_daily, kind)
+      select c_id, p_child, t.title, t.reward, coalesce(t.category, 'дом'), t.needs_photo, true, 'day'
+      from task_templates t
+      where t.kind = 'day'
+      order by random()
+      limit 1;
+  end if;
 end $$;
 
 -- Родитель добавляет ребёнка в свой круг (создаёт профиль + кошелёк + 6 daily).
@@ -644,6 +656,8 @@ returns int language sql stable security definer set search_path = public as $$
     when 'number_score'     then (select coalesce(score,0) from mini_games where child_id=p_child and game='number')
     when 'compare_score'    then (select coalesce(score,0) from mini_games where child_id=p_child and game='compare')
     when 'story_score'      then (select coalesce(score,0) from mini_games where child_id=p_child and game='story')
+    when 'quiz_score'       then (select coalesce(score,0) from mini_games where child_id=p_child and game='quiz')
+    when 'logic_score'      then (select coalesce(score,0) from mini_games where child_id=p_child and game='logic')
     else 0 end::int
 $$;
 
@@ -734,14 +748,29 @@ begin
   return o;
 end $$;
 
--- Покупатель подтверждает получение: шишки уходят продавцу (сделка завершена).
-create or replace function confirm_order(p_order uuid)
+-- Продавец отметил передачу: товар отдан, ждём «Получил» от покупателя.
+create or replace function hand_order(p_order uuid, p_seller uuid)
 returns orders language plpgsql security definer set search_path = public as $$
-declare o orders; c_id uuid;
+declare o orders;
 begin
   select * into o from orders where id = p_order for update;
   if not found then raise exception 'order not found'; end if;
-  if o.status <> 'reserved' then raise exception 'order not reservable (status=%)', o.status; end if;
+  if o.seller_id <> p_seller then raise exception 'not the seller'; end if;
+  if o.status <> 'reserved' then raise exception 'order not reserved (status=%)', o.status; end if;
+  update orders set status = 'handed', handed_at = now() where id = p_order
+    returning * into o;
+  return o;
+end $$;
+
+-- Покупатель подтверждает получение: шишки уходят продавцу (сделка завершена).
+-- Только после передачи — иначе продавец ещё не отдал товар.
+create or replace function confirm_order(p_order uuid)
+returns orders language plpgsql security definer set search_path = public as $$
+declare o orders; c_id uuid; lot_title text;
+begin
+  select * into o from orders where id = p_order for update;
+  if not found then raise exception 'order not found'; end if;
+  if o.status <> 'handed' then raise exception 'order not handed (status=%)', o.status; end if;
 
   update wallets set balance = balance + o.price, total_earned = total_earned + o.price
     where user_id = o.seller_id;                       -- продавец получает доход
@@ -750,8 +779,10 @@ begin
   update orders set status = 'delivered', confirmed_at = now() where id = p_order;
 
   select circle_id into c_id from users where id = o.buyer_id;
+  select title into lot_title from shop_lots where id = o.lot_id;
   insert into transactions(circle_id, from_user, to_user, amount, type, ref_id, message)
-    values (c_id, o.buyer_id, o.seller_id, o.price, 'transfer', p_order, 'Покупка в лавке');
+    values (c_id, o.buyer_id, o.seller_id, o.price, 'transfer', p_order,
+            'Покупка в лавке: ' || coalesce(lot_title, 'товар'));
 
   perform check_achievements(o.seller_id);   -- продажи (Акула Бизнеса)
   perform check_achievements(o.buyer_id);
@@ -759,13 +790,14 @@ begin
 end $$;
 
 -- Отмена заказа: эскроу-шишки возвращаются покупателю.
+-- Можно до выплаты: и из резерва, и после «Отдал» (покупатель не получил).
 create or replace function cancel_order(p_order uuid)
 returns orders language plpgsql security definer set search_path = public as $$
 declare o orders;
 begin
   select * into o from orders where id = p_order for update;
   if not found then raise exception 'order not found'; end if;
-  if o.status <> 'reserved' then raise exception 'only reserved orders can be canceled'; end if;
+  if o.status not in ('reserved', 'handed') then raise exception 'only open orders can be canceled'; end if;
   update wallets set balance = balance + o.price where user_id = o.buyer_id;  -- вернуть эскроу
   update orders set status = 'canceled' where id = p_order;
   return o;
@@ -1178,6 +1210,11 @@ returns jsonb language sql stable security definer set search_path = public as $
         when type = 'transfer' and message = 'Подарок другу' and to_user = p_child then 'Подарок шишками'
         when type = 'transfer' and message = 'Подарок другу' and from_user = p_child then 'Подарок другу'
         when type = 'transfer' and message = 'Шишка-сюрприз' and to_user = p_child then 'Шишка-сюрприз'
+        when type = 'transfer' and message like 'Покупка в лавке%' and from_user = p_child then
+          'Купил в лавке «' || coalesce(nullif(trim(split_part(message, ': ', 2)), ''), 'товар') || '»'
+        when type = 'transfer' and message like 'Покупка в лавке%' and to_user = p_child then
+          'Продал в лавке «' || coalesce(nullif(trim(split_part(message, ': ', 2)), ''), 'товар') || '»'
+        when type = 'purchase' then 'Купил «' || coalesce(nullif(message, ''), 'приз') || '»'
         else coalesce(message, '') end,
       -- покупатель видит полную цену (нетто продавцу + комиссия), без отдельной строки налога
       'amount', case

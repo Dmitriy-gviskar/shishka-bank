@@ -18,8 +18,9 @@
   .kid-head .bal{font-weight:900;color:var(--brown);font-size:24px;white-space:nowrap;line-height:1;text-align:right}
   .kid-head .bal small{display:block;font-size:11px;color:#a1876a;font-weight:700}
   .give-row{display:flex;gap:6px;margin-top:9px;align-items:center}
-  .give-row .amt{flex:1;min-width:0;background:#fffaf0;border:2px solid #d9c39a;border-radius:10px;
+  .give-row .amt,.give-row.ages input{flex:1;min-width:0;background:#fffaf0;border:2px solid #d9c39a;border-radius:10px;
     padding:7px 10px;font-size:15px;font-weight:800;color:var(--ink);outline:none}
+  .give-row.ages input{max-width:72px;text-align:center;font-size:13px}
   .mini{border:none;border-radius:10px;padding:7px 12px;font-weight:900;cursor:pointer;font-size:13px;white-space:nowrap}
   .mini.g{background:#8ec44f;color:#fff}.mini.r{background:#e0a99a;color:#5b4636}
   .mini.del{background:#c45c4a;color:#fff;min-width:36px;padding:7px 10px}
@@ -61,7 +62,8 @@
 </style></head><body data-no-nav>
 <div class="phone"><div class="wrap">
   <div class="title">Кабинет ведущего</div>
-  <div class="scroll">
+  <div id="pinGate" class="scroll" hidden></div>
+  <div id="cabinet" class="scroll">
     <h3>Мои дети</h3>
     <div id="kids"></div>
     <details class="form"><summary>Добавить ребёнка</summary>
@@ -94,11 +96,14 @@
     <h3>Обещания из магазина</h3>
     <div id="purchases"></div>
 
-    <details class="form"><summary>Выдать задание</summary>
+    <details class="form"><summary>Выдать лагерное задание</summary>
+      <p style="color:#8a7358;font-weight:700;font-size:12px;line-height:1.35;margin:0 0 8px">
+        Семейные дела (3–5 штук) родители выдают сами в приложении, на экране заданий. Здесь — только лагерь.
+      </p>
       <select id="taskKid"></select>
       <select id="taskTpl"><option value="">Библиотека заданий (50 готовых)…</option></select>
       <input id="taskTitle" placeholder="Что нужно сделать" maxlength="60">
-      <input id="taskReward" type="number" min="1" placeholder="Награда в шишках">
+      <input id="taskReward" type="number" min="1" max="100" placeholder="Награда, до 100">
       <label><input type="checkbox" id="taskPhoto"> нужно подтвердить фото</label>
       <button class="btn btn-lg" id="createTask">Выдать задание</button>
     </details>

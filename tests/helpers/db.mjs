@@ -18,7 +18,8 @@ const pgUser = process.env.PGUSER || process.env.USER;
 export const url = `postgres://${pgUser}@localhost:5432/${DB}?sslmode=disable`;
 
 export async function setupDb() {
-  await run('dropdb', ['--if-exists', DB]);
+  // --force: рвёт залипшие коннекты прошлого server-pg (иначе dropdb падает)
+  await run('dropdb', ['--if-exists', '--force', DB]);
   await run('createdb', [DB]);
   // Supabase-специфика: схема auth и заглушка auth.uid() — их зовут функции из functions.sql
   await run('psql', ['-q', '-d', DB, '-c',
@@ -29,6 +30,7 @@ export async function setupDb() {
     alter table transactions add column if not exists is_anonymous boolean not null default false;
     alter table transactions add column if not exists revealed boolean not null default false;
     alter table users add column if not exists last_seen timestamptz;
+    alter table user_cards add column if not exists seen_at timestamptz;
     create table if not exists mini_games (
       child_id uuid not null references users(id) on delete cascade,
       game text not null, level int not null default 1, score int not null default 0,
@@ -55,13 +57,29 @@ export async function setupDb() {
       child_id uuid not null references users(id) on delete cascade,
       guardian_id uuid not null references users(id) on delete cascade,
       primary key (child_id, guardian_id));
+    -- guilds v3 achievement_metric_legacy ссылается на surprises; в схеме её нет
+    -- (сюрпризы в проде — строки transactions), но CREATE FUNCTION требует отношение
+    create table if not exists surprises (
+      id uuid primary key default gen_random_uuid(),
+      child_id uuid references users(id) on delete cascade,
+      revealed boolean not null default false);
   `]);
   // cards.sql — часть прод-схемы (карты, лор, рынок, аукцион): /api/state читает familiar_* из неё
   for (const f of ['db/functions.sql', 'db/migration_auth.sql', 'db/cards.sql',
                      'db/migration_referrals.sql', 'db/migration_referral_levels.sql',
                      'db/migration_referral_l3.sql',                      'db/migration_friendships.sql',
                      'db/migration_reactions.sql',                      'db/migration_cross_circle_friends.sql',
-                     'db/migration_friend_cards.sql', 'db/migration_forest_mail.sql'])
+                     'db/migration_friend_cards.sql', 'db/migration_forest_mail.sql',
+                     'db/migration_guilds_v2.sql', 'db/migration_guilds_v3.sql',
+                     'db/migration_bereza_quests.sql', 'db/migration_card_swaps.sql',
+                     'db/migration_quest_two_lists.sql', 'db/migration_games_wave3.sql',
+                     'db/migration_offline_packs.sql', 'db/migration_guild_invites.sql',
+                     'db/migration_shop_avito.sql', 'db/migration_shop_feed.sql',
+                     'db/migration_card_gather.sql', 'db/migration_card_exchange_pick.sql',
+                     'db/migration_characters.sql', 'db/migration_chat_ages.sql',
+                     'db/migration_card_rank_down.sql',                      'db/migration_forest_welcome.sql',
+                     'db/migration_friend_trade.sql',
+                     'db/migration_forest_tasks_pack.sql'])
     await run('psql', ['-q', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-f', join(ROOT, f)]);
   // child_logins не входит в schema.sql — в проде её создаёт db/seed.sql (см. server-pg.mjs: авторизация ребёнка по коду из этой таблицы)
   await run('psql', ['-q', '-d', DB, '-c',
@@ -99,13 +117,37 @@ export function startServer(dbUrl, env = {}) {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   const ready = new Promise((ok, bad) => {
-    const timer = setTimeout(() => bad(new Error('сервер не поднялся за 10с')), 10000);
-    proc.stdout.on('data', (d) => { if (String(d).includes('http://')) { clearTimeout(timer); ok(); } });
-    proc.stderr.on('data', (d) => { clearTimeout(timer); bad(new Error(String(d))); });
+    let done = false;
+    const buf = [];
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      bad(new Error('сервер не поднялся за 10с\n' + buf.join('')));
+    }, 10000);
+    const finish = (fn, err) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      fn(err);
+    };
+    proc.stdout.on('data', (d) => {
+      buf.push(String(d));
+      if (String(d).includes('http://')) finish(ok);
+    });
+    // warn/error на старте (пустой PIN, sweep гильдий) — не считаем падением
+    proc.stderr.on('data', (d) => { buf.push(String(d)); });
+    proc.on('exit', (code) => {
+      if (!done) finish(bad, new Error('сервер вышел ' + code + '\n' + buf.join('')));
+    });
   });
   return ready.then(() => ({
     port,
     api: (path, opts = {}) => fetch(`http://127.0.0.1:${port}${path}`, opts).then((r) => r.json().then((j) => ({ status: r.status, body: j }))),
-    stop: () => proc.kill(),
+    stop: () => new Promise((done) => {
+      if (proc.exitCode != null || proc.signalCode != null) return done();
+      const killTimer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch { /* уже мёртв */ } }, 1500);
+      proc.once('exit', () => { clearTimeout(killTimer); done(); });
+      try { proc.kill('SIGTERM'); } catch { clearTimeout(killTimer); done(); }
+    }),
   }));
 }

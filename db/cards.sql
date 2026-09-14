@@ -781,6 +781,12 @@ begin
   select * into l from card_listings where id=p_listing for update;
   if not found or l.status <> 'open' then raise exception 'listing unavailable'; end if;
   if l.seller_id = p_child then raise exception 'own listing'; end if;
+  if (select circle_id from users where id=p_child) is distinct from l.circle_id then
+    if not exists (
+      select 1 from friendships
+       where user_id=p_child and friend_id=l.seller_id and status='accepted'
+    ) then raise exception 'other circle'; end if;
+  end if;
   select * into w from wallets where user_id=p_child for update;
   if w.balance < l.price then raise exception 'not enough cones'; end if;
   fee := card_fee(l.price); net := l.price - fee;
@@ -892,7 +898,8 @@ begin
   insert into card_gifts(circle_id, from_user, to_user, type_id, grade) values (c_id, p_child, p_to, p_type, p_grade);
 
   select * into t from card_types where id=p_type;
-  perform send_message(p_child, p_to, 'emoji', 'Дарю тебе карту: ' || t.name || '!');
+  insert into messages(circle_id, from_user, to_user, type, content)
+    values (c_id, p_child, p_to, 'emoji', 'Дарю тебе карту: ' || t.name || '!');
   perform check_card_rewards(p_to);
   perform check_achievements(p_to);
   return jsonb_build_object('ok', true, 'left_today', 3 - today_n - 1);

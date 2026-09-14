@@ -1,4 +1,4 @@
-// Мини-игры: умножение / угадайка / блиц / память / слово / лишнее / числа / сравнение / задачи.
+// Мини-игры: умножение / угадайка / блиц / память / слово / лишнее / числа / сравнение / задачи / викторина / логика.
 // Зависит от window.api, window.esc, window.cardUrl из app.js.
 window.runGames = function () {
   const api = window.api;
@@ -17,6 +17,8 @@ let oddRounds = [], oddIdx = 0, oddCorrect = 0;
 let numberQuestions = [], numberIdx = 0, numberCorrect = 0;
 let compareRounds = [], compareIdx = 0, compareCorrect = 0;
 let storyQuestions = [], storyIdx = 0, storyCorrect = 0;
+let quizQuestions = [], quizIdx = 0, quizCorrect = 0;
+let logicQuestions = [], logicIdx = 0, logicCorrect = 0;
 
 function setGameInputMode(mode) {
   const a = document.getElementById('gameA');
@@ -286,12 +288,21 @@ async function startCountGame() {
   }, 1000);
 }
 
+function showCountQuestion() {
+  const q = countQuestions[countIdx];
+  if (!q) return;
+  document.getElementById('gameQ').textContent = `${q.a} ${q.op} ${q.b} = ?`;
+  document.getElementById('gameA').value = '';
+  setGameProg(countDuration - Math.max(countLeft, 0), countDuration, `⏱ ${Math.max(countLeft, 0)}с · ${countScore}`);
+  focusGameAnswer();
+}
+
 function endCountGame(reason) {
   clearInterval(countTimer);
   countTimer = null;
   setGameProg(countDuration - Math.max(countLeft, 0), countDuration, `⏱ ${Math.max(countLeft, 0)}с · ${countScore}`);
-  const label = reason === 'wrong' ? 'Ошибка!' : reason === 'done' ? 'Готово!' : 'Время вышло!';
-  const cup = reason === 'wrong' ? '💥' : countScore >= 10 ? '🔥' : '⏱️';
+  const label = reason === 'done' ? 'Готово!' : 'Время вышло!';
+  const cup = countScore >= 10 ? '🔥' : '⏱️';
   showGameDone(`${label} Правильно: ${countScore}`, cup);
 }
 
@@ -305,21 +316,17 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
       flashStage(true);
       document.getElementById('gameMsg').textContent = 'Верно!';
       document.getElementById('gameMsg').style.color = '#5f8e37';
-      countIdx++;
-      if (countIdx >= countQuestions.length || countLeft <= 0) {
-        endCountGame(countLeft <= 0 ? 'time' : 'done');
-        return;
-      }
-      document.getElementById('gameQ').textContent =
-        `${countQuestions[countIdx].a} ${countQuestions[countIdx].op} ${countQuestions[countIdx].b} = ?`;
-      document.getElementById('gameA').value = '';
-      focusGameAnswer();
     } else {
       flashStage(false);
       document.getElementById('gameMsg').textContent = `${q.a} ${q.op} ${q.b} = ${q.answer}`;
       document.getElementById('gameMsg').style.color = '#b3452e';
-      endCountGame('wrong');
     }
+    countIdx++;
+    if (countIdx >= countQuestions.length || countLeft <= 0) {
+      endCountGame(countLeft <= 0 ? 'time' : 'done');
+      return;
+    }
+    showCountQuestion();
     return;
   }
 
@@ -774,6 +781,72 @@ function showStoryQ() {
   focusGameAnswer();
 }
 
+async function startQuizGame() {
+  currentGame = 'quiz';
+  resetGameSheet('Викторина 10–14');
+  const r = await api('/api/game/quiz/start', {});
+  if (r.error) {
+    document.getElementById('gameMsg').textContent = r.error;
+    document.getElementById('gameMsg').style.color = '#b3452e';
+    return;
+  }
+  quizQuestions = r.questions; quizIdx = 0; quizCorrect = 0;
+  showGamePlay(false);
+  document.getElementById('gameDone').classList.remove('on');
+  showQuizQ();
+}
+
+function showQuizQ() {
+  const q = quizQuestions[quizIdx];
+  document.getElementById('gameQ').innerHTML = `<div class="story-text">${esc(q.q)}</div>`;
+  document.getElementById('gameMsg').textContent = 'Выбери ответ';
+  document.getElementById('gameMsg').style.color = '#5a3a18';
+  setGameProg(quizIdx, 8);
+  const box = document.getElementById('gameLevels');
+  box.style.display = '';
+  box.innerHTML = '';
+  (q.options || []).forEach((opt) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = opt;
+    b.onclick = async () => {
+      [...box.querySelectorAll('button')].forEach((x) => { x.disabled = true; });
+      document.getElementById('gameA').value = opt;
+      document.getElementById('gameBtn').click();
+    };
+    box.appendChild(b);
+  });
+}
+
+async function startLogicGame() {
+  currentGame = 'logic';
+  resetGameSheet('Задачи 10–14');
+  showGamePlay(false);
+  document.getElementById('gameQ').textContent = 'Загрузка…';
+  const r = await api('/api/game/logic/start', {});
+  if (r.error) {
+    document.getElementById('gameMsg').textContent = r.error;
+    document.getElementById('gameMsg').style.color = '#b3452e';
+    return;
+  }
+  logicQuestions = r.questions; logicIdx = 0; logicCorrect = 0;
+  document.getElementById('gameBtn').textContent = 'Ответить';
+  showGamePlay(true);
+  setGameInputMode('number');
+  showLogicQ();
+}
+
+function showLogicQ() {
+  const q = logicQuestions[logicIdx];
+  document.getElementById('gameQ').innerHTML = `<div class="story-text">${esc(q.text)}</div>`;
+  document.getElementById('gameA').value = '';
+  document.getElementById('gameA').placeholder = 'Ответ';
+  document.getElementById('gameMsg').textContent = 'Реши и введи число';
+  document.getElementById('gameMsg').style.color = '#5a3a18';
+  setGameProg(logicIdx, 5);
+  focusGameAnswer();
+}
+
 if (document.getElementById('gameClaim')) {
   document.getElementById('gameClaim').onclick = async () => {
     const score = currentGame === 'count' ? countScore
@@ -784,6 +857,8 @@ if (document.getElementById('gameClaim')) {
       : currentGame === 'number' ? numberCorrect
       : currentGame === 'compare' ? compareCorrect
       : currentGame === 'story' ? storyCorrect
+      : currentGame === 'quiz' ? quizCorrect
+      : currentGame === 'logic' ? logicCorrect
       : gameCorrect;
     await claimGameReward(score);
   };
@@ -851,6 +926,60 @@ if (document.getElementById('gameBtn')) {
       }
       return;
     }
+    if (currentGame === 'quiz') {
+      const val = document.getElementById('gameA').value.trim();
+      if (!val) return;
+      const q = quizQuestions[quizIdx];
+      const box = document.getElementById('gameLevels');
+      const r = await api('/api/game/quiz/answer', { answer: val, expected: q.answer });
+      flashStage(!!r.correct);
+      if (box) {
+        [...box.querySelectorAll('button')].forEach((btn) => {
+          if (btn.textContent === q.answer) btn.style.outline = '3px solid #6fad45';
+          else if (btn.textContent === val && !r.correct) btn.style.outline = '3px solid #c45c4a';
+        });
+      }
+      if (r.correct) {
+        quizCorrect++;
+        document.getElementById('gameMsg').textContent = 'Верно!';
+        document.getElementById('gameMsg').style.color = '#5f8e37';
+      } else {
+        document.getElementById('gameMsg').textContent = `Почти! ${q.answer}`;
+        document.getElementById('gameMsg').style.color = '#b3452e';
+      }
+      quizIdx++;
+      if (quizIdx >= 8) {
+        setGameProg(8, 8);
+        if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+        showGameDone(`Верно: ${quizCorrect} из 8`, quizCorrect >= 6 ? '🦉' : '📖');
+      } else {
+        setTimeout(showQuizQ, 900);
+      }
+      return;
+    }
+    if (currentGame === 'logic') {
+      const val = parseInt(document.getElementById('gameA').value, 10);
+      if (isNaN(val)) return;
+      const q = logicQuestions[logicIdx];
+      const ok = val === q.answer;
+      flashStage(ok);
+      if (ok) {
+        logicCorrect++;
+        document.getElementById('gameMsg').textContent = 'Верно!';
+        document.getElementById('gameMsg').style.color = '#5f8e37';
+      } else {
+        document.getElementById('gameMsg').textContent = `Почти! Ответ: ${q.answer}`;
+        document.getElementById('gameMsg').style.color = '#b3452e';
+      }
+      logicIdx++;
+      if (logicIdx >= 5) {
+        showGamePlay(false);
+        setTimeout(() => showGameDone(`Верно: ${logicCorrect} из 5`, logicCorrect >= 4 ? '🧠' : '✏️'), 700);
+      } else {
+        setTimeout(showLogicQ, 800);
+      }
+      return;
+    }
     if (typeof baseHandler === 'function') return baseHandler.call(document.getElementById('gameBtn'));
   };
 }
@@ -864,6 +993,8 @@ window._startOdd = startOddGame;
 window._startNumber = startNumberGame;
 window._startCompare = startCompareGame;
 window._startStory = startStoryGame;
+window._startQuiz = startQuizGame;
+window._startLogic = startLogicGame;
 
 // привязка плиток на странице игр (SPA-навигация не выполняет inline-скрипты)
 if ((location.pathname.split('/').pop() || '') === 'games.html') (function bind() {
@@ -876,7 +1007,9 @@ if ((location.pathname.split('/').pop() || '') === 'games.html') (function bind(
   const num = document.getElementById('gmNumber');
   const cmp = document.getElementById('gmCompare');
   const st = document.getElementById('gmStory');
-  if (!m || !g || !c || !mem || !w || !o || !num || !cmp || !st) return setTimeout(bind, 50);
+  const qz = document.getElementById('gmQuiz');
+  const lg = document.getElementById('gmLogic');
+  if (!m || !g || !c || !mem || !w || !o || !num || !cmp || !st || !qz || !lg) return setTimeout(bind, 50);
   m.onclick = (e) => { e.preventDefault(); window._startMultiply(); };
   g.onclick = (e) => { e.preventDefault(); window._startGuess(); };
   c.onclick = (e) => { e.preventDefault(); window._startCount(); };
@@ -886,6 +1019,8 @@ if ((location.pathname.split('/').pop() || '') === 'games.html') (function bind(
   num.onclick = (e) => { e.preventDefault(); window._startNumber(); };
   cmp.onclick = (e) => { e.preventDefault(); window._startCompare(); };
   st.onclick = (e) => { e.preventDefault(); window._startStory(); };
+  qz.onclick = (e) => { e.preventDefault(); window._startQuiz(); };
+  lg.onclick = (e) => { e.preventDefault(); window._startLogic(); };
 })();
 
 };

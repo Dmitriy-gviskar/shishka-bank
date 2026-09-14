@@ -122,6 +122,74 @@ test('обменная полка: 5 излишков → недостающая
   } finally { await f.pool.end(); }
 });
 
+test('обменная полка: сам выбираешь, какие дубли отдать', async () => {
+  const f = await fixture();
+  try {
+    const kid = f.childA1.id;
+    await f.give(kid, 'lisa', 1, 4);
+    await f.give(kid, 'sova', 1, 3);
+    await f.give(kid, 'zayac', 1, 2);
+    const lisa = await f.typeId('lisa');
+    const sova = await f.typeId('sova');
+    const zayac = await f.typeId('zayac');
+
+    await assert.rejects(
+      () => f.q('select exchange_cards_pick($1,$2,$3::uuid[])', [kid, 1, [lisa, lisa, lisa, lisa, sova]]),
+      /last copy/);
+
+    const r = (await f.one('select exchange_cards_pick($1,$2,$3::uuid[]) as v',
+      [kid, 1, [lisa, lisa, lisa, sova, sova]])).v;
+    assert.equal(r.card.grade, 1);
+    assert.ok(!['lisa', 'sova'].includes(r.card.code));
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, lisa])).qty, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, sova])).qty, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, zayac])).qty, 2);
+  } finally { await f.pool.end(); }
+});
+
+test('обменная полка: 1 высший ранг → 1 недостающая ниже', async () => {
+  const f = await fixture();
+  try {
+    const kid = f.childA1.id;
+    const before = await f.balance(kid);
+    await f.give(kid, 'lisa', 3, 2);
+    await f.give(kid, 'zayac', 1, 1);
+    const lisa = await f.typeId('lisa');
+    const sova = await f.typeId('sova');
+    const zayac = await f.typeId('zayac');
+    const spec = await f.typeId('special_ng_shishka');
+
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 3, zayac, 1]),
+      /already have/);
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 3, sova, 3]),
+      /want not lower/);
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 1, sova, 1]),
+      /bad grade/);
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, spec, 3, sova, 1]),
+      /no types/);
+
+    const r = (await f.one('select exchange_rank_down($1,$2,$3,$4,$5) as v',
+      [kid, lisa, 3, sova, 1])).v;
+    assert.equal(r.ok, true);
+    assert.equal(r.spent.code, 'lisa');
+    assert.equal(r.spent.grade, 3);
+    assert.equal(r.card.code, 'sova');
+    assert.equal(r.card.grade, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=3', [kid, lisa])).qty, 1);
+    assert.equal((await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [kid, sova])).qty, 1);
+    assert.equal(await f.balance(kid), before);
+
+    const volk = await f.typeId('volk');
+    await assert.rejects(
+      () => f.q('select exchange_rank_down($1,$2,$3,$4,$5)', [kid, lisa, 3, volk, 1]),
+      /need spare/);
+  } finally { await f.pool.end(); }
+});
+
 test('подарок: карта переходит другу, больше трёх в день нельзя', async () => {
   const f = await fixture();
   try {
@@ -399,7 +467,8 @@ test('о событиях рынка и торгов приходит весто
 
     const l = (await f.one('select list_card($1,$2,4,44) as v', [seller, lisa])).v;
     await f.q('select buy_listing($1,$2)', [buyer, l.listing]);
-    assert.ok((await inbox(seller)).some((m) => /купили на рынке/.test(m.content)), 'продавцу сообщили о покупке');
+    // при цене ≥10 текст другой: «Карту купили за N. Тебе … — банк взял …»
+    assert.ok((await inbox(seller)).some((m) => /купили/.test(m.content)), 'продавцу сообщили о покупке');
 
     const a = (await f.one('select start_card_auction($1,$2,6,700) as v', [seller, sova])).v;
     await f.q('select bid_card_auction($1,$2,700)', [buyer, a.auction]);
@@ -408,7 +477,8 @@ test('о событиях рынка и торгов приходит весто
     await f.q("update card_auctions set ends_at = now() - interval '1 minute' where id=$1", [a.auction]);
     await f.q('select close_card_auction($1)', [a.auction]);
     assert.ok((await inbox(buyer)).some((m) => /выиграл торги/.test(m.content)), 'победителю сообщили');
-    assert.ok((await inbox(seller)).some((m) => /ушла с молотка/.test(m.content)), 'продавцу сообщили об итоге');
+    // при ставке ≥10 текст: «ушла за N. Тебе … — банк взял …», без «с молотка»
+    assert.ok((await inbox(seller)).some((m) => /ушла/.test(m.content)), 'продавцу сообщили об итоге');
   } finally { await f.pool.end(); }
 });
 
@@ -505,5 +575,33 @@ test('особые карты: не выпадают, не торгуются, �
     const all = await f.one('select count(*)::int as n from card_types');
     assert.ok(specials.n > 0, 'спец-карты в каталоге есть');
     assert.equal(total.n, all.n - specials.n, 'счёт коллекции не включает особые карты');
+  } finally { await f.pool.end(); }
+});
+
+test('обмен картами: нельзя просить ранг выше, равный и ниже — можно, карты меняются', async () => {
+  const f = await fixture();
+  try {
+    const a = f.childA1.id, b = f.childA2.id;
+    await f.give(a, 'lisa', 3, 1);
+    await f.give(b, 'sova', 1, 1);
+    await f.give(b, 'sova', 4, 1);
+    const lisa = await f.typeId('lisa'), sova = await f.typeId('sova');
+
+    await assert.rejects(
+      () => f.q('select create_card_swap($1,$2,3,$3,4)', [a, lisa, sova]),
+      /want higher grade/);
+
+    const okLow = (await f.one('select create_card_swap($1,$2,3,$3,1) as v', [a, lisa, sova])).v;
+    assert.equal(okLow.ok, true);
+    const held = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=3', [a, lisa]);
+    assert.equal(held, null, 'карта ушла в заявку');
+
+    const swap = await f.one("select id from card_swaps where from_id=$1 and status='open'", [a]);
+    const took = (await f.one('select accept_card_swap($1,$2) as v', [b, swap.id])).v;
+    assert.equal(took.ok, true);
+    const aGot = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=1', [a, sova]);
+    const bGot = await f.one('select qty from user_cards where user_id=$1 and type_id=$2 and grade=3', [b, lisa]);
+    assert.equal(aGot.qty, 1);
+    assert.equal(bGot.qty, 1);
   } finally { await f.pool.end(); }
 });

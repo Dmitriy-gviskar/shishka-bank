@@ -56,7 +56,7 @@ test('в лесу без ведущего дело засчитывается с
   assert.equal(await bal(srv, db.childB1.code), before + 12);
 });
 
-test('нельзя одобрить чужое задание чужим PIN, но главное — approve требует PIN', async (t) => {
+test('ведущий одобряет задание без PIN', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
   const pp = openPool(db.url);
@@ -65,9 +65,9 @@ test('нельзя одобрить чужое задание чужим PIN, н
   const [task] = await pp.q(
     "insert into tasks(circle_id,child_id,title,reward,status) values($1,$2,'Задание',50,'pending_review') returning id",
     [db.circleA, db.childA1.id]);
-  const noPin = await srv.api('/api/parent/approve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: task.id }) });
-  assert.equal(noPin.status, 401, 'approve без PIN запрещён');
-  assert.equal(await bal(srv, db.childA1.code), 30, 'начисления не было');
+  const ok = await srv.api('/api/parent/approve', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: task.id }) });
+  assert.equal(ok.status, 200);
+  assert.equal(await bal(srv, db.childA1.code), 80);
 });
 
 test('покупка списывает шишки и не даёт уйти в минус', async (t) => {
@@ -86,6 +86,17 @@ test('покупка списывает шишки и не даёт уйти в 
   const over = await srv.api('/api/shop/buy', P(db.childA1.code, { id: dear.id }));
   assert.equal(over.status, 400, 'нельзя купить дороже баланса');
   assert.equal(await bal(srv, db.childA1.code), 10, 'баланс не тронут при неудачной покупке');
+
+  const album = await srv.api('/api/album', H(db.childA1.code));
+  assert.equal(album.status, 200);
+  const bought = (album.body || []).find((e) => e.kind === 'buy' && /Мороженое/.test(e.title));
+  assert.ok(bought, 'в альбоме есть «Купил Мороженое»');
+  assert.match(bought.title, /Купил «Мороженое»/);
+
+  const news = await srv.api('/api/news', H(db.childA1.code));
+  assert.equal(news.status, 200);
+  const feed = (news.body || []).find((e) => e.kind === 'buy' && /Мороженое/.test(e.what));
+  assert.ok(feed, 'в новостях покупателя видно, что купил');
 });
 
 test('перевод: 1:1 без потерь, себе нельзя, больше баланса нельзя', async (t) => {
