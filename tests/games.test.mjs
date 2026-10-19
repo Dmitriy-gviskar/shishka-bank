@@ -1,4 +1,4 @@
-// Мини-игры: шишки только за верные ответы, не за заход в забег.
+// Мини-игры: доля за верные, двойка ниже половины, провал закрывает день.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setupDb, startServer } from './helpers/db.mjs';
@@ -9,7 +9,7 @@ const P = (code, body) => ({
   body: JSON.stringify(body || {}),
 });
 
-test('лесные задачи: 0 верных — ничего, 1 верный — 1 шишка, не все 5', async (t) => {
+test('лесные задачи: ниже половины — двойка и ноль, день закрыт', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
   t.after(() => srv.stop());
@@ -17,20 +17,26 @@ test('лесные задачи: 0 верных — ничего, 1 верный
   const zero = await srv.api('/api/game/finish', P(db.childA1.code, { game: 'story', score: 0 }));
   assert.equal(zero.status, 200);
   assert.equal(zero.body.reward, 0);
-  const before = zero.body.balance;
-  assert.equal(typeof before, 'number');
+  assert.equal(zero.body.failed, true);
 
-  const one = await srv.api('/api/game/finish', P(db.childA1.code, { game: 'story', score: 1 }));
+  const retry = await srv.api('/api/game/finish', P(db.childA1.code, { game: 'story', score: 5 }));
+  assert.equal(retry.body.already, true);
+  assert.equal(retry.body.reward, 0, 'завалил — приходи завтра, даже на пятёрку');
+
+  const one = await srv.api('/api/game/finish', P(db.childA2.code, { game: 'story', score: 1 }));
   assert.equal(one.status, 200);
-  assert.equal(one.body.reward, 1, '1 из 5 задач = 1 шишка, не обещанные 5');
-  assert.equal(one.body.balance, before + 1);
+  assert.equal(one.body.reward, 0, '1 из 5 — двойка, не 1 и не 5');
 
-  const again = await srv.api('/api/game/finish', P(db.childA1.code, { game: 'story', score: 5 }));
-  assert.equal(again.body.already, true);
-  assert.equal(again.body.reward, 0, 'вторая выплата за тот же день не проходит');
+  const halfMinus = await srv.api('/api/game/finish', P(db.childB1.code, { game: 'story', score: 2 }));
+  assert.equal(halfMinus.body.reward, 0, '2 из 5 всё ещё двойка');
+
+  const pass = await srv.api('/api/game/finish', P(db.childB2.code, { game: 'story', score: 3 }));
+  assert.equal(pass.status, 200);
+  assert.equal(pass.body.reward, 3, '3 из 5 — тройка, 3 шишки');
+  assert.equal(pass.body.failed, false);
 });
 
-test('игры: полный забег даёт обещанное, частичный — долю', async (t) => {
+test('игры: полный забег даёт обещанное, провал не кормит', async (t) => {
   const db = await setupDb();
   const srv = await startServer(db.url);
   t.after(() => srv.stop());
@@ -41,11 +47,11 @@ test('игры: полный забег даёт обещанное, части�
 
   const part = await srv.api('/api/game/finish', P(db.childA2.code, { game: 'guess', score: 1 }));
   assert.equal(part.status, 200);
-  assert.equal(part.body.reward, 1, '1 из 5 угадайки — 1, не 5');
+  assert.equal(part.body.reward, 0, '1 из 5 угадайки — двойка');
 
   const mul = await srv.api('/api/game/finish', P(db.childB1.code, { game: 'multiply', score: 1 }));
   assert.equal(mul.status, 200);
-  assert.equal(mul.body.reward, 0, '1 из 10 умножения на лёгком (3 шишки) ещё не дотягивает');
+  assert.equal(mul.body.reward, 0, '1 из 10 умножения — двойка');
 
   const mulAll = await srv.api('/api/game/finish', P(db.childB2.code, { game: 'multiply', score: 10 }));
   assert.equal(mulAll.status, 200);

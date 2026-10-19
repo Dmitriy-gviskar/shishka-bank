@@ -154,19 +154,19 @@ function resetGameSheet(title) {
 
 async function claimGameReward(score) {
   if (!currentGame) return closeGameOv();
-  if (!score) return closeGameOv();
-  const r = await api('/api/game/finish', { game: currentGame, score });
+  const r = await api('/api/game/finish', { game: currentGame, score: score || 0 });
   if (r.ok && r.balance != null) {
     const b = document.getElementById('topBal');
     if (b) b.textContent = r.balance;
   }
   if (r.already) {
-    showGameDone('Сегодня награда за эту игру уже получена', '😴');
+    showGameDone('Сегодня эта игра уже сдана. Приходи завтра', '😴');
     setTimeout(closeGameOv, 1600);
     return;
   }
   if (r.reward) showGameDone(`+${r.reward} шишек!`, '🌰');
-  setTimeout(closeGameOv, r.reward ? 900 : 200);
+  else showGameDone('Двойка. Приходи завтра', '📓');
+  setTimeout(closeGameOv, r.reward ? 900 : 1600);
 }
 
 async function startMultiplyGame() {
@@ -286,12 +286,25 @@ async function startCountGame() {
   }, 1000);
 }
 
+function nextCountQuestion() {
+  if (currentGame !== 'count') return;
+  if (!document.getElementById('gameOv')?.classList.contains('on')) return;
+  if (countIdx >= countQuestions.length || countLeft <= 0) {
+    endCountGame(countLeft <= 0 ? 'time' : 'done');
+    return;
+  }
+  document.getElementById('gameQ').textContent =
+    `${countQuestions[countIdx].a} ${countQuestions[countIdx].op} ${countQuestions[countIdx].b} = ?`;
+  document.getElementById('gameA').value = '';
+  focusGameAnswer();
+}
+
 function endCountGame(reason) {
   clearInterval(countTimer);
   countTimer = null;
   setGameProg(countDuration - Math.max(countLeft, 0), countDuration, `⏱ ${Math.max(countLeft, 0)}с · ${countScore}`);
-  const label = reason === 'wrong' ? 'Ошибка!' : reason === 'done' ? 'Готово!' : 'Время вышло!';
-  const cup = reason === 'wrong' ? '💥' : countScore >= 10 ? '🔥' : '⏱️';
+  const label = reason === 'done' ? 'Готово!' : 'Время вышло!';
+  const cup = countScore >= 10 ? '🔥' : '⏱️';
   showGameDone(`${label} Правильно: ${countScore}`, cup);
 }
 
@@ -305,21 +318,17 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
       flashStage(true);
       document.getElementById('gameMsg').textContent = 'Верно!';
       document.getElementById('gameMsg').style.color = '#5f8e37';
-      countIdx++;
-      if (countIdx >= countQuestions.length || countLeft <= 0) {
-        endCountGame(countLeft <= 0 ? 'time' : 'done');
-        return;
-      }
-      document.getElementById('gameQ').textContent =
-        `${countQuestions[countIdx].a} ${countQuestions[countIdx].op} ${countQuestions[countIdx].b} = ?`;
-      document.getElementById('gameA').value = '';
-      focusGameAnswer();
     } else {
       flashStage(false);
       document.getElementById('gameMsg').textContent = `${q.a} ${q.op} ${q.b} = ${q.answer}`;
       document.getElementById('gameMsg').style.color = '#b3452e';
-      endCountGame('wrong');
     }
+    countIdx++;
+    if (countIdx >= countQuestions.length || countLeft <= 0) {
+      endCountGame(countLeft <= 0 ? 'time' : 'done');
+      return;
+    }
+    setTimeout(nextCountQuestion, val === q.answer ? 200 : 650);
     return;
   }
 

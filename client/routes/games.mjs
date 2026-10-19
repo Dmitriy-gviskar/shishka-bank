@@ -66,6 +66,7 @@ const GAME_FULL = {
   guess: 5, word: 4, odd: 4, number: 3, compare: 3, story: 5,
 };
 // Банк платит за верные ответы, не за заход в игру: доля от обещанного.
+// Ниже половины забега — двойка: 0 шишек, попытка на сегодня закрыта.
 function payForScore(full, score, maxScore) {
   const max = Math.max(1, Number(maxScore) || 1);
   const s = Math.min(Math.max(parseInt(score, 10) || 0, 0), max);
@@ -73,6 +74,12 @@ function payForScore(full, score, maxScore) {
   if (s <= 0 || f <= 0) return 0;
   return Math.round((f * s) / max);
 }
+function passedRun(game, score, maxScore) {
+  if (game === 'memory') return score >= 6;
+  if (game === 'count') return score > 0;
+  return score * 2 >= maxScore;
+}
+const todayMsk = "(now() at time zone 'Europe/Moscow')::date";
 const RU_ONES = ['ноль', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
 const RU_TEENS = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать',
   'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
@@ -111,8 +118,8 @@ const STORY_TEMPLATES = [
     const n = Math.floor(Math.random() * 9) + 1;
     questions.push({ a, b: n, answer: a * n });
   }
-  await q(`insert into mini_games(child_id, game, level, last_played) values ($1,'multiply',$2,current_date)
-    on conflict (child_id, game) do update set level=$2, last_played=current_date`, [ctx.child, level]);
+  await q(`insert into mini_games(child_id, game, level) values ($1,'multiply',$2)
+    on conflict (child_id, game) do update set level=$2`, [ctx.child, level]);
   return { questions, reward, level };
 },
 'POST /api/game/answer': async (b, ctx) => {
@@ -130,8 +137,8 @@ const STORY_TEMPLATES = [
     if (op === '-' && n > a) [a, n] = [n, a];
     questions.push({ a, op, b: n, answer: op === '+' ? a + n : a - n });
   }
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'count',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  await q(`insert into mini_games(child_id, game) values ($1,'count')
+    on conflict (child_id, game) do nothing`, [ctx.child]);
   return { questions, duration: 30 };
 },
 'POST /api/game/guess/start': async (b, ctx) => {
@@ -160,8 +167,8 @@ const STORY_TEMPLATES = [
     ];
     return { code: row.code, name: row.name, hints, options };
   });
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'guess',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  await q(`insert into mini_games(child_id, game) values ($1,'guess')
+    on conflict (child_id, game) do nothing`, [ctx.child]);
   return { questions, reward: 5 };
 },
 'POST /api/game/guess/answer': async (b, ctx) => {
@@ -174,8 +181,8 @@ const STORY_TEMPLATES = [
     `select t.code, t.name from card_types t
       where t.code = any($1::text[]) order by random() limit 6`, [GAME_EASY]);
   if (pairs.length < 6) throw { code: 400, msg: 'мало карт для игры' };
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'memory',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  await q(`insert into mini_games(child_id, game) values ($1,'memory')
+    on conflict (child_id, game) do nothing`, [ctx.child]);
   return { pairs, duration: 90, reward: 4 };
 },
 'POST /api/game/word/start': async (b, ctx) => {
@@ -191,8 +198,8 @@ const STORY_TEMPLATES = [
     const letters = shuffleArr(lettersOf(r.name).toUpperCase().split(''));
     return { code: r.code, name: r.name, category: r.category, letters };
   });
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'word',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  await q(`insert into mini_games(child_id, game) values ($1,'word')
+    on conflict (child_id, game) do nothing`, [ctx.child]);
   return { questions, reward: 4 };
 },
 'POST /api/game/odd/start': async (b, ctx) => {
@@ -215,8 +222,8 @@ const STORY_TEMPLATES = [
     rounds.push({ items, oddCode: odd.code });
   }
   if (rounds.length < 6) throw { code: 400, msg: 'не удалось собрать раунды' };
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'odd',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  await q(`insert into mini_games(child_id, game) values ($1,'odd')
+    on conflict (child_id, game) do nothing`, [ctx.child]);
   return { rounds, reward: 4 };
 },
 'POST /api/game/number/start': async (b, ctx) => {
@@ -231,8 +238,8 @@ const STORY_TEMPLATES = [
     used.add(n);
     questions.push({ n, text: numToRu(n), answer: n });
   }
-  await q(`insert into mini_games(child_id, game, level, last_played) values ($1,'number',$2,current_date)
-    on conflict (child_id, game) do update set level=$2, last_played=current_date`, [ctx.child, level]);
+  await q(`insert into mini_games(child_id, game, level) values ($1,'number',$2)
+    on conflict (child_id, game) do update set level=$2`, [ctx.child, level]);
   return { questions, level, reward: 3 };
 },
 'POST /api/game/compare/start': async (b, ctx) => {
@@ -254,8 +261,8 @@ const STORY_TEMPLATES = [
         prompt: `На сколько ${hi} больше ${lo}?` });
     }
   }
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'compare',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  await q(`insert into mini_games(child_id, game) values ($1,'compare')
+    on conflict (child_id, game) do nothing`, [ctx.child]);
   return { rounds, reward: 3 };
 },
 'POST /api/game/story/start': async (b, ctx) => {
@@ -272,8 +279,8 @@ const STORY_TEMPLATES = [
     const answer = tpl.op === '+' ? a + n : a - n;
     return { text, answer };
   });
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'story',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
+  await q(`insert into mini_games(child_id, game) values ($1,'story')
+    on conflict (child_id, game) do nothing`, [ctx.child]);
   return { questions, reward: 5 };
 },
 'POST /api/game/finish': async (b, ctx) => {
@@ -284,40 +291,36 @@ const STORY_TEMPLATES = [
   const label = GAME_LABELS[game];
 
   const w0 = await one('select balance from wallets where user_id=$1', [ctx.child]);
-  if (score <= 0) return { ok: true, reward: 0, balance: w0?.balance ?? 0 };
-
   const already = await one(
-    `select 1 as x from transactions
-      where to_user=$1 and type='reward' and message=$2
-        and (created_at at time zone 'Europe/Moscow')::date = (now() at time zone 'Europe/Moscow')::date
-      limit 1`, [ctx.child, label]);
+    `select 1 as x from mini_games
+      where child_id=$1 and game=$2 and last_played = ${todayMsk}
+     union all
+     select 1 from transactions
+      where to_user=$1 and type='reward' and message=$3
+        and (created_at at time zone 'Europe/Moscow')::date = ${todayMsk}
+     limit 1`, [ctx.child, game, label]);
   if (already) {
-    return { ok: true, reward: 0, balance: w0.balance, already: true };
+    return { ok: true, reward: 0, balance: w0?.balance ?? 0, already: true };
   }
 
   let reward = 0;
-  if (game === 'multiply') {
-    const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
-    const level = row?.level || 1;
-    const full = level === 1 ? 3 : level === 2 ? 5 : 8;
-    reward = payForScore(full, score, maxScore);
-  } else if (game === 'count') {
-    reward = score;
-  } else if (game === 'memory') {
-    reward = score >= 6 ? 4 : 0; // память: только полный забег
-  } else if (GAME_FULL[game] != null) {
-    reward = payForScore(GAME_FULL[game], score, maxScore);
+  if (passedRun(game, score, maxScore)) {
+    if (game === 'multiply') {
+      const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
+      const level = row?.level || 1;
+      const full = level === 1 ? 3 : level === 2 ? 5 : 8;
+      reward = payForScore(full, score, maxScore);
+    } else if (game === 'count') {
+      reward = score;
+    } else if (game === 'memory') {
+      reward = 4;
+    } else if (GAME_FULL[game] != null) {
+      reward = payForScore(GAME_FULL[game], score, maxScore);
+    }
   }
 
-  if (reward <= 0 && game === 'memory') {
-    await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,current_date)
-      on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=current_date`,
-      [ctx.child, game, score]);
-    return { ok: true, reward: 0, balance: w0.balance };
-  }
-
-  await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,current_date)
-    on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=current_date`,
+  await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,${todayMsk})
+    on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=${todayMsk}`,
     [ctx.child, game, score]);
   if (reward > 0) {
     await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [ctx.child, reward]);
@@ -325,7 +328,7 @@ const STORY_TEMPLATES = [
   }
   await rpc('check_achievements', [ctx.child]).catch(() => {});
   const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
-  return { ok: true, reward, balance: w.balance };
+  return { ok: true, reward, balance: w?.balance ?? 0, failed: reward === 0 };
 },
   };
 }
