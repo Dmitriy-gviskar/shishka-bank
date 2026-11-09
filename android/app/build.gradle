@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'ru.elkakvest.shishka'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "ru.elkakvest.shishka"
+        minSdk 24
+        targetSdk 34
+        versionCode 6
+        versionName "1.5"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.core:core:1.13.1'   // FileProvider — content:// URI для камеры (фото-задания)
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'  // WebSocket пуши без Firebase
+}

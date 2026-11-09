@@ -1,0 +1,22 @@
+Shishka Bank recovery release — 2026-11-09
+
+Initial local Git snapshot of the complete preserved project, including all reviewed
+access, guardian, offline transaction/outbox, fail-fast migration, CI/deployment/backup,
+guild migration and recovery-generation barrier fixes. No prior Git ancestry is
+claimed. Existing configured Git user identity is used for the commit.
+
+Source includes runtime client/assets, SQL, tests, ops, Android and authoring sources.
+Dependencies are installed from client/package-lock.json. Runtime requires Node 24
+and PostgreSQL 16. Database backups, uploads, credentials and node_modules are not
+release source and must be provisioned separately.
+
+Every database restore requires a NEW external CARD_OPERATION_EPOCH before workers
+start. Normal restarts and code-only rollback retain the current generation.
+See docs/recovery for mandatory infrastructure, backup and acceptance gates.
+
+This snapshot does not authorize deployment. New VPS and independent backup/restore
+acceptance remain outstanding. Notifications may remain disabled initially.
+The prior full local suite passed 166 tests; release packaging separately reruns
+the complete suite against an exported copy of the exact committed tree.
+Final commit ID, manifests, archive digests and test evidence are emitted outside
+the commit to avoid self-referential hashes.

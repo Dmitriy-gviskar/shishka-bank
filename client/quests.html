@@ -1,0 +1,109 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесные задания</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+  .wrap{overflow-y:hidden}
+  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:8px;
+    background:linear-gradient(180deg,#a07840 0%,#8a6238 55%,#6b4a22 100%);
+    color:#fff8eb;border:3px solid #5a3a18;text-shadow:0 2px 0 rgba(0,0,0,.25);
+    box-shadow:0 4px 0 #4a3010, inset 0 1px 0 rgba(255,230,180,.35)}
+  .greet{margin:4px 0 6px}
+  .greet img{width:108px;height:108px;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
+  .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
+  #taskList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 8px}
+  #taskList::-webkit-scrollbar{width:0}
+
+  .quest{display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 12px 12px 10px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .quest.daily{box-shadow:0 0 0 3px #e0a52e,0 5px 0 rgba(90,55,20,.28)}
+  .quest.rejected{box-shadow:0 0 0 3px #e0a99a,0 5px 0 rgba(90,55,20,.28)}
+  .quest .ic{width:58px;height:58px;flex:none;background:linear-gradient(180deg,#fff8eb,#f0d7a4);
+    border:3px solid #fff;overflow:hidden;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
+  .quest .ic img{width:100%;height:100%;object-fit:contain;padding:2px}
+  .quest .mid{flex:1;min-width:0}
+  .quest .nm{font-weight:900;color:var(--ink);font-size:16px;font-family:"Fredoka","Nunito",sans-serif;line-height:1.2}
+  .quest .rw{display:inline-flex;align-items:center;gap:3px;font-weight:900;color:#8a5a20;font-size:15px;margin-top:3px}
+  .quest .rw img{width:22px;height:22px}
+
+  /* нарисованные CTA */
+  .quest-act-img{flex:none;background:none;border:none;padding:0;margin:0;cursor:pointer;
+    line-height:0;filter:drop-shadow(0 3px 0 rgba(60,40,15,.22));transition:transform .08s}
+  .quest-act-img:active{transform:translateY(2px);filter:drop-shadow(0 1px 0 rgba(60,40,15,.22))}
+  .quest-act-img img{display:block;height:32px;width:auto;max-width:96px;object-fit:contain}
+  .quest-act-img[aria-label="Отправить фото"] img{max-width:118px;height:30px}
+
+  .quest-done{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;min-width:72px}
+  .quest-done img{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 3px 2px rgba(60,40,15,.25))}
+  .quest-done span{font-weight:900;color:#4f8a2e;font-size:12px;margin-top:-2px;
+    font-family:"Fredoka","Nunito",sans-serif;text-shadow:0 1px 0 rgba(255,255,255,.5)}
+
+  .quest-wait{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:none;min-width:72px;
+    background:linear-gradient(180deg,#ffe9a8,#ffd062);border:3px solid #fff;border-radius:16px;padding:8px 8px 6px;
+    box-shadow:0 0 0 2px #e0a52e}
+  .quest-wait b{font-size:22px;line-height:1;color:#6b4a12}
+  .quest-wait span{font-weight:900;color:#6b4a12;font-size:11px;text-align:center;line-height:1.15;
+    font-family:"Fredoka","Nunito",sans-serif}
+
+  #note{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,248,235,.94);
+    border:2.5px solid #fff;border-radius:14px;padding:9px;box-shadow:0 0 0 2px #c9a86a}
+  .quest-sec{margin:12px 4px 4px;font-weight:900;color:var(--ink);font-size:14px;letter-spacing:.3px;
+    text-transform:uppercase;font-family:"Fredoka","Nunito",sans-serif;
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:12px;padding:6px 12px;
+    box-shadow:0 0 0 2px #c9a86a;align-self:flex-start;width:fit-content}
+  .quest-empty{text-align:center;font-weight:800;color:#a1876a;margin-top:16px;
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:14px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .family-box{margin:4px 0 10px;padding:4px 12px 10px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 4px 0 rgba(90,55,20,.22)}
+  .family-box>summary{font-weight:900;color:var(--ink);font-size:15px;cursor:pointer;padding:8px 0;
+    font-family:"Fredoka","Nunito",sans-serif;list-style:none}
+  .family-box>summary::-webkit-details-marker{display:none}
+  .family-box>summary::before{content:"+ ";color:#6b8e37}
+  .family-box[open]>summary::before{content:"– "}
+  .family-box .hint{color:#8a5a20;font-weight:700;font-size:12px;line-height:1.35;margin:0 0 8px}
+  .family-box input,.family-box select{width:100%;box-sizing:border-box;background:#fffaf0;
+    border:2.5px solid #d9c39a;border-radius:12px;padding:8px;font-size:14px;font-weight:800;
+    color:var(--ink);outline:none;margin-bottom:6px}
+  .family-box label{display:flex;align-items:center;gap:7px;font-weight:800;color:#8a5a20;
+    font-size:13px;margin:2px 0 8px}
+  .family-box input[type=checkbox]{width:auto;margin:0}
+  .family-box .go{width:100%;border:none;border-radius:12px;padding:9px;font-weight:900;
+    cursor:pointer;background:#8ec44f;color:#fff;font-size:14px}
+  .family-box .go.sec{background:#c9a86a;margin-top:6px}
+  .ward-row{padding:9px 10px;margin-top:6px;background:rgba(255,255,255,.7);
+    border:2.5px solid #fff;border-radius:14px;box-shadow:0 0 0 2px #c9a86a}
+  .ward-row .t{font-weight:900;color:var(--ink);font-size:14px;font-family:"Fredoka","Nunito",sans-serif}
+  .ward-row .who{color:#8a5a20;font-weight:800;font-size:12px;margin-top:2px}
+  .ward-row .acts{display:flex;gap:6px;margin-top:8px}
+  .ward-row .acts button{flex:1;border:none;border-radius:10px;padding:8px 10px;font-weight:900;cursor:pointer;font-size:13px}
+  .ward-row .acts .ok{background:#8ec44f;color:#fff}
+  .ward-row .acts .no{background:#e0a99a;color:#5b4636}
+  .kid-chip{display:flex;justify-content:space-between;align-items:center;gap:8px;
+    font-weight:800;color:var(--ink);font-size:13px;padding:6px 0;border-bottom:1px dashed #e4d6b8}
+  .kid-chip button{border:none;background:none;color:#a1876a;font-weight:800;cursor:pointer;font-size:12px}
+  .family-box .age-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 8px}
+  .family-box .age-row label{margin:0;font-size:12px;gap:4px}
+  .family-box .age-row input{width:48px;margin:0;padding:6px 4px;text-align:center}
+  .family-box .age-row .go{width:auto;padding:6px 10px;margin:0}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесные задания</div>
+  <div class="greet">
+    <img src="assets/spirit_scroll.webp" alt="Лесной Дух">
+    <div class="bubble">Помоги лесу и получи шишки!</div>
+  </div>
+  <div id="taskList"></div>
+  <div id="note"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

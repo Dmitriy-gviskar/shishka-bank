@@ -1,0 +1,64 @@
+{
+  "freshRestore": true,
+  "sourceCommit": "395588b792aa2d6a59fe8037d444f80fb209487b",
+  "applicationCodeUnchangedFromPreparedFix": true,
+  "notificationsDisabled": true,
+  "restoredCounts": {
+    "users": 20,
+    "wallets": 19,
+    "transactions": 15625,
+    "cards": 5828
+  },
+  "firstMigration": {
+    "metricNames": 46,
+    "comparedUserMetricPairs": 920,
+    "allMetricsPreserved": true,
+    "financialTablesUnchanged": true
+  },
+  "repeatMigration": {
+    "metricsPreserved": true,
+    "financialTablesUnchanged": true
+  },
+  "requiredFunctionsPresent": [
+    "bump_guild_activity(uuid)",
+    "guild_set_role(uuid,uuid,text,uuid)",
+    "guild_set_share(uuid,uuid,integer,uuid)",
+    "guild_awaken(uuid)",
+    "sweep_sleeping_guilds(integer)",
+    "achievement_metric_legacy(uuid,text)"
+  ],
+  "noFakeSurprisesTable": true,
+  "startup1": {
+    "migrations": 22,
+    "guildBackgroundErrors": 0
+  },
+  "guildScenarios": {
+    "createFounder": true,
+    "join": true,
+    "unauthorizedRoleDenied": true,
+    "role": true,
+    "share": true,
+    "rejoinPreservesShare": true,
+    "payout": 11,
+    "payoutEntries": 2,
+    "metricsCorrect": true,
+    "chat": true,
+    "sleep": true,
+    "awaken": true,
+    "history": true
+  },
+  "startup2": {
+    "migrations": 22,
+    "guildBackgroundErrors": 0
+  },
+  "recoveryBarrier": {
+    "lostReceiptRetryBlocked": true,
+    "missingGenerationBlocked": true,
+    "allThreeEndpointsBlocked": true,
+    "noFinancialChangeOnRejection": true,
+    "freshGenerationAccepted": true,
+    "retryExactlyOnce": true
+  },
+  "repeatStartupFinancialStateUnchanged": true,
+  "success": true
+}

@@ -1,0 +1,31 @@
+{
+  "layoutVersion": 1,
+  "releaseRoot": "/opt/shishka/releases",
+  "current": "/opt/shishka/current",
+  "uploadsDir": "/opt/shishka/shared/uploads",
+  "lockFile": "/var/lib/shishka/release.lock",
+  "maintenanceFile": "/var/lib/shishka/maintenance",
+  "maintenanceUrl": "http://127.0.0.1/api/ping",
+  "publicHost": "elka-kvest-2026.ru",
+  "healthUrl": "http://127.0.0.1:3777/api/ping",
+  "healthAttempts": 30,
+  "service": "shishka",
+  "appOwner": "REPLACE_WITH_SERVICE_USER",
+  "appGroup": "REPLACE_WITH_SERVICE_GROUP",
+  "approvedFallbacks": {},
+  "backup": {
+    "backupRoot": "/var/backups/shishka",
+    "gitRepo": "/root/shishka-backups",
+    "pgService": "shishka-backup-source",
+    "restoreService": "shishka-restore-validation",
+    "expectedDatabase": "REPLACE_WITH_VERIFIED_DATABASE",
+    "gpgRecipient": "REPLACE_WITH_BACKUP_PUBLIC_KEY_FINGERPRINT",
+    "offsiteHost": "root@REPLACE_WITH_VERIFIED_OFFSITE_HOST",
+    "offsiteRoot": "/root/shishka-offsite",
+    "configPaths": [
+      "/etc/systemd/system/shishka.service",
+      "/etc/nginx/sites-available/shishka",
+      "/root/shishka-app.env"
+    ]
+  }
+}

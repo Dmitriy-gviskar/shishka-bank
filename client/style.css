@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@700;800;900&display=swap');
+:root{
+  --cream:#f7efe0; --card:#f3e7cf; --ink:#5a4030; --brown:#6b4f3a;
+  --green:#6fad45; --green-d:#4f8a2e; --gold:#f0c14a; --gold-d:#d49a2a;
+  --wood:#8a6238; --parchment:#fff8eb; --shadow:rgba(70,45,20,.28);
+  --font:"Nunito","Fredoka","SF Pro Rounded",system-ui,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
+  font-family:var(--font)}
+.phone{position:relative;width:min(390px,100vw);height:100vh;height:100dvh;max-height:844px;
+  overflow:hidden;background:center/cover no-repeat;
+  background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+.phone::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+.wrap{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;padding:18px 16px 0;
+  overflow-y:auto;-webkit-overflow-scrolling:touch}
+/* игра открыта: лист на весь экран, док не перекрывает клавиатуру / «Забрать шишки» */
+.phone.game-open > .wrap{z-index:20}
+.phone.game-open > .nav{visibility:hidden;pointer-events:none}
+/* длинные списки прокручиваются ВНУТРИ экрана, навбар остаётся внизу */
+#taskList,#shopList,#marketList{flex:1 1 auto;min-height:0;overflow-y:auto;
+  -webkit-overflow-scrolling:touch;padding-bottom:6px}
+#taskList::-webkit-scrollbar,#shopList::-webkit-scrollbar,#marketList::-webkit-scrollbar{width:0}
+
+/* заголовок-плашка */
+.title{align-self:center;background:var(--parchment);border:3px solid #fff;border-radius:20px;
+  padding:8px 22px;font-size:22px;font-weight:900;color:var(--ink);
+  box-shadow:0 0 0 3px #c9a86a,0 4px 0 rgba(107,79,58,.22);margin-bottom:4px;
+  font-family:"Fredoka","Nunito",sans-serif}
+
+/* стикер-плитки (игры, поляна, вторичные сетки) */
+.tile{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:20px;
+  padding:14px 8px 12px;text-align:center;text-decoration:none;
+  box-shadow:0 0 0 3px #c9a86a,0 5px 0 rgba(107,79,58,.2);
+  display:flex;flex-direction:column;align-items:center;gap:5px;transition:transform .08s}
+.tile:active{transform:translateY(3px);box-shadow:0 0 0 3px #c9a86a,0 2px 0 rgba(107,79,58,.2)}
+.tile img{width:74px;height:74px;object-fit:contain;filter:drop-shadow(0 3px 4px var(--shadow))}
+.tile span{font-weight:900;color:var(--ink);font-size:15px;line-height:1.05;
+  font-family:"Fredoka","Nunito",sans-serif}
+.tile small{font-weight:700;color:#a1876a;font-size:12px;line-height:1.25}
+
+/* заметка / статус */
+.note,.page-note{display:none;text-align:center;font-weight:800;margin-top:8px;
+  background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:9px;
+  box-shadow:0 0 0 2px #c9a86a}
+
+/* пергамент-чипы выбора */
+.chip,.term,.ap,.sum .s,.bids .s,.give .s{background:linear-gradient(180deg,#fff8eb,#f3e7cf);
+  border:3px solid #fff;border-radius:14px;font-weight:900;color:var(--brown);cursor:pointer;
+  box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15)}
+.chip.sel,.term.sel,.ap.sel,.sum .s.sel,.bids .s.sel,.give .s.sel{
+  background:linear-gradient(180deg,#ffe9a8,#ffd062);box-shadow:0 0 0 3px #e0a52e,0 3px 0 rgba(160,110,20,.2)}
+
+/* приветствие Духа — стикер поверх леса */
+.greet{display:flex;align-items:flex-start;gap:6px}
+.greet img{width:96px;height:96px;object-fit:contain;
+  filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 1px #fff8eb) drop-shadow(0 5px 8px var(--shadow))}
+.bubble{background:var(--parchment);border:3px solid #fff;border-radius:22px;padding:11px 14px;
+  margin-top:12px;font-weight:800;color:var(--ink);font-size:15px;line-height:1.25;
+  box-shadow:0 0 0 3px var(--brown),0 5px 0 rgba(107,79,58,.22);position:relative;flex:1}
+.bubble::before{content:"";position:absolute;left:-14px;top:18px;border:9px solid transparent;
+  border-right-color:var(--brown)}
+.bubble::after{content:"";position:absolute;left:-8px;top:21px;border:6px solid transparent;
+  border-right-color:var(--parchment)}
+
+/* карточки — пергамент + «стикерная» обводка */
+.card{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:22px;
+  box-shadow:0 0 0 3px #c9a86a,0 6px 0 rgba(107,79,58,.22);padding:14px}
+
+/* кнопки — «живые» зелёные пилюли */
+.btn{background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
+  color:#fff;font-weight:900;border-radius:999px;box-shadow:0 5px 0 var(--green-d);cursor:pointer;
+  text-shadow:0 1px 1px rgba(0,0,0,.15)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 var(--green-d)}
+.btn-lg{display:block;margin:14px auto 0;font-size:20px;padding:12px 30px}
+.btn-sm{font-size:15px;padding:7px 16px}
+
+/* цена в шишках */
+.price{display:inline-flex;align-items:center;gap:4px;font-weight:900;color:var(--brown);font-size:22px}
+.price img{width:30px;height:30px;object-fit:contain}
+
+/* нижняя навигация — на .phone (не в .wrap), иначе уезжает со скроллом; место даёт .nav-spacer */
+.nav{position:absolute;left:0;right:0;bottom:0;z-index:12;flex:none;
+  display:flex;justify-content:space-around;align-items:center;gap:2px;
+  background:linear-gradient(180deg,#fbf3e4 0%,#efe2c8 100%);
+  border-top:3px solid #c9a86a;
+  border-radius:22px 22px 0 0;
+  box-shadow:0 -6px 18px rgba(60,40,15,.16);
+  padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px))}
+.nav-spacer{flex:none;height:calc(88px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.nav button{background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid var(--brown);
+  width:52px;height:52px;border-radius:50%;padding:5px;cursor:pointer;
+  box-shadow:0 3px 0 rgba(107,79,58,.28);display:flex;align-items:center;justify-content:center}
+.nav button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(107,79,58,.28)}
+.nav img{width:34px;height:34px;object-fit:contain;display:block;filter:drop-shadow(0 1px 1px rgba(80,50,20,.2))}
+.nav .active{background:linear-gradient(180deg,#ffe7a0,#f0c14a);
+  box-shadow:0 0 0 3px #f6d56a,0 3px 0 rgba(107,79,58,.28)}
+
+/* баланс-шапка + «←» — единые чипы 42px */
+#topbar{position:absolute;top:14px;right:12px;z-index:5;display:flex;align-items:center;gap:4px;
+  height:42px;box-sizing:border-box;
+  background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+  padding:0 10px 0 6px;box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);
+  font-weight:900;color:var(--brown);font-size:14px;font-family:"Fredoka","Nunito",sans-serif}
+#topbar img{width:20px;height:20px;object-fit:contain}
+.nav-back{position:absolute;top:14px;left:12px;z-index:6;width:42px;height:42px;padding:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+  box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22);
+  font-size:20px;font-weight:900;line-height:1;color:#6b4f3a;cursor:pointer;
+  font-family:"Fredoka","Nunito",sans-serif}
+/* контент под рядом чипов (не коллекция — там свой .chead в одном ряду) */
+.wrap.has-topbar{padding-top:62px !important}
+
+.friends{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+.friends::-webkit-scrollbar{display:none}
+.friends .friend{flex:0 0 88px}
+.on-art{display:inline-block;background:rgba(255,250,240,.92);border:2px solid #d9c39a;border-radius:12px;padding:7px 12px}

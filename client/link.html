@@ -1,0 +1,57 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Вход — Шишка Банк</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.18), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.08),rgba(35,50,25,.22))}
+  .wrap{justify-content:center;align-items:center;text-align:center;padding:18px 20px;overflow-y:auto}
+  .brand{font-family:"Fredoka","Nunito",sans-serif;font-size:28px;font-weight:900;color:var(--ink);
+    margin-top:4px;text-shadow:0 1px 0 #fff8eb}
+  .spirit img{width:140px;height:140px;object-fit:contain;
+    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 6px 10px rgba(60,40,15,.35))}
+  .lead{color:var(--brown);font-weight:700;margin-top:10px;font-size:15px;line-height:1.35;
+    background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:16px;padding:10px 14px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .web-tip{margin-top:10px;font-weight:700;color:#8a5a20;font-size:12px;line-height:1.35;
+    background:rgba(255,255,255,.5);border:2px dashed #c9a86a;border-radius:12px;padding:8px 10px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .plant-btn{width:100%;margin-top:16px;font-size:18px;padding:14px 22px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .code-toggle{display:inline-block;margin-top:14px;font-weight:800;font-size:14px;color:var(--brown);
+    text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+    font-family:"Fredoka","Nunito",sans-serif}
+  #codeBox{display:none;width:100%;margin-top:12px;text-align:center}
+  .code-in{width:100%;box-sizing:border-box;background:#fffaf0;border:3px solid #fff;
+    border-radius:16px;padding:14px;font-size:22px;font-weight:900;color:var(--ink);text-align:center;
+    outline:none;text-transform:uppercase;letter-spacing:1px;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .code-in::placeholder{color:#c3ab8c;font-weight:700;letter-spacing:0;text-transform:none}
+  .code-in:focus{box-shadow:0 0 0 2px #e0a52e}
+  .enter-btn{width:100%;margin-top:10px;font-size:17px;padding:12px 22px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  #note{width:100%;display:none;text-align:center;font-weight:800;margin-top:10px;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:14px;padding:9px;
+    box-shadow:0 0 0 2px #c9a86a}
+  .alt-link{display:inline-block;margin-top:14px;background:rgba(255,250,240,.94);border:2.5px solid #fff;
+    border-radius:14px;padding:8px 14px;font-weight:800;font-size:14px;text-decoration:none;
+    box-shadow:0 0 0 2px #c9a86a;color:var(--green-d);font-family:"Fredoka","Nunito",sans-serif}
+</style></head><body data-no-nav>
+<div class="phone"><div class="wrap">
+  <div class="spirit"><img src="assets/spirit.webp" alt="Лесной Дух"></div>
+  <div class="brand">Шишка Банк</div>
+  <div class="lead">Посади своё дерево и копи шишки за реальные дела.</div>
+  <div class="web-tip" id="webTip">Это сайт — можно сразу в браузере. Ставить приложение не обязательно.</div>
+  <button class="btn btn-lg plant-btn" id="plantBtn" type="button">🍃 Посадить своё дерево</button>
+  <a href="#" class="code-toggle" id="codeToggle">У меня уже есть код</a>
+  <div id="codeBox">
+    <input class="code-in" id="codeInput" placeholder="Код с другого телефона" maxlength="12" autocapitalize="characters">
+    <button class="btn btn-lg enter-btn" id="linkBtn" type="button">Войти по коду</button>
+    <p>Не помните код? Обратитесь к ведущему для восстановления доступа после проверки.</p>
+  </div>
+  <div id="note"></div>
+</div></div>
+<script src="app.js"></script>
+</body></html>

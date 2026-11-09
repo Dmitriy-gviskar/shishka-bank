@@ -1,0 +1,94 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy the tested release to provisioned production'
+        type: boolean
+        default: false
+        required: true
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shishka-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      SHISHKA_TEST_DB: shishka_test_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        working-directory: client
+      - name: Run all tests
+        run: npm test
+        working-directory: client
+
+  deploy:
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy
+    environment: production
+    timeout-minutes: 60
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package the tested source
+        run: |
+          test -z "$(find client -type l -print -quit)"
+          tar --exclude=client/node_modules --exclude=client/uploads --exclude='client/*.env' --exclude='client/.env*' -czf release.tar.gz client .nvmrc
+          sha256sum release.tar.gz > release.tar.gz.sha256
+          (cd ops && sha256sum runtime.mjs backup.mjs deploy.mjs) > ops.sha256
+      - name: Upload to incoming directory
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "release.tar.gz,release.tar.gz.sha256,ops.sha256"
+          target: "/opt/shishka-incoming/${{ github.sha }}/"
+      - name: Deploy staged release under maintenance
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: root
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          command_timeout: 45m
+          script: |
+            set -eu
+            cd /opt/shishka-incoming/${{ github.sha }}
+            sha256sum --check release.tar.gz.sha256
+            (cd /opt/shishka-ops && sha256sum --check /opt/shishka-incoming/${{ github.sha }}/ops.sha256)
+            digest=$(cut -d ' ' -f 1 release.tar.gz.sha256)
+            node /opt/shishka-ops/deploy.mjs /root/shishka-deploy.json deploy '${{ github.sha }}' "$PWD/release.tar.gz" "$digest"

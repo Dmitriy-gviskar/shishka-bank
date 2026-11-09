@@ -1,0 +1,45 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Дупло-сейф</title><link rel="stylesheet" href="style.css">
+<style>
+  /* bg: global cozy */
+  .terms{display:flex;gap:8px;margin-top:6px}
+  .term{flex:1;padding:10px 4px;text-align:center;border-radius:16px}
+  .term b{display:block;font-size:20px;font-family:"Fredoka","Nunito",sans-serif}
+  .term small{color:#a1876a;font-size:12px}
+  .sum{margin-top:10px;display:flex;gap:8px;justify-content:center}
+  .sum .s{padding:8px 14px;font-size:18px;font-family:"Fredoka","Nunito",sans-serif}
+  h3{text-align:center;color:var(--ink);font-weight:900;margin:14px 0 6px;font-size:16px;
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:5px 14px;
+    align-self:center;margin-left:auto;margin-right:auto;width:fit-content;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .safe{display:flex;align-items:center;gap:10px;margin-top:9px;padding:12px}
+  .safe .amt{flex:1;font-weight:900;color:var(--brown);font-size:17px}
+  .safe .st{color:#a1876a;font-weight:700;font-size:13px}
+  #safeList{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+  #safeList::-webkit-scrollbar{width:0}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Дупло-сейф</div>
+  <div class="card">
+    <div class="terms">
+      <div class="term sel" data-days="3"><b>3 дня</b><small>+5%</small></div>
+      <div class="term" data-days="7"><b>7 дней</b><small>+10%</small></div>
+      <div class="term" data-days="30"><b>30 дней</b><small>+20%</small></div>
+    </div>
+    <div class="sum">
+      <div class="s sel" data-a="10">10</div>
+      <div class="s" data-a="25">25</div>
+      <div class="s" data-a="50">50</div>
+    </div>
+    <button class="btn btn-lg" id="freeze">Заморозить в Дупле</button>
+  </div>
+  <h3>Мои Дупла</h3>
+  <div id="safeList"></div>
+  <div id="note" class="page-note"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="deposit.js"></script>
+<script src="nav.js"></script>
+</body></html>

@@ -1,0 +1,17 @@
+{
+  "backupRoot": "/var/backups/shishka",
+  "appDir": "/opt/shishka/current",
+  "uploadsDir": "/opt/shishka/shared/uploads",
+  "gitRepo": "/root/shishka-backups",
+  "pgService": "shishka-backup-source",
+  "restoreService": "shishka-restore-validation",
+  "expectedDatabase": "REPLACE_WITH_VERIFIED_DATABASE",
+  "gpgRecipient": "REPLACE_WITH_BACKUP_PUBLIC_KEY_FINGERPRINT",
+  "offsiteHost": "root@REPLACE_WITH_VERIFIED_OFFSITE_HOST",
+  "offsiteRoot": "/root/shishka-offsite",
+  "configPaths": [
+    "/etc/systemd/system/shishka.service",
+    "/etc/nginx/sites-available/shishka",
+    "/root/shishka-app.env"
+  ]
+}

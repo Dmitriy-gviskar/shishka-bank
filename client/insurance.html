@@ -1,0 +1,50 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесная страховка</title><link rel="stylesheet" href="style.css">
+<style>
+  /* bg: global cozy */
+  .fund{text-align:center;padding:16px;margin-top:4px}
+  .fund .n{font-size:44px;font-weight:900;color:var(--brown);font-family:"Fredoka","Nunito",sans-serif}
+  .fund .l{font-weight:800;color:#a1876a}
+  h3{text-align:center;color:var(--ink);font-weight:900;margin:12px 0 4px;font-size:16px;
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:5px 14px;
+    align-self:center;margin-left:auto;margin-right:auto;width:fit-content;box-shadow:0 0 0 2px #c9a86a;
+    font-family:"Fredoka","Nunito",sans-serif}
+  #claims{flex:1 1 auto;min-height:0;overflow-y:auto}#claims::-webkit-scrollbar{width:0}
+  .claim{margin-top:9px;padding:12px}
+  .claim .t{font-weight:900;color:var(--ink);font-size:15px}
+  .claim .row{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .claim .votes{flex:1;color:#a1876a;font-weight:700;font-size:13px}
+  .vbtn{border:none;border-radius:12px;padding:6px 14px;font-weight:900;cursor:pointer;font-size:14px}
+  .yes{background:#8ec44f;color:#fff}.no{background:#e0a99a;color:#5b4636}
+  .claim-form{margin-top:10px;padding:12px}
+  .cf-h{font-weight:900;color:var(--ink);font-size:15px;margin-bottom:8px;text-align:center;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .claim-form input{width:100%;background:#fffaf0;border:3px solid #fff;border-radius:12px;
+    padding:10px;font-size:15px;font-weight:800;color:var(--ink);outline:none;margin-bottom:8px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .cf-row{display:flex;gap:8px}
+  .cf-row input{flex:1;margin-bottom:0}
+  .cf-tip{margin-top:8px;text-align:center;font-weight:700;color:#8a5a20;font-size:12px}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="title">Лесная страховка</div>
+  <div class="card fund"><div class="n" id="fund">…</div><div class="l">шишек в общем фонде</div></div>
+  <button class="btn btn-lg" id="premium">Внести 1 шишку в фонд</button>
+  <div class="claim-form card">
+    <div class="cf-h">Попал в беду?</div>
+    <input id="claimReason" placeholder="Что случилось" maxlength="60">
+    <div class="cf-row">
+      <input id="claimAmt" type="number" min="1" max="50" value="5" placeholder="Сумма">
+      <button class="btn btn-sm" id="claimBtn" type="button">Подать заявку</button>
+    </div>
+    <div class="cf-tip">Семья проголосует в Совете — выплата из фонда</div>
+  </div>
+  <h3>Заявки на выплату</h3>
+  <div id="claims"></div>
+  <div id="note" class="page-note"></div>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>

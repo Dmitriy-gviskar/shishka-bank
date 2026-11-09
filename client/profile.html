@@ -1,0 +1,216 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Моё дерево</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+  .wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:0}
+  .wrap::-webkit-scrollbar{width:0}
+
+  .head-card{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .head-card .ht{flex:1;min-width:0}
+  .head-card .h1{font-weight:900;color:var(--ink);font-size:20px;line-height:1.1;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .head-card .h2{font-weight:800;color:#8a5a20;font-size:13px;margin-top:3px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .head-card .av{width:56px;height:56px;flex:none;object-fit:contain;
+    filter:drop-shadow(0 3px 4px rgba(60,40,15,.25))}
+
+  .hero{text-align:center;margin-top:4px}
+  .hero img{width:148px;height:166px;object-fit:contain;
+    filter:drop-shadow(0 6px 10px rgba(60,40,15,.35))}
+  .progress{height:16px;background:#e4d3ad;border:3px solid #fff;border-radius:12px;margin:10px 36px 0;overflow:hidden;
+    box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.12)}
+  .progress i{display:block;height:100%;width:65%;background:linear-gradient(90deg,#f1c65a,#e8a93b);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+  .prog-cap{display:block;width:fit-content;max-width:92%;margin:8px auto 0;text-align:center;
+    font-weight:900;color:#000;font-size:13px;line-height:1.3;
+    background:#fff8eb;border:2.5px solid #fff;border-radius:12px;padding:7px 14px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif;
+    -webkit-text-fill-color:#000;text-shadow:none}
+  .tree-tip{margin:8px 8px 0;text-align:center;font-weight:700;color:#6b4f3a;font-size:12.5px;line-height:1.35;
+    background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:14px;padding:8px 12px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .freeze-buy{margin:8px 8px 0;padding:10px 12px;display:flex;align-items:center;gap:8px;
+    background:rgba(220,238,248,.92);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #9ec4d8}
+  .freeze-buy .fb-txt{flex:1;font-weight:700;color:#3a5a6a;font-size:12px;line-height:1.3;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .freeze-buy button{flex:none;font-size:13px;padding:8px 10px;white-space:nowrap}
+
+  .chronicle{margin-top:12px;padding:14px 14px 12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .chronicle h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 8px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .chronicle p{margin:0;text-align:center;font-weight:800;color:#6b4f3a;font-size:14px;line-height:1.45;
+    font-family:"Fredoka","Nunito",sans-serif}
+
+  .passport{margin-top:12px;padding:14px 14px 12px;
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .passport h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 6px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .pass-hint{text-align:center;font-weight:800;color:#8a5a20;font-size:12.5px;line-height:1.35;margin:0 0 12px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .trait{display:flex;align-items:center;gap:8px}
+  .trait .nm{width:98px;font-weight:800;color:#6b4f3a;font-size:13px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .trait .val{width:28px;text-align:right;font-weight:900;color:#5f8e37;font-size:14px;
+    font-family:"Fredoka","Nunito",sans-serif;flex:none}
+  .bar{flex:1;height:14px;background:#e4d3ad;border:2.5px solid #fff;border-radius:10px;overflow:hidden;
+    box-shadow:0 0 0 2px #c9a86a}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#8ec44f,#5f8e37);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+  .bar i[data-trait="generosity"]{background:linear-gradient(90deg,#f0a35a,#e07a3a)}
+  .bar i[data-trait="reliability"]{background:linear-gradient(90deg,#f1c65a,#e0a52e)}
+  .bar i[data-trait="wisdom"]{background:linear-gradient(90deg,#7cbc5a,#4f8a2e)}
+  .how{font-weight:700;color:#8a7358;font-size:11.5px;line-height:1.3;margin:3px 0 10px 0;
+    padding-left:2px;font-family:"Fredoka","Nunito",sans-serif}
+  .pass-more{display:block;text-align:center;margin-top:4px;font-weight:800;font-size:13px;color:#5f8e37;
+    text-decoration:none;font-family:"Fredoka","Nunito",sans-serif}
+
+  .profile-btn{margin-top:14px;width:100%;max-width:300px;font-size:18px;padding:13px 22px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  #pnote{display:none;text-align:center;font-weight:800;margin-top:8px;background:rgba(255,248,235,.94);
+    border:2.5px solid #fff;border-radius:14px;padding:9px;color:#5f8e37;box-shadow:0 0 0 2px #c9a86a}
+  .switch-user{display:inline-block;margin-top:12px;font-weight:800;font-size:13px;color:var(--brown);
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:7px 12px;
+    box-shadow:0 0 0 2px #c9a86a;text-decoration:none;font-family:"Fredoka","Nunito",sans-serif}
+
+  .grove{margin-top:12px;padding:14px 14px 16px;scroll-margin-top:8px;
+    scroll-margin-bottom:calc(100px + env(safe-area-inset-bottom,0px));
+    background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
+    box-shadow:0 0 0 2px #c9a86a,0 5px 0 rgba(90,55,20,.28)}
+  .grove h3{text-align:center;color:var(--ink);font-weight:900;font-size:17px;margin:0 0 4px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .grove .hook{text-align:center;font-weight:800;color:#8a5a20;font-size:12.5px;line-height:1.4;margin-bottom:10px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .grove .hook img{width:16px;height:16px;vertical-align:-3px}
+  .grove-stats{display:flex;gap:8px;margin-bottom:10px;align-items:stretch}
+  .grove-stat{flex:1;min-width:0;min-height:68px;box-sizing:border-box;text-align:center;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.55);border:2.5px solid #fff;border-radius:14px;
+    padding:8px 6px;box-shadow:0 0 0 2px #c9a86a}
+  .grove-stat .n{font-weight:900;font-size:22px;color:#5f8e37;font-family:"Fredoka","Nunito",sans-serif;line-height:1}
+  .grove-stat .l{font-weight:800;font-size:11px;color:#8a5a20;margin-top:3px;line-height:1.15}
+  .ref-sec{font-weight:900;color:var(--ink);font-size:13px;margin:10px 2px 6px;
+    font-family:"Fredoka","Nunito",sans-serif;
+    scroll-margin-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  .grove-code{text-align:center;font-weight:900;font-size:22px;letter-spacing:2px;color:var(--ink);
+    background:#fffaf0;border:3px solid #fff;border-radius:14px;padding:10px;margin-bottom:8px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .grove-actions{display:flex;gap:8px}
+  .grove-actions button{flex:1;font-size:14px;padding:10px 8px;font-family:"Fredoka","Nunito",sans-serif}
+  #refFriends,#refCascade{margin-top:10px;max-height:none;overflow:visible;padding-bottom:8px}
+  .ref-row{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:8px;
+    background:#fff;border:2.5px solid #fff;border-radius:12px;box-shadow:0 0 0 2px #c9a86a}
+  #refFriends .ref-row:last-child,#refCascade .ref-row:last-child{margin-bottom:2px}
+  .ref-row .nm{font-weight:900;color:var(--ink);font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ref-row .rw{font-weight:900;color:#5f8e37;font-size:13px;display:inline-flex;align-items:center;gap:2px}
+  .ref-row .rw img{width:16px;height:16px}
+  .ref-empty{text-align:center;font-weight:700;color:#a1876a;font-size:12px;padding:6px}
+  .grove-tip{margin-top:8px;text-align:center;font-weight:700;color:#6b4f3a;font-size:12px;line-height:1.4;
+    background:rgba(255,255,255,.55);border:2px dashed #c9a86a;border-radius:12px;padding:8px 10px;
+    font-family:"Fredoka","Nunito",sans-serif}
+  #refQrBox{display:none;position:absolute;inset:0;z-index:40;background:rgba(20,26,18,.82);
+    align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+  #refQrBox.on{display:flex}
+  #refQrBox .sheet{background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:22px;
+    padding:16px;text-align:center;max-width:300px;width:100%;box-shadow:0 0 0 2px #c9a86a}
+  #refQrBox .sheet h3{margin:0 0 8px;font-family:"Fredoka","Nunito",sans-serif}
+  #refQrSvg{display:flex;justify-content:center;margin:8px 0}
+</style></head><body>
+<div class="phone"><div class="wrap">
+  <div class="head-card">
+    <div class="ht">
+      <div class="h1" id="heroName">Моё дерево</div>
+      <div class="h2" id="levelLabel">Дубок · Уровень 5</div>
+    </div>
+    <img class="av" src="assets/spirit_bust.webp" alt="">
+  </div>
+
+  <div class="hero"><img src="assets/tree5.webp" alt=""></div>
+  <div class="progress"><i id="treeProg"></i></div>
+  <div class="prog-cap" id="treeProgCap">До следующего уровня</div>
+  <div class="tree-tip" id="treeTip">Заходи каждый день на главную и забирай подарок — от серии дней дерево растёт.</div>
+  <div class="chronicle" id="chronicle">
+    <h3>Лесная грамота</h3>
+    <p id="chStory">Лес ещё пишет твою историю…</p>
+  </div>
+  <div class="freeze-buy">
+    <div class="fb-txt">Дождик-защитник спасает серию, если пропустишь 1 день. Сейчас: <b id="freezeCount">0</b></div>
+    <button class="btn btn-sm" id="buyFreezeBtn" type="button">Купить за 20 🌰</button>
+  </div>
+
+  <div class="passport">
+    <h3>Лесной паспорт</h3>
+    <div class="pass-hint">Качается от настоящих дел. Каждое — +1, полоска до 100.</div>
+    <div class="trait"><span class="nm">Честность</span><div class="bar"><i style="width:0%" data-trait="honesty"></i></div><span class="val" data-val="honesty">0</span></div>
+    <div class="how">Задание, которое приняли родители</div>
+    <div class="trait"><span class="nm">Щедрость</span><div class="bar"><i style="width:0%" data-trait="generosity"></i></div><span class="val" data-val="generosity">0</span></div>
+    <div class="how">Подарок другу, котёл или друг с поляны</div>
+    <div class="trait"><span class="nm">Надёжность</span><div class="bar"><i style="width:0%" data-trait="reliability"></i></div><span class="val" data-val="reliability">0</span></div>
+    <div class="how">Дождался срока в дупле и забрал шишки</div>
+    <div class="trait"><span class="nm">Мудрость</span><div class="bar"><i style="width:0%" data-trait="wisdom"></i></div><span class="val" data-val="wisdom">0</span></div>
+    <div class="how">Положил шишки в дупло на срок</div>
+    <a class="pass-more" href="achievements.html">Все награды →</a>
+  </div>
+
+  <div class="grove" id="grove">
+    <h3>Поляна дружбы</h3>
+    <div class="hook">
+      Друг → <img src="assets/coin1.webp" alt=""> <b id="refReward">100</b> ·
+      друг друга → <img src="assets/coin1.webp" alt=""> <b id="refRewardL2">50</b> ·
+      3-й круг → <img src="assets/coin1.webp" alt=""> <b id="refRewardL3">25</b>
+    </div>
+    <div class="grove-stats">
+      <div class="grove-stat"><div class="n" id="refCount">0</div><div class="l">прямых</div></div>
+      <div class="grove-stat"><div class="n" id="refCountDeep">0</div><div class="l">2–3 круг</div></div>
+      <div class="grove-stat"><div class="n" id="refEarned">0</div><div class="l">шишек</div></div>
+    </div>
+    <div class="grove-code" id="refCode">······</div>
+    <div class="grove-actions">
+      <button class="btn btn-sm" id="refCopyBtn" type="button">Скопировать ссылку</button>
+      <button class="btn btn-sm" id="refQrBtn" type="button">QR другу</button>
+    </div>
+    <div class="grove-tip">Ссылка ведёт на сайт и открывается в браузере — ставить приложение не нужно. Друг сразу жмёт «Посадить дерево».</div>
+    <div class="ref-sec">Твои друзья</div>
+    <div id="refFriends"><div class="ref-empty">Пока никого — позови первого!</div></div>
+    <div class="ref-sec">Глубже в поляне</div>
+    <div id="refCascade"><div class="ref-empty">Друг друга / 3-й круг — здесь +50 и +25</div></div>
+  </div>
+
+  <div class="grove" id="myDevice">
+    <h3>Моё дерево на другом телефоне</h3>
+    <div class="grove-tip">На другом телефоне открой главную и вставь этот код.</div>
+    <div class="grove-code" id="loginCode">······</div>
+    <div class="grove-actions">
+      <button class="btn btn-sm" id="copyLoginBtn" type="button">Скопировать код</button>
+    </div>
+  </div>
+
+  <button class="btn btn-lg profile-btn" type="button">Сменить наряд</button>
+  <div id="pnote"></div>
+  <div style="text-align:center"><a href="#" id="switchUser" class="switch-user">Сменить пользователя</a></div>
+
+  <div id="refQrBox"><div class="sheet">
+    <h3>Покажи другу</h3>
+    <div id="refQrSvg"></div>
+    <div style="font-weight:700;color:#8a5a20;font-size:12px;line-height:1.4;margin-bottom:10px">
+      Пусть наведёт камеру телефона.<br>
+      Откроется сайт в браузере — приложение ставить не надо.
+    </div>
+    <button class="btn btn-sm" id="refQrClose" type="button">Закрыть</button>
+  </div></div>
+</div></div>
+<script src="assets/qrcode.js"></script>
+<script src="app.js"></script>
+<script src="profile.js"></script>
+<script src="nav.js"></script>
+</body></html>

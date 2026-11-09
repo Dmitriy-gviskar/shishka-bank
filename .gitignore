@@ -1,0 +1,19 @@
+node_modules/
+*.tar.gz
+.DS_Store
+*.url
+client/*.png
+client/uploads/
+client/*.env
+cards/collection_all.html
+scratchpad/
+
+# Local secrets, database state and generated verification output
+.env
+.env.*
+*.env
+*.dump
+*.sqlite
+*.sqlite3
+*.log
+__pycache__/

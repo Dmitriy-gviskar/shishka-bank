@@ -1,0 +1,155 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
+<title>Лесная поляна</title><link rel="stylesheet" href="style.css">
+<style>
+  .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg.webp)}
+  .phone::after{background:
+    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
+    linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
+  .wrap{overflow-y:auto;min-height:0}
+  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px;
+    max-width:calc(100% - 8px);text-align:center;line-height:1.15}
+  .spirit-tip{position:absolute;top:14px;left:12px;z-index:6;width:42px;height:42px;padding:0;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 3px #c9a86a,0 3px 0 rgba(107,79,58,.22)}
+  .spirit-tip:active{transform:translateY(2px);box-shadow:0 0 0 3px #c9a86a,0 1px 0 rgba(107,79,58,.22)}
+  .spirit-tip img{width:34px;height:34px;object-fit:contain;
+    filter:drop-shadow(0 2px 3px rgba(60,40,15,.25))}
+  .spirit-pop{display:none;margin:0 0 8px;padding:9px 12px;text-align:center;
+    font-weight:800;color:#5a3a18;font-size:13px;line-height:1.35;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:14px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .spirit-pop.on{display:block}
+  .doors{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:2px 2px 4px}
+  .more-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:2px 2px 6px}
+  .tile{background:linear-gradient(180deg,#fff8eb,#f3e7cf);border:3px solid #fff;border-radius:20px;
+    padding:12px 6px 10px;text-align:center;text-decoration:none;
+    box-shadow:0 0 0 3px #c9a86a,0 5px 0 rgba(107,79,58,.2);
+    display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .08s}
+  .tile:active{transform:translateY(3px);box-shadow:0 0 0 3px #c9a86a,0 2px 0 rgba(107,79,58,.2)}
+  .tile img{width:70px;height:70px;object-fit:contain;filter:drop-shadow(0 3px 4px var(--shadow))}
+  .tile span{font-weight:900;color:var(--ink);font-size:14px;line-height:1.05;
+    font-family:"Fredoka","Nunito",sans-serif}
+  .tile small{font-weight:700;color:#a1876a;font-size:11px;line-height:1.2}
+  .doors .tile{padding:10px 6px 8px}
+  .doors .tile img{width:60px;height:60px}
+  .more-forest{margin:4px 2px 8px;flex:none}
+  .more-forest::-webkit-scrollbar{width:0}
+  .more-forest > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
+    background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:16px;
+    padding:11px 14px;text-align:center;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.15);
+    font-family:"Fredoka","Nunito",sans-serif}
+  .more-forest > summary::-webkit-details-marker{display:none}
+  .more-forest[open] > summary{margin-bottom:10px}
+  .more-forest > summary::after{content:" ▾";font-weight:900}
+  .more-forest[open] > summary::after{content:" ▴"}
+  .fam{display:flex;align-items:center;gap:8px;background:rgba(255,248,235,.94);
+    border:3px solid #fff;border-radius:16px;padding:6px 10px 6px 6px;margin-bottom:8px;
+    cursor:pointer;box-shadow:0 0 0 3px var(--fc,#c9a86a),0 3px 0 rgba(107,79,58,.16)}
+  .fam img{width:42px;height:42px;object-fit:cover;border-radius:9px;border:2px solid var(--fc,#c9a86a);flex:none}
+  .fam .fi{flex:1;min-width:0}
+  .fam .fn{font-weight:900;color:var(--ink);font-size:14px;font-family:"Fredoka","Nunito",sans-serif}
+  .fam .ft,.fam .fp{font-weight:700;color:#a1876a;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .fam .fp{color:#6b4f3a;font-style:italic}
+  .fam-empty{text-align:center;font-weight:700;color:#a1876a;font-size:12px;padding:4px 0 6px}
+  .grove-life{display:grid;grid-template-columns:1fr;gap:8px;margin:0 0 10px}
+  .glife{display:block;text-decoration:none;padding:10px 12px;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 3px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .glife .gh{font-weight:900;color:var(--ink);font-size:14px}
+  .glife .gs{font-weight:700;color:#8a5a20;font-size:12px;margin-top:2px;line-height:1.3}
+  .gather-bar{display:none;margin:0 0 8px;padding:9px 12px;text-align:center;
+    background:rgba(255,248,235,.96);border:2.5px solid #fff;border-radius:16px;
+    box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
+  .gather-bar.on{display:block}
+  .gather-bar .gt{font-weight:900;color:var(--ink);font-size:14px}
+  .gather-bar .gs{font-weight:700;color:#8a5a20;font-size:12px;margin:3px 0 8px}
+  .gather-bar button{width:100%;font-size:15px}
+  .ov{position:absolute;inset:0;z-index:30;background:rgba(20,26,18,.82);display:none;
+    align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(3px)}
+  .ov.on{display:flex}
+  .more-head{display:none}
+  @media (min-width:720px){
+    .phone{width:min(960px,96vw);max-height:none;height:100dvh;
+      box-shadow:0 0 0 4px #c9a86a,0 16px 48px rgba(0,0,0,.35)}
+    .wrap{padding:22px 22px 0}
+    .doors{grid-template-columns:repeat(4,1fr);gap:12px;padding:4px 0 10px}
+    .doors .tile{padding:16px 8px 12px}
+    .doors .tile img{width:72px;height:72px}
+    .tile span{font-size:16px}
+    .tile small{font-size:12px}
+    .more-grid{grid-template-columns:repeat(4,1fr);gap:12px;padding:2px 0 8px}
+    .more-forest > summary{display:none}
+    .more-head{display:block;font-weight:900;color:#5a3a18;text-align:center;
+      font-family:"Fredoka","Nunito",sans-serif;font-size:15px;margin:6px 0 10px}
+    .fam,.gather-bar{max-width:none}
+    .grove-top{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px}
+    .grove-top:not(:has(#groveChar:not([hidden]))){grid-template-columns:1fr}
+    .grove-life{grid-template-columns:repeat(2,1fr);gap:10px}
+  }
+  @media (hover:hover) and (min-width:720px){
+    .tile:hover{transform:translateY(-3px);box-shadow:0 0 0 3px #c9a86a,0 8px 0 rgba(107,79,58,.18)}
+    .fam:hover{transform:translateY(-1px)}
+  }
+</style></head><body>
+<div class="phone">
+  <button class="spirit-tip" id="spiritTip" type="button" aria-label="Подсказка о поляне">
+    <img src="assets/spirit.webp" alt="">
+  </button>
+  <div class="wrap">
+  <div class="title">Лесная поляна</div>
+  <div class="spirit-pop" id="spiritPop"></div>
+  <div class="grove-top">
+  <div class="fam" id="groveChar" hidden>
+    <div class="mark" style="font-size:28px;width:42px;text-align:center">🌲</div>
+    <div class="fi"><div class="fn">Обитатель</div><div class="ft">поселился на поляне</div></div>
+  </div>
+  <div id="famList"></div>
+  </div>
+  <div class="grove-life" id="groveLife" hidden></div>
+  <div class="gather-bar" id="gatherBar">
+    <div class="gt">Сборщики карт</div>
+    <div class="gs" id="gatherSub"></div>
+    <button class="btn btn-sm" id="gatherBtn" type="button">Собрать шишки</button>
+  </div>
+  <div class="ov" id="talkOv"><div class="sheet" id="talkSheet" style="max-width:320px;text-align:center">
+    <button class="x" id="talkClose">&times;</button>
+    <img id="talkImg" src="" style="width:90px;height:120px;object-fit:cover;border-radius:14px;margin-bottom:6px">
+    <h3 id="talkName" style="margin:0 0 4px">...</h3>
+    <div id="talkBubble" style="background:#f6ecd6;border-radius:14px;padding:10px 14px;font-weight:700;color:var(--ink);font-size:14px;line-height:1.4;margin-bottom:10px;min-height:40px">...</div>
+    <div id="talkBtns" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div></div>
+
+  <div class="doors">
+    <a class="tile" href="collection.html"><img src="assets/chest_closed.webp" alt=""><span>Коллекция</span><small>альбом существ</small></a>
+    <a class="tile" href="games.html"><img src="assets/spirit_scroll.webp" alt=""><span>Игры</span><small>с питомцем</small></a>
+    <a class="tile" href="mail.html#friends"><img src="assets/mail.webp" alt=""><span>Почта</span><small>найти и написать</small></a>
+    <a class="tile" href="profile.html#grove"><img src="assets/tree5.webp" alt=""><span>Моё дерево</span><small>профиль и код</small></a>
+  </div>
+  <div class="doors">
+    <a class="tile" href="market.html"><img src="assets/nav/n5.png" alt=""><span>Лавки</span><small>товары друзей</small></a>
+    <a class="tile" href="pot.html"><img src="assets/pot.webp" alt=""><span>Котёл</span><small>общий запас</small></a>
+    <a class="tile" href="guilds.html"><img src="assets/tree4.webp" alt=""><span>Гильдия</span><small>своя стая</small></a>
+    <a class="tile" href="council.html"><img src="assets/spirit_scroll.webp" alt=""><span>Совет</span><small>лесные идеи</small></a>
+  </div>
+
+  <details class="more-forest" id="moreForest">
+    <summary>Ещё в лесу</summary>
+    <div class="more-head">Ещё в лесу</div>
+    <div class="more-grid">
+      <a class="tile" href="board.html"><img src="assets/badge1.webp" alt=""><span>Поляна</span></a>
+      <a class="tile" href="deposit.html"><img src="assets/tree.webp" alt=""><span>Дупло</span></a>
+      <a class="tile" href="horoscope.html"><img src="assets/oracle.webp" alt=""><span>Гороскоп</span></a>
+      <a class="tile" href="quest.html"><img src="assets/skin_gold.webp" alt=""><span>Квест</span></a>
+      <a class="tile" href="auction.html"><img src="assets/auction.webp" alt=""><span>Аукцион</span></a>
+      <a class="tile" href="achievements.html"><img src="assets/badge1.webp" alt=""><span>Награды</span></a>
+      <a class="tile" href="skins.html"><img src="assets/skin_rainbow.webp" alt=""><span>Наряды</span></a>
+      <a class="tile" href="insurance.html"><img src="assets/spirit.webp" alt=""><span>Страховка</span></a>
+    </div>
+  </details>
+</div></div>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body></html>
