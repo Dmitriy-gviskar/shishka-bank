@@ -124,10 +124,10 @@ const LOGIC_TEMPLATES = [
   { kind: 'pack', t: 'В корзине {a} ягод, в банку кладут по {b}. Сколько полных банок?' },
 ];
 
-  return {
+  const routes = {
 // ── Мини-игры ──
-// Счёт в БД пишем только на finish (один раз). Награда считается на сервере; с клиента берём только score с потолком.
-// За каждую игру — не больше одной награды в день (по message транзакции).
+// Generators remain private: wrappers below persist challenges and redact answer keys.
+// Answers and final rewards are committed by the durable SQL attempt protocol.
 'POST /api/game/start': async (b, ctx) => {
   const level = Math.min(Math.max(parseInt(b.level) || 1, 1), 3);
   const tables = level === 1 ? [2, 3, 5] : level === 2 ? [4, 6, 7, 8] : [2, 3, 4, 5, 6, 7, 8, 9];
@@ -138,15 +138,7 @@ const LOGIC_TEMPLATES = [
     const n = Math.floor(Math.random() * 9) + 1;
     questions.push({ a, b: n, answer: a * n });
   }
-  await q(`insert into mini_games(child_id, game, level, last_played) values ($1,'multiply',$2,current_date)
-    on conflict (child_id, game) do update set level=$2, last_played=current_date`, [ctx.child, level]);
   return { questions, reward, level };
-},
-'POST /api/game/answer': async (b, ctx) => {
-  // только проверка для UI — прогресс в БД не трогаем (иначе double-count с finish)
-  const expected = parseInt(b.expected, 10);
-  const correct = parseInt(b.answer, 10) === expected;
-  return { correct, expected };
 },
 'POST /api/game/count/start': async (b, ctx) => {
   const questions = [];
@@ -157,8 +149,6 @@ const LOGIC_TEMPLATES = [
     if (op === '-' && n > a) [a, n] = [n, a];
     questions.push({ a, op, b: n, answer: op === '+' ? a + n : a - n });
   }
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'count',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { questions, duration: 30 };
 },
 'POST /api/game/guess/start': async (b, ctx) => {
@@ -187,22 +177,13 @@ const LOGIC_TEMPLATES = [
     ];
     return { code: row.code, name: row.name, hints, options };
   });
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'guess',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { questions, reward: 5 };
-},
-'POST /api/game/guess/answer': async (b, ctx) => {
-  const name = String(b.name || '');
-  const correct = String(b.answer || '').trim().toLowerCase() === name.trim().toLowerCase();
-  return { correct, name };
 },
 'POST /api/game/memory/start': async (b, ctx) => {
   const pairs = await q(
     `select t.code, t.name from card_types t
       where t.code = any($1::text[]) order by random() limit 6`, [GAME_EASY]);
   if (pairs.length < 6) throw { code: 400, msg: 'мало карт для игры' };
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'memory',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { pairs, duration: 90, reward: 4 };
 },
 'POST /api/game/word/start': async (b, ctx) => {
@@ -218,8 +199,6 @@ const LOGIC_TEMPLATES = [
     const letters = shuffleArr(lettersOf(r.name).toUpperCase().split(''));
     return { code: r.code, name: r.name, category: r.category, letters };
   });
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'word',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { questions, reward: 4 };
 },
 'POST /api/game/odd/start': async (b, ctx) => {
@@ -242,8 +221,6 @@ const LOGIC_TEMPLATES = [
     rounds.push({ items, oddCode: odd.code });
   }
   if (rounds.length < 6) throw { code: 400, msg: 'не удалось собрать раунды' };
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'odd',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { rounds, reward: 4 };
 },
 'POST /api/game/number/start': async (b, ctx) => {
@@ -258,8 +235,6 @@ const LOGIC_TEMPLATES = [
     used.add(n);
     questions.push({ n, text: numToRu(n), answer: n });
   }
-  await q(`insert into mini_games(child_id, game, level, last_played) values ($1,'number',$2,current_date)
-    on conflict (child_id, game) do update set level=$2, last_played=current_date`, [ctx.child, level]);
   return { questions, level, reward: 3 };
 },
 'POST /api/game/compare/start': async (b, ctx) => {
@@ -281,8 +256,6 @@ const LOGIC_TEMPLATES = [
         prompt: `На сколько ${hi} больше ${lo}?` });
     }
   }
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'compare',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { rounds, reward: 3 };
 },
 'POST /api/game/story/start': async (b, ctx) => {
@@ -299,8 +272,6 @@ const LOGIC_TEMPLATES = [
     const answer = tpl.op === '+' ? a + n : a - n;
     return { text, answer };
   });
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'story',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { questions, reward: 5 };
 },
 'POST /api/game/quiz/start': async (b, ctx) => {
@@ -310,14 +281,7 @@ const LOGIC_TEMPLATES = [
     options: shuffleArr(row.options.slice()),
     answer: row.answer,
   }));
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'quiz',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { questions, reward: 6 };
-},
-'POST /api/game/quiz/answer': async (b, ctx) => {
-  const expected = String(b.expected || '').trim();
-  const correct = String(b.answer || '').trim() === expected;
-  return { correct, expected };
 },
 'POST /api/game/logic/start': async (b, ctx) => {
   const names = await q(
@@ -359,64 +323,58 @@ const LOGIC_TEMPLATES = [
     }
     return { text, answer };
   });
-  await q(`insert into mini_games(child_id, game, last_played) values ($1,'logic',current_date)
-    on conflict (child_id, game) do update set last_played=current_date`, [ctx.child]);
   return { questions, reward: 6 };
 },
-'POST /api/game/finish': async (b, ctx) => {
-  const game = String(b.game || 'multiply');
-  if (!GAME_LABELS[game]) throw { code: 400, msg: 'неизвестная игра' };
-  const maxScore = GAME_MAX[game] || 10;
-  const score = Math.min(Math.max(parseInt(b.score, 10) || 0, 0), maxScore);
-  const label = GAME_LABELS[game];
-
-  const w0 = await one('select balance from wallets where user_id=$1', [ctx.child]);
-  if (score <= 0) return { ok: true, reward: 0, balance: w0?.balance ?? 0 };
-
-  const already = await one(
-    `select 1 as x from transactions
-      where to_user=$1 and type='reward' and message=$2
-        and (created_at at time zone 'Europe/Moscow')::date = (now() at time zone 'Europe/Moscow')::date
-      limit 1`, [ctx.child, label]);
-  if (already) {
-    return { ok: true, reward: 0, balance: w0.balance, already: true };
-  }
-
-  // обещанная награда минус 1 шишка за каждую ошибку — нельзя натыкать кнопки и забрать всё
-  let reward = 0;
-  if (game === 'count') {
-    reward = score;
-  } else {
-    let promised = 0;
-    if (game === 'multiply') {
-      const row = await one(`select level from mini_games where child_id=$1 and game='multiply'`, [ctx.child]);
-      const level = row?.level || 1;
-      promised = level === 1 ? 3 : level === 2 ? 5 : 8;
-    }     else if (game === 'quiz' || game === 'logic') promised = 6;
-    else if (game === 'guess' || game === 'story') promised = 5;
-    else if (game === 'memory' || game === 'word' || game === 'odd') promised = 4;
-    else if (game === 'number' || game === 'compare') promised = 3;
-    const wrong = Math.max(0, maxScore - score);
-    reward = Math.max(0, promised - wrong);
-  }
-
-  if (reward <= 0 && game === 'memory') {
-    await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,current_date)
-      on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=current_date`,
-      [ctx.child, game, score]);
-    return { ok: true, reward: 0, balance: w0.balance };
-  }
-
-  await q(`insert into mini_games(child_id, game, score, last_played) values ($1,$2,$3,current_date)
-    on conflict (child_id, game) do update set score=mini_games.score+$3, last_played=current_date`,
-    [ctx.child, game, score]);
-  if (reward > 0) {
-    await q('update wallets set balance=balance+$2, total_earned=total_earned+$2 where user_id=$1', [ctx.child, reward]);
-    await q("insert into transactions(circle_id, to_user, amount, type, message) select circle_id, $1, $2, 'reward', $3 from users where id=$1", [ctx.child, reward, label]);
-  }
-  await rpc('check_achievements', [ctx.child]).catch(() => {});
-  const w = await one('select balance from wallets where user_id=$1', [ctx.child]);
-  return { ok: true, reward, balance: w.balance };
-},
   };
+  const epoch = process.env.CARD_OPERATION_EPOCH;
+  function ready() {
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(epoch || ''))
+      throw {code:503,msg:'Игры временно закрыты: поколение восстановления не настроено'};
+  }
+  async function call(fn, args) {
+    ready();
+    try { return (await one(`select ${fn}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as v`,args)).v; }
+    catch(e) {
+      const code = e.code === 'P0503' ? 503 : e.code === 'P0409' ? 409 : e.code === '22023' || e.code === '22P02' ? 400 : null;
+      if(code) throw {code,msg:code===503?'После восстановления начните новую игру':code===409?'Попытка уже завершена, ответ изменён или время вышло':'Неверная игровая попытка'};
+      throw e;
+    }
+  }
+  const starts = {multiply:'/api/game/start',...Object.fromEntries(Object.keys(GAME_LABELS).filter(g=>g!=='multiply').map(g=>[g,`/api/game/${g}/start`]))};
+  for(const [game,path] of Object.entries(starts)) {
+    const generate=routes['POST '+path];
+    routes['POST '+path]=async(b,ctx)=>{
+      ready();
+      const data=await generate(b,ctx);
+      const questions=data.questions || data.rounds || [];
+      const answers=questions.map(q=>game==='guess'||game==='word'?q.name:game==='odd'?q.oddCode:q.answer);
+      const deck=game==='memory'?shuffleArr(data.pairs.flatMap(p=>[p.code,p.code])):[];
+      const challenge={questions,answers,deck};
+      const promised=game==='count'?30:data.reward??0;
+      const attempt=await one(`insert into game_attempts(child_id,game,epoch,level,promised,max_score,label,challenge,answer_until)
+        values($1,$2,$3,$4,$5,$6,$7,$8::jsonb,now()+($9::int * interval '1 second')) returning id`,
+        [ctx.child,game,epoch,data.level||1,promised,GAME_MAX[game],GAME_LABELS[game],JSON.stringify(challenge),game==='count'?30:1800]);
+      const clean=q=>{const copy={...q};delete copy.answer;delete copy.oddCode;if(game==='guess'||game==='word')delete copy.name;if(game==='number')delete copy.n;return copy;};
+      const result={...data,attemptId:attempt.id};
+      if(data.questions)result.questions=questions.map(clean);
+      if(data.rounds)result.rounds=questions.map(clean);
+      if(game==='memory'){delete result.pairs;result.tiles=deck.map((_,i)=>i);}
+      return result;
+    };
+  }
+  const answer=async(b,ctx)=>{
+    if(typeof b.attemptId!=='string'||!Number.isInteger(b.index)||!['string','number'].includes(typeof b.answer))throw {code:400,msg:'Нужна игровая попытка и ответ'};
+    return call('answer_game_attempt',[ctx.child,b.attemptId,epoch,b.index,String(b.answer)]);
+  };
+  for(const path of ['/api/game/answer','/api/game/quiz/answer','/api/game/guess/answer'])routes['POST '+path]=answer;
+  routes['POST /api/game/memory/flip']=async(b,ctx)=>{
+    if(typeof b.attemptId!=='string'||!Number.isInteger(b.tile)||!Number.isInteger(b.move))throw {code:400,msg:'Нужна попытка и номер хода'};
+    return call('flip_game_tile',[ctx.child,b.attemptId,epoch,b.move,b.tile]);
+  };
+  routes['POST /api/game/finish']=async(b,ctx)=>{
+    if(b.game && !Object.hasOwn(GAME_LABELS,b.game))throw {code:400,msg:'Неизвестная игра'};
+    if(typeof b.attemptId!=='string')throw {code:503,msg:'Обновите игру и начните новую попытку'};
+    return call('finish_game_attempt',[ctx.child,b.attemptId,epoch]);
+  };
+  return routes;
 }

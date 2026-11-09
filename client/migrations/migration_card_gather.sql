@@ -15,6 +15,8 @@ create or replace function train_gatherer(p_child uuid, p_type uuid, p_grade int
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare have int; used int; spec boolean;
 begin
+  perform 1 from wallets where user_id=p_child for update;
+  if not found then raise exception 'wallet not found'; end if;
   if p_grade < 1 or p_grade > 6 then raise exception 'bad grade'; end if;
   select category = 'special' into spec from card_types where id = p_type;
   if spec is null then raise exception 'no type'; end if;
@@ -41,6 +43,8 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare today date := (timezone('Europe/Moscow', now()))::date;
         n int; c_id uuid;
 begin
+  perform 1 from wallets where user_id=p_child for update;
+  if not found then raise exception 'wallet not found'; end if;
   select count(*) into n
     from card_gatherers g
     join user_cards uc on uc.user_id = g.user_id and uc.type_id = g.type_id and uc.grade = g.grade and uc.qty > 0

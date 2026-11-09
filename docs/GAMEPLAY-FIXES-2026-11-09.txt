@@ -1,0 +1,35 @@
+Shishka Bank — gameplay integrity fixes after release 0b0048a
+
+Resolved review items:
+P1 game reward concurrency/partial writes: durable attempts and daily claims,
+wallet lock before limit checks, one SQL transaction for progress/reward/history/
+achievements/receipt. Existing legacy rewards today still suppress another reward.
+P1 collector concurrency: player wallet lock precedes readiness/count checks;
+training uses the same lock before checking capacity.
+P2 unverified score: server stores private challenges, evaluates each answer once,
+counts verified results and stores the final receipt. Memory deck and ordered flips
+are server-owned, not a client-provided score. Start keys are redacted from replies.
+P2 gift limit: deterministic lock order of both player wallets before the sender's
+shared Moscow-day gift count, across card types and recipients.
+
+Updated browser code uses the attempt protocol for all eleven games. Lost replies
+can be retried with the same answer/move/attempt. Double clicks during feedback do
+not answer the next question. Timers from an abandoned game cannot close a new game.
+Count accepts answers for 30 seconds; all attempts expire after 30 minutes; memory's
+90-second display still permits continuing until the overall expiry. A completed
+result is retryable past expiry in the same recovery generation without re-payment.
+Every database restore requires a NEW external CARD_OPERATION_EPOCH; restored game
+attempts cannot pay or replay receipts under a different generation. Normal restarts
+and code-only switches retain the generation. Do not restore an archived epoch.
+
+Tests include real PostgreSQL HTTP concurrency, forced history/receipt/achievement
+failures and rollback, all eleven games, ownership/expiry/generation/order checks,
+private answer keys, independent daily limits, two recipients/types, gift message
+rollback, and browser logic for redacted questions, retries and opaque memory flips.
+Exact final test totals and Git SHA/artifact manifests are emitted outside the commit
+in the release report. No production or remote deployment is part of this release.
+
+The old 0b0048a release remains immutable historical evidence; it must not be approved
+as a fallback for these gameplay fixes. Without a tested safe fallback, retain
+maintenance and fix forward. Infrastructure/independent backup and VPS acceptance
+requirements still apply; a successful local suite alone does not open production.

@@ -1,10 +1,40 @@
 // Мини-игры: умножение / угадайка / блиц / память / слово / лишнее / числа / сравнение / задачи / викторина / логика.
 // Зависит от window.api, window.esc, window.cardUrl из app.js.
 window.runGames = function () {
-  const api = window.api;
+  const rawApi = window.api;
+  let attemptId = null, memoryMove = 0, answering = false, questionLocked = false, startVersion = 0;
+  const api = async(path,body) => {
+    const starting = path.startsWith('/api/game/') && path.endsWith('/start');
+    const version = starting ? ++startVersion : startVersion;
+    if(starting) attemptId = null;
+    const result = await rawApi(path,body);
+    if(starting && version !== startVersion) return {error:'Открыта другая игра'};
+    if(starting && result.attemptId) { attemptId = result.attemptId; memoryMove = 0; questionLocked = false; }
+    return result;
+  };
+  function later(fn,ms) {
+    const version=startVersion;
+    return setTimeout(()=>{if(version===startVersion && attemptId)fn();},ms);
+  }
+  async function secureAnswer(index,answer) {
+    if(answering || questionLocked || !attemptId) return null;
+    answering = true;
+    const id = attemptId;
+    try {
+      const result = await api('/api/game/answer',{attemptId:id,index,answer});
+      if(id !== attemptId) return null;
+      if(result.error) {
+        document.getElementById('gameMsg').textContent = result.error;
+        document.querySelectorAll('#gameLevels button').forEach(b=>{b.disabled=false;});
+        return null;
+      }
+      questionLocked = true;
+      return result;
+    } finally { answering = false; }
+  }
   const esc = window.esc;
   const cardUrl = window.cardUrl;
-  if (!api || !document.getElementById('gameOv')) return;
+  if (!rawApi || !document.getElementById('gameOv')) return;
 
   // ── Мини-игры (умножение / угадайка / блиц / память / слово / лишнее) ──
   let currentGame = null;
@@ -118,6 +148,7 @@ function ensureGamePad() {
 }
 
 function closeGameOv() {
+  attemptId = null; startVersion++;
   clearInterval(countTimer);
   countTimer = null;
   clearInterval(memoryTimer);
@@ -134,6 +165,7 @@ function closeGameOv() {
 }
 
 function resetGameSheet(title) {
+  startVersion++; attemptId=null; questionLocked=false;
   clearInterval(countTimer);
   countTimer = null;
   clearInterval(memoryTimer);
@@ -156,19 +188,19 @@ function resetGameSheet(title) {
 
 async function claimGameReward(score) {
   if (!currentGame) return closeGameOv();
-  if (!score) return closeGameOv();
-  const r = await api('/api/game/finish', { game: currentGame, score });
+  const r = await api('/api/game/finish', { game: currentGame, attemptId });
+  if(r.error) { document.getElementById('gameResult').textContent=r.error; return; }
   if (r.ok && r.balance != null) {
     const b = document.getElementById('topBal');
     if (b) b.textContent = r.balance;
   }
   if (r.already) {
     showGameDone('Сегодня награда за эту игру уже получена', '😴');
-    setTimeout(closeGameOv, 1600);
+    later(closeGameOv, 1600);
     return;
   }
   if (r.reward) showGameDone(`+${r.reward} шишек!`, '🌰');
-  setTimeout(closeGameOv, r.reward ? 900 : 200);
+  later(closeGameOv, r.reward ? 900 : 200);
 }
 
 async function startMultiplyGame() {
@@ -211,6 +243,7 @@ async function beginMultiply(level) {
 }
 
 function showQuestion() {
+  questionLocked = false;
   const q = gameQuestions[gameIdx];
   document.getElementById('gameQ').textContent = `${q.a} × ${q.b} = ?`;
   setGameProg(gameIdx, 10);
@@ -236,6 +269,7 @@ async function startGuessGame() {
 }
 
 function showGuessQ() {
+  questionLocked = false;
   const q = guessQuestions[guessIdx];
   document.getElementById('gameQ').innerHTML =
     `<img src="${cardUrl(q.code, 1, 'md')}" alt="" style="filter:blur(5px) brightness(.92) saturate(.95)">`;
@@ -289,6 +323,7 @@ async function startCountGame() {
 }
 
 function showCountQuestion() {
+  questionLocked = false;
   const q = countQuestions[countIdx];
   if (!q) return;
   document.getElementById('gameQ').textContent = `${q.a} ${q.op} ${q.b} = ?`;
@@ -311,7 +346,10 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
     const val = parseInt(document.getElementById('gameA').value, 10);
     if (isNaN(val)) return;
     const q = countQuestions[countIdx];
-    if (val === q.answer) {
+    const checked = await secureAnswer(countIdx,val);
+    if(!checked) return;
+    q.answer=checked.expected;
+    if (checked.correct) {
       countScore++;
       flashStage(true);
       document.getElementById('gameMsg').textContent = 'Верно!';
@@ -335,7 +373,8 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
     if (!val) return;
     const q = guessQuestions[guessIdx];
     const box = document.getElementById('gameLevels');
-    const r = await api('/api/game/guess/answer', { answer: val, name: q.name });
+    const r = await secureAnswer(guessIdx,val);
+    if(!r) return; q.name=r.expected;
     document.getElementById('gameQ').innerHTML =
       `<img src="${cardUrl(q.code, 1, 'md')}" alt="">`;
     flashStage(!!r.correct);
@@ -359,7 +398,7 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
       if (box) { box.style.display = 'none'; box.innerHTML = ''; }
       showGameDone(`Угадано: ${guessCorrect} из 5`, guessCorrect >= 4 ? '🦉' : '🌿');
     } else {
-      setTimeout(showGuessQ, 1100);
+      later(showGuessQ, 1100);
     }
     return;
   }
@@ -368,7 +407,8 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
     const val = parseInt(document.getElementById('gameA').value, 10);
     if (isNaN(val)) return;
     const q = gameQuestions[gameIdx];
-    const r = await api('/api/game/answer', { answer: val, expected: q.answer });
+    const r = await secureAnswer(gameIdx,val);
+    if(!r) return; q.answer=r.expected;
     flashStage(!!r.correct);
     if (r.correct) {
       gameCorrect++;
@@ -383,7 +423,7 @@ if (document.getElementById('gameBtn')) document.getElementById('gameBtn').oncli
       setGameProg(10, 10);
       showGameDone(`Правильно: ${gameCorrect} из 10`, gameCorrect >= 8 ? '🏆' : '✨');
     } else {
-      setTimeout(showQuestion, 700);
+      later(showQuestion, 700);
     }
   }
 };
@@ -407,10 +447,7 @@ async function startMemoryGame() {
   }
   memoryMatched = 0; memoryMoves = 0; memoryOpen = []; memoryLock = false;
   memoryLeft = r.duration || 90;
-  const tiles = shuffleArr(r.pairs.flatMap((p) => [
-    { code: p.code, name: p.name, id: p.code + '_a' },
-    { code: p.code, name: p.name, id: p.code + '_b' },
-  ]));
+  const tiles = r.tiles.map(index=>({id:index}));
   const q = document.getElementById('gameQ');
   q.innerHTML = '';
   const grid = document.createElement('div');
@@ -418,8 +455,8 @@ async function startMemoryGame() {
   tiles.forEach((t) => {
     const card = document.createElement('div');
     card.className = 'mem-card';
-    card.dataset.code = t.code;
-    card.innerHTML = `<div class="back">🌰</div><div class="face"><img src="${cardUrl(t.code, 1, 'sm')}" alt=""></div>`;
+    card.dataset.tile = t.id;
+    card.innerHTML = '<div class="back">🌰</div><div class="face"></div>';
     card.onclick = () => onMemoryFlip(card);
     grid.appendChild(card);
   });
@@ -439,8 +476,18 @@ async function startMemoryGame() {
   }, 1000);
 }
 
-function onMemoryFlip(card) {
+async function onMemoryFlip(card) {
   if (memoryLock || card.classList.contains('open') || card.classList.contains('matched')) return;
+  const id=attemptId;
+  memoryLock=true;
+  const result=await api('/api/game/memory/flip',{attemptId:id,move:memoryMove,tile:Number(card.dataset.tile)});
+  if(id!==attemptId) return;
+  memoryLock=false;
+  if(result.error) {document.getElementById('gameMsg').textContent=result.error;return;}
+  memoryMove++;
+  card.dataset.code=result.code;
+  card.querySelector('.face').innerHTML=`<img src="${cardUrl(result.code,1,'sm')}" alt="">`;
+
   card.classList.add('open');
   memoryOpen.push(card);
   if (memoryOpen.length < 2) return;
@@ -462,7 +509,7 @@ function onMemoryFlip(card) {
     }
   } else {
     flashStage(false);
-    setTimeout(() => {
+    later(() => {
       a.classList.remove('open');
       b.classList.remove('open');
       memoryOpen = [];
@@ -496,6 +543,7 @@ async function startWordGame() {
 }
 
 function showWordQ() {
+  questionLocked = false;
   const q = wordQuestions[wordIdx];
   wordBuilt = '';
   const used = [];
@@ -537,11 +585,12 @@ function showWordQ() {
     paintBuilt();
     document.getElementById('gameMsg').textContent = '';
   };
-  document.getElementById('wordCheck').onclick = () => {
-    const target = (q.name || '').replace(/[^А-Яа-яЁёA-Za-z]/g, '').toUpperCase();
-    const got = wordBuilt.toUpperCase();
+  document.getElementById('wordCheck').onclick = async () => {
+    const got = wordBuilt;
     if (!got) return;
-    if (got === target) {
+    const result = await secureAnswer(wordIdx,got);
+    if(!result) return; q.name=result.expected;
+    if (result.correct) {
       wordCorrect++;
       flashStage(true);
       document.getElementById('gameMsg').textContent = `Верно! ${q.name}`;
@@ -554,9 +603,9 @@ function showWordQ() {
     wordIdx++;
     setGameProg(wordIdx, 5);
     if (wordIdx >= 5) {
-      setTimeout(() => showGameDone(`Собрано: ${wordCorrect} из 5`, wordCorrect >= 4 ? '📖' : '✏️'), 700);
+      later(() => showGameDone(`Собрано: ${wordCorrect} из 5`, wordCorrect >= 4 ? '📖' : '✏️'), 700);
     } else {
-      setTimeout(showWordQ, 900);
+      later(showWordQ, 900);
     }
   };
   setGameProg(wordIdx, 5);
@@ -580,6 +629,7 @@ async function startOddGame() {
 }
 
 function showOddQ() {
+  questionLocked = false;
   const round = oddRounds[oddIdx];
   const box = document.getElementById('gameQ');
   box.innerHTML = '';
@@ -592,9 +642,12 @@ function showOddQ() {
     card.className = 'odd-card';
     card.dataset.code = it.code;
     card.innerHTML = `<img src="${cardUrl(it.code, 1, 'sm')}" alt=""><div class="nm">${esc(it.name)}</div>`;
-    card.onclick = () => {
+    card.onclick = async () => {
       if (locked) return;
       locked = true;
+      const result = await secureAnswer(oddIdx,it.code);
+      if(!result) {locked=false;return;}
+      round.oddCode=result.expected;
       [...grid.querySelectorAll('.odd-card')].forEach((c) => c.classList.add('show-name'));
       const oddItem = round.items.find((x) => x.code === round.oddCode);
       const maj = round.items.find((x) => x.code !== round.oddCode);
@@ -618,9 +671,9 @@ function showOddQ() {
       oddIdx++;
       setGameProg(oddIdx, 6);
       if (oddIdx >= 6) {
-        setTimeout(() => showGameDone(`Верно: ${oddCorrect} из 6`, oddCorrect >= 5 ? '🦊' : '🌿'), 1100);
+        later(() => showGameDone(`Верно: ${oddCorrect} из 6`, oddCorrect >= 5 ? '🦊' : '🌿'), 1100);
       } else {
-        setTimeout(showOddQ, 1200);
+        later(showOddQ, 1200);
       }
     };
     grid.appendChild(card);
@@ -668,6 +721,7 @@ async function beginNumber(level) {
 }
 
 function showNumberQ() {
+  questionLocked = false;
   const q = numberQuestions[numberIdx];
   document.getElementById('gameQ').textContent = q.text;
   document.getElementById('gameA').value = '';
@@ -693,6 +747,7 @@ async function startCompareGame() {
 }
 
 function showCompareQ() {
+  questionLocked = false;
   const r = compareRounds[compareIdx];
   const box = document.getElementById('gameQ');
   document.getElementById('gameMsg').textContent = '';
@@ -726,11 +781,11 @@ function showCompareQ() {
   }
 }
 
-function answerCompare(val) {
+async function answerCompare(val) {
   const r = compareRounds[compareIdx];
-  let ok = false;
-  if (r.type === 'cmp') ok = val === r.answer;
-  else ok = parseInt(val, 10) === r.answer;
+  const checked = await secureAnswer(compareIdx,val);
+  if(!checked) return; r.answer=checked.expected;
+  let ok = checked.correct;
   flashStage(ok);
   if (ok) {
     compareCorrect++;
@@ -746,9 +801,9 @@ function answerCompare(val) {
   compareIdx++;
   if (compareIdx >= 8) {
     showGamePlay(false);
-    setTimeout(() => showGameDone(`Верно: ${compareCorrect} из 8`, compareCorrect >= 6 ? '⚖️' : '📏'), 700);
+    later(() => showGameDone(`Верно: ${compareCorrect} из 8`, compareCorrect >= 6 ? '⚖️' : '📏'), 700);
   } else {
-    setTimeout(showCompareQ, 800);
+    later(showCompareQ, 800);
   }
 }
 
@@ -771,6 +826,7 @@ async function startStoryGame() {
 }
 
 function showStoryQ() {
+  questionLocked = false;
   const q = storyQuestions[storyIdx];
   document.getElementById('gameQ').innerHTML = `<div class="story-text">${esc(q.text)}</div>`;
   document.getElementById('gameA').value = '';
@@ -797,6 +853,7 @@ async function startQuizGame() {
 }
 
 function showQuizQ() {
+  questionLocked = false;
   const q = quizQuestions[quizIdx];
   document.getElementById('gameQ').innerHTML = `<div class="story-text">${esc(q.q)}</div>`;
   document.getElementById('gameMsg').textContent = 'Выбери ответ';
@@ -837,6 +894,7 @@ async function startLogicGame() {
 }
 
 function showLogicQ() {
+  questionLocked = false;
   const q = logicQuestions[logicIdx];
   document.getElementById('gameQ').innerHTML = `<div class="story-text">${esc(q.text)}</div>`;
   document.getElementById('gameA').value = '';
@@ -876,7 +934,9 @@ if (document.getElementById('gameBtn')) {
       const val = parseInt(document.getElementById('gameA').value, 10);
       if (isNaN(val)) return;
       const q = numberQuestions[numberIdx];
-      const ok = val === q.answer;
+      const checked = await secureAnswer(numberIdx,val);
+      if(!checked) return; q.answer=checked.expected;
+      const ok = checked.correct;
       flashStage(ok);
       if (ok) {
         numberCorrect++;
@@ -889,9 +949,9 @@ if (document.getElementById('gameBtn')) {
       numberIdx++;
       if (numberIdx >= 8) {
         showGamePlay(false);
-        setTimeout(() => showGameDone(`Верно: ${numberCorrect} из 8`, numberCorrect >= 6 ? '🔢' : '✏️'), 700);
+        later(() => showGameDone(`Верно: ${numberCorrect} из 8`, numberCorrect >= 6 ? '🔢' : '✏️'), 700);
       } else {
-        setTimeout(showNumberQ, 700);
+        later(showNumberQ, 700);
       }
       return;
     }
@@ -907,7 +967,9 @@ if (document.getElementById('gameBtn')) {
       const val = parseInt(document.getElementById('gameA').value, 10);
       if (isNaN(val)) return;
       const q = storyQuestions[storyIdx];
-      const ok = val === q.answer;
+      const checked = await secureAnswer(storyIdx,val);
+      if(!checked) return; q.answer=checked.expected;
+      const ok = checked.correct;
       flashStage(ok);
       if (ok) {
         storyCorrect++;
@@ -920,9 +982,9 @@ if (document.getElementById('gameBtn')) {
       storyIdx++;
       if (storyIdx >= 5) {
         showGamePlay(false);
-        setTimeout(() => showGameDone(`Верно: ${storyCorrect} из 5`, storyCorrect >= 4 ? '📚' : '🌲'), 700);
+        later(() => showGameDone(`Верно: ${storyCorrect} из 5`, storyCorrect >= 4 ? '📚' : '🌲'), 700);
       } else {
-        setTimeout(showStoryQ, 800);
+        later(showStoryQ, 800);
       }
       return;
     }
@@ -931,7 +993,8 @@ if (document.getElementById('gameBtn')) {
       if (!val) return;
       const q = quizQuestions[quizIdx];
       const box = document.getElementById('gameLevels');
-      const r = await api('/api/game/quiz/answer', { answer: val, expected: q.answer });
+      const r = await secureAnswer(quizIdx,val);
+      if(!r) return; q.answer=r.expected;
       flashStage(!!r.correct);
       if (box) {
         [...box.querySelectorAll('button')].forEach((btn) => {
@@ -953,7 +1016,7 @@ if (document.getElementById('gameBtn')) {
         if (box) { box.style.display = 'none'; box.innerHTML = ''; }
         showGameDone(`Верно: ${quizCorrect} из 8`, quizCorrect >= 6 ? '🦉' : '📖');
       } else {
-        setTimeout(showQuizQ, 900);
+        later(showQuizQ, 900);
       }
       return;
     }
@@ -961,7 +1024,9 @@ if (document.getElementById('gameBtn')) {
       const val = parseInt(document.getElementById('gameA').value, 10);
       if (isNaN(val)) return;
       const q = logicQuestions[logicIdx];
-      const ok = val === q.answer;
+      const checked = await secureAnswer(logicIdx,val);
+      if(!checked) return; q.answer=checked.expected;
+      const ok = checked.correct;
       flashStage(ok);
       if (ok) {
         logicCorrect++;
@@ -974,9 +1039,9 @@ if (document.getElementById('gameBtn')) {
       logicIdx++;
       if (logicIdx >= 5) {
         showGamePlay(false);
-        setTimeout(() => showGameDone(`Верно: ${logicCorrect} из 5`, logicCorrect >= 4 ? '🧠' : '✏️'), 700);
+        later(() => showGameDone(`Верно: ${logicCorrect} из 5`, logicCorrect >= 4 ? '🧠' : '✏️'), 700);
       } else {
-        setTimeout(showLogicQ, 800);
+        later(showLogicQ, 800);
       }
       return;
     }

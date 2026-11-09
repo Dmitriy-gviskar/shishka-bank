@@ -262,6 +262,7 @@ async function applyBootMigrations() {
     'migration_forest_welcome.sql',
     'migration_friend_trade.sql',
     'migration_forest_tasks_pack.sql',
+    'migration_gameplay_integrity.sql',
   ];
   await runMigrations(pool, dir, files);
 }

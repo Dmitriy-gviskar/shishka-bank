@@ -6,6 +6,7 @@ create or replace function gift_card(p_child uuid, p_to uuid, p_type uuid, p_gra
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare have int; c_id uuid; today_n int; t card_types;
 begin
+  perform 1 from wallets where user_id in (p_child,p_to) order by user_id for update;
   if p_child = p_to then raise exception 'self gift'; end if;
   select circle_id into c_id from users where id=p_child;
   select count(*) into today_n from card_gifts
