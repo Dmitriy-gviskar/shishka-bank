@@ -1,3 +1,4 @@
+import {s3Fixture,s3Mock} from './helpers/s3.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp,mkdir,writeFile,readFile,readdir,rm } from 'node:fs/promises';
@@ -11,10 +12,13 @@ async function fixture(t,fail) {
   await writeFile(join(root,'config'),'secret-config');
   await writeFile(join(root,'maintenance'),'on');
   const config={backupRoot:join(root,'backups'),appDir:join(root,'app'),uploadsDir:join(root,'uploads'),gitRepo:join(root,'git'),pgService:'source',restoreService:'restore',expectedDatabase:'shishka_test_source',gpgRecipient:'test-recipient',offsiteHost:'backup.example',offsiteRoot:'/private-backups',configPaths:[join(root,'config')],maintenanceFile:join(root,'maintenance'),service:'shishka'};
+  Object.assign(config,await s3Fixture(root));
+  const aws=s3Mock();
   const calls=[];
   const run=async(file,args=[],options={})=>{
     calls.push({file,args,options});
     if(fail?.(file,args))throw new Error('injected '+file+' failure');
+    if(file==='aws')return aws(args);
     if(file==='systemctl')return {stdout:'inactive\n',code:3};
     if(file==='psql')return {stdout:args.includes('select current_database()')?'shishka_test_source\n':'4\n',code:0};
     if(file==='pg_dump')await writeFile(args.find((x)=>x.startsWith('--file=')).slice(7),'dump-data');
@@ -34,7 +38,7 @@ test('verified backup is unique, encrypted, restored and confirmed by both desti
   assert.notEqual(first.id,second.id);
   const success=JSON.parse(await readFile(join(first.path,'SUCCESS.json')));
   assert.equal(success.mode,'checkpoint');assert.equal(success.restoreVerified,true);
-  assert.deepEqual((await readdir(first.path)).sort(),['SUCCESS.json','bundle.tar.gpg','bundle.tar.gpg.sha256']);
+  assert.deepEqual((await readdir(first.path)).sort(),['SUCCESS.json','bundle.tar.gpg','bundle.tar.gpg.sha256','receipt.json']);
   assert.ok(f.calls.some((c)=>c.file==='pg_restore'&&c.args.includes('--exit-on-error')));
   const restore=f.calls.find((c)=>c.file==='pg_restore'&&c.args.includes('--exit-on-error'));
   assert.ok(restore.args.some((x)=>x.startsWith('--dbname=shishka_restore_')));
@@ -58,7 +62,7 @@ for(const [name,fail] of [
   await assert.rejects(createBackup(f.config,{run:f.run,checkpoint:true}),/injected/);
   assert.deepEqual(await readdir(f.config.backupRoot),['previous']);
   assert.equal(await readFile(join(f.config.backupRoot,'previous','keep'),'utf8'),'previous-backup');
-  if(fail('gpg',[]))assert.ok(!f.calls.some((c)=>c.file==='scp'||c.file==='git'));
+  if(fail('gpg',[]))assert.ok(!f.calls.some((c)=>c.file==='scp'||(c.file==='git'&&c.args.includes('push'))));
 });
 
 test('database identity mismatch and missing encryption configuration fail before backup',async(t)=>{
@@ -87,4 +91,31 @@ test('cron wrapper preserves nonzero exit and never prints OK when configuration
   const {fileURLToPath}=await import('node:url');
   const root=await mkdtemp(join(tmpdir(),'shishka-backup-cli-'));t.after(()=>rm(root,{recursive:true,force:true}));
   await assert.rejects(promisify(execFile)('bash',[fileURLToPath(new URL('../ops/backup-shishka.sh',import.meta.url))],{env:{...process.env,SHISHKA_BACKUP_CONFIG:join(root,'missing.json')}}),(e)=>{assert.equal(e.code,1);assert.match(e.stderr,/FAIL backup/);assert.doesNotMatch(e.stdout,/OK/);return true;});
+});
+
+test('GitHub receives receipts only; both full remote copies are recorded',async t=>{
+ const f=await fixture(t);const result=await createBackup(f.config,{run:f.run});
+ const files=await readdir(join(f.config.gitRepo,'metadata-v2'));assert.equal(files.length,1);
+ const receipt=JSON.parse(await readFile(join(f.config.gitRepo,'metadata-v2',files[0])));assert.deepEqual(receipt.copies.map(c=>c.kind),['s3','ssh']);
+ assert.ok((await readFile(join(f.config.gitRepo,'metadata-v2',files[0]))).length<65536);
+ for(const call of f.calls.filter(c=>c.file==='git'&&(c.args.includes('add')||c.args.includes('commit'))))assert.match(call.args.at(-1),/^metadata-v2\/.*\.json$/);
+ assert.equal((await readdir(result.path)).includes('receipt.json'),true);
+});
+test('shared failure domains and dirty or unpublished Git mirror fail before dump',async t=>{
+ const f=await fixture(t);
+ await assert.rejects(createBackup({...f.config,sourceFailureDomain:'SELECTEL'},{run:f.run}),/independent/);
+ const run=(file,args,options)=>file==='git'&&args.includes('status')?Promise.resolve({code:0,stdout:'?? old-large-archive'}):f.run(file,args,options);
+ await assert.rejects(createBackup(f.config,{run}),/dirty/);assert.ok(!f.calls.some(c=>c.file==='pg_dump'));
+});
+test('S3 verification failure never records success or pushes Git metadata',async t=>{
+ const f=await fixture(t,(file,args)=>file==='aws'&&args.includes('get-object'));
+ await assert.rejects(createBackup(f.config,{run:f.run}),/get-object failed/);
+ assert.deepEqual(await readdir(f.config.backupRoot),[]);assert.ok(!f.calls.some(c=>c.file==='git'&&c.args.includes('push')));
+});
+test('backup lock prevents overlapping writers and is released after errors',async t=>{
+ const f=await fixture(t);await writeFile(join(f.config.backupRoot,'.backup.lock'),'owned by another backup');
+ await assert.rejects(createBackup(f.config,{run:f.run}),/lock exists/);
+ assert.equal(await readFile(join(f.config.backupRoot,'.backup.lock'),'utf8'),'owned by another backup');
+ await rm(join(f.config.backupRoot,'.backup.lock'));await createBackup(f.config,{run:f.run});
+ assert.ok(!(await readdir(f.config.backupRoot)).includes('.backup.lock'));
 });

@@ -1,3 +1,4 @@
+import { createReadStream } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile, writeFile, access } from 'node:fs/promises';
@@ -18,7 +19,7 @@ export async function command(file, args = [], options = {}) {
 export function required(value,label) { if(typeof value!=='string'||!value.trim())throw new Error(`Missing ${label}`);return value; }
 export function absolute(value,label) {required(value,label);if(!isAbsolute(value)||resolve(value)==='/')throw new Error(`Unsafe ${label}`);return resolve(value);}
 export async function exists(path) {try{await access(path);return true;}catch{return false;}}
-export async function sha256(path) {return createHash('sha256').update(await readFile(path)).digest('hex');}
+export async function sha256(path) {const hash=createHash('sha256');for await(const chunk of createReadStream(path))hash.update(chunk);return hash.digest('hex');}
 export async function json(path,value) {await writeFile(path,JSON.stringify(value,null,2)+'\n',{mode:0o600});}
 export const quote=(value)=>"'"+String(value).replaceAll("'","'\\''")+"'";
 export async function probe(url,host) {

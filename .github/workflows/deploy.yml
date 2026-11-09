@@ -46,7 +46,12 @@ jobs:
           cache: npm
           cache-dependency-path: client/package-lock.json
       - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client gnupg
+      - name: Install pinned S3 client for integration tests
+        run: |
+          python3 -m venv /tmp/shishka-aws
+          /tmp/shishka-aws/bin/pip install awscli==1.46.3
+          echo /tmp/shishka-aws/bin >> "$GITHUB_PATH"
       - name: Install dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
         working-directory: client
@@ -67,7 +72,7 @@ jobs:
           test -z "$(find client -type l -print -quit)"
           tar --exclude=client/node_modules --exclude=client/uploads --exclude='client/*.env' --exclude='client/.env*' -czf release.tar.gz client .nvmrc
           sha256sum release.tar.gz > release.tar.gz.sha256
-          (cd ops && sha256sum runtime.mjs backup.mjs deploy.mjs) > ops.sha256
+          (cd ops && sha256sum runtime.mjs s3.mjs backup.mjs deploy.mjs) > ops.sha256
       - name: Upload to incoming directory
         uses: appleboy/scp-action@v0.1.7
         with:

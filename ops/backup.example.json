@@ -13,5 +13,18 @@
     "/etc/systemd/system/shishka.service",
     "/etc/nginx/sites-available/shishka",
     "/root/shishka-app.env"
-  ]
+  ],
+  "sourceFailureDomain": "REPLACE_VPS_PROVIDER",
+  "offsiteFailureDomain": "REPLACE_INDEPENDENT_SSH_PROVIDER",
+  "s3": {
+    "provider": "selectel",
+    "failureDomain": "selectel",
+    "endpoint": "https://REPLACE_WITH_ENDPOINT_FROM_SELECTEL_PANEL",
+    "bucket": "replace-with-private-bucket",
+    "region": "REPLACE_WITH_REGION_FROM_PANEL",
+    "profile": "shishka-backup",
+    "credentialsFile": "/root/.aws/shishka-credentials",
+    "configFile": "/root/.aws/shishka-config",
+    "prefix": "shishka/snapshots"
+  }
 }
