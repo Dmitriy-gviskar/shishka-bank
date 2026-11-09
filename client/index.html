@@ -88,6 +88,7 @@
           <span class="freeze-chip" id="freezeChip" hidden>🌧×0</span><button id="dailyBtn" type="button">Забрать</button>
         </div>
       </section>
+<section id="firstAdventure" class="first-adventure" data-screen="home" aria-label="Первое приключение" hidden></section>
       <section class="next-deed" id="nextDeed" aria-label="Следующее дело">
         <div class="nd-label">Твой следующий шаг</div>
         <a class="nd-title" id="nextDeedTitle" href="quests.html">Сделаем доброе дело?</a>
@@ -99,6 +100,7 @@
         <a href="forest.html"><img src="assets/nav/n6.png" alt="">На поляну</a>
       </div>
       <details class="wallet-more"><summary>Ещё возможности</summary><div class="home-extras">
+        <label class="forest-motion-setting"><span>Живой лес<small id="forestMotionNote">Мягкое движение дерева и Духа</small></span><input type="checkbox" id="forestMotionToggle" aria-label="Анимации леса"></label>
         <button id="inviteBtn" type="button">Позвать друга в лес<small>Приглашение и твой код</small></button>
         <a href="news.html">Новости леса →</a><a href="album.html">Лесной альбом →</a>
         <a href="surprises.html" id="spLink" style="display:none">Шишки-сюрпризы →</a>
@@ -129,6 +131,10 @@
   </div>
 <script src="assets/qrcode.js"></script>
 <script src="assets/jsqr.js"></script>
+<script src="lib/first-adventure.js"></script>
+<script src="first-adventure.js"></script>
+<script src="forest-motion.js"></script>
+<script src="mobile-viewport.js"></script>
 <script src="app.js"></script>
 <script src="wallet.js"></script>
 <script src="nav.js"></script>

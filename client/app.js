@@ -273,8 +273,8 @@ async function api(path, body, method) {
   const snapOk = (p) => p === '/api/cards' || p === '/api/achievements' || p === '/api/state';
   try {
     if (!post) {
-      // кабинет ведущего не кэшируем — иначе чужой PIN/сессия могут показать чужих детей
-      if (path.startsWith('/api/parent/')) {
+      // Права ведущего и живые статусы семейных дел всегда читаем с сервера.
+      if (path.startsWith('/api/parent/') || path === '/api/tasks' || path === '/api/guardian/family') {
         const res = await fetch(path, opt);
         const d = await res.json();
         if (!res.ok && d.error) d.error = friendlyError(res.status, d.error);
@@ -711,7 +711,15 @@ function questNote(t2, ok) {
   n.style.color = ok ? '#5f8e37' : '#b3452e';
 }
 
-function renderFamilyBox(cont, family) {
+function renderFamilyBox(cont, family, tasks) {
+  const cycle = window.ShishkaFamilyCycle ? window.ShishkaFamilyCycle(tasks, family) : null;
+  if(cycle && cycle.total){
+    const summary=document.createElement('section');summary.className='family-cycle-summary';summary.setAttribute('aria-label','Мои семейные дела');
+    const title=document.createElement('b');title.textContent='Твои семейные дела';
+    const text=document.createElement('p');text.textContent=`Сделать: ${cycle.open} · На проверке: ${cycle.waiting} · Принято за неделю: ${cycle.done}`;
+    const hint=document.createElement('small');hint.textContent=cycle.waiting?'Родитель проверит результат. Шишки придут после принятия дела.':'Договорись с родителем, выполни дело и отправь результат на проверку.';
+    summary.append(title,text,hint);cont.appendChild(summary);
+  }
   if (!family) return;
   const loadErr = family.error;
   if (loadErr) family = { kids: [], pending: [], templates: [], maxTasks: 5, maxReward: 15 };
@@ -726,7 +734,8 @@ function renderFamilyBox(cont, family) {
     `<option value="${k.id}">${esc(k.name)} · ${k.hanging || 0}/${family.maxTasks || 5}</option>`).join('');
   const tplOpts = tpls.map((t) =>
     `<option value="${t.id}" data-title="${esc(t.title)}" data-reward="${t.reward}" data-photo="${t.needs_photo ? 1 : 0}">${esc(t.title)} · ${t.reward}</option>`).join('');
-  box.innerHTML = `<summary>Я родитель — дела для своих</summary>
+  box.innerHTML = `<summary>${kids.length || pending.length ? `Семейные дела · на проверке ${pending.length}` : 'Я родитель — семейные дела'}</summary>
+    <p class="family-flow">Предложите дело → ребёнок выполнит → примите результат</p>
     <p class="hint">До ${family.maxTasks || 5} дел, до ${maxR} шишек.</p>
     ${loadErr ? `<p class="hint">${esc(loadErr)}</p>` : ''}
     ${pending.length ? pending.map((p) => `
@@ -734,10 +743,10 @@ function renderFamilyBox(cont, family) {
         <div class="t">${esc(p.title)}</div>
         <div class="who">${esc(p.childName)} · +${p.reward} шишек</div>
         ${p.photo ? `<img src="/${String(p.photo).replace(/^\/+/, '')}" alt="" style="width:100%;border-radius:10px;margin-top:6px;border:2px solid #d9c39a">` : ''}
-        <div class="acts"><button class="ok" type="button">Ок</button>
-          <button class="no" type="button">Вернуть</button></div>
+        <div class="acts"><button class="ok" type="button">Принять дело</button>
+          <button class="no" type="button">На доработку</button></div>
       </div>`).join('') : ''}
-    ${kids.length ? kids.map((k) =>
+    ${kids.length ? `<details class="family-settings"><summary>Дети и настройки общения</summary>${kids.map((k) =>
       `<div class="kid-chip"><span>${esc(k.name)}</span>
         <button type="button" data-unlink="${k.id}">отвязать</button></div>
        <div class="age-row" data-age="${k.id}">
@@ -745,13 +754,13 @@ function renderFamilyBox(cont, family) {
          <label>писать с <input type="number" min="4" max="17" inputmode="numeric" value="${k.chatMin || ''}" placeholder="—"></label>
          <label>до <input type="number" min="4" max="17" inputmode="numeric" value="${k.chatMax || ''}" placeholder="—"></label>
          <button type="button" class="go sec" data-agesave="${k.id}">Ок</button>
-       </div>`).join('') : ''}
-    ${kids.length ? `<select id="famKid">${kidOpts}</select>
-      <select id="famTpl"><option value="">Каталог дел…</option>${tplOpts}</select>
-      <input id="famTitle" placeholder="Своё дело" maxlength="60">
-      <input id="famReward" type="number" min="1" max="${maxR}" placeholder="Награда, до ${maxR}">
+       </div>`).join('')}</details>` : ''}
+    ${kids.length ? `<label for="famKid">Кому предложить дело</label><select id="famKid">${kidOpts}</select>
+      <label for="famTpl">Выбрать готовое дело</label><select id="famTpl"><option value="">Каталог дел…</option>${tplOpts}</select>
+      <label for="famTitle">Что нужно сделать</label><input id="famTitle" placeholder="Например, полить цветы" maxlength="60">
+      <label for="famReward">Награда в шишках</label><input id="famReward" type="number" min="1" max="${maxR}" placeholder="Награда, до ${maxR}">
       <label><input type="checkbox" id="famPhoto"> нужно фото</label>
-      <button class="go" id="famGive" type="button">Выдать дело</button>` : ''}
+      <button class="go" id="famGive" type="button">Предложить дело ребёнку</button>` : ''}
     <p>Чтобы добавить ребёнка, обратитесь к ведущему: он проверит взрослого и назначит опекуна.</p>`;
   const tplSel = box.querySelector('#famTpl');
   if (tplSel) tplSel.onchange = () => {
@@ -815,7 +824,7 @@ function renderFamilyBox(cont, family) {
 async function loadTasks() {
   const [tasks, family] = await Promise.all([api('/api/tasks'), api('/api/guardian/family')]);
   const cont = document.getElementById('taskList'); cont.innerHTML = '';
-  renderFamilyBox(cont, family);
+  renderFamilyBox(cont, family, tasks);
   if (!Array.isArray(tasks) || !tasks.length) {
     const empty = document.createElement('div');
     empty.className = 'quest-empty';
@@ -831,14 +840,17 @@ async function loadTasks() {
   const redo = tasks.filter((t) => t.status === 'rejected');
   const day = tasks.filter((t) => t.kind === 'day' && t.status !== 'rejected');
   const daily = tasks.filter((t) => t.kind !== 'day' && t.kind !== 'family' && t.is_daily && t.status !== 'rejected');
-  const familyTasks = tasks.filter((t) => t.kind === 'family' && t.status !== 'rejected');
+  const familyTasks = tasks.filter((t) => t.kind === 'family' && t.status !== 'rejected' && t.status !== 'done');
+  const acceptedFamily = tasks.filter((t) => t.kind === 'family' && t.status === 'done');
   const other = tasks.filter((t) => t.kind !== 'day' && t.kind !== 'family' && !t.is_daily && t.status !== 'rejected');
   const sections = [];
   if (redo.length) sections.push(['Вернули — переделай', redo]);
   if (familyTasks.length) sections.push(['От родителей', familyTasks]);
+
   if (day.length) sections.push(['Задание дня', day]);
   if (daily.length) sections.push(['Ежедневки', daily]);
   if (other.length) sections.push(['От ведущего', other]);
+  if (acceptedFamily.length) sections.push(['Принято семьёй · за неделю', acceptedFamily]);
   const bind = (el, t) => {
     const btn = el.querySelector('button'); if (!btn) return;
     btn.onclick = async () => {
@@ -890,6 +902,7 @@ async function loadTasks() {
       cont.appendChild(el);
     }
   }
+  if (window.runFirstAdventure) window.runFirstAdventure();
 }
 if (page === 'quests.html') loadTasks();
 
@@ -1505,6 +1518,9 @@ if (page === 'forest.html') {
 // ══════════════ Лесная коллекция (карточки) ══════════════
 
   window.api = api; window.esc = esc; window.refreshBalance = refreshBalance;
+  if (window.runFirstAdventure) window.runFirstAdventure();
+  if (window.runForestMotion) window.runForestMotion();
+  if (window.runMobileViewport) window.runMobileViewport();
   window.capturePhoto = capturePhoto; window.clearSession = clearSession;
   // per-page модули — только после window.api (иначе холодный заход падает)
   if (page === 'deposit.html' && window.runDeposit) window.runDeposit();

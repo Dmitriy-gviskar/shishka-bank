@@ -749,13 +749,14 @@ const api = {
   'GET /api/tasks': async (b, ctx) => {
     try { await rpc('ensure_daily_tasks', [ctx.child]); }
     catch (e) { console.error('ensure_daily_tasks', e.message); }
-    // open / на проверке / вернули на доработку; done только у сегодняшних daily
+    // Открытые дела, сегодняшние daily и принятые семейные дела за последние семь дней.
     const rows = (await q(`select id,title,reward,needs_photo,status,is_daily,category,created_at,
              coalesce(kind, case when is_daily then 'daily' else 'host' end) as kind
       from tasks where child_id=$1
       and (
         status in ('open','pending_review','rejected')
         or (status = 'done' and is_daily and created_at::date = (now() at time zone 'Europe/Moscow')::date)
+        or (status = 'done' and kind = 'family' and coalesce(completed_at, created_at) >= now() - interval '7 days')
       )
       order by case status when 'rejected' then 0 when 'open' then 1 when 'pending_review' then 2 else 3 end,
                case coalesce(kind, '') when 'day' then 0 else 1 end,

@@ -42,7 +42,8 @@ const inviteBtn = document.getElementById('inviteBtn');
 if (inviteBtn) inviteBtn.onclick = () => navigate('profile.html#grove');
 
 // ── Ежедневный подарок + серия ──
-function coneRain(n) {   // дождик шишек поверх экрана
+function coneRain(n) {
+  if (window.forestMotionEnabled && !window.forestMotionEnabled()) return;   // дождик шишек поверх экрана
   const phone = document.querySelector('.phone'); if (!phone) return;
   const box = document.createElement('div'); box.className = 'rain'; phone.appendChild(box);
   for (let i = 0; i < n; i++) {
@@ -89,6 +90,7 @@ function initDaily(s) {
     if (r.rain) parts.push(`🌧+${r.rain}`);
     const total = (r.bonus || 0) + (r.milestone || 0) + (r.rain || 0);
     coneRain(12 + (r.milestone ? 18 : 0));
+    if (window.forestRewardPulse) window.forestRewardPulse();
     el.classList.add('got'); fire.textContent = '🔥';
     const grew = (r.tree_level || prevLvl) > prevLvl;
     let msg = parts.join(' · ') || `+${total}`;

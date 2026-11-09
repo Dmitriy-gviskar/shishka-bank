@@ -76,10 +76,31 @@ window.runCards = function () {
     });
   }
 
+  function renderGoal(d){
+    const box=document.getElementById('collectionGoal');
+    if(!box||!window.ShishkaCollectionGoal)return;
+    const goal=window.ShishkaCollectionGoal(d);
+    box.hidden=!goal;if(!goal)return;
+    const summary=document.getElementById('collectionGoalSummary');
+    const body=document.getElementById('collectionGoalBody');body.replaceChildren();
+    if(goal.kind!=='target'){
+      summary.textContent=goal.kind==='complete'?'Все лесные жители собраны целиком':'Начни знакомство с лесом';
+      const text=document.createElement('p');text.textContent=goal.kind==='complete'?'Каждый житель в этом альбоме собран во всех шести обликах. Особые награды показаны отдельно.':'Открой пак кнопкой внизу. Когда появятся карты, здесь будет твоя ближайшая цель.';body.appendChild(text);return;
+    }
+    summary.textContent=`Ближайшая цель · ${goal.name} · ${goal.have}/6`;
+    const missing=document.createElement('p');missing.textContent='Не хватает: '+goal.missingNames.join(', ')+'.';body.appendChild(missing);
+    if(goal.season){const season=document.createElement('p');season.className='goal-season';season.textContent=`Сезон «${goal.season}»: ${goal.seasonCells} из ${goal.seasonTotal} обликов.`;body.appendChild(season);}
+    const hint=document.createElement('small');hint.textContent='Собери все 6 обликов жителя. В его карточке можно посмотреть недостающие карты и доступные действия.';body.appendChild(hint);
+    const button=document.createElement('button');button.type='button';button.textContent='Посмотреть недостающие';button.onclick=()=>{const card=DATA.cards.find(c=>c.id===goal.id);if(card)openDetail(card,goal.missing[0]);};body.appendChild(button);
+  }
+
   function render(d) {
     DATA = d;
     if (!d.peek) OWN = d;
     PEEK = d.peek && d.friend ? d.friend : null;
+    renderGoal(d);
+    const firstGuide=document.getElementById('firstAdventure');
+    if(firstGuide && d.pity && d.pity.opened>0) firstGuide.hidden=true;
     RAR = {}; d.rarities.forEach((r) => RAR[r.grade] = r);
     const legend = document.getElementById('rarityLegend');
     if (legend) legend.innerHTML = d.rarities.map(r => `<span style="--gc:${presentation.rarity(r.grade,d.rarities).color}">${r.grade} / 6 · ${esc(r.name)}</span>`).join('');

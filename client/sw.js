@@ -1,4 +1,4 @@
-const CACHE = 'shishka-v163';
+const CACHE = 'shishka-v169';
 const CARDS_CACHE = 'shishka-cards-v2';
 const CARDS_MAX = 500;       // альбом тянет сотни thumb — 120 было мало, промахи ломали картинки
 const CARDS_FULL_MAX = 40;   // full-res отдельно жёстче
@@ -7,7 +7,7 @@ const PAGES = ['/', 'landing.html', 'index.html', 'quests.html', 'shop.html', 't
   'skins.html', 'mail.html', 'auction.html', 'insurance.html', 'council.html', 'guilds.html', 'quest.html', 'collection.html',
   'parent.html', 'surprises.html', 'link.html', 'onboard.html', 'board.html',
   'style.css', 'storybook-theme.css', 'assets/forest-storybook.webp', 'app.js', 'games.js', 'wallet.js', 'transfers.js', 'market.js', 'profile.js', 'mail.js', 'parent.js', 'cards.js', 'deposit.js', 'horoscope.js', 'quest.js', 'news.js', 'guilds.js', 'nav.js', 'board.js',
-  'lib/offline-cards.mjs', 'lib/offline-queue.mjs', 'lib/new-shelf.mjs', 'lib/card-presentation.js',
+  'mobile-viewport.js', 'forest-motion.js', 'first-adventure.js', 'lib/first-adventure.js', 'lib/offline-cards.mjs', 'lib/offline-queue.mjs', 'lib/new-shelf.mjs', 'lib/family-cycle.js', 'lib/collection-goal.js', 'lib/card-presentation.js',
   'assets/qrcode.js', 'assets/jsqr.js',
   'assets/home_btn_earn.webp', 'assets/shop_btn_buy.webp', 'assets/gift_btn_send.webp',
   'assets/shop/shop_ic_cartoon.webp', 'assets/shop/shop_ic_phone.webp', 'assets/shop/shop_ic_dinner.webp',

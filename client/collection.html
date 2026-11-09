@@ -448,9 +448,11 @@
 </style><link rel="stylesheet" href="storybook-theme.css"></head><body>
 <div class="phone storybook-theme" data-storybook-screen="collection"><div class="cbg"></div><div class="cwrap">
   <header class="chead"><h1 class="h1">Коллекция</h1></header>
-  <section class="collection-intro" aria-label="Мой альбом">
+  <section id="firstAdventure" class="first-adventure" data-screen="collection" aria-label="Первое приключение" hidden></section>
+<section class="collection-intro" aria-label="Мой альбом">
     <div class="prog"><span id="progTxt">Знакомимся с лесом…</span><div class="bar"><i id="progBar" style="width:0"></i></div></div>
   </section>
+  <details class="collection-goal" id="collectionGoal" hidden><summary id="collectionGoalSummary"></summary><div id="collectionGoalBody"></div></details>
   <div class="peekbar" id="peekBar">
     <div class="pt" id="peekTitle">Альбом друга</div>
     <div class="ps" id="peekSub"></div>
@@ -528,7 +530,12 @@
     <div class="jp-tap">нажми, чтобы продолжить</div>
   </div>
 </div>
+<script src="lib/first-adventure.js"></script>
+<script src="first-adventure.js"></script>
+<script src="forest-motion.js"></script>
+<script src="mobile-viewport.js"></script>
 <script src="app.js"></script>
+<script src="lib/collection-goal.js"></script>
 <script src="lib/card-presentation.js"></script>
 <script src="cards.js"></script>
 <script src="nav.js"></script>

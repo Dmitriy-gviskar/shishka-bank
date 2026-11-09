@@ -1,0 +1,11 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {createRequire} from 'node:module';
+const {collectionGoal}=createRequire(import.meta.url)('../client/lib/collection-goal.js');
+const card=(id,n,extra={})=>({id,code:id,name:id,category:'zver',season:'s1',grades:[1,2,3,4,5,6].map(grade=>({grade,qty:grade<=n?1:0})),...extra});
+const data=cards=>({cards,rarities:[1,2,3,4,5,6].map(grade=>({grade,name:'Ранг '+grade})),seasons:[{code:'s1',name:'Опушка'}]});
+test('chooses closest incomplete creature and names exact missing ranks',()=>{const g=collectionGoal(data([card('a',2),card('b',5)]));assert.equal(g.id,'b');assert.deepEqual(g.missing,[6]);assert.deepEqual(g.missingNames,['Ранг 6']);});
+test('duplicates and quantities do not inflate unique progress',()=>{const c=card('a',1);c.grades.push({grade:1,qty:99});const g=collectionGoal(data([c]));assert.equal(g.have,1);assert.equal(g.seasonCells,1);});
+test('complete creatures and special awards cannot become an incomplete goal',()=>{assert.equal(collectionGoal(data([card('full',6),card('award',5,{category:'special'}),card('near',3)])).id,'near');});
+test('empty and fully completed albums have honest empty states',()=>{assert.equal(collectionGoal(data([])).kind,'empty');assert.equal(collectionGoal(data([card('a',0)])).kind,'empty');assert.equal(collectionGoal(data([card('a',6)])).kind,'complete');});
+test('friend albums never receive own-player recommendations',()=>{assert.equal(collectionGoal({...data([card('a',3)]),peek:true}),null);});
+test('season progress excludes special rewards and other seasons',()=>{const g=collectionGoal(data([card('a',5),card('b',2),card('c',4,{season:'s2'}),card('award',6,{category:'special'})]));assert.equal(g.seasonCells,7);assert.equal(g.seasonTotal,12);});
+test('missing rarity metadata is safe and source inventory is unchanged',()=>{const d=data([card('a',5)]);d.rarities=[];const original=structuredClone(d);assert.deepEqual(collectionGoal(d).missingNames,['Редкость 6']);assert.deepEqual(d,original);});

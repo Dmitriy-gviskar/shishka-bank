@@ -581,3 +581,69 @@ body.storybook-admin{background:#f8f2e5 url('assets/forest-storybook.webp') cent
 .storybook-theme :is(.game-filters,.mailTabs,.sortTabs) button{min-height:42px}
 .storybook-theme :is(.deposit-wrap .term,.deposit-wrap .sum .s,.auction-wrap .bids .s,.gifts-wrap .ap,.pot-wrap .give .s){min-height:44px;box-sizing:border-box}
 @media(max-height:650px){.storybook-theme :is(.quests-wrap,.shop-wrap,.gifts-wrap,.guilds-wrap,.council-wrap,.deposit-wrap,.pot-wrap,.storybook-rest){overflow-y:auto}.storybook-theme :is(.quests-wrap,.shop-wrap,.gifts-wrap,.guilds-wrap,.council-wrap,.deposit-wrap,.pot-wrap,.storybook-rest) > :is(.title,.greet,.card,.head-card,.newg,.sub,.prop-form,.pot-img,.oracle,.lead,.panel){flex-shrink:0}}
+
+.storybook-theme .first-adventure{flex:none;background:#fffaf0ed;border:1px solid #cdd5b0;border-radius:22px;padding:16px;color:#45613c;box-shadow:0 4px 14px #72592e14}
+.storybook-theme .first-adventure[hidden]{display:none}
+.storybook-theme .adventure-kicker{font:900 10px var(--font);letter-spacing:1px;text-transform:uppercase;color:#756343}
+.storybook-theme .adventure-steps{display:flex;gap:7px;list-style:none;padding:0;margin:12px 0;counter-reset:adventure}
+.storybook-theme .adventure-steps li{flex:1;font:800 10px/1.4 var(--font);color:#756343;counter-increment:adventure}
+.storybook-theme .adventure-steps li::before{content:counter(adventure);display:block;width:23px;height:23px;line-height:23px;border-radius:50%;background:#eee6d2;color:#756343;margin-bottom:5px;text-align:center}
+.storybook-theme .adventure-steps li[aria-current]{color:#426536}.storybook-theme .adventure-steps li[aria-current]::before{background:#4e7040;color:#fff8e8}.storybook-theme .adventure-steps li.complete::before{content:'✓';background:#dfe9cb;color:#526f3b}
+.storybook-theme .first-adventure h2{font:900 18px/1.3 var(--font);color:#45613c;margin:0 0 8px}
+.storybook-theme .first-adventure p{font:700 13px/1.55 var(--font);color:#64734b;margin:0 0 12px}
+.storybook-theme .first-adventure small{display:block;font:700 11px/1.5 var(--font);color:#756343;margin-top:10px}
+.storybook-theme .adventure-action{display:block;text-align:center;text-decoration:none;background:#42653c;color:#fff8e8;border:1px solid #315237;border-radius:14px;padding:12px;font:900 13px var(--font);min-height:44px;box-sizing:border-box}
+.storybook-theme .quests-wrap:has(.first-adventure:not([hidden])) #taskList{flex:1 0 300px;overflow:visible}
+.storybook-theme .quests-wrap:has(.first-adventure:not([hidden])){overflow-y:auto}
+
+.storybook-theme .cwrap .first-adventure{padding:12px 14px}.storybook-theme .cwrap .first-adventure .adventure-steps,.storybook-theme .cwrap .first-adventure small{display:none}.storybook-theme .cwrap .first-adventure h2{font-size:15px;margin:7px 0}.storybook-theme .cwrap .first-adventure p{font-size:12px;margin:0}
+
+.storybook-theme .quests-wrap .first-adventure{padding:12px 14px}.storybook-theme .quests-wrap .first-adventure .adventure-steps,.storybook-theme .quests-wrap .first-adventure small{display:none}.storybook-theme .quests-wrap .first-adventure h2{font-size:15px;margin:6px 0}.storybook-theme .quests-wrap .first-adventure p{font-size:12px;margin:0}
+
+/* Gentle, optional ambient life; motion never communicates unique game information. */
+@keyframes forest-breathe{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-3px) rotate(1deg)}}
+@keyframes forest-canopy{0%,100%{transform:rotate(-1deg)}50%{transform:rotate(1deg)}}
+@keyframes forest-reward{0%,100%{box-shadow:0 4px 15px #70582e13}45%{box-shadow:0 0 0 5px #b8ce8b55,0 5px 22px #647e3b24}}
+html[data-forest-motion="on"] .storybook-theme .greet-row > .spirit{animation:forest-breathe 6s ease-in-out infinite;transform-origin:50% 85%}
+html[data-forest-motion="on"] .storybook-theme :is(.lvlbadge-tree,.profile-wrap .hero img){animation:forest-canopy 8s ease-in-out infinite;transform-origin:50% 95%}
+html[data-forest-motion="on"] .storybook-theme .forest-reward-pulse{animation:forest-reward .8s ease-out 1}
+.storybook-theme .forest-motion-setting{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px;background:#fffaf0ed;border:1px solid #ded1b7;border-radius:15px;color:#48613b;font:800 13px var(--font);min-height:48px}
+.storybook-theme .forest-motion-setting small{display:block;margin-top:4px;color:#756343;font:700 11px/1.5 var(--font)}
+.storybook-theme .forest-motion-setting input{width:22px;height:22px;flex:none;accent-color:#527346;cursor:pointer}
+html[data-forest-motion="off"] .storybook-theme *,html[data-forest-motion="off"] .storybook-theme *::before,html[data-forest-motion="off"] .storybook-theme *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+html[data-forest-motion="off"] .storybook-theme .rain{display:none!important}
+@media(prefers-reduced-motion:reduce){.storybook-theme *,.storybook-theme *::before,.storybook-theme *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.storybook-theme .rain{display:none!important}}
+
+.storybook-theme .collection-goal{flex:none;background:#f8f4e8ed;border:1px solid #d7d8b7;border-radius:16px;color:#586d43;padding:0 12px}
+.storybook-theme .collection-goal[hidden]{display:none}
+.storybook-theme .collection-goal > summary{cursor:pointer;list-style:none;font:900 12px/1.5 var(--font);padding:11px 20px 11px 0;position:relative;min-height:42px;box-sizing:border-box}
+.storybook-theme .collection-goal > summary::-webkit-details-marker{display:none}
+.storybook-theme .collection-goal > summary::after{content:'＋';position:absolute;right:0;top:11px;color:#7e8f59}.storybook-theme .collection-goal[open] > summary::after{content:'−'}
+.storybook-theme .collection-goal p{font:700 12px/1.5 var(--font);color:#64734b;margin:0 0 8px}.storybook-theme .collection-goal .goal-season{color:#756343}
+.storybook-theme .collection-goal small{font:700 11px/1.5 var(--font);color:#756343;display:block;margin-bottom:10px}
+.storybook-theme .collection-goal button{background:#45673e;border:1px solid #315237;border-radius:12px;color:#fff8e8;font:900 12px var(--font);min-height:42px;padding:10px 12px;margin-bottom:12px;width:100%}
+.storybook-theme .cwrap:has(#firstAdventure:not([hidden])) .collection-goal{display:none}
+.storybook-theme .cwrap:has(.collection-goal[open]) .collection-goal{max-height:36vh;overflow-y:auto}
+
+.storybook-theme .family-cycle-summary{background:#edf0dce8;border:1px solid #c6d1ad;border-radius:18px;padding:13px;margin-bottom:12px;color:#557040}
+.storybook-theme .family-cycle-summary b{font:900 14px var(--font)}.storybook-theme .family-cycle-summary p{font:800 12px/1.6 var(--font);margin:6px 0;color:#61744a}.storybook-theme .family-cycle-summary small{font:700 11px/1.5 var(--font);color:#756343}
+.storybook-theme .family-box .family-flow{font:700 12px/1.5 var(--font);color:#66784c;margin:4px 0 10px}
+.storybook-theme .family-box .family-settings{background:#f7f2e5;border:1px solid #dfd3b7;border-radius:14px;padding:3px 10px;margin:12px 0}
+.storybook-theme .family-box .family-settings summary{font:800 12px var(--font);color:#7a7952;padding:11px 0;cursor:pointer}
+.storybook-theme .family-box > label:not(:has(input)){margin:12px 0 5px;font:800 12px var(--font);color:#5d7345}
+.storybook-theme .family-box :is(select,input:not([type=checkbox])){min-height:42px;max-width:100%}
+.storybook-theme .family-box .ward-row .acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+.storybook-theme .family-box .ward-row .acts button{flex:1;min-height:42px;font:900 12px var(--font);padding:10px;border-radius:12px;cursor:pointer}
+.storybook-theme .family-box .ward-row .acts .ok{background:#496d40;border:1px solid #315237;color:#fff8e8}
+.storybook-theme .family-box .ward-row .acts .no{background:#eee5d4;border:1px solid #dacbad;color:#89724c}
+.storybook-theme .family-box > p:last-child{font:700 11px/1.5 var(--font);color:#756343}
+
+/* Small-screen editing: preserve readable controls and space above the keyboard. */
+@media(max-width:600px){.storybook-theme :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px!important}.storybook-theme :is(input,textarea){scroll-margin-block:80px}.storybook-theme :is(.fAdd button,.fMyCode button,.prop-form button,.claim-form button,.newp button,.family-box .go){min-height:44px}}
+html[data-keyboard-open="true"] .phone.storybook-theme{height:min(844px,var(--forest-visible-height));top:var(--forest-visible-top,0px)}
+html[data-keyboard-open="true"] .storybook-theme > .nav,html[data-keyboard-open="true"] .storybook-theme > .pack-dock{display:none!important}
+html[data-keyboard-open="true"] .storybook-theme :is(.wrap,.cwrap){padding-bottom:16px!important}
+html[data-keyboard-open="true"] .storybook-theme .nav-spacer{height:0}
+html[data-keyboard-open="true"] .storybook-theme .mail-wrap.chat-open #chatDetail{overflow:hidden}
+html[data-keyboard-open="true"] .storybook-theme #chatInput{position:relative;bottom:auto;flex-shrink:0}
+html[data-keyboard-open="true"] .storybook-theme #stickerBar{max-height:46px}

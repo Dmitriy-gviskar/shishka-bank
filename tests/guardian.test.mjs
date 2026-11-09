@@ -112,4 +112,15 @@ test('ребёнок сдаёт семейное дело — шишки пос�
   const appr = await srv.api('/api/guardian/approve', P(db.childA2.code, { id: task.id }));
   assert.equal(appr.status, 200);
   assert.equal(await bal(srv, db.childA1.code), before + 10);
+  const accepted = await srv.api('/api/tasks', H(db.childA1.code));
+  assert.equal(accepted.body.find(x=>x.id===task.id)?.status, 'done');
+  const foreign = await srv.api('/api/tasks', H(db.childB1.code));
+  assert.equal(foreign.body.some(x=>x.id===task.id), false);
+  const pool = openPool(db.url);
+  try { await pool.q("update tasks set completed_at=now()-interval '8 days', created_at=now()-interval '9 days' where id=$1", [task.id]); }
+  finally { await pool.end(); }
+  const expired = await srv.api('/api/tasks', H(db.childA1.code));
+  assert.equal(expired.body.some(x=>x.id===task.id), false);
+  assert.equal(await bal(srv, db.childA1.code), before + 10);
+
 });
