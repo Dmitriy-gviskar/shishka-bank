@@ -4,7 +4,7 @@
 <title>Лесная почта</title><link rel="stylesheet" href="style.css">
 <style>
   /* bg: global cozy */
-  .wrap{display:flex;flex-direction:column;height:100%;padding:0 10px;position:relative}
+  .mail-wrap{display:flex;flex-direction:column;height:100%;padding:0 10px;position:relative}
   .title{flex:none;margin:0 0 8px}
   /* Список чатов */
   #chatList{flex:1;overflow-y:auto;min-height:0;padding:6px 8px;display:none;flex-direction:column;gap:6px}
@@ -31,11 +31,11 @@
   #chatDetail{flex:1;display:none;flex-direction:column;min-height:0}
   #chatDetail.open{display:flex}
   /* открытый чат: один ряд чипов вместо title + ← + полоски */
-  .wrap.chat-open > .title{display:none}
-  .wrap.chat-open > .mailTabs{display:none}
+  .mail-wrap.chat-open > .title{display:none}
+  .mail-wrap.chat-open > .mailTabs{display:none}
   /* прячем глобальный ← без :has() — на части Android WebView :has ломается */
   .phone.chat-open > .nav-back{display:none!important;pointer-events:none}
-  .wrap.chat-open #chatHeader{
+  .mail-wrap.chat-open #chatHeader{
     position:absolute;top:14px;left:12px;right:118px;z-index:6;
     height:42px;box-sizing:border-box;margin:0;padding:0;gap:8px;
     display:flex;align-items:center;background:transparent;border:none}
@@ -171,8 +171,8 @@
   .fMyCode button{margin-left:auto;border:2px solid #fff;border-radius:12px;padding:6px 10px;cursor:pointer;
     font-weight:900;font-size:12px;font-family:"Fredoka","Nunito",sans-serif;
     background:linear-gradient(180deg,#9ad65f,#6fad45);color:#fff;box-shadow:0 0 0 2px #5f9a38}
-</style></head><body>
-<div class="phone"><div class="wrap">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body>
+<div class="phone storybook-theme" data-storybook-screen="mail"><div class="cbg" aria-hidden="true"></div><div class="wrap mail-wrap">
   <div class="title">Лесная почта</div>
   <div class="mailTabs" id="mailTabs">
     <button type="button" class="on" data-tab="chats">Чаты</button>

@@ -6,7 +6,7 @@
   .phone{background-image:url(assets/bg.webp)}
   .scroll{flex:1 1 auto;min-height:0;overflow-y:auto;padding-bottom:10px}
   .scroll::-webkit-scrollbar{width:0}
-  h3{display:inline-block;background:rgba(255,250,240,.92);border-radius:11px;padding:4px 13px;
+  .parent-wrap h3{display:inline-block;background:rgba(255,250,240,.92);border-radius:11px;padding:4px 13px;
     color:var(--ink);font-weight:900;font-size:16px;margin:14px 2px 6px}
   .kid-row{margin-top:8px;padding:11px}
   .kid-head{display:flex;align-items:center;gap:10px}
@@ -28,10 +28,10 @@
   .pend .t{font-weight:900;color:var(--ink);font-size:15px}
   .pend .row{display:flex;align-items:center;gap:8px;margin-top:8px}
   .pend .who{flex:1;color:#a1876a;font-weight:700;font-size:13px}
-  details{margin-top:10px;background:var(--card);border:3px solid #cbb083;border-radius:16px;padding:4px 12px}
-  summary{font-weight:900;color:var(--brown);cursor:pointer;padding:8px 0;list-style:none}
-  summary::-webkit-details-marker{display:none}
-  summary::before{content:"+ ";color:var(--green-d)}
+  .parent-wrap details{margin-top:10px;background:var(--card);border:3px solid #cbb083;border-radius:16px;padding:4px 12px}
+  .parent-wrap summary{font-weight:900;color:var(--brown);cursor:pointer;padding:8px 0;list-style:none}
+  .parent-wrap summary::-webkit-details-marker{display:none}
+  .parent-wrap summary::before{content:"+ ";color:var(--green-d)}
   details[open] summary::before{content:"– "}
   .form input,.form select{width:100%;background:#fffaf0;border:3px solid #d9c39a;border-radius:12px;
     padding:9px;font-size:15px;font-weight:700;color:var(--ink);outline:none;margin-bottom:7px}
@@ -59,8 +59,8 @@
   .mkthint{flex-basis:100%;color:#a1876a;font-weight:700;font-size:11.5px}
   .logout{margin-top:8px;text-align:center}
   .logout a{color:var(--brown);font-weight:800;font-size:13px}
-</style></head><body data-no-nav>
-<div class="phone"><div class="wrap">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body data-no-nav>
+<div class="phone storybook-theme" data-storybook-screen="parent"><div class="cbg" aria-hidden="true"></div><div class="wrap storybook-rest parent-wrap">
   <div class="title">Кабинет ведущего</div>
   <div id="pinGate" class="scroll">
     <label for="pinInput">PIN ведущего</label>

@@ -1352,23 +1352,13 @@ if (page === 'surprises.html') {
 
 // ── Питомцы на поляне: до 5 карт, каждая с фразой + диалог ──
 if (page === 'forest.html') {
-  const wideGrove = window.matchMedia('(min-width: 720px)');
-  const moreForest = document.getElementById('moreForest');
-  const syncGroveWide = () => { if (moreForest) moreForest.open = wideGrove.matches; };
-  syncGroveWide();
-  if (wideGrove.addEventListener) wideGrove.addEventListener('change', syncGroveWide);
-  else wideGrove.addListener(syncGroveWide);
   const FOREST_TIPS = [
-    wideGrove.matches
-      ? 'На ноуте двери в ряд: коллекция, игры, почта, дерево — и ещё лес ниже.'
-      : 'Четыре двери — главное. Остальное спрятано в «Ещё в лесу».',
+    'Начни с четырёх дверей: коллекция, игры, почта и твоё дерево.',
     'Коллекция — альбом существ. Дубль можно поселить собирать шишки.',
-    'В играх питомец помогает копить шишки.',
-    'Почта — найди обитателя по имени и напиши. Другом станет, когда примет заявку.',
-    'Моё дерево — грамота, паспорт и твой код поляны.',
-    wideGrove.matches
-      ? 'Поляна друзей, дупло и награды — в нижнем ряду, без пряток.'
-      : 'В «Ещё» — поляна леса, дупло и награды. Лавки уже на дверях.',
+    'В играх можно заработать шишки для лесных приключений.',
+    'Почта — найди друга по имени и напиши. Дружба начинается с принятой заявки.',
+    'Котлы, гильдии, лавки и совет ждут в «Друзья и общие дела».',
+    'В «Ещё в лесу» — награды, наряды, дупло и другие приключения.',
   ];
   const tipBtn = document.getElementById('spiritTip');
   const tipPop = document.getElementById('spiritPop');
@@ -1392,7 +1382,6 @@ if (page === 'forest.html') {
           card('council.html', 'Совет', 'Предложи тему семье'),
           card('guilds.html', 'Гильдии', 'Оснуй стаю или вступи'),
           card('market.html', 'Лавки', 'Открой лавку — друзья увидят'),
-          card('mail.html#friends', 'Почта', 'Найди обитателя по имени'),
         ].join('');
         return;
       }
@@ -1409,13 +1398,14 @@ if (page === 'forest.html') {
       const mail = d.mail && d.mail.pending_in
         ? `Заявки в друзья: ${d.mail.pending_in}`
         : (d.mail && d.mail.friends ? `Друзей: ${d.mail.friends}` : 'Найди обитателя по имени');
+      const mailHint = document.getElementById('forestMailHint');
+      if (mailHint) mailHint.textContent = mail;
       lifeBox.hidden = false;
       lifeBox.innerHTML = [
         card('pot.html', 'Котлы', pot),
         card('council.html', 'Совет', prop),
         card('guilds.html', 'Гильдии', gild),
         card('market.html', 'Лавки', shop),
-        card('mail.html#friends', 'Почта', mail),
       ].join('');
     });
   }

@@ -36,3 +36,42 @@ test('memory UI sends ordered opaque tile moves and retries the same move after 
  await ui.window._startMemory();const cards=ui.get('gameQ').children[0].children;assert.ok(cards.every(c=>!c.innerHTML.includes('<img')));
  await cards[0].click();await cards[0].click();await cards[1].click();const moves=calls.filter(x=>x.path.endsWith('/flip')).map(x=>x.b);assert.deepEqual(moves.map(x=>x.move),[0,0,1]);assert.deepEqual(moves.map(x=>x.tile),[0,0,1]);assert.ok(moves.every(x=>x.attemptId==='memory-attempt'));
 });
+
+test('quiz keeps server feedback visible until Next and marks both selected and correct options',async()=>{
+ const calls=[];const ui=mount(async(path,b)=>{calls.push({path,b});return path.endsWith('/start')?{attemptId:'quiz-feedback',questions:Array.from({length:8},()=>({q:'question',options:['A','B','C','D']}))}:{correct:b.answer==='B',expected:'B'};});
+ await ui.window._startQuiz();
+ assert.equal(ui.get('gameNext').hidden,true);assert.ok(ui.get('gameLevels').children.every(b=>!b.dataset.result));
+ ui.get('gameA').value='A';await ui.get('gameBtn').click();
+ assert.equal(ui.get('gameLevels').children[0].dataset.result,'incorrect');assert.equal(ui.get('gameLevels').children[1].dataset.result,'correct');
+ assert.ok(ui.get('gameLevels').children.every(b=>b.disabled));assert.equal(ui.get('gameNext').hidden,false);
+ assert.match(ui.get('gameMsg').textContent,/Верный ответ: B/);assert.ok(ui.get('gameMsg').classList.contains('feedback-incorrect'));
+ await ui.get('gameBtn').click();assert.equal(calls.length,2);
+ await ui.get('gameNext').click();assert.equal(calls.length,2);assert.match(ui.get('gameProg').textContent,/Вопрос 2/);
+ assert.equal(ui.get('gameNext').hidden,true);assert.ok(ui.get('gameLevels').children.every(b=>!b.dataset.result));
+ ui.get('gameA').value='B';await ui.get('gameBtn').click();assert.match(ui.get('gameMsg').textContent,/Верно!/);assert.ok(ui.get('gameMsg').classList.contains('feedback-correct'));
+ assert.equal(calls[2].b.index,1);assert.equal(calls[2].b.attemptId,'quiz-feedback');assert.equal(calls[2].b.expected,undefined);
+});
+
+test('quiz answer failure remains on the same question and retry preserves attempt and index',async()=>{
+ let tries=0;const calls=[];const ui=mount(async(path,b)=>{calls.push({path,b});if(path.endsWith('/start'))return {attemptId:'quiz-retry',questions:Array.from({length:8},()=>({q:'question',options:['A','B']}))};return ++tries===1?{error:'Нет связи'}:{correct:true,expected:'B'};});
+ await ui.window._startQuiz();ui.get('gameA').value='B';await ui.get('gameBtn').click();
+ assert.equal(ui.get('gameNext').hidden,true);assert.match(ui.get('gameMsg').textContent,/Нет связи/);assert.ok(ui.get('gameLevels').children.every(b=>b.disabled===false));
+ await ui.get('gameBtn').click();assert.equal(calls[1].b.attemptId,calls[2].b.attemptId);assert.equal(calls[1].b.index,calls[2].b.index);assert.equal(ui.get('gameNext').hidden,false);
+});
+
+test('eighth quiz answer stays readable before results and reward still uses the server attempt',async()=>{
+ const calls=[];const ui=mount(async(path,b)=>{calls.push({path,b});if(path.endsWith('/start'))return {attemptId:'quiz-complete',questions:Array.from({length:8},()=>({q:'question',options:['A','B']}))};if(path.endsWith('/answer'))return {correct:true,expected:'B'};return {ok:true,reward:6,balance:36};});
+ await ui.window._startQuiz();for(let i=0;i<8;i++){ui.get('gameA').value='B';await ui.get('gameBtn').click();if(i<7)await ui.get('gameNext').click();}
+ assert.equal(calls.filter(c=>c.path.endsWith('/answer')).length,8);assert.equal(calls.filter(c=>c.path.endsWith('/finish')).length,0);
+ assert.equal(ui.get('gameDone').classList.contains('on'),false);assert.equal(ui.get('gameNext').textContent,'Посмотреть результат →');assert.match(ui.get('gameMsg').textContent,/Верно!/);
+ await ui.get('gameNext').click();assert.equal(ui.get('gameResult').textContent,'Верно: 8 из 8');
+ await ui.get('gameClaim').click();const finish=calls.find(c=>c.path.endsWith('/finish'));assert.equal(finish.b.attemptId,'quiz-complete');assert.equal(finish.b.score,undefined);assert.equal(ui.get('topBal').textContent,36);
+});
+
+test('quiz shows pending state without inventing correctness and blocks repeated requests while waiting',async()=>{
+ let release;const calls=[];const ui=mount(async(path,b)=>{calls.push({path,b});if(path.endsWith('/start'))return {attemptId:'quiz-pending',questions:Array.from({length:8},()=>({q:'question',options:['A','B']}))};return new Promise(resolve=>{release=resolve;});});
+ await ui.window._startQuiz();ui.get('gameA').value='A';const waiting=ui.get('gameBtn').click();
+ assert.match(ui.get('gameMsg').textContent,/Проверяем/);assert.equal(ui.get('gameLevels').children[0].dataset.result,'pending');assert.equal(ui.get('gameNext').hidden,true);
+ await ui.get('gameBtn').click();assert.equal(calls.length,2);release({correct:false,expected:'B'});await waiting;
+ assert.equal(ui.get('gameLevels').children[0].dataset.result,'incorrect');assert.equal(ui.get('gameLevels').children[1].dataset.result,'correct');
+});

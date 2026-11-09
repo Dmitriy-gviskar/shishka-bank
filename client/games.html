@@ -7,12 +7,12 @@
   .phone::after{background:
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.14), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.05),rgba(35,50,25,.22))}
-  .wrap{overflow-y:hidden}
-  .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px;
+  .games-wrap{overflow-y:hidden}
+  .games-wrap > .title{font-family:"Fredoka","Nunito",sans-serif;margin-bottom:6px;
     background:linear-gradient(180deg,#a07840 0%,#8a6238 55%,#6b4a22 100%);
     color:#fff8eb;border:3px solid #5a3a18;text-shadow:0 2px 0 rgba(0,0,0,.25);
     box-shadow:0 4px 0 #4a3010, inset 0 1px 0 rgba(255,230,180,.35)}
-  .greet{margin:2px 0 8px}
+  .games-wrap > .greet{margin:2px 0 8px}
   .greet img{width:88px;height:88px;
     filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 5px 8px rgba(60,40,15,.3))}
   .greet .bubble{font-family:"Fredoka","Nunito",sans-serif;font-size:14px}
@@ -175,22 +175,81 @@
   .cmp-row button:active{transform:translateY(2px)}
   .story-text{font-family:"Fredoka","Nunito",sans-serif;font-weight:800;font-size:18px;line-height:1.35;
     color:#3d2a14;text-align:center;padding:4px 6px}
-</style></head><body>
-<div class="phone"><div class="wrap">
-  <div class="title">Развивающие игры</div>
-  <div class="greet">
-    <img src="assets/spirit_scroll.webp" alt="Лесной Дух">
-    <div class="bubble">Поиграем — и шишки в карман!</div>
-  </div>
+  .games-wrap{gap:12px;padding-left:18px;padding-right:18px}
+  .games-heading{flex:none;padding:16px;background:rgba(255,249,237,.97);border:1px solid #dfc99e;border-radius:22px;text-align:center}
+  .games-kicker{font-size:10px;font-weight:900;color:#7b6747;letter-spacing:1.3px}
+  .games-heading h1{font-size:24px;font-weight:900;color:#4f402b;line-height:1.3;margin:4px 0}
+  .games-heading p{font-size:12px;color:#77603f;font-weight:700}
+  .game-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex:none}
+  .game-filters button{min-height:40px;border:1px solid #d4bb8c;border-radius:12px;background:#f8efdc;color:#6b5739;font:800 12px var(--font);cursor:pointer}
+  .game-filters button.selected{background:#f2dfa5;border-color:#b59b55;color:#4d3d1f}
+  .games-list-head{display:flex;justify-content:space-between;gap:12px;flex:none;background:#2b3d24e8;border-radius:10px;padding:8px 10px;color:#fff2d4;font-size:10px;font-weight:800;line-height:1.4}
+  .games-list-head span:last-child{text-align:right;font-weight:700;max-width:155px}
+  .games-wrap #grid{gap:10px;padding:0 0 10px}
+  .games-wrap .gtile{border:1px solid #dfc99e;box-shadow:0 3px 10px #2a2c1829;border-radius:19px;padding:13px 12px;gap:12px;background:linear-gradient(#fffaf0,#f4ead2)}
+  .games-wrap .gtile[hidden]{display:none!important}
+  .games-wrap .gtile .ic{width:48px;height:56px;border:0;box-shadow:none;background:none;border-radius:0}
+  .games-wrap .gtile .ic img{width:48px;height:48px}
+  .games-wrap .gtile .nm{font-size:17px;line-height:1.25}
+  .games-wrap .gtile .ds{font-size:12px;line-height:1.35;margin-top:4px;color:#715b3e}
+  .game-meta{font-size:10px;font-weight:700;color:#7e6a4b;line-height:1.4;margin-top:5px}
+  .games-wrap .gtile .rw{border:0;box-shadow:none;text-shadow:none;background:#e5edd5;color:#46602e;font-size:11px;padding:4px 8px;margin-top:7px}
+  .game-arrow{font-size:20px;color:#8f794f;flex:none}
+  /* The quiz has a compact question and persistent, readable server feedback. */
+  .quiz-guide{display:flex;align-items:center;gap:10px;margin:14px 0 10px;padding:10px;background:#ede5cf;border-radius:14px;flex:none}
+  .quiz-guide img{width:45px;height:45px;object-fit:contain;flex:none}
+  .quiz-guide p{font-size:12px;color:#78613e;font-weight:700;line-height:1.45}
+  .quiz-guide b{color:#5b4d30;font-weight:800}
+  #quizGuide[hidden],#gameNext[hidden]{display:none!important}
+  .gsheet.quiz-mode{flex:none;align-self:flex-start;width:100%;height:auto;max-height:100%;padding:18px 16px;border:1px solid #d7c195;border-radius:23px;background:linear-gradient(#fffaf0,#f4e8cd);box-shadow:0 10px 30px #15201066;animation:none}
+  #gameClose{top:22px;right:22px}
+  #gameOv:has(.quiz-mode) > .gx{width:36px;height:36px;border:1px solid #d7c195;box-shadow:none;background:#f5ead3;border-radius:12px}
+  .quiz-mode .ghead{text-align:left;padding:4px 40px 0 0;flex:none}
+  .quiz-mode .gtitle{font-size:20px;line-height:1.25;margin-bottom:12px}
+  .quiz-mode .gbar{height:7px;border:0;box-shadow:none;background:#e2d5b5}
+  .quiz-mode .gprog{font-size:11px;margin-top:7px;color:#78613e}
+  .quiz-mode .gq-stage{flex:none;min-height:125px;margin:4px 0 12px;justify-content:flex-start;padding:18px 15px;border:1px solid #dfc99e;border-radius:17px;background:#fffdf5;box-shadow:none}
+  .quiz-mode .gq{width:100%;text-align:left;-webkit-text-stroke:0;letter-spacing:0;font-size:22px}
+  .quiz-mode .story-text{text-align:left;font-size:22px;line-height:1.4;padding:0;color:#493c29}
+  .quiz-mode .glevels{flex:none;gap:9px;margin:0}
+  .quiz-mode .glevels button{position:relative;min-height:52px;padding:14px 35px 14px 50px;border:1px solid #d8c7a4;background:#fffaf0;border-radius:13px;box-shadow:0 2px 0 #ddd0b3;font-size:14px;line-height:1.4;color:#51412b}
+  .quiz-mode .glevels button::before{content:attr(data-choice);position:absolute;left:12px;top:50%;transform:translateY(-50%);width:25px;height:25px;border:1px solid #d8c7a4;border-radius:8px;display:grid;place-items:center;background:#efe7d2;font-size:12px;color:#806a46}
+  .quiz-mode .glevels button:disabled{opacity:1;cursor:default}
+  .quiz-mode .glevels button[data-result="pending"]{background:#f8edcc;border-color:#bfa56b}
+  .quiz-mode .glevels button[data-result="pending"]::after{content:"…";position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:20px}
+  .quiz-mode .glevels button[data-result="correct"]{background:#e5efd7;border-color:#759848;box-shadow:none;color:#345520}
+  .quiz-mode .glevels button[data-result="incorrect"]{background:#f6e4d9;border-color:#bd8065;box-shadow:none;color:#7b4630}
+  .quiz-mode .glevels button[data-result="correct"]::after{content:'✓';position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:20px;font-weight:900}
+  .quiz-mode .glevels button[data-result="incorrect"]::after{content:'×';position:absolute;right:13px;top:50%;transform:translateY(-50%);font-size:23px;font-weight:900}
+  .quiz-mode .gmsg{font-size:12px;color:#7b6644;line-height:1.5;margin:12px 0 0;white-space:pre-line}
+  .quiz-mode .gmsg.feedback-correct,.quiz-mode .gmsg.feedback-incorrect{font-size:14px;min-height:66px;text-align:left;padding:12px;border-radius:13px;border:1px solid #aac58c;background:#e7f0dc;color:#3e5b29}
+  .quiz-mode .gmsg.feedback-incorrect{background:#f5e8d5;border-color:#d5b990;color:#765536}
+  .game-next{flex:none;width:100%;min-height:48px;margin-top:12px;background:linear-gradient(#7ea44f,#608537);border:1px solid #476a2a;border-radius:14px;box-shadow:0 3px 0 #476a2a;color:#fffaf0;font:900 15px var(--font);cursor:pointer}
+  .game-next:disabled{opacity:.6;cursor:wait}
+  .quiz-mode .gdone{margin-top:24px}
+  @media(max-width:350px){.games-wrap{padding-left:14px;padding-right:14px;gap:10px}.games-heading{padding:13px}.games-heading h1{font-size:22px}.game-filters button{font-size:11px}.games-wrap .gtile{gap:9px;padding:12px 10px}.games-wrap .gtile .ic,.games-wrap .gtile .ic img{width:40px;height:40px}.games-wrap .gtile .nm{font-size:16px}.game-arrow{display:none}.gsheet.quiz-mode{padding:14px 12px}.quiz-mode .gq-stage{min-height:105px;padding:14px 12px}.quiz-mode .story-text{font-size:19px}.quiz-guide{margin-top:10px;padding:8px}.quiz-guide p{font-size:11px}.quiz-mode .glevels button{min-height:48px;font-size:13px;padding:11px 30px 11px 45px}}
+  @media(prefers-reduced-motion:reduce){.gsheet,.gq-stage.ok,.gq-stage.bad,.gdone.on{animation:none!important}.gbar > i{transition:none}}
 
-  <div class="ov" id="gameOv">
-    <div class="gsheet" id="gameSheet">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body>
+<div class="phone storybook-theme" data-storybook-screen="games"><div class="cbg" aria-hidden="true"></div><div class="wrap games-wrap">
+  <header class="games-heading"><div class="games-kicker">ЛЕСНАЯ ТРЕНИРОВКА</div><h1>Во что поиграем?</h1><p>Выбери то, что хочется потренировать</p></header>
+  <div class="game-filters" aria-label="Выбрать игры по навыку">
+    <button type="button" data-game-filter="all" aria-pressed="true" class="selected">Все</button>
+    <button type="button" data-game-filter="math" aria-pressed="false">Счёт</button>
+    <button type="button" data-game-filter="world" aria-pressed="false">Знания</button>
+    <button type="button" data-game-filter="attention" aria-pressed="false">Внимание</button>
+  </div>
+  <div class="games-list-head"><span id="gameFilterStatus" role="status">Игр на выбор: 11</span><span>Награда — раз в день за игру</span></div>
+
+  <div class="ov" id="gameOv" role="dialog" aria-modal="true" aria-labelledby="gameTitle">
       <button class="gx" id="gameClose" type="button" aria-label="Закрыть">&times;</button>
+    <div class="gsheet" id="gameSheet">
       <div class="ghead">
         <h3 class="gtitle" id="gameTitle">Таблица умножения</h3>
         <div class="gbar"><i id="gameProgBar"></i></div>
         <div class="gprog" id="gameProg">0 / 10</div>
       </div>
+      <div class="quiz-guide" id="quizGuide" hidden><img src="assets/spirit_scroll.webp" alt=""><p>Вспомни, подумай и выбери один ответ.<br><b>Дух леса поможет разобраться.</b></p></div>
       <div class="gq-stage" id="gameStage">
         <div class="gq" id="gameQ">7 × 8 = ?</div>
       </div>
@@ -200,7 +259,8 @@
         <button class="btn" id="gameBtn" type="button">Ответить</button>
       </div>
       <div class="gpad" id="gamePad"></div>
-      <div class="gmsg" id="gameMsg"></div>
+      <div class="gmsg" id="gameMsg" role="status" aria-live="polite" aria-atomic="true"></div>
+      <button id="gameNext" class="game-next" type="button" hidden>Следующий вопрос →</button>
       <div class="gdone" id="gameDone">
         <div class="cup" id="gameCup">🏆</div>
         <div id="gameResult"></div>
@@ -209,96 +269,39 @@
     </div>
   </div>
 
-  <div id="grid">
-    <div class="gsec">Старшие · 10–14 лет</div>
-    <a class="gtile" href="#" id="gmQuiz">
-      <div class="ic"><img src="assets/spirit_scroll.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Викторина</div>
-        <div class="ds">Природа, география, логика · 8 вопросов</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> до 6 за забег</span>
-      </div>
+  <div id="grid" aria-label="Каталог мини-игр">
+    <a class="gtile" href="#" id="gmQuiz" data-group="world">
+      <div class="ic"><img src="assets/quest/quest_ic_adventure.webp" alt=""></div><div class="body"><div class="nm">Викторина</div><div class="ds">Природа и мир вокруг нас</div><div class="game-meta">10–14 лет · 8 вопросов</div><span class="rw">🌰 до 6 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmLogic">
-      <div class="ic"><img src="assets/chest_closed.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Задачи старше</div>
-        <div class="ds">Доли, проценты, два действия · 5 задач</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> до 6 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmMemory" data-group="attention">
+      <div class="ic"><img src="assets/mail.webp" alt=""></div><div class="body"><div class="nm">Найди пару</div><div class="ds">Запоминай лесных жителей</div><div class="game-meta">6 пар · до 90 секунд</div><span class="rw">🌰 4 шишки</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <div class="gsec">Младшие</div>
-    <a class="gtile" href="#" id="gmMultiply">
-      <div class="ic"><img src="assets/chest_closed.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Умножение</div>
-        <div class="ds">Таблица умножения · 3 уровня сложности</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> до 8 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmCount" data-group="math">
+      <div class="ic"><img src="assets/coin1.webp" alt=""></div><div class="body"><div class="nm">Блиц-счёт</div><div class="ds">Складывай и вычитай на скорость</div><div class="game-meta">30 секунд · числа</div><span class="rw">🌰 1 шишка за ответ</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmGuess">
-      <div class="ic"><img src="assets/spirit_scroll.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Угадайка</div>
-        <div class="ds">Знакомые звери и растения · выбери из 4 ответов</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 5 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmGuess" data-group="world">
+      <div class="ic"><img src="assets/tree5.webp" alt=""></div><div class="body"><div class="nm">Угадайка</div><div class="ds">Узнай зверя или растение</div><div class="game-meta">5 вопросов · 4 варианта</div><span class="rw">🌰 до 5 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmCount">
-      <div class="ic"><img src="assets/coin1.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Блиц-счёт</div>
-        <div class="ds">Сложение и вычитание на скорость · 30 сек</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 1 шишка за ответ</span>
-      </div>
+    <a class="gtile" href="#" id="gmMultiply" data-group="math">
+      <div class="ic"><img src="assets/quest/quest_ic_learn.webp" alt=""></div><div class="body"><div class="nm">Умножение</div><div class="ds">Потренируй таблицу умножения</div><div class="game-meta">3 уровня сложности</div><span class="rw">🌰 до 8 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmMemory">
-      <div class="ic"><img src="assets/chest_closed.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Найди пару</div>
-        <div class="ds">Память · 6 пар лесных карт · 90 сек</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 4 за полный забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmLogic" data-group="math">
+      <div class="ic"><img src="assets/quest/quest_ic_self.webp" alt=""></div><div class="body"><div class="nm">Логические задачи</div><div class="ds">Доли, проценты и два действия</div><div class="game-meta">10–14 лет · 5 задач</div><span class="rw">🌰 до 6 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmWord">
-      <div class="ic"><img src="assets/spirit_scroll.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Собери слово</div>
-        <div class="ds">Сложи имя зверя или растения из букв</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 4 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmWord" data-group="world">
+      <div class="ic"><img src="assets/spirit_scroll.webp" alt=""></div><div class="body"><div class="nm">Собери слово</div><div class="ds">Сложи имя жителя леса из букв</div><div class="game-meta">5 слов · без спешки</div><span class="rw">🌰 до 4 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmOdd">
-      <div class="ic"><img src="assets/coin1.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Что лишнее?</div>
-        <div class="ds">Найди карту не из своей группы</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 4 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmOdd" data-group="attention">
+      <div class="ic"><img src="assets/quest/quest_ic_adventure.webp" alt=""></div><div class="body"><div class="nm">Что лишнее?</div><div class="ds">Найди карту из другой группы</div><div class="game-meta">6 заданий · наблюдательность</div><span class="rw">🌰 до 4 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmNumber">
-      <div class="ic"><img src="assets/spirit_scroll.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Диктант чисел</div>
-        <div class="ds">Прочитай число словами → набери цифрами</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 3 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmNumber" data-group="math">
+      <div class="ic"><img src="assets/quest/quest_ic_learn.webp" alt=""></div><div class="body"><div class="nm">Диктант чисел</div><div class="ds">Прочитай слова и запиши число</div><div class="game-meta">8 заданий · 3 уровня</div><span class="rw">🌰 до 3 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmCompare">
-      <div class="ic"><img src="assets/coin1.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Тропинка сравнения</div>
-        <div class="ds">Что больше и на сколько · числа до 30</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 3 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmCompare" data-group="math">
+      <div class="ic"><img src="assets/coin1.webp" alt=""></div><div class="body"><div class="nm">Тропинка сравнения</div><div class="ds">Определи, что больше и на сколько</div><div class="game-meta">8 заданий · числа до 30</div><span class="rw">🌰 до 3 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
-    <a class="gtile" href="#" id="gmStory">
-      <div class="ic"><img src="assets/chest_closed.webp" alt=""></div>
-      <div class="body">
-        <div class="nm">Лесные задачи</div>
-        <div class="ds">Короткие истории на + и −</div>
-        <span class="rw"><img src="assets/coin1.webp" alt=""> 5 за забег</span>
-      </div>
+    <a class="gtile" href="#" id="gmStory" data-group="math">
+      <div class="ic"><img src="assets/quest/quest_ic_home.webp" alt=""></div><div class="body"><div class="nm">Лесные задачи</div><div class="ds">Помоги героям решить задачу</div><div class="game-meta">5 историй · сложение и вычитание</div><span class="rw">🌰 до 5 шишек</span></div><span class="game-arrow" aria-hidden="true">→</span>
     </a>
   </div>
 </div></div>

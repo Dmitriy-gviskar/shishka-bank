@@ -7,7 +7,7 @@
   .fund{text-align:center;padding:16px;margin-top:4px}
   .fund .n{font-size:44px;font-weight:900;color:var(--brown);font-family:"Fredoka","Nunito",sans-serif}
   .fund .l{font-weight:800;color:#a1876a}
-  h3{text-align:center;color:var(--ink);font-weight:900;margin:12px 0 4px;font-size:16px;
+  .insurance-wrap h3{text-align:center;color:var(--ink);font-weight:900;margin:12px 0 4px;font-size:16px;
     background:rgba(255,248,235,.94);border:2.5px solid #fff;border-radius:14px;padding:5px 14px;
     align-self:center;margin-left:auto;margin-right:auto;width:fit-content;box-shadow:0 0 0 2px #c9a86a;
     font-family:"Fredoka","Nunito",sans-serif}
@@ -27,8 +27,8 @@
   .cf-row{display:flex;gap:8px}
   .cf-row input{flex:1;margin-bottom:0}
   .cf-tip{margin-top:8px;text-align:center;font-weight:700;color:#8a5a20;font-size:12px}
-</style></head><body>
-<div class="phone"><div class="wrap">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body>
+<div class="phone storybook-theme" data-storybook-screen="insurance"><div class="cbg" aria-hidden="true"></div><div class="wrap storybook-rest insurance-wrap">
   <div class="title">Лесная страховка</div>
   <div class="card fund"><div class="n" id="fund">…</div><div class="l">шишек в общем фонде</div></div>
   <button class="btn btn-lg" id="premium">Внести 1 шишку в фонд</button>

@@ -83,21 +83,18 @@ body{background:#2a3224;display:flex;justify-content:center;min-height:100vh;
 .price img{width:30px;height:30px;object-fit:contain}
 
 /* нижняя навигация — на .phone (не в .wrap), иначе уезжает со скроллом; место даёт .nav-spacer */
-.nav{position:absolute;left:0;right:0;bottom:0;z-index:12;flex:none;
-  display:flex;justify-content:space-around;align-items:center;gap:2px;
-  background:linear-gradient(180deg,#fbf3e4 0%,#efe2c8 100%);
-  border-top:3px solid #c9a86a;
-  border-radius:22px 22px 0 0;
-  box-shadow:0 -6px 18px rgba(60,40,15,.16);
-  padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px))}
-.nav-spacer{flex:none;height:calc(88px + env(safe-area-inset-bottom,0px));pointer-events:none}
-.nav button{background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid var(--brown);
-  width:52px;height:52px;border-radius:50%;padding:5px;cursor:pointer;
-  box-shadow:0 3px 0 rgba(107,79,58,.28);display:flex;align-items:center;justify-content:center}
-.nav button:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(107,79,58,.28)}
-.nav img{width:34px;height:34px;object-fit:contain;display:block;filter:drop-shadow(0 1px 1px rgba(80,50,20,.2))}
-.nav .active{background:linear-gradient(180deg,#ffe7a0,#f0c14a);
-  box-shadow:0 0 0 3px #f6d56a,0 3px 0 rgba(107,79,58,.28)}
+.nav{position:absolute;left:0;right:0;bottom:0;z-index:12;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:3px;
+  background:linear-gradient(180deg,#fff9ed,#f1e6cf);border-top:1px solid #d6bd8f;border-radius:23px 23px 0 0;
+  box-shadow:0 -5px 20px rgba(48,36,15,.16);padding:7px 8px calc(7px + env(safe-area-inset-bottom,0px))}
+.nav-spacer{flex:none;height:calc(96px + env(safe-area-inset-bottom,0px));pointer-events:none}
+.nav button{width:100%;min-width:0;min-height:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  padding:5px 0;border:1px solid transparent;border-radius:15px;background:transparent;color:#79684d;font-family:var(--font);cursor:pointer}
+.nav-icon{display:flex;align-items:center;justify-content:center;width:34px;height:34px}
+.nav img{width:31px;height:31px;object-fit:contain;display:block;filter:drop-shadow(0 1px 1px rgba(80,50,20,.18))}
+.nav-label{font-size:10px;line-height:1.3;font-weight:900;white-space:nowrap}
+.nav button.active{background:#f7e8b7;border-color:#d8bc74;color:#514220}
+.nav button:active{transform:translateY(1px);background:#eddfbe}
+:where(button,a,summary):focus-visible{outline:3px solid #497a2c;outline-offset:3px}
 
 /* баланс-шапка + «←» — единые чипы 42px */
 #topbar{position:absolute;top:14px;right:12px;z-index:5;display:flex;align-items:center;gap:4px;

@@ -7,7 +7,7 @@
   .phone::after{background:
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.05),rgba(35,50,25,.22))}
-  .wrap{overflow-y:auto;min-height:0;padding-left:14px;padding-right:14px;padding-bottom:0}
+  .market-wrap{overflow-y:auto;min-height:0;padding-left:14px;padding-right:14px;padding-bottom:0}
 
   .mkt-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex:none}
   .mkt-top img{width:56px;height:56px;object-fit:contain;flex:none;
@@ -134,8 +134,8 @@
   .mkt-ov #askIn{width:100%;box-sizing:border-box;background:#fffaf0;border:3px solid #fff;border-radius:12px;
     padding:10px;font-size:16px;font-weight:800;color:var(--ink);outline:none;margin:0 0 12px;
     box-shadow:0 0 0 2px #c9a86a;font-family:"Fredoka","Nunito",sans-serif;text-align:center}
-</style></head><body>
-<div class="phone"><div class="wrap">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body>
+<div class="phone storybook-theme" data-storybook-screen="market"><div class="cbg" aria-hidden="true"></div><div class="wrap market-wrap">
   <div class="mkt-top">
     <img src="assets/spirit_bust.webp" alt="">
     <div class="mkt-title">Лесные лавки</div>

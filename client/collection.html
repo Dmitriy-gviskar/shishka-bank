@@ -120,7 +120,7 @@
     border:1.5px solid rgba(255,220,150,.35);color:#ffe9b8;font-weight:800;font-size:13px;
     border-radius:12px;padding:8px;cursor:pointer;font-family:"Fredoka","Nunito",sans-serif}
   .newshelf .nmore:active{transform:scale(.98)}
-  .ncard{min-width:0;cursor:pointer;text-align:center}
+  .ncard{font-family:var(--font);text-align:left;min-width:0;cursor:pointer;text-align:center}
   .ncard .nf{width:100%;aspect-ratio:3/4;border-radius:9px;overflow:hidden;border:2.5px solid var(--gc,#ff5a4d);
     position:relative;box-shadow:0 0 10px -2px var(--gc,#ff5a4d);background:#0e0e0e}
   .ncard img{width:100%;height:100%;object-fit:cover;display:block}
@@ -359,21 +359,98 @@
   .sheet .fact b{display:block;color:#5f8e37;font-size:12px;margin-bottom:2px}
   .sheet .factlock{text-align:center;color:#b0a084;font-weight:700;font-size:11.5px;
     font-style:italic;margin:0 2px 6px}
-</style></head><body>
-<div class="phone"><div class="cbg"></div><div class="cwrap">
-  <div class="chead">
-    <div class="h1">Коллекция</div>
-    <div class="prog"><span id="progTxt">…</span><div class="bar"><i id="progBar" style="width:0"></i></div></div>
-  </div>
-  <button class="packbtn" id="packBtn">🎴 Открыть пак · 20 🌰</button>
-  <div class="pity" id="pityTxt"></div>
-  <div id="albumTools" style="text-align:center;margin-top:-4px;margin-bottom:8px">
-    <button id="exchBtn" style="background:none;border:none;color:#fff;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)">Обменная полка ♻</button>
-    <span style="color:#fff;opacity:.5;margin:0 6px">·</span>
-    <button id="helpBtn" style="background:none;border:none;color:#fff;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)">Памятка 📖</button>
-    <span style="color:#fff;opacity:.5;margin:0 6px">·</span>
-    <button id="peekBtn" style="background:none;border:none;color:#fff;font-weight:800;font-size:12px;text-decoration:underline;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5)">Посмотреть 👀</button>
-  </div>
+  /* A quieter album: one readable portrait per resident, six forms in the detail. */
+  .cbg{filter:brightness(.72) saturate(.85)}
+  .cbg::after{background:linear-gradient(rgba(32,48,23,.15),rgba(18,30,13,.8))}
+  .cwrap{padding:14px 16px 0;gap:10px}
+  .cwrap [hidden]{display:none!important}
+  .chead{padding-left:48px;padding-right:80px;margin:0;min-height:42px;flex-shrink:0}
+  .chead .h1{margin:0;padding:0;border:0;box-shadow:none;background:none;color:#fff8e5;font-size:21px;text-shadow:0 2px 5px #3b3e20}
+  .collection-intro{padding:12px;background:#fff8e7;border:1px solid #ddc49a;border-radius:20px;flex-shrink:0}
+  .collection-intro .prog{height:auto;min-height:0;border:0;box-shadow:none;padding:0;background:none;color:#665333;font-size:12px;line-height:1.4}
+  .collection-intro .bar{height:4px;margin-top:6px;background:#e5d8b8}
+  .collection-intro .packbtn{width:100%;margin:10px 0 0;padding:5px 10px;min-height:46px;gap:8px;border:1px solid #c4a664;border-radius:13px;box-shadow:0 2px 0 #c4a664;font-size:15px;background:linear-gradient(#f9e8b6,#ecd399);color:#57401d}
+  .packbtn img{width:36px;height:36px;object-fit:contain}
+  .packbtn span{margin-left:auto;font-size:12px;white-space:nowrap}
+  .packbtn:disabled{opacity:.65;cursor:wait}
+  .cwrap > .tabs{flex-shrink:0;margin:0;gap:5px}
+  .cwrap > .tabs button{border:1px solid #ddc49a;padding:9px 5px;font-size:13px;border-radius:12px;background:#f4ecd9;min-height:40px}
+  .cwrap > .tabs button.on{background:#f5e1a6;border-color:#d6b966;box-shadow:none;color:#4c3a1c}
+  .collection-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-shrink:0;position:relative}
+  .filter-label{min-width:0}
+  #albumFilter{font:800 12px var(--font);color:#fdf4da;border:0;border-bottom:1px solid #aeaa79;background:#263720;min-height:36px;padding:6px;border-radius:8px;max-width:150px}
+  #albumTools{position:static}
+  #albumTools > summary{cursor:pointer;font-size:12px;font-weight:800;color:#fff2d3;min-height:36px;padding:9px 5px;list-style:none;text-decoration:underline;text-underline-offset:3px}
+  #albumTools > summary::-webkit-details-marker{display:none}
+  .collection-tool-menu{position:absolute;top:100%;right:0;left:0;z-index:25;padding:10px;background:#fff8e9;border:1px solid #d9c39a;border-radius:16px;box-shadow:0 10px 25px #19231066;max-height:260px;overflow:auto}
+  .collection-tool-menu button{width:100%;display:block;min-height:44px;padding:10px;border:0;border-bottom:1px solid #e3d5b9;background:none;color:#594a32;text-align:left;font:800 13px var(--font);cursor:pointer}
+  .collection-tool-menu .pity{margin:8px 0;text-align:left;font-size:12px;color:#675432;text-shadow:none;line-height:1.5}
+  .rarity-legend{display:grid;gap:5px;margin-top:10px}.rarity-legend span{border-left:4px solid var(--gc);padding:4px 8px;color:#594a32;font-size:12px;font-weight:800}
+  .collection-tip{font-size:12px;color:#76603d;line-height:1.5}
+  .cwrap #catTabs{margin:0!important;gap:5px}
+  #catTabs button{font-size:11px;padding:8px 3px;min-height:36px}
+  .cwrap .scroll{padding:0 0 calc(100px + env(safe-area-inset-bottom,0px));scroll-padding-top:10px}
+  .being-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .cwrap .cat{margin:4px 0 10px;font-size:14px}
+  .resident-card{display:flex;flex-direction:column;align-items:stretch;min-width:0;width:100%;margin:0;padding:9px;background:#fff8e9;border:1px solid #deca9e;border-radius:18px;text-align:left;font-family:var(--font);box-shadow:0 4px 12px #111b1455;cursor:pointer}
+  .resident-card.full{background:#fff0bf;border-color:#c4a655}
+  .resident-art{position:relative;aspect-ratio:3/4;border-radius:11px;overflow:hidden;background:#dfd3b4;border:2px solid var(--gc)}
+  .resident-art img{display:block;width:100%;height:100%;object-fit:cover}
+  .resident-card.undiscovered .resident-art img{filter:grayscale(.7) brightness(.4)}
+  .resident-unknown{position:absolute;inset:0;display:grid;place-items:center;font-size:36px;color:#fff4d3;font-weight:900}
+  .resident-name{font-size:15px;font-weight:900;color:#493c29;line-height:1.3;margin-top:8px;overflow-wrap:anywhere}
+  .rarity-tag{display:inline-block;align-self:flex-start;max-width:100%;font-size:11px;font-weight:900;line-height:1.4;color:#56482d;background:#eee6d0;border-left:4px solid var(--gc,var(--rc,#8c9870));border-radius:6px;padding:3px 7px;margin-top:5px;overflow-wrap:anywhere}
+  .resident-progress{font-size:10px;line-height:1.4;color:#7b6543;margin-top:6px;font-weight:700}
+  .resident-new{position:absolute;top:6px;left:6px;background:#f6e2a4;color:#58431f;padding:3px 7px;border-radius:7px;font-size:10px;font-weight:900}
+  .album-empty{grid-column:1/-1;background:#fff8e9;border-radius:16px;padding:20px;color:#685435;font-size:14px;line-height:1.5;text-align:center}
+  .special-album{margin-top:16px;color:#f8ebcc}
+  .special-album > summary{min-height:44px;padding:12px;font-size:13px;font-weight:900;background:#34452d;border:1px solid #8b9265;border-radius:12px;cursor:pointer}
+  .newshelf{background:transparent;border:0;box-shadow:none;padding:0}
+  .newshelf-row{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .ncard{font-family:var(--font);text-align:left;min-width:0;padding:9px;background:#fff8e9;border:1px solid #deca9e;border-radius:18px;cursor:pointer}
+  .ncard .nf{border-radius:11px}
+  .ncard .nl{font-size:14px;color:#493c29;text-shadow:none;white-space:normal;line-height:1.3;margin-top:7px}
+  .ncard .ng{font-size:11px;color:#6b5839;margin-top:5px;border-left:4px solid var(--gc);padding-left:6px}
+  .newshelf-h .nt{font-size:14px}
+  .newshelf-h .nok{min-height:36px}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  /* Full-height reward view: strongest card first, every card has a name and rarity. */
+  .pov{justify-content:flex-start;overflow-y:auto;overscroll-behavior:contain;background:linear-gradient(#293d23f7,#182612fc);padding:24px 18px calc(20px + env(safe-area-inset-bottom,0px));gap:18px}
+  .pov > *{flex-shrink:0}
+  .pov h2{font-size:22px;color:#fff2cf;text-align:center;margin:0;outline:none}
+  .pcards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:100%;max-width:none}
+  .pcard{width:auto;aspect-ratio:auto;overflow:visible;opacity:1;transform:none;animation:none!important;background:#fff8e9;padding:9px;border:1px solid #deca9e;border-radius:17px;box-shadow:0 4px 14px #0b170955}
+  .pcards:has(>.pcard:only-child:not(.pack-feature)){display:flex;justify-content:center}
+  .pcard.pack-feature{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;padding:15px;border-color:#dcc48a;background:linear-gradient(#fff9eb,#f4e8c5)}
+  .reward-eyebrow{font-size:10px;letter-spacing:1px;color:#7b6542;font-weight:900;text-align:center;margin-bottom:12px}
+  .reward-art{position:relative;width:100%;aspect-ratio:3/4;border:3px solid var(--rc);border-radius:11px;overflow:hidden;background:#ede1c2}
+  .pack-feature .reward-art{width:min(190px,75%);box-shadow:0 6px 20px #49391933}
+  .pcard .reward-art img{display:block;width:100%;height:100%;object-fit:cover}
+  .pcard .new{background:#f7e5ad;color:#57401f;font-size:10px;padding:3px 6px;top:6px;left:6px}
+  .pcard .new.duplicate{background:#eee7d8;color:#655d4b}
+  .reward-caption{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-top:8px;color:#493c29;min-width:0}
+  .reward-caption b{font-size:14px;line-height:1.3;overflow-wrap:anywhere}
+  .reward-caption small{font-size:10px;color:#7b6542;margin-top:3px}
+  .pack-feature .reward-caption{align-items:center;text-align:center}
+  .pack-feature .reward-caption b{font-size:22px;margin-top:3px}
+  .pack-feature .rarity-tag{align-self:center;font-size:14px;padding:4px 10px}
+  .pov .done{position:sticky;bottom:0;z-index:5;width:100%;min-height:48px;padding:12px 18px;border:1px solid #466d2b;box-shadow:0 4px 14px #0b170977;background:linear-gradient(#82a957,#63883d);font-family:var(--font);font-size:16px}
+  .pov .rewards{width:100%}
+  .pov .rw{padding:12px;background:#fff2cd;color:#594723;border:1px solid #ccb577;border-radius:12px;font-size:13px}
+  .pov .crate{margin:auto 0;width:100%;text-align:center}
+  .crate-title{font-size:23px;font-weight:900;color:#fff0c6;line-height:1.3;max-width:260px}
+  .crate-trigger{border:0;background:none;cursor:pointer;border-radius:30px;padding:8px;min-height:200px}
+  .crate-trigger:disabled{cursor:wait}
+  .crate-hint{font-size:13px;line-height:1.5;animation:none;color:#f1e3bd}
+  @media(max-width:350px){.cwrap{padding-left:12px;padding-right:12px;gap:8px}.resident-name{font-size:13px}.resident-card,.ncard{padding:7px}.being-grid{gap:9px}.pov{padding-left:14px;padding-right:14px}.chead .h1{font-size:19px}.reward-caption b{font-size:13px}}
+  @media(prefers-reduced-motion:reduce){.crate-box,.crate-hint,.pcard.show{animation:none!important}.phone.shake{animation:none!important}}
+
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body>
+<div class="phone storybook-theme" data-storybook-screen="collection"><div class="cbg"></div><div class="cwrap">
+  <header class="chead"><h1 class="h1">Коллекция</h1></header>
+  <section class="collection-intro" aria-label="Мой альбом">
+    <div class="prog"><span id="progTxt">Знакомимся с лесом…</span><div class="bar"><i id="progBar" style="width:0"></i></div></div>
+  </section>
   <div class="peekbar" id="peekBar">
     <div class="pt" id="peekTitle">Альбом друга</div>
     <div class="ps" id="peekSub"></div>
@@ -384,6 +461,13 @@
     <button id="tabNew">Новые</button>
     <button id="tabMarket">Рынок</button>
   </div>
+  <div class="collection-controls">
+    <label class="filter-label"><span class="sr-only">Какие карты показать</span><select id="albumFilter" disabled><option value="all">Все жители</option><option value="owned">Мои карты</option></select></label>
+    <details id="albumTools"><summary>Помощь и обмен</summary><div class="collection-tool-menu">
+      <button id="exchBtn" type="button">Обменная полка</button><button id="helpBtn" type="button">Как устроена коллекция</button><button id="peekBtn" type="button">Альбом друга</button>
+      <div id="rarityLegend" class="rarity-legend" aria-label="Шесть уровней редкости"></div><p class="pity" id="pityTxt"></p><p class="collection-tip">Открой карточку жителя, чтобы увидеть все 6 обликов и действия с картами.</p>
+    </div></details>
+  </div>
   <div class="tabs" id="catTabs" style="display:none;margin-top:-4px">
     <button data-cat="zver">🦊 Звери</button>
     <button data-cat="rastenie">🌿 Растения</button>
@@ -393,6 +477,8 @@
   <div class="scroll" id="newView" style="display:none"></div>
   <div class="scroll" id="marketView" style="display:none"></div>
 </div>
+  <div class="pack-dock"><button class="packbtn" id="packBtn" type="button" disabled><span class="pack-icon" aria-hidden="true"></span>Открыть пак <span class="pack-price" aria-label="20 шишек">20<i class="currency" aria-hidden="true"></i></span></button></div>
+
 
   <!-- деталь карты -->
   <div class="ov" id="detail"><div class="sheet" id="sheet"></div></div>
@@ -407,11 +493,12 @@
   <div class="ov" id="giftOv"><div class="sheet" id="giftSheet"></div></div>
 
   <!-- открытие пака -->
-  <div class="pov" id="packOv">
-    <h2 id="packH" style="display:none">🎉 Смотри, кто выпал!</h2>
+  <div class="pov" id="packOv" role="dialog" aria-modal="true" aria-label="Открытие пака">
+    <h2 id="packH" tabindex="-1" style="display:none">🎉 Смотри, кто выпал!</h2>
     <div class="crate" id="crate">
-      <img class="crate-box" id="crateBox" src="assets/chest_closed.webp" alt="Сундук с картами">
-      <div class="crate-hint">Руби сундук — тапай!</div>
+      <div class="crate-title">Кто спрятался в сундуке?</div>
+      <button class="crate-trigger" id="crateTrigger" type="button" aria-label="Открыть сундук"><img class="crate-box" id="crateBox" src="assets/chest_closed.webp" alt=""></button>
+      <div class="crate-hint" id="crateHint" role="status">Три нажатия — и сундук откроется</div>
     </div>
     <div class="chips" id="chips"></div>
     <div class="pcards" id="packCards"></div>
@@ -442,6 +529,7 @@
   </div>
 </div>
 <script src="app.js"></script>
+<script src="lib/card-presentation.js"></script>
 <script src="cards.js"></script>
 <script src="nav.js"></script>
 </body></html>

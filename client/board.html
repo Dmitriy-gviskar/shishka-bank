@@ -3,7 +3,7 @@
 <link rel="manifest" href="manifest.json"><meta name="theme-color" content="#6fad45"><link rel="apple-touch-icon" href="assets/app-icon-192.png">
 <title>Поляна леса</title><link rel="stylesheet" href="style.css">
 <style>
-  .wrap{overflow:hidden;min-height:0}
+  .board-wrap{overflow:hidden;min-height:0}
   .hint{font-size:12px;font-weight:700;color:#8a6a48;line-height:1.35;text-align:center;
     padding:0 8px 8px;font-family:"Fredoka","Nunito",sans-serif}
   .acts{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-top:6px}
@@ -54,8 +54,8 @@
   .bFind input{width:100%;box-sizing:border-box;border:2px solid #d9c39a;border-radius:12px;
     padding:8px 10px;font-weight:700;font-size:14px;outline:none;font-family:inherit;color:var(--ink);
     background:rgba(255,248,235,.9)}
-</style></head><body>
-<div class="phone"><div class="wrap">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body>
+<div class="phone storybook-theme" data-storybook-screen="board"><div class="cbg" aria-hidden="true"></div><div class="wrap storybook-rest board-wrap">
   <div class="title">Поляна леса</div>
   <div class="hint">Найди обитателя по имени и попроси в друзья. Код из мессенджера не нужен.</div>
   <div class="bFind"><input id="boardFind" type="search" placeholder="Найти по имени" maxlength="24" autocomplete="off"></div>

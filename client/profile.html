@@ -7,8 +7,8 @@
   .phone::after{background:
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.16), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.06),rgba(35,50,25,.2))}
-  .wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:0}
-  .wrap::-webkit-scrollbar{width:0}
+  .profile-wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:0}
+  .profile-wrap::-webkit-scrollbar{width:0}
 
   .head-card{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px 12px;
     background:linear-gradient(180deg,#fffaf0,#f6ead0);border:4px solid #8a6238;border-radius:18px;
@@ -125,8 +125,8 @@
     padding:16px;text-align:center;max-width:300px;width:100%;box-shadow:0 0 0 2px #c9a86a}
   #refQrBox .sheet h3{margin:0 0 8px;font-family:"Fredoka","Nunito",sans-serif}
   #refQrSvg{display:flex;justify-content:center;margin:8px 0}
-</style></head><body>
-<div class="phone"><div class="wrap">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body>
+<div class="phone storybook-theme" data-storybook-screen="profile"><div class="cbg" aria-hidden="true"></div><div class="wrap profile-wrap">
   <div class="head-card">
     <div class="ht">
       <div class="h1" id="heroName">Моё дерево</div>

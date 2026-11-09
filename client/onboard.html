@@ -7,7 +7,7 @@
   .phone::after{background:
     radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.18), transparent 55%),
     linear-gradient(180deg,rgba(255,248,230,.08),rgba(35,50,25,.22))}
-  .wrap{justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 20px}
+  .onboard-wrap{justify-content:center;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 20px}
   .wrap::-webkit-scrollbar{width:0}
 
   .welcome{align-self:center;text-align:center;font-family:"Fredoka","Nunito",sans-serif;
@@ -57,8 +57,8 @@
     background:rgba(255,255,255,.55);border:2px dashed #c9a86a;border-radius:12px;padding:8px 10px;
     font-family:"Fredoka","Nunito",sans-serif}
   .web-tip.on{display:block}
-</style></head><body data-no-nav>
-<div class="phone"><div class="wrap">
+</style><link rel="stylesheet" href="storybook-theme.css"></head><body data-no-nav>
+<div class="phone storybook-theme" data-storybook-screen="onboard"><div class="cbg" aria-hidden="true"></div><div class="wrap storybook-rest onboard-wrap">
   <div class="welcome">Добро пожаловать в лес!</div>
   <div class="panel">
     <div class="web-tip" id="webTip">Ты уже на сайте — всё в браузере. Приложение ставить не нужно.</div>

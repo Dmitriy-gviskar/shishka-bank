@@ -3,11 +3,11 @@
 (function () {
   // 5 слотов: дом / круг / сток / дела / лес. Лавки живут в «Ещё в лесу», не в таббаре.
   const ITEMS = [
-    { i: 'n1', href: 'index.html' },     // Дом (кошелёк)
-    { i: 'n2', href: 'transfers.html' }, // Подарки
-    { i: 'n3', href: 'shop.html' },      // Магазин впечатлений
-    { i: 'n4', href: 'quests.html' },    // Дела
-    { i: 'n6', href: 'forest.html' },    // Лес
+    { i: 'n1', label: 'Дом', href: 'index.html' },     // Дом (кошелёк)
+    { i: 'n2', label: 'Подарки', href: 'transfers.html' }, // Подарки
+    { i: 'n3', label: 'Магазин', href: 'shop.html' },      // Магазин впечатлений
+    { i: 'n4', label: 'Дела', href: 'quests.html' },    // Дела
+    { i: 'n6', label: 'Лес', href: 'forest.html' },    // Лес
   ];
 
   window.mountNav = function () {
@@ -30,10 +30,13 @@
     }
     const file = location.pathname.split('/').pop() || 'index.html';
     const nav = document.createElement('nav'); nav.className = 'nav';
+    nav.setAttribute('aria-label', 'Разделы игры');
     for (const it of ITEMS) {
       const b = document.createElement('button');
-      if (it.href === file) b.className = 'active';
-      b.innerHTML = `<img src="assets/nav/${it.i}.png" alt="">`;
+      b.type = 'button';
+      b.setAttribute('aria-label', it.label);
+      if (it.href === file) { b.className = 'active'; b.setAttribute('aria-current', 'page'); }
+      b.innerHTML = `<span class="nav-icon"><img src="assets/nav/${it.i}.png" alt=""></span><span class="nav-label">${it.label}</span>`;
       b.addEventListener('click', () => { if (it.href !== file) navigate(it.href); });
       nav.appendChild(b);
     }

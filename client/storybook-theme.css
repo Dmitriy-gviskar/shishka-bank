@@ -1,0 +1,583 @@
+/* Contemporary storybook shell. Existing card artwork and all game operations are unchanged. */
+.phone.storybook-theme{--green:#426d42;--green-d:#244c31;--ink:#30462f;--brown:#69523c;--gold:#d7a547;--paper:#f8f2e5;background:#f8f2e5;color:#30462f}
+.storybook-theme .cbg{position:absolute;inset:0;z-index:1;pointer-events:none;background:#f8f2e5 url('assets/forest-storybook.webp') center top/cover no-repeat;filter:none}
+.storybook-theme .cbg::after{background:linear-gradient(180deg,rgba(250,245,230,.05),rgba(248,242,229,.7) 24%,rgba(248,242,229,.96) 52%)}
+.storybook-theme .cwrap{padding-top:30px;gap:10px}
+.storybook-theme .chead{padding-left:44px;padding-right:80px;min-height:48px}
+.storybook-theme .chead .h1{font-family:var(--font);font-weight:900;font-size:26px;color:#28462f;text-shadow:0 1px #fff8e8}
+.storybook-theme .collection-intro{background:#fffaf0c9;border:0;border-radius:16px;padding:10px 12px;box-shadow:none}
+.storybook-theme .collection-intro .prog{color:#526843;font-size:12px;background:none}
+.storybook-theme .collection-intro .bar{height:5px;background:#e6dbc1;margin-top:7px}
+.storybook-theme .collection-intro .bar i{background:#6c8b4a;box-shadow:none}
+.storybook-theme .cwrap > .tabs{gap:5px}
+.storybook-theme .cwrap > .tabs button{background:#ede4d466;border:0;border-radius:15px;color:#66533c;box-shadow:none;font-size:13px}
+.storybook-theme .cwrap > .tabs button.on{background:#2c5237;color:#fff8e9;border:0;box-shadow:0 3px 10px #28462f15}
+.storybook-theme #catTabs button{background:none;color:#7e6d4c;font-size:11px;min-height:34px;border:0;border-bottom:2px solid transparent;border-radius:0}
+.storybook-theme #catTabs button.on{background:#ead8aa44;color:#3d6039;box-shadow:none;border-bottom-color:#8c9d63}
+.storybook-theme #albumFilter{background:#fffaf0b8;color:#4a6340;border:1px solid #d7ccb2;border-radius:11px;min-height:36px}
+.storybook-theme #albumTools > summary{color:#716145;text-decoration:none;min-height:36px;padding:10px 4px;font-size:11px}
+.storybook-theme #albumTools > summary::after{content:' ＋';color:#426d42}
+.storybook-theme .collection-tool-menu{background:#fffaf0;border:1px solid #ded2b8;box-shadow:0 12px 32px #59422529;border-radius:18px}
+.storybook-theme .collection-tool-menu button{color:#3d5336;border-bottom-color:#e9dfcb}
+.storybook-theme .collection-tool-menu .pity,.storybook-theme .collection-tip,.storybook-theme .rarity-legend span{color:#756448}
+.storybook-theme .cwrap .cat{color:#527048;text-shadow:none;font-size:13px}
+.storybook-theme .cat::after{height:1px;background:linear-gradient(90deg,#a4b58b66,transparent)}
+.storybook-theme .cat .cc-count{background:#e4ead7;color:#49633d;border:0;box-shadow:none;font-size:10px}
+.storybook-theme .being-grid{gap:12px}
+.storybook-theme .resident-card,.storybook-theme .ncard{background:#fffaf0ed;border:1px solid #e5d9bf80;border-radius:20px;box-shadow:0 4px 14px #624b2420;padding:8px}
+.storybook-theme .resident-card.full{background:#fff2d4;border-color:#c6ad6c;box-shadow:0 4px 14px #8d6b2520}
+.storybook-theme .resident-art{background:#eee7d8;border:0;border-radius:13px}
+.storybook-theme .resident-art img{object-fit:contain}
+.storybook-theme .resident-name,.storybook-theme .ncard .nl{color:#2c4930;font-size:16px;text-shadow:none}
+.storybook-theme .rarity-tag{background:#eee7d677;color:#635239;border-left:3px solid var(--gc,var(--rc,#75934d));font-size:10px;padding:3px 6px;border-radius:6px}
+.storybook-theme .resident-progress{color:#8b795a;font-size:10px}
+.storybook-theme .resident-new,.storybook-theme .pcard .new,.storybook-theme .gnew{background:#e1eac8;color:#3a5a32;border:0;box-shadow:none;font-size:9px}
+.storybook-theme .pcard .new.duplicate{background:#eee5d6;color:#7f6d51}
+.storybook-theme .resident-unknown{color:#fff7dc}
+.storybook-theme .ncard .ng{color:#685740;font-size:11px}
+.storybook-theme .newshelf-h .nt{color:#47663b;text-shadow:none}
+.storybook-theme .newshelf-h .nok,.storybook-theme .newshelf .nmore{background:#f6efdde8;border-color:#d2c8ae;color:#526c41}
+.storybook-theme .album-empty{background:#fff9eb;color:#766345;border:1px solid #ded3bb}
+.storybook-theme .special-album > summary{background:#f6eddc;color:#5f6843;border:1px solid #d8cbb1}
+.storybook-theme .season.sp,.storybook-theme .being.spone{background:#fbf5e8;border-color:#d8cbb1;box-shadow:none}
+.storybook-theme .being.spone .bn{color:#355236}.storybook-theme .being.spone .spwhy{color:#8b7657}
+/* One deliberate green action, above a quiet illustrated navigation bar. */
+.storybook-theme .pack-dock{position:absolute;left:22px;right:22px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:13;filter:drop-shadow(0 4px 10px #33503033)}
+.storybook-theme .pack-dock:has(.packbtn[style*="display: none"]){display:none}
+.storybook-theme .packbtn,.storybook-theme .pov .done{background:linear-gradient(#426c43,#294e34);border:1px solid #2b5135;border-radius:24px;color:#fff8e8;box-shadow:inset 0 1px #ffffff15,0 3px 8px #294d3020;font-family:var(--font);font-size:15px;font-weight:900;text-shadow:none;min-height:52px}
+.storybook-theme .packbtn{display:flex;width:100%;margin:0;padding:9px 15px;gap:9px}
+.storybook-theme .packbtn .pack-price{margin-left:auto;background:#f6e7b51a;color:#f7e6bb;padding:5px 9px;border-radius:12px;font-size:12px}
+.storybook-theme .packbtn .pack-icon{margin:0;width:23px;height:28px;background:#f0d495;flex:none;mask:var(--icon-cone) center/contain no-repeat;-webkit-mask:var(--icon-cone) center/contain no-repeat}
+.storybook-theme .cwrap .scroll{padding-bottom:calc(180px + env(safe-area-inset-bottom,0px))}
+.storybook-theme .nav{background:linear-gradient(#fffaf2f2,#f0e7d4fc);border-top:1px solid #ddd1b8;border-radius:23px 23px 0 0;box-shadow:0 -8px 24px #866b3510;backdrop-filter:blur(12px)}
+.storybook-theme .nav button{background:none;border-color:transparent;box-shadow:none}
+.storybook-theme .nav .nav-icon img{display:none}
+.storybook-theme .nav .nav-icon::before{content:'';display:block;width:25px;height:25px;background:currentColor;mask:var(--nav-symbol) center/contain no-repeat;-webkit-mask:var(--nav-symbol) center/contain no-repeat}
+
+.storybook-theme .nav .nav-label{font-weight:800;font-size:10px}
+.storybook-theme #topbar,.storybook-theme .nav-back{background:#fff8e8ed;border:1px solid #d9cbb1;color:#40573a;box-shadow:0 3px 12px #77613a18;border-radius:14px}
+.storybook-theme :where(button,a,summary,select):focus-visible{outline:3px solid #719951;outline-offset:3px}
+/* Matte paper dialogs retain all existing actions and quantities. */
+.storybook-theme .ov{background:#26352999;backdrop-filter:blur(8px)}
+.storybook-theme .sheet{background:linear-gradient(#fffaf0,#f4ebd8);border:1px solid #d7c6a4;color:#3c5134;border-radius:24px;box-shadow:0 16px 50px #15271844}
+.storybook-theme .sheet .x{color:#66774f}.storybook-theme .sheet h3,.storybook-theme .sheet .pricebig{color:#355335}
+.storybook-theme .sheet .sub,.storybook-theme .sheet .factlock,.storybook-theme .sheet .asktext{color:#756343}
+.storybook-theme .sheet .big{box-shadow:0 7px 20px #44342430}
+.storybook-theme .sheet .lore{background:#eae6d144;color:#766345}
+.storybook-theme .sheet .gr{background:#f2eadb;border:1px solid #ddd1b7;box-shadow:none}
+.storybook-theme .sheet .gr .gn,.storybook-theme .sheet .gr .gq{color:#66553c}
+.storybook-theme .sheet .gr.no{opacity:.7}
+.storybook-theme .sheet .gr.has{background:#fffaf0;border-color:color-mix(in srgb,var(--gc) 60%,#c3b59a)}
+.storybook-theme .sheet .gr.active{background:#f8f2e6;box-shadow:inset 3px 0 var(--gc);border-color:var(--gc)}
+.storybook-theme .sheet .evoprog,.storybook-theme .sheet .guar{background:#edf0dc;color:#617046;border:1px solid #bfcca5}
+.storybook-theme .sheet .fact{background:#e9efdb;color:#4b683a;border-color:#b6c69c}
+.storybook-theme .sheet .fact b,.storybook-theme .sheet .guar b{color:#567c3c}
+.storybook-theme .sheet .a-ok,.storybook-theme .sheet .a-list{background:#3f6b41;color:#fff8e6}
+.storybook-theme .sheet .a-no{background:#e6ddc9;color:#6e634c}
+.storybook-theme .sheet .exrow,.storybook-theme .sheet .expick,.storybook-theme .sheet .gfriend,.storybook-theme .sheet .presets button{background:#fffaf0;border:1px solid #d7c8a8;color:#5c5e3e}
+/* No image edits: frame and illustration pixels come from the existing card files. */
+.storybook-theme .pov{background:linear-gradient(#faf3e4eb,#f2e9d8f7),url('assets/forest-storybook.webp') center/cover;backdrop-filter:blur(10px);gap:18px}
+.storybook-theme .pov h2{font-family:var(--font);font-size:25px;color:#345136;font-weight:900;text-shadow:none}
+.storybook-theme .pcard{background:#fffaf0;border:1px solid #dfd0b2;border-radius:19px;box-shadow:0 5px 16px #64503120}
+.storybook-theme .pcard.pack-feature{position:relative;isolation:isolate;background:radial-gradient(ellipse at 50% 15%,color-mix(in srgb,var(--rc) 9%,#fff8e9),#fcf5e6 80%);border:1px solid color-mix(in srgb,var(--rc) 25%,#d5c5a3);padding:18px 14px;box-shadow:0 5px 20px #64503120}
+.storybook-theme .pack-feature::before{content:'✦';position:absolute;right:17px;top:14px;color:#bd9a57;font-size:22px;pointer-events:none}
+.storybook-theme .reward-eyebrow{color:#9a8056;letter-spacing:1.2px;font-size:9px;padding-right:12px}
+.storybook-theme .reward-art{background:#ede7da;border:0;border-radius:12px}
+.storybook-theme .reward-art img{object-fit:contain}
+.storybook-theme .pack-feature .reward-art{width:min(210px,80%);box-shadow:0 7px 22px #67502e30}
+.storybook-theme .reward-caption,.storybook-theme .reward-caption b{color:#335035}
+.storybook-theme .reward-caption small{color:#756343}
+.storybook-theme .pack-feature .reward-caption b{font-family:var(--font);font-size:26px;font-weight:900}
+.storybook-theme .pack-feature .rarity-tag{background:color-mix(in srgb,var(--rc) 12%,#f4ebd8);border:0;border-left:3px solid var(--rc);border-radius:9px;font-size:13px;padding:5px 13px;color:#64523a}
+.storybook-theme .pov .rw{background:#e9efda;color:#526b3b;border:1px solid #bbc99b}
+.storybook-theme .crate-title{font-family:var(--font);font-weight:900;color:#3d5b36;font-size:26px}
+.storybook-theme .crate-hint{color:#90794e;font-size:12px;text-shadow:none}
+.storybook-theme .crate-trigger{filter:drop-shadow(0 8px 14px #6d512737)}
+@media(max-width:350px){.storybook-theme .cwrap{padding-left:12px;padding-right:12px}.storybook-theme .chead{padding-left:44px;padding-right:75px}.storybook-theme .chead .h1{font-size:22px}.storybook-theme .pack-dock{left:18px;right:18px}.storybook-theme .resident-name{font-size:13px}.storybook-theme .resident-card,.storybook-theme .ncard{padding:6px}.storybook-theme .reward-caption b{font-size:13px}}
+
+.phone.storybook-theme{--icon-cone:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M12%202c-3%201-7%207-7%2011%200%205%204%209%207%209s7-4%207-9c0-4-4-10-7-11Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22m8%208%204%203%204-3M6%2013l6%204%206-4m-8%207%202-3%202%203M12%202v4%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%221.6%22%2F%3E%3C%2Fsvg%3E")}
+.storybook-theme .nav button:nth-child(1){--nav-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M2%2011%2012%202l10%209h-3v10h-5v-7h-4v7H5V11Z%22%2F%3E%3C%2Fsvg%3E")}
+.storybook-theme .nav button:nth-child(2){--nav-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M3%2010h18v5h-2v7H5v-7H3Zm8%200h2v12h-2Z%22%2F%3E%3Cpath%20d%3D%22M12%209C3%2010%204%201%208%203c3%201%204%206%204%206Zm0%200s1-5%204-6c4-2%205%207-4%206Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3C%2Fsvg%3E")}
+.storybook-theme .nav button:nth-child(3){--nav-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M3%208h18l-2%205H5ZM5%2015h14v7H5Zm3%202v5h4v-5ZM5%202h14l3%206H2Z%22%2F%3E%3C%2Fsvg%3E")}
+.storybook-theme .nav button:nth-child(4){--nav-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M7%204H4v18h16V4h-3M9%202h6v5H9Z%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.3%22%20stroke-linejoin%3D%22round%22%2F%3E%3Cpath%20d%3D%22m7%2013%203%203%207-7%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222.3%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E")}
+.storybook-theme .nav button:nth-child(5){--nav-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M21%202C8%201%202%206%203%2014c1%205%205%207%209%205%206-2%208-10%209-17Z%22%2F%3E%3Cpath%20d%3D%22m3%2022%2013-14%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E")}
+
+.storybook-theme .nav button:nth-child(1){color:#3d603b}.storybook-theme .nav button:nth-child(2){color:#b7643e}.storybook-theme .nav button:nth-child(3){color:#9c713b}.storybook-theme .nav button:nth-child(4){color:#526744}
+
+.phone.storybook-theme{--icon-leaf:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M21%202C8%201%202%206%203%2014c1%205%205%207%209%205%206-2%208-10%209-17Z%22%2F%3E%3Cpath%20d%3D%22m3%2022%2013-14%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20fill%3D%22none%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E")}
+.storybook-theme .packbtn .pack-icon{mask-image:var(--icon-leaf);-webkit-mask-image:var(--icon-leaf)}
+.storybook-theme .pack-price{display:inline-flex;align-items:center;gap:5px}.storybook-theme .pack-price .currency{display:inline-block;width:14px;height:17px;background:#efd292;mask:var(--icon-cone) center/contain no-repeat;-webkit-mask:var(--icon-cone) center/contain no-repeat}
+
+/* Shared storybook surfaces on home, forest, quests and games. */
+.phone.storybook-theme::after{display:none}
+.storybook-theme .nav button:last-child{background:none;border-color:transparent}
+.storybook-theme .nav button.active,.storybook-theme[data-storybook-screen="collection"] .nav button:last-child,.storybook-theme[data-storybook-screen="games"] .nav button:last-child{background:#dde7cb90;border:1px solid #c3d1a344;color:#365c35}
+.storybook-theme .home-greeting,.storybook-theme .wallet-card,.storybook-theme .next-deed,.storybook-theme .home-secondary a,.storybook-theme .home-secondary button{background:#fffaf0ed;border:1px solid #e1d5bc99;box-shadow:0 4px 15px #70582e13;border-radius:21px}
+.storybook-theme .home-wrap{padding-top:28px;gap:14px}
+.storybook-theme .home-greeting{padding:10px 13px;border-radius:18px}
+.storybook-theme .home-kicker,.storybook-theme .nd-label{color:#8c7753;letter-spacing:1.4px}
+.storybook-theme .home-greeting .bubble{color:#355039;font-size:14px}
+.storybook-theme .wallet-card{background:linear-gradient(135deg,#fffaf0ed,#f4ecd7ee)}
+.storybook-theme .wc-num{color:#345c38;font-size:48px}
+.storybook-theme .wc-label,.storybook-theme .wc-sub{color:#8a795d}
+.storybook-theme .wc-unit,.storybook-theme .tree-link{color:#4b6440}
+.storybook-theme .daily{border-top-color:#ddd1b6}
+.storybook-theme .daily .t1{color:#52693f}.storybook-theme .daily .t2{color:#756343}
+.storybook-theme .home-wrap .daily button{background:#e6eccf;border:1px solid #bdcca2;color:#426039;border-radius:13px;min-height:40px;box-shadow:none}
+.storybook-theme .nd-title{color:#345335;font-size:20px}
+.storybook-theme .nd-meta{color:#79834c}
+.storybook-theme .home-primary,.storybook-theme .gather-bar button,.storybook-theme .family-box .go,.storybook-theme #gameBtn,.storybook-theme #gameClaim,.storybook-theme .game-next{background:linear-gradient(#466e44,#305637);border:1px solid #315237;box-shadow:0 3px 9px #3b5b2f22;border-radius:17px;color:#fff8e8;text-shadow:none}
+.storybook-theme .home-primary{min-height:49px}
+.storybook-theme .wallet-more{border-top:1px solid #cfbea0}
+.storybook-theme .wallet-more > summary{color:#71684c;text-shadow:none}
+.storybook-theme .home-extras a,.storybook-theme .home-extras button,.storybook-theme .qr-more > summary{background:#fffaf0ed;border-color:#ded1b7;color:#48613b;border-radius:15px}
+.storybook-theme .home-secondary img{display:none}
+.storybook-theme .home-secondary button::before,.storybook-theme .home-secondary a::before{content:'';display:block;width:28px;height:28px;background:#6b7f44;mask:var(--home-symbol) center/contain no-repeat;-webkit-mask:var(--home-symbol) center/contain no-repeat}
+.storybook-theme .home-secondary a{--home-symbol:var(--icon-leaf)}
+.storybook-theme .forest-lead,.storybook-theme .games-heading{background:#fffaf0c9;border:1px solid #e2d6ba55;box-shadow:none;border-radius:23px}
+.storybook-theme .forest-lead h1,.storybook-theme .games-heading h1{color:#2e5134;font-size:25px}
+.storybook-theme .forest-lead .eyebrow,.storybook-theme .games-kicker{color:#8e7b58}
+.storybook-theme .forest-lead p,.storybook-theme .games-heading p{color:#887650}
+.storybook-theme .forest-wrap .tile{background:#fffaf0e8;border:1px solid #e5d9bf66;box-shadow:0 4px 14px #72592e16;border-radius:22px}
+.storybook-theme .forest-wrap .tile span{color:#395839}
+.storybook-theme .forest-wrap .tile small{color:#756343}
+.storybook-theme .forest-wrap .doors .tile img{display:none}
+.storybook-theme .forest-wrap .doors .tile::before{content:'';display:block;width:50px;height:50px;margin:3px 0 6px;background:var(--scene-ink,#567344);mask:var(--scene-symbol) center/contain no-repeat;-webkit-mask:var(--scene-symbol) center/contain no-repeat}
+.storybook-theme .forest-details{background:#fffaf0e0;border-color:#dfd2b8}
+.storybook-theme .forest-details > summary{color:#536741}
+.storybook-theme .forest-details .glife{border-top-color:#e3d7be}.storybook-theme .forest-details .glife .gh{color:#42603a}.storybook-theme .forest-details .glife .gs{color:#756343}
+.storybook-theme .grove-top .fam{background:#fffaf0e8;border-color:#e1d4b8}
+.storybook-theme .grove-top .fam-empty{background:#f7f0dfe8;border-color:#c8d1ac;color:#7e8055}
+.storybook-theme .gather-bar{background:#eef0dce8;border:1px solid #c6d0ab;border-radius:19px;box-shadow:none}
+.storybook-theme .spirit-tip{background:#fff8e8ed;border:1px solid #d9cbb1;box-shadow:0 3px 12px #77613a18}
+.storybook-theme .spirit-pop{background:#fffaf0;border-color:#d7c9ad;color:#5a6d46}
+/* Quests: same events and accessible labels, fresh text controls. */
+.storybook-theme .quests-wrap{padding-left:16px;padding-right:16px;gap:10px}
+.storybook-theme .quests-wrap > .title{background:#fffaf0c9;border:0;box-shadow:none;color:#345535;text-shadow:none;font-size:25px;padding:14px 18px;border-radius:22px;margin:0}
+.storybook-theme .quests-wrap > .greet{align-items:center;gap:9px;margin:0}
+.storybook-theme .quests-wrap > .greet img{width:60px;height:60px;filter:drop-shadow(0 3px 4px #6b54222b)}
+.storybook-theme .quests-wrap > .greet .bubble{background:#fffaf0e8;border:1px solid #e2d5ba;border-radius:18px;box-shadow:none;font-size:13px;margin:0;padding:12px;color:#5d7146}
+.storybook-theme .quests-wrap > .greet .bubble::before,.storybook-theme .quests-wrap > .greet .bubble::after{display:none}
+.storybook-theme #taskList{padding:2px 1px 12px}
+.storybook-theme .quest,.storybook-theme .quest.daily{border:1px solid #e1d5bc;background:#fffaf0ed;box-shadow:0 3px 12px #72592e14;border-radius:19px;padding:12px 10px;gap:9px}
+.storybook-theme .quest.daily{border-left:3px solid #c2a46e}
+.storybook-theme .quest.rejected{border-left:3px solid #c78767}
+.storybook-theme .quest .ic{width:44px;height:44px;border:0;box-shadow:none;background:none;border-radius:0}
+.storybook-theme .quest .nm{font-size:14px;color:#3e5b38;line-height:1.35}
+.storybook-theme .quest .rw{font-size:12px;color:#9c7844}.storybook-theme .quest .rw img{width:16px;height:16px}
+.storybook-theme .quest-act-img{display:flex;align-items:center;justify-content:center;min-height:42px;max-width:96px;min-width:65px;padding:8px 10px;border:1px solid #43613b;border-radius:13px;background:#4d7142;color:#fff8e9;box-shadow:none;filter:none;font:800 12px var(--font);line-height:1.25;text-align:center}
+.storybook-theme .quest-act-img img{display:none}
+.storybook-theme .quest-act-img::after{content:attr(aria-label)}
+.storybook-theme .quest-act-img:active{filter:none;transform:translateY(1px)}
+.storybook-theme .quest-act-img:disabled{opacity:.65;cursor:wait}
+.storybook-theme .quest-sec{background:none;border:0;box-shadow:none;padding:5px 2px;margin:13px 0 2px;color:#6c7e4c;font-size:11px;letter-spacing:1px}
+.storybook-theme .quest-empty{background:#f5eeddeb;border:1px solid #dfd2b8;box-shadow:none;border-radius:15px;color:#756343;font-size:12px;line-height:1.5;padding:11px}
+.storybook-theme .family-box{background:#fffaf0dc;border:1px solid #e0d3b8;box-shadow:none;border-radius:17px;padding:4px 12px 10px}
+.storybook-theme .family-box>summary{font-size:13px;color:#567044}
+.storybook-theme .family-box input,.storybook-theme .family-box select{border:1px solid #d5c7aa;border-radius:11px;color:#4d6541}
+.storybook-theme .family-box .hint,.storybook-theme .family-box label{color:#756343}
+.storybook-theme .ward-row{background:#fffbf0;border:1px solid #e0d2b4;box-shadow:none;border-radius:14px}
+.storybook-theme .quest-wait{background:#eee5c8;border:1px solid #d4c291;box-shadow:none;border-radius:13px;color:#8e7747;min-width:65px}
+.storybook-theme .quest-wait span{color:#8e7747}
+/* All mini-games use paper panels; correctness colors and feedback remain explicit. */
+.storybook-theme .games-list-head{background:#ecebd8dd;color:#77804f;border:1px solid #d5d9ba66}
+.storybook-theme .game-filters button{background:#f9f3e7d9;border:1px solid #d9cdb1;color:#7d7150;border-radius:13px}
+.storybook-theme .game-filters button.selected{background:#43673c;color:#fff8e8;border-color:#43673c}
+.storybook-theme .games-wrap .gtile{background:#fffaf0e8;border:1px solid #e5d8bc80;box-shadow:0 4px 14px #72592e14;border-radius:21px}
+.storybook-theme .games-wrap .gtile .nm{color:#355637}.storybook-theme .games-wrap .gtile .ds{color:#897653}.storybook-theme .game-meta{color:#9a8661}
+.storybook-theme .games-wrap .gtile .rw{background:#e7ecd5;color:#658145;border:0;text-shadow:none}
+.storybook-theme .gsheet,.storybook-theme .gsheet.quiz-mode{background:linear-gradient(#fffaf0,#f4ecd9);border:1px solid #d8caac;box-shadow:0 12px 35px #24302130;border-radius:24px}
+.storybook-theme .gtitle{color:#3c5b38}
+.storybook-theme .gx,.storybook-theme #gameOv:has(.quiz-mode) > .gx{background:#f9f1df;border:1px solid #d9cbb1;color:#6e784d;box-shadow:none;border-radius:12px}
+.storybook-theme .gbar{background:#e3dbc6;border:0;box-shadow:none}
+.storybook-theme .gbar > i{background:#81a05e}
+.storybook-theme .gprog{color:#927e57}
+.storybook-theme .gq-stage,.storybook-theme .quiz-mode .gq-stage{background:#fffcf4;border:1px solid #ddd1b5;box-shadow:none;border-radius:18px}
+.storybook-theme .gq{-webkit-text-stroke:0;color:#3c5734}
+.storybook-theme .story-text,.storybook-theme .quiz-mode .story-text{color:#3a5735}
+.storybook-theme .quiz-guide{background:#eaecd6;color:#6d7a4b;border-radius:16px}
+.storybook-theme .quiz-guide p{color:#8c7d56}.storybook-theme .quiz-guide b{color:#617346}
+.storybook-theme .glevels button{background:#fdf8ec;border:1px solid #dcd0b5;box-shadow:0 2px 0 #e5d9bf;color:#5c6541;border-radius:14px}
+.storybook-theme .quiz-mode .glevels button[data-result="correct"]{background:#e3edd4;border-color:#88a35e;color:#496337;box-shadow:none}
+.storybook-theme .quiz-mode .glevels button[data-result="incorrect"]{background:#f4e2d5;border-color:#c29172;color:#865d40;box-shadow:none}
+.storybook-theme .quiz-mode .glevels button[data-result="pending"]{background:#f4ebcc;border-color:#c2ad70}
+.storybook-theme .quiz-mode .gmsg.feedback-correct{background:#e7eed8;border-color:#b2c58d;color:#566c3d}
+.storybook-theme .quiz-mode .gmsg.feedback-incorrect{background:#f2e7d1;border-color:#d5bd95;color:#8a6c48}
+.storybook-theme #gameA{background:#fffdf4;border:1px solid #dccdad;box-shadow:none;color:#47633b}
+.storybook-theme .gpad button,.storybook-theme .word-letters button,.storybook-theme .word-actions button,.storybook-theme .cmp-row button{background:#fcf7e9;border:1px solid #d9ccad;box-shadow:none;color:#587243;border-radius:13px}
+.storybook-theme .gpad button.go,.storybook-theme .word-actions button.go{background:#4f7341;color:#fff8e7;border-color:#4f7341}
+.storybook-theme .mem-card{border:1px solid #d0c19b;box-shadow:0 3px 8px #6855291a;background:#b4c498}
+.storybook-theme .mem-card.matched{box-shadow:0 0 0 2px #8eaa68}
+.storybook-theme .odd-card{background:#fcf7e9;border:1px solid #dbceaf;box-shadow:none}
+.storybook-theme .odd-card.pick-ok{box-shadow:0 0 0 2px #8eaa68}.storybook-theme .odd-card.pick-bad{box-shadow:0 0 0 2px #c68d70}
+.storybook-theme .gdone #gameResult{color:#44633a}
+@media(max-width:350px){.storybook-theme .home-wrap{padding-top:23px;gap:12px}.storybook-theme .wc-num{font-size:38px}.storybook-theme .quests-wrap{padding-left:12px;padding-right:12px;gap:8px}.storybook-theme .quests-wrap > .title{font-size:22px;padding:12px}.storybook-theme .quest{gap:7px;padding:10px 8px}.storybook-theme .quest .ic{width:32px;height:36px}.storybook-theme .quest .nm{font-size:13px}.storybook-theme .quest-act-img{min-width:58px;max-width:82px;padding:8px;font-size:11px}.storybook-theme .forest-lead h1,.storybook-theme .games-heading h1{font-size:22px}}
+
+.storybook-theme .forest-wrap .doors .tile[href="collection.html"]{--scene-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Crect%20x%3D%225%22%20y%3D%223%22%20width%3D%2215%22%20height%3D%2218%22%20rx%3D%223%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M5%207H3v15h13%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M15%208c-6%200-8%205-5%207%204%202%206-2%205-7Z%22%2F%3E%3C%2Fsvg%3E");--scene-ink:#71854b}
+.storybook-theme .forest-wrap .doors .tile[href="games.html"]{--scene-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M5%207h4V5a3%203%200%201%201%206%200v2h4v5h-2a3%203%200%201%200%200%206h2v4H5v-5h2a3%203%200%201%200%200-6H5Z%22%2F%3E%3C%2Fsvg%3E");--scene-ink:#bc7650}
+.storybook-theme .forest-wrap .doors .tile[href="mail.html#friends"]{--scene-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M2%205h20v14H2Zm1%201%209%207%209-7%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fsvg%3E");--scene-ink:#9b854e}
+.storybook-theme .forest-wrap .doors .tile[href="profile.html#grove"]{--scene-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22m12%202-7%208h4l-6%207h7v5h4v-5h7l-6-7h4Z%22%2F%3E%3C%2Fsvg%3E");--scene-ink:#4f7949}
+.storybook-theme #spendBtn{--home-symbol:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%3E%3Cpath%20d%3D%22M3%208h18l-2%205H5ZM5%2015h14v7H5Zm3%202v5h4v-5ZM5%202h14l3%206H2Z%22%2F%3E%3C%2Fsvg%3E")}
+
+/* Shop and gifts share the same paper, forest ink and quiet controls. */
+.storybook-theme :is(.shop-wrap,.gifts-wrap){padding:28px 16px 100px;gap:12px}
+.storybook-theme :is(.shop-wrap,.gifts-wrap) > .title{background:#fffaf0c9;border:0;border-radius:22px;box-shadow:none;color:#345535;text-shadow:none;font:900 24px var(--font);padding:14px 16px;margin:0;text-align:left}
+.storybook-theme :is(.shop-wrap,.gifts-wrap) > .greet{margin:0;gap:9px;align-items:center}
+.storybook-theme :is(.shop-wrap,.gifts-wrap) > .greet img{width:60px;height:60px;filter:drop-shadow(0 3px 4px #6b54222b)}
+.storybook-theme :is(.shop-wrap,.gifts-wrap) .bubble{background:#fffaf0e8;border:1px solid #e2d5ba;border-radius:18px;box-shadow:none;color:#5d7146;font:800 13px var(--font);padding:12px;margin:0}
+.storybook-theme :is(.shop-wrap,.gifts-wrap) .bubble::before,.storybook-theme :is(.shop-wrap,.gifts-wrap) .bubble::after{display:none}
+.storybook-theme .shop-wrap #shopList{padding:0 1px 15px}
+.storybook-theme .shop-wrap :is(.lot,.my-purchases,.ward-box){background:#fffaf0ed;border:1px solid #e1d5bc;border-radius:21px;box-shadow:0 4px 14px #72592e14;padding:13px 11px}
+.storybook-theme .shop-wrap .lot{gap:10px;margin-top:10px;flex-wrap:wrap}
+.storybook-theme .shop-wrap .pic{width:58px;height:58px;background:#f0eadb;border:0;border-radius:15px;box-shadow:none}
+.storybook-theme .shop-wrap .nm{font:900 15px/1.3 var(--font);color:#3b5937}
+.storybook-theme .shop-wrap .price{color:#9c7844;font-size:15px;gap:4px}
+.storybook-theme .shop-wrap .price img{width:18px;height:18px}
+.storybook-theme .shop-buy,.storybook-theme .gifts-wrap #giftSendBtn{background:linear-gradient(#466e44,#305637);border:1px solid #315237;border-radius:15px;color:#fff8e8;box-shadow:0 3px 9px #3b5b2f22;text-shadow:none;font:900 13px var(--font);min-height:44px;padding:10px 14px;min-width:78px;cursor:pointer}
+.storybook-theme .shop-buy:active,.storybook-theme .gifts-wrap #giftSendBtn:active{transform:translateY(1px);filter:none;box-shadow:none}
+.storybook-theme .shop-wrap .mp-h{color:#5a7045;font:900 13px var(--font);text-align:left}
+.storybook-theme .shop-wrap :is(.mp-row,.ward-row){background:#f6f1e4;border:1px solid #e1d5bc;box-shadow:none;border-radius:12px}
+.storybook-theme .shop-wrap .mp-t{color:#4e613c}.storybook-theme .shop-wrap .mp-s{color:#8d7954}
+.storybook-theme .shop-wrap .mp-row.fulfilled .mp-s{color:#55723f}
+.storybook-theme .shop-wrap .mp-row.promised .mp-s{color:#9d7453}
+.storybook-theme .gifts-wrap .friends{height:auto;max-height:226px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px;background:#fffaf0b8;border:1px solid #e1d5bc;border-radius:21px;box-shadow:none}
+.storybook-theme .gifts-wrap .friend{width:auto;min-width:0;height:98px;flex:auto;background:#faf5e9;border:1px solid #e0d4b8;box-shadow:none;border-radius:16px;padding:8px 5px}
+.storybook-theme .gifts-wrap .friend.sel{background:#e6ecd7;border-color:#789459;box-shadow:inset 0 0 0 1px #789459}
+.storybook-theme .gifts-wrap .friend span{color:#52663e;font:800 11px var(--font)}
+.storybook-theme .gifts-wrap .friend img{width:46px;height:46px}
+.storybook-theme .gifts-wrap :is(.gift-block,.gifts-sec){background:#fffaf0ed;border:1px solid #e1d5bc;box-shadow:0 4px 14px #72592e14;border-radius:22px;padding:17px 13px;margin-top:0}
+.storybook-theme .gifts-wrap .amt-big .n{color:#3c623b;background:none;-webkit-text-stroke:0;font:900 42px/1.1 var(--font)}
+.storybook-theme .gifts-wrap .amt-big .u{background:none;border:0;box-shadow:none;color:#8c7955;font-size:10px;letter-spacing:1.7px}
+.storybook-theme .gifts-wrap .apick{gap:8px;margin-top:13px}
+.storybook-theme .gifts-wrap .ap{flex:1;min-width:0;background:#f3eddf;border:1px solid #ddd0b3;box-shadow:none;color:#73804e;border-radius:13px;font:900 18px var(--font);padding:10px}
+.storybook-theme .gifts-wrap .ap.sel{background:#e3ebd1;border-color:#82995f;box-shadow:inset 0 0 0 1px #82995f;color:#3f6135}
+.storybook-theme .gifts-wrap #anonRow{background:#f5f1e5;border:1px solid #e0d5bc;box-shadow:none;color:#7a7851;border-radius:13px;font-size:11px;line-height:1.45;padding:10px 8px;text-align:left}
+.storybook-theme .gifts-wrap #anonRow input{flex:none;accent-color:#4d7142}
+.storybook-theme .gifts-wrap #giftSendBtn{width:100%;max-width:none;margin:13px 0 0;filter:none;line-height:1.3}
+.storybook-theme .gifts-wrap .gift-send img{display:none}
+.storybook-theme .gifts-wrap .gift-send::after{content:attr(aria-label)}
+.storybook-theme .gifts-wrap :is(.gifts-title,.gifts-empty){color:#657448;-webkit-text-fill-color:currentColor;font-family:var(--font)}
+.storybook-theme .gifts-wrap .gifts-title{text-align:left;font-size:13px;margin-bottom:7px}
+.storybook-theme .gifts-wrap .gifts-empty{background:none;border:0;box-shadow:none;padding:0;text-align:left;font-size:12px;color:#897858}
+.storybook-theme :is(.shop-wrap,.gifts-wrap) #note{background:#f8f0dc;border:1px solid #d9c6a4;border-radius:14px;box-shadow:none;font-size:13px;padding:12px}
+@media(max-width:350px){.storybook-theme :is(.shop-wrap,.gifts-wrap){padding-left:12px;padding-right:12px}.storybook-theme .shop-wrap .pic{width:44px;height:44px}.storybook-theme .shop-wrap .nm{font-size:13px}.storybook-theme .shop-buy{min-width:65px;padding:9px;font-size:12px}.storybook-theme .shop-wrap .lot{gap:7px}.storybook-theme :is(.shop-wrap,.gifts-wrap) > .title{font-size:21px}}
+
+/* Profile and woodland mail: presentation only, original art and actions retained. */
+.storybook-theme :is(.profile-wrap,.mail-wrap){padding:28px 16px 100px;gap:12px}
+.storybook-theme .profile-wrap :is(.head-card,.chronicle,.passport,.grove){background:#fffaf0ed;border:1px solid #e1d5bc;box-shadow:0 4px 14px #72592e14;border-radius:22px;padding:16px;margin:0}
+.storybook-theme .profile-wrap .head-card{padding:14px 16px;background:#fffaf0cc}
+.storybook-theme .profile-wrap .head-card .h1{font:900 24px/1.15 var(--font);color:#345535}
+.storybook-theme .profile-wrap .head-card .h2{font:800 12px var(--font);color:#756343;margin-top:5px}
+.storybook-theme .profile-wrap .hero{margin:0}.storybook-theme .profile-wrap .hero img{filter:drop-shadow(0 5px 10px #6b54222b)}
+.storybook-theme .profile-wrap :is(.progress,.bar){background:#e6ddc6;border:0;box-shadow:none;height:8px;border-radius:8px}
+.storybook-theme .profile-wrap .progress{margin:0 35px}
+.storybook-theme .profile-wrap .progress i{background:#8ba264;box-shadow:none}
+.storybook-theme .profile-wrap :is(.prog-cap,.tree-tip,.grove-tip){background:#f8f3e6da;border:1px solid #e1d5bc;box-shadow:none;border-radius:14px;color:#7b7852;-webkit-text-fill-color:currentColor;margin:0;padding:10px 12px;font-family:var(--font);font-size:12px}
+.storybook-theme .profile-wrap .prog-cap{align-self:center}
+.storybook-theme .profile-wrap :is(.chronicle,.passport,.grove) h3{font:900 17px var(--font);color:#3f603b;text-align:left}
+.storybook-theme .profile-wrap .chronicle p{font:700 13px/1.6 var(--font);color:#887554;text-align:left}
+.storybook-theme .profile-wrap :is(.pass-hint,.hook,.how){color:#756343;font-family:var(--font);font-weight:700;line-height:1.5}
+.storybook-theme .profile-wrap .pass-hint{text-align:left;font-size:12px}
+.storybook-theme .profile-wrap .trait .nm{font:800 12px var(--font);color:#586a43;width:88px}.storybook-theme .profile-wrap .trait .val{color:#64834b;font-family:var(--font)}
+.storybook-theme .profile-wrap .bar i{background:#8ca76a;box-shadow:none}.storybook-theme .profile-wrap .bar i[data-trait="generosity"]{background:#c18c64}.storybook-theme .profile-wrap .bar i[data-trait="reliability"]{background:#c2a25f}
+.storybook-theme .profile-wrap .freeze-buy{margin:0;padding:13px;background:#eaf0e6ed;border:1px solid #cbd8bc;box-shadow:none;border-radius:18px;flex-wrap:wrap}
+.storybook-theme .profile-wrap .freeze-buy .fb-txt{color:#657751;min-width:130px;font-family:var(--font)}
+.storybook-theme .profile-wrap :is(.btn,.profile-btn),.storybook-theme .mail-wrap :is(.fAdd button,.fMyCode button,.fRow .acts .go,#btnSend,.doPay){background:linear-gradient(#466e44,#305637);border:1px solid #315237;color:#fff8e8;box-shadow:0 3px 9px #3b5b2f22;text-shadow:none;border-radius:14px;font-family:var(--font);font-size:12px;min-height:42px}
+.storybook-theme .profile-wrap .profile-btn{margin:0;max-width:none;flex:none;font-size:14px}
+.storybook-theme .profile-wrap :is(.grove-stat,.grove-code,.ref-row){background:#f7f2e6;border:1px solid #e0d4b8;box-shadow:none;border-radius:13px}
+.storybook-theme .profile-wrap .grove-stat .n{font-family:var(--font);color:#557641}.storybook-theme .profile-wrap .grove-stat .l{color:#756343}
+.storybook-theme .profile-wrap .grove-code{color:#557046;font:900 20px var(--font);letter-spacing:2px}
+.storybook-theme .profile-wrap .grove-actions button{min-width:0;white-space:normal}
+.storybook-theme .profile-wrap :is(.ref-sec,.pass-more){color:#5c7648;font-family:var(--font)}
+.storybook-theme .profile-wrap :is(.switch-user,#pnote){background:#f8f3e6;border:1px solid #ded0b3;box-shadow:none;border-radius:14px;color:#7c7453;font-family:var(--font)}
+.storybook-theme .profile-wrap #refQrBox .sheet{background:#fffaf0;border:1px solid #d7c6a4;box-shadow:0 16px 50px #15271844;border-radius:24px;color:#3f603b}
+.storybook-theme .mail-wrap > .title{background:#fffaf0c9;border:0;border-radius:22px;box-shadow:none;color:#345535;text-shadow:none;font:900 25px var(--font);padding:14px 16px;margin:0;text-align:left}
+.storybook-theme .mailTabs{background:#f8f3e6c9;border:1px solid #e0d4b8;box-shadow:none;border-radius:17px;margin:0;padding:4px}
+.storybook-theme .mailTabs button{color:#756343;font-family:var(--font);border-radius:13px;min-height:42px}
+.storybook-theme .mailTabs button.on{background:#42653d;color:#fff8e8;box-shadow:none;text-shadow:none}
+.storybook-theme :is(#chatList,#friendsPane){padding:2px 1px 12px;gap:10px}
+.storybook-theme :is(.chatRow,.fRow,.fAdd,.fMyCode,.noChats,.emptyChat){background:#fffaf0ed;border:1px solid #e1d5bc;box-shadow:0 4px 14px #72592e14;border-radius:19px;padding:13px 11px}
+.storybook-theme :is(.chatRow,.fRow) img{background:#ecebd9;border:1px solid #ddd3b7;border-radius:13px}
+.storybook-theme :is(.chatRow .name,.fRow .nm,.fSec){color:#41603a;font-family:var(--font)}
+.storybook-theme :is(.chatRow .preview,.chatRow .time,.fHint){color:#756343}
+.storybook-theme .fMyCode{flex-wrap:wrap;color:#7b7954;font:800 12px var(--font)}
+.storybook-theme .fMyCode b{color:#4b6e3f;font-size:14px}
+.storybook-theme .fRow .acts button{background:#f0eadb;border:1px solid #d8cbae;box-shadow:none;color:#68734b;border-radius:12px;font-family:var(--font);min-height:36px}
+.storybook-theme .fRow .acts{max-width:56%}
+.storybook-theme :is(.fAdd input,.fFind input,#inputRow input){background:#fffcf4;border:1px solid #d9ccae;border-radius:13px;color:#4b6541}
+.storybook-theme :is(.fAdd input,.fFind input,#inputRow input):focus-visible{outline:2px solid #7e9a61;outline-offset:1px}
+.storybook-theme .mail-wrap.chat-open{padding-top:75px}
+.storybook-theme #chatHeader :is(.back,.chName,.payBtn){background:#fff8e8ed;border:1px solid #d9cbb1;box-shadow:0 3px 12px #77613a18;color:#496340;border-radius:14px;font-family:var(--font)}
+.storybook-theme #chatHeader .payBtn{background:#e9ecd5}
+.storybook-theme #chatMsgs{padding:8px 0 12px;gap:9px}
+.storybook-theme .msgBubble{font-size:14px;font-weight:700;padding:10px 13px}
+.storybook-theme .msgBubble.mine{background:#527346;color:#fff8e8}
+.storybook-theme .msgBubble.theirs{background:#fffaf0;border:1px solid #ded1b4;color:#526441}
+.storybook-theme :is(.noChats,.emptyChat){color:#756343;font-size:13px;line-height:1.6;margin:0}
+.storybook-theme #chatInput{background:#fbf5e8f5;border:1px solid #dfd2b6;border-radius:18px;padding:9px 8px}
+.storybook-theme #stickerBar button{background:#f6efdf;border:1px solid #ded1b5;border-radius:11px;padding:6px}
+.storybook-theme #inputRow{align-items:center}
+.storybook-theme #inputRow #micBtn{background:#ede8d6;border:1px solid #d7ccae;border-radius:13px;flex:none;color:#5e7047;padding:0}
+.storybook-theme #inputRow #micBtn.recording{background:#c45349;border-color:#a9443c;color:#fff}
+.storybook-theme #inputRow #btnSend{padding:8px 13px;flex:none}
+.storybook-theme :is(#replyBar,.replyQuote){background:#eaf0dc;border-color:#b7c89a;color:#5d7644}
+.storybook-theme :is(.rxChip,#rxPicker){background:#fffaf0;border:1px solid #ddd0b2;color:#6b7950}
+.storybook-theme #rxPicker .rxActs button{background:#f4eddd;border:1px solid #ded0b1;box-shadow:none;color:#68734b;font-family:var(--font)}
+.storybook-theme #rxPicker .rxActs button.danger{background:#f4e3d8;color:#9b6550}
+.storybook-theme #payPopup .card{background:#fffaf0;border:1px solid #d7c6a4;box-shadow:0 16px 50px #15271844;border-radius:24px;max-width:100%}
+.storybook-theme #payPopup .amts button{background:#f6efdf;border:1px solid #dbcdad;color:#7a7951}
+.storybook-theme #payPopup .amts button.sel{background:#e5edd5;border-color:#829b61;color:#4b683b}
+@media(max-width:350px){.storybook-theme :is(.profile-wrap,.mail-wrap){padding-left:12px;padding-right:12px}.storybook-theme .profile-wrap .head-card .h1{font-size:21px}.storybook-theme .mail-wrap > .title{font-size:22px}.storybook-theme .fRow{gap:7px;flex-wrap:wrap}.storybook-theme .fRow .acts{max-width:100%;margin-left:auto}.storybook-theme .fMyCode button{padding:7px}.storybook-theme .mail-wrap.chat-open #chatHeader{left:12px;right:108px;gap:5px}.storybook-theme #chatHeader .chName{padding:0 6px;font-size:12px}.storybook-theme #chatHeader .payBtn{width:36px}}
+
+/* Achievements and outfits: original illustrations, quieter paper frames. */
+.storybook-theme :is(.achievements-wrap,.outfits-wrap){padding:28px 16px 100px;gap:12px}
+.storybook-theme :is(.achievements-wrap,.outfits-wrap) > .title{background:#fffaf0c9;border:0;border-radius:22px;box-shadow:none;color:#345535;text-shadow:none;font:900 24px var(--font);padding:14px 16px;margin:0;text-align:left}
+.storybook-theme .achievements-wrap .count{align-self:flex-start;background:#edf0dce8;border:1px solid #cbd5b3;border-radius:12px;box-shadow:none;color:#627b49;font:800 12px var(--font);padding:8px 12px;margin:0}
+.storybook-theme #achList{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-content:start;padding:1px 1px 15px}
+.storybook-theme .ach{background:#fffaf0ed;border:1px solid #e1d5bc;border-radius:20px;box-shadow:0 4px 14px #72592e14;padding:14px 11px;min-width:0}
+.storybook-theme .ach.lock{opacity:1;filter:none;background:#f6f0e3e8;border-color:#e0d6c1;box-shadow:none}
+.storybook-theme .ach.lock img{filter:grayscale(.7);opacity:.6}
+.storybook-theme .ach img{width:60px;height:60px}
+.storybook-theme .ach .t{font:900 13px/1.3 var(--font);color:#44613b;height:auto;min-height:34px;overflow:visible;margin-top:7px}
+.storybook-theme .ach .d{font:700 11px/1.5 var(--font);color:#756343;margin-top:5px}
+.storybook-theme .ach.lock .t{color:#7d7b60}
+.storybook-theme .ach .pb{height:5px;background:#e5dcc6;margin-top:11px;border-radius:6px}
+.storybook-theme .ach .pb i{background:#8da56a}
+.storybook-theme .outfits-wrap :is(#skinList,#charList){grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:1px 1px 8px;flex:none}
+.storybook-theme .outfits-wrap .skin{background:#fffaf0ed;border:1px solid #e1d5bc;border-radius:21px;box-shadow:0 4px 14px #72592e14;padding:16px 11px 12px;min-width:0}
+.storybook-theme .outfits-wrap .skin.on{background:#f1f3e2;border-color:#8da46c;box-shadow:inset 0 0 0 1px #8da46c}
+.storybook-theme .outfits-wrap .skin img{filter:drop-shadow(0 4px 6px #6b54222b);max-width:100%}
+.storybook-theme .outfits-wrap .skin .t{font:900 14px/1.35 var(--font);color:#45613a;margin:8px 0 10px}
+.storybook-theme .outfits-wrap .skin .btn-sm{background:linear-gradient(#466e44,#305637);border:1px solid #315237;border-radius:14px;box-shadow:0 3px 9px #3b5b2f22;color:#fff8e8;text-shadow:none;font:900 12px var(--font);min-height:42px;padding:9px 7px;white-space:normal}
+.storybook-theme .outfits-wrap .skin .st{font:800 12px/1.4 var(--font);padding:11px 4px;border-radius:13px;box-sizing:border-box}
+.storybook-theme .outfits-wrap .skin .st.on{background:#e0e9cc;color:#53723d;border:1px solid #b9c99b}
+.storybook-theme .outfits-wrap .rar b{background:#eee6d4;color:#8b7956;border:1px solid #d9c9a8;font:800 9px var(--font);padding:3px 7px;top:9px;right:9px;border-radius:9px}
+.storybook-theme .outfits-wrap .rar.rare b{background:#f0e5c7;color:#987439}.storybook-theme .outfits-wrap .rar.epic b{background:#eae2ef;color:#886698}.storybook-theme .outfits-wrap .rar.seasonal b{background:#e6ecd7;color:#6c834e}
+.storybook-theme .outfits-wrap .sec-title{font:900 14px var(--font);color:#5b7347;margin:3px 2px 0;flex:none}
+.storybook-theme .outfits-wrap .sec-hint{background:#f8f3e6c9;border:1px solid #e1d5bc;border-radius:15px;padding:11px 12px;font:700 12px/1.5 var(--font);color:#756343;margin:0;flex:none}
+.storybook-theme .outfits-wrap .page-note{background:#f8f0dc;border:1px solid #d9c6a4;border-radius:14px;box-shadow:none;font-size:13px;color:#7b7951}
+@media(max-width:350px){.storybook-theme :is(.achievements-wrap,.outfits-wrap){padding-left:12px;padding-right:12px}.storybook-theme :is(.achievements-wrap,.outfits-wrap) > .title{font-size:21px}.storybook-theme .ach{padding:12px 9px}.storybook-theme .ach .t{font-size:12px}.storybook-theme .outfits-wrap .skin{padding-left:9px;padding-right:9px}.storybook-theme .outfits-wrap .skin .t{font-size:13px}}
+
+/* Woodland trading surfaces; transaction handlers and all artwork remain intact. */
+.storybook-theme :is(.market-wrap,.auction-wrap){padding:28px 16px 100px;gap:12px}
+.storybook-theme .auction-wrap > .title,.storybook-theme .mkt-top{background:#fffaf0cc;border:0;border-radius:22px;box-shadow:none;color:#345535;text-shadow:none;padding:14px 16px;margin:0}
+.storybook-theme .auction-wrap > .title{font:900 24px var(--font);text-align:left}
+.storybook-theme .mkt-top{padding:12px;gap:10px}
+.storybook-theme .mkt-top img{width:46px;height:46px;filter:drop-shadow(0 3px 5px #6b54222b)}
+.storybook-theme .mkt-title{font:900 25px/1.2 var(--font);color:#345535;text-shadow:none;letter-spacing:normal}
+.storybook-theme .market-wrap #marketList{padding:10px 1px 15px}
+.storybook-theme .market-wrap :is(.shop-card,.orders-box,#createForm),.storybook-theme .auction-wrap :is(.bid,.winner){background:#fffaf0ed;border:1px solid #e1d5bc;box-shadow:0 4px 14px #72592e14;border-radius:22px}
+.storybook-theme .market-wrap .shop-card{padding-bottom:13px;margin-top:20px}
+.storybook-theme .market-wrap .stall{background:#f0eadb;border:1px solid #dfd2b4;box-shadow:none;border-radius:16px;margin:12px 12px 0}
+.storybook-theme .market-wrap .shop-name{font:900 19px var(--font);color:#40603b;margin-top:12px}
+.storybook-theme .market-wrap :is(.mine-tag,.heir){background:#e4ebd3;border:1px solid #bdcca1;box-shadow:none;color:#5b7643;font:800 11px var(--font);padding:5px 9px;border-radius:11px}
+.storybook-theme .market-wrap .heir{background:#f2e7c9;border-color:#dfcca0;color:#927948}
+.storybook-theme .market-wrap :is(.lot-row,.ord-row,.lotForm){background:#f8f3e6;border:1px solid #e1d5bc;box-shadow:none;border-radius:16px}
+.storybook-theme .market-wrap .lot-row{padding:11px 9px;gap:9px}
+.storybook-theme .market-wrap .lot-thumb{border:1px solid #dfd2b5;box-shadow:none;border-radius:12px}
+.storybook-theme .market-wrap :is(.lt,.ord-row .t){font:800 14px/1.4 var(--font);color:#4a6340}
+.storybook-theme .market-wrap .price{font:900 16px var(--font);color:#967644}
+.storybook-theme .market-wrap .price img{width:18px;height:18px}
+.storybook-theme .market-wrap .mini,.storybook-theme .market-wrap .ord-row .cancel{background:#f1ead9;border:1px solid #daccae;box-shadow:none;border-radius:12px;color:#74774f;font:800 12px var(--font);min-height:38px;padding:8px 10px}
+.storybook-theme .market-wrap :is(.btn,.shop-buy,.open-stall),.storybook-theme .auction-wrap #doBid{background:linear-gradient(#466e44,#305637);border:1px solid #315237;box-shadow:0 3px 9px #3b5b2f22;border-radius:15px;color:#fff8e8;text-shadow:none;font:900 13px var(--font);min-height:44px;padding:11px 13px}
+.storybook-theme .market-wrap .lot-row .shop-buy{min-width:78px}
+.storybook-theme .market-wrap :is(.lot-empty,.mkt-empty,.ord-row .m){color:#756343;font-family:var(--font)}
+.storybook-theme .market-wrap .mkt-empty{background:#fffaf0dd;border:1px solid #e1d5bc;border-radius:20px;padding:20px 15px;margin:0;font-size:13px;line-height:1.6}
+.storybook-theme .market-wrap :is(.lotForm input,#createForm input),.storybook-theme #askIn,.storybook-theme .auction-wrap #bidCustom{background:#fffcf4;border:1px solid #d9ccae;box-shadow:none;border-radius:13px;color:#4b6541;font-family:var(--font);box-sizing:border-box}
+.storybook-theme .market-wrap :is(.lotForm input,#createForm input):focus-visible,.storybook-theme #askIn:focus-visible,.storybook-theme .auction-wrap #bidCustom:focus-visible{outline:2px solid #7e9a61;outline-offset:2px}
+.storybook-theme .market-wrap .orders-box h3{font:900 15px var(--font);color:#547044;text-align:left}
+.storybook-theme .market-wrap :is(#note,#mktNote),.storybook-theme .auction-wrap .page-note{background:#f8f0dc;border:1px solid #d9c6a4;box-shadow:none;border-radius:14px;font-family:var(--font);font-size:13px}
+.storybook-theme .mkt-ov .sheet{background:#fffaf0;border:1px solid #d7c6a4;box-shadow:0 16px 50px #15271844;border-radius:24px}
+.storybook-theme .mkt-ov .acts button{border:1px solid #d7c6a4;box-shadow:none;border-radius:14px;font-family:var(--font);min-height:44px}
+.storybook-theme .mkt-ov .a-ok{background:#466d42;color:#fff8e8}.storybook-theme .mkt-ov .a-no{background:#eee6d5;color:#7d7655}
+.storybook-theme .auction-wrap .lot-img{margin:0}.storybook-theme .auction-wrap .lot-img img{filter:drop-shadow(0 5px 9px #6b54222b);max-width:100%}
+.storybook-theme .auction-wrap .lot-name{font:900 20px/1.35 var(--font);color:#42613b}
+.storybook-theme .auction-wrap .bid{margin-top:0;padding:18px 14px}
+.storybook-theme .auction-wrap .bid .cur{font:900 40px var(--font);color:#486a3f}
+.storybook-theme .auction-wrap .bid .lead{color:#756343;font:700 12px/1.5 var(--font)}
+.storybook-theme .auction-wrap .timer{background:#edf0dce8;border:1px solid #cad5b2;box-shadow:none;border-radius:14px;color:#6c7d4c;font:800 13px var(--font);padding:10px}
+.storybook-theme .auction-wrap .timer.soon{background:#f5e7d7;border-color:#d7b38f;color:#a2714c}
+.storybook-theme .auction-wrap .timer b{font-size:16px}
+.storybook-theme .auction-wrap .bids{gap:9px;margin-top:13px}
+.storybook-theme .auction-wrap .bids .s{background:#f7f1e4;border:1px solid #dbceb0;box-shadow:none;border-radius:13px;color:#778052;font:900 17px var(--font);padding:11px 18px}
+.storybook-theme .auction-wrap .bids .s.sel{background:#e2eacf;border-color:#8ca568;color:#4b6c3c;box-shadow:inset 0 0 0 1px #8ca568}
+.storybook-theme .auction-wrap #doBid{width:100%;margin-top:14px}
+.storybook-theme .auction-wrap .winner{padding:20px 15px;color:#4d683e}.storybook-theme .auction-wrap .winner .who{color:#5c7745}.storybook-theme .auction-wrap .winner .sub{color:#927e57}
+@media(max-width:350px){.storybook-theme :is(.market-wrap,.auction-wrap){padding-left:12px;padding-right:12px}.storybook-theme .mkt-title,.storybook-theme .auction-wrap > .title{font-size:22px}.storybook-theme .market-wrap .lot-row{flex-wrap:wrap}.storybook-theme .market-wrap .lot-side{margin-left:auto}.storybook-theme .market-wrap .shop-mgmt{flex-wrap:wrap}.storybook-theme .auction-wrap .bids .s{padding:10px 15px}}
+
+/* Hollow savings and wish pots: same operations in warm paper surfaces. */
+.storybook-theme :is(.deposit-wrap,.pot-wrap){padding:28px 16px 100px;gap:12px}
+.storybook-theme :is(.deposit-wrap,.pot-wrap) > .title{background:#fffaf0cc;border:0;border-radius:22px;box-shadow:none;color:#345535;text-shadow:none;font:900 24px var(--font);padding:14px 16px;margin:0;text-align:left}
+.storybook-theme .deposit-wrap .card,.storybook-theme .pot-wrap .pcard{background:#fffaf0ed;border:1px solid #e1d5bc;box-shadow:0 4px 14px #72592e14;border-radius:22px;padding:16px 13px}
+.storybook-theme .deposit-wrap .terms{gap:7px;margin:0}
+.storybook-theme .deposit-wrap .term{background:#f5efdf;border:1px solid #ddd0b2;box-shadow:none;border-radius:15px;padding:13px 3px;color:#748052}
+.storybook-theme .deposit-wrap .term b{font:900 17px var(--font);color:inherit}
+.storybook-theme .deposit-wrap .term small{display:block;margin-top:5px;color:#8f805a;font:800 12px var(--font)}
+.storybook-theme .deposit-wrap .term.sel{background:#e4ecd4;border-color:#8da56c;box-shadow:inset 0 0 0 1px #8da56c;color:#4f6f40}
+.storybook-theme .deposit-wrap .sum{gap:8px;margin-top:14px}
+.storybook-theme .deposit-wrap .sum .s,.storybook-theme .pot-wrap .give .s{background:#f6efdf;border:1px solid #dbceb0;border-radius:13px;box-shadow:none;color:#778052;font:900 16px var(--font);padding:10px 15px}
+.storybook-theme .deposit-wrap .sum .s.sel,.storybook-theme .pot-wrap .give .s.sel{background:#e2eacf;border-color:#8ca568;color:#4b6c3c;box-shadow:inset 0 0 0 1px #8ca568}
+.storybook-theme :is(.deposit-wrap,.pot-wrap) .btn{background:linear-gradient(#466e44,#305637);border:1px solid #315237;box-shadow:0 3px 9px #3b5b2f22;border-radius:15px;color:#fff8e8;text-shadow:none;font:900 13px var(--font);min-height:44px;padding:11px 13px}
+.storybook-theme .deposit-wrap #freeze{width:100%;margin-top:15px}
+.storybook-theme .deposit-wrap h3{align-self:flex-start;background:none;border:0;box-shadow:none;font:900 14px var(--font);color:#62784b;margin:2px 0;padding:0 2px}
+.storybook-theme .deposit-wrap #safeList{padding:1px 1px 12px}
+.storybook-theme .deposit-wrap .safe{gap:10px;margin-top:10px;padding:14px 12px;flex-wrap:wrap}
+.storybook-theme .deposit-wrap .safe .amt{font:900 17px var(--font);color:#4d6d40;min-width:110px}
+.storybook-theme .deposit-wrap .safe .st{font:700 12px/1.5 var(--font);color:#756343}
+.storybook-theme :is(.deposit-wrap,.pot-wrap) .page-note{background:#f8f0dc;border:1px solid #d9c6a4;box-shadow:none;border-radius:14px;font:800 13px/1.5 var(--font);color:#7b7951}
+.storybook-theme .pot-wrap .pot-img{margin:0}.storybook-theme .pot-wrap .pot-img img{filter:drop-shadow(0 5px 9px #6b54222b)}
+.storybook-theme .pot-wrap #potList{padding:1px 1px 12px;margin:0}
+.storybook-theme .pot-wrap .pcard{margin-bottom:12px}
+.storybook-theme .pot-wrap .pcard .pn{font:900 17px/1.35 var(--font);color:#46623c;overflow-wrap:anywhere}
+.storybook-theme .pot-wrap .pcard .pa{font:700 12px/1.5 var(--font);color:#756343}
+.storybook-theme .pot-wrap .pcard .tag{background:#eee7cf;border:1px solid #dbcca6;border-radius:10px;color:#927c4e;font:800 10px var(--font);padding:4px 8px}
+.storybook-theme .pot-wrap .scale{background:#e9e2cc;border:1px solid #d4ccad;border-radius:12px;height:25px;margin-top:12px}
+.storybook-theme .pot-wrap .scale i{background:#bdce9c}
+.storybook-theme .pot-wrap .scale span{font:900 12px var(--font);color:#4f6740;text-shadow:none}
+.storybook-theme .pot-wrap .give{gap:7px;flex-wrap:wrap;margin-top:12px}
+.storybook-theme .pot-wrap .give .s{padding:10px 12px;font-size:14px}
+.storybook-theme .pot-wrap .give .btn{margin-left:auto}
+.storybook-theme .pot-wrap .newp{margin:0;background:#fffaf0ed;border:1px solid #e1d5bc;border-radius:20px;padding:7px 12px;flex:none}
+.storybook-theme .pot-wrap .newp summary{background:none;border:0;box-shadow:none;border-radius:12px;font:900 13px var(--font);color:#5c7647;padding:12px 0;margin:0;text-align:left;width:auto;min-height:42px;box-sizing:border-box}
+.storybook-theme .pot-wrap .newp :is(input,select){background:#fffcf4;border:1px solid #d9ccae;box-shadow:none;border-radius:13px;color:#4b6541;font:700 14px var(--font);min-height:43px}
+.storybook-theme .pot-wrap .newp :is(input,select):focus-visible{outline:2px solid #7e9a61;outline-offset:1px}
+.storybook-theme .pot-wrap .newp #createPot{margin:3px 0 7px}
+@media(max-width:350px){.storybook-theme :is(.deposit-wrap,.pot-wrap){padding-left:12px;padding-right:12px}.storybook-theme :is(.deposit-wrap,.pot-wrap) > .title{font-size:22px}.storybook-theme .deposit-wrap .term b{font-size:15px}.storybook-theme .pot-wrap .give{gap:5px}.storybook-theme .pot-wrap .give .s{padding:10px}.storybook-theme .pot-wrap .give .btn{padding:10px;font-size:12px}}
+
+/* Guilds and council: quiet shared surfaces; membership and votes unchanged. */
+.storybook-theme :is(.guilds-wrap,.council-wrap){padding:28px 16px 100px;gap:12px}
+.storybook-theme :is(.guilds-wrap,.council-wrap) > .title{background:#fffaf0cc;border:0;border-radius:22px;box-shadow:none;color:#345535;text-shadow:none;font:900 24px var(--font);padding:14px 16px;margin:0;text-align:left}
+.storybook-theme :is(.guilds-wrap,.council-wrap) .card{background:#fffaf0ed;border:1px solid #e1d5bc;box-shadow:0 4px 14px #72592e14;border-radius:21px}
+.storybook-theme :is(.guilds-wrap,.council-wrap) .btn{background:linear-gradient(#466e44,#305637);border:1px solid #315237;box-shadow:0 3px 9px #3b5b2f22;border-radius:14px;color:#fff8e8;text-shadow:none;font:900 12px var(--font);min-height:42px;padding:10px 12px}
+.storybook-theme .guilds-wrap .glist{padding:1px 1px 12px;margin-top:0}
+.storybook-theme .guilds-wrap .gcard{padding:15px 13px;margin-bottom:12px}
+.storybook-theme .guilds-wrap .gcard .gn{font:900 18px var(--font);color:#45613c}
+.storybook-theme .guilds-wrap .gcard .gm{font:700 12px/1.5 var(--font);color:#756343;margin-top:4px}
+.storybook-theme .guilds-wrap .gcard .row{gap:7px;margin-top:12px}
+.storybook-theme .guilds-wrap .newg{background:#fffaf0ed;border:1px solid #e1d5bc;border-radius:20px;padding:12px;margin-top:8px;flex:none}
+.storybook-theme .guilds-wrap .newg input,.storybook-theme .council-wrap .prop-form input{background:#fffcf4;border:1px solid #d9ccae;box-shadow:none;border-radius:13px;color:#4b6541;font:700 14px var(--font);min-height:44px}
+.storybook-theme .guilds-wrap .newg input:focus-visible,.storybook-theme .council-wrap .prop-form input:focus-visible{outline:2px solid #7e9a61;outline-offset:1px}
+.storybook-theme .guilds-wrap h3{align-self:flex-start;background:#fffaf0c9;border:1px solid #e1d5bc;box-shadow:none;border-radius:13px;color:#5b7546;font:900 14px var(--font);margin:9px 0;padding:9px 12px}
+.storybook-theme .guilds-wrap .mrow{background:#fffaf0ed;border:1px solid #e1d5bc;border-radius:15px;padding:11px 12px;margin-top:6px;gap:8px}
+.storybook-theme .guilds-wrap .mrow .nm{font:800 13px var(--font);color:#4c6540;min-width:0;overflow-wrap:anywhere}
+.storybook-theme .guilds-wrap .mrow .share{background:#eee8ce;border:1px solid #d8cba5;color:#8a784c;border-radius:10px;font:800 12px var(--font);white-space:nowrap}
+.storybook-theme .guilds-wrap .msg{background:#fffaf0;border:1px solid #dfd2b5;border-radius:16px;padding:10px 12px;overflow-wrap:anywhere}
+.storybook-theme .guilds-wrap .msg.bank{background:#f2ead3;border-color:#dac99e}
+.storybook-theme .guilds-wrap .msg .who{color:#657e4c;font:900 11px var(--font)}
+.storybook-theme .guilds-wrap .msg .txt{color:#526441;font:700 13px/1.5 var(--font)}
+.storybook-theme .guilds-wrap .phrases{gap:6px}
+.storybook-theme .guilds-wrap .phrases button,.storybook-theme .guilds-wrap #invSheet .gfriend{background:#f7f1e4;border:1px solid #dbceb0;box-shadow:none;border-radius:13px;color:#687b4b;font:800 12px var(--font);padding:10px 11px;min-height:40px}
+.storybook-theme .guilds-wrap #invSheet{background:#fffaf0;border:1px solid #d7c6a4;box-shadow:0 16px 50px #15271844;border-radius:24px}
+.storybook-theme .guilds-wrap :is(#backToList,#invClose){background:#eee7d5!important;color:#7b7553!important;box-shadow:none!important;border:1px solid #d9cbae}
+.storybook-theme .council-wrap .sub{background:#edf0dce8;border:1px solid #cbd5b3;box-shadow:none;border-radius:16px;color:#6c7c4f;font:700 12px/1.5 var(--font);padding:12px;margin:0;width:auto}
+.storybook-theme .council-wrap .prop-form{padding:12px;margin:0;gap:9px;flex-wrap:wrap;flex:none}
+.storybook-theme .council-wrap .prop-form input{min-width:140px;padding:11px}
+.storybook-theme .council-wrap .prop-form button{margin-left:auto}
+.storybook-theme .council-wrap #props{padding:1px 1px 12px}
+.storybook-theme .council-wrap .prop{padding:16px 13px;margin-top:11px}
+.storybook-theme .council-wrap .prop .t{font:900 16px/1.4 var(--font);color:#45613c;overflow-wrap:anywhere}
+.storybook-theme .council-wrap .prop .row{gap:7px;flex-wrap:wrap;margin-top:13px}
+.storybook-theme .council-wrap .prop .tally{font:800 12px/1.5 var(--font);color:#756343;min-width:90px}
+.storybook-theme .council-wrap .vbtn{border:1px solid #bccea1;border-radius:13px;font:900 12px var(--font);padding:10px 13px;min-height:42px}
+.storybook-theme .council-wrap .yes{background:#e2ecd2;color:#4e703c}
+.storybook-theme .council-wrap .no{background:#f2e4d9;border-color:#d7b9a3;color:#986e52}
+.storybook-theme :is(.guilds-wrap,.council-wrap) .page-note{background:#f8f0dc;border:1px solid #d9c6a4;box-shadow:none;border-radius:14px;font:800 13px/1.5 var(--font);color:#7b7951}
+@media(max-width:350px){.storybook-theme :is(.guilds-wrap,.council-wrap){padding-left:12px;padding-right:12px}.storybook-theme :is(.guilds-wrap,.council-wrap) > .title{font-size:22px}.storybook-theme .council-wrap .prop-form input{width:100%;flex-basis:100%}.storybook-theme .council-wrap .prop-form button{width:100%}.storybook-theme .guilds-wrap .gcard .gn{font-size:16px}}
+
+.storybook-theme .guilds-wrap #guildView{overflow-y:auto;padding:0 1px 14px}
+.storybook-theme .guilds-wrap #guildView > :not(#chat){flex-shrink:0}
+.storybook-theme .guilds-wrap #guildView #chat{flex:1 0 80px}
+.storybook-theme .guilds-wrap #gMembers .mrow{flex-wrap:wrap}
+
+/* Remaining screens use the same shell without changing IDs, handlers or artwork. */
+.storybook-theme .storybook-rest{padding:28px 16px 100px;gap:12px}
+.storybook-theme .storybook-rest > .title{background:#fffaf0cc;border:0;border-radius:22px;box-shadow:none;color:#345535;text-shadow:none;font:900 24px var(--font);padding:14px 16px;margin:0;text-align:left}
+.storybook-theme .storybook-rest :is(.card,.panel,.pod,.bRow,.season-box,details,.empty){background:#fffaf0ed;border:1px solid #e1d5bc;box-shadow:0 4px 14px #72592e14;border-radius:20px}
+.storybook-theme .storybook-rest :is(.btn,.start-btn,.mini.g,.ask){background:linear-gradient(#466e44,#305637);border:1px solid #315237;box-shadow:0 3px 9px #3b5b2f22;border-radius:14px;color:#fff8e8;text-shadow:none;font-family:var(--font);min-height:42px;padding:10px 12px}
+.storybook-theme .storybook-rest :is(input:not([type=checkbox]),select){background:#fffcf4;border:1px solid #d9ccae;box-shadow:none;border-radius:13px;color:#4b6541;font-family:var(--font);box-sizing:border-box;max-width:100%;min-width:0;min-height:42px}
+.storybook-theme .storybook-rest :is(input,select):focus-visible{outline:2px solid #7e9a61;outline-offset:2px}
+.storybook-theme .storybook-rest :is(.nm,.t,.cf-h,.sname,.brand,.welcome){color:#45613c;font-family:var(--font);text-shadow:none}
+.storybook-theme .storybook-rest :is(.k,.meta,.hint,.cf-tip,.step-tag,.sinfo,.mkthint,.how){color:#756343;font-family:var(--font);line-height:1.5}
+.storybook-theme .storybook-rest :is(.lead,.web-tip,.sub,h3){background:#f8f3e6de;border:1px solid #e1d5bc;box-shadow:none;border-radius:15px;color:#727b51;font-family:var(--font);padding:11px 12px;line-height:1.5}
+.storybook-theme .storybook-rest h3{font-size:14px;text-align:left;margin:10px 0 7px}
+.storybook-theme .storybook-rest :is(.ev,.sp){padding:14px 12px;gap:10px;flex-wrap:wrap}
+.storybook-theme .storybook-rest :is(.ev .nm,.sp .nm){font-size:14px;line-height:1.4}
+.storybook-theme .storybook-rest .sp .mid{min-width:120px}
+.storybook-theme .storybook-rest .sp .amt{color:#5a7a45;font-size:18px}
+.storybook-theme .storybook-rest :is(.story,.pred){font:800 16px/1.65 var(--font);color:#5b7048;padding:20px 16px}
+.storybook-theme .storybook-rest .oracle img{filter:drop-shadow(0 5px 9px #6b54222b);max-width:100%}
+.storybook-theme .storybook-rest :is(.qprog,.bar){background:#e5ddc7;border:1px solid #d9cfb2;box-shadow:none;border-radius:12px}
+.storybook-theme .storybook-rest .qprog i{background:#b1c58d}
+.storybook-theme .storybook-rest .bonus .pill{background:#efe8ce;border:1px solid #daca9f;border-radius:15px;color:#947b48;font-size:16px}
+.storybook-theme .insurance-wrap .fund .n{font:900 42px var(--font);color:#4c6f40}.storybook-theme .insurance-wrap .fund .l{color:#8c7b58;font-size:12px}
+.storybook-theme .insurance-wrap .cf-row{flex-wrap:wrap}.storybook-theme .insurance-wrap .cf-row input{width:80px;min-width:60px}
+.storybook-theme .insurance-wrap .claim .row{flex-wrap:wrap}.storybook-theme .insurance-wrap .vbtn{border:1px solid #bdcca2;min-height:42px;border-radius:13px;font-family:var(--font)}
+.storybook-theme .insurance-wrap .yes{background:#e1ebd0;color:#54723d}.storybook-theme .insurance-wrap .no{background:#f1e2d7;border-color:#d5b69e;color:#996e50}
+.storybook-theme .board-wrap .sortTabs{background:#f8f3e6c9;border:1px solid #e0d4b8;box-shadow:none;border-radius:17px;margin-bottom:0}
+.storybook-theme .board-wrap .sortTabs button{font-family:var(--font);color:#756343;min-height:38px}
+.storybook-theme .board-wrap .sortTabs button.on{background:#42653d;color:#fff8e8;box-shadow:none;text-shadow:none}
+.storybook-theme .board-wrap .pod{min-width:0;padding:12px 6px}.storybook-theme .board-wrap .pod.p1{background:#f3ecd4;border-color:#d1bd8d}
+.storybook-theme .board-wrap :is(.pod.mine,.bRow.mine){border-color:#91a573;box-shadow:inset 0 0 0 1px #91a573}
+.storybook-theme .board-wrap .bRow{gap:8px;flex-wrap:wrap}.storybook-theme .board-wrap .bRow .nm{min-width:70px}.storybook-theme .board-wrap .bRow .acts{margin-left:auto}
+.storybook-theme .board-wrap :is(.pod img,.bRow img){background:#eee9d8;border:1px solid #dfd3b5}
+.storybook-theme .board-wrap .ask{min-height:34px;font-size:11px;padding:7px 9px}
+.storybook-theme .board-wrap .ask.write{background:#eee6ce;border:1px solid #dbcca6;box-shadow:none;color:#887747}
+.storybook-theme :is(.link-wrap,.onboard-wrap){padding-bottom:28px;justify-content:flex-start}
+.storybook-theme .link-wrap{padding-top:50px}
+.storybook-theme .link-wrap .spirit img{width:120px;height:120px;filter:drop-shadow(0 4px 8px #6b54222b)}
+.storybook-theme .link-wrap .brand{font-size:30px;color:#3b5e37}
+.storybook-theme .link-wrap :is(.lead,.web-tip){margin-top:0;font-size:13px}
+.storybook-theme .link-wrap :is(.plant-btn,.enter-btn){margin-top:0;flex:none;width:100%}
+.storybook-theme .link-wrap .code-toggle{color:#6d7e4e;font-family:var(--font);margin-top:0}
+.storybook-theme .link-wrap #codeBox{margin-top:0}.storybook-theme .link-wrap #codeBox p{font-size:12px;color:#756343;line-height:1.5}
+.storybook-theme .onboard-wrap .welcome{font:900 24px var(--font);background:#fffaf0c9;border:0;box-shadow:none;border-radius:20px;padding:15px}
+.storybook-theme .onboard-wrap .panel{padding:16px}
+.storybook-theme .onboard-wrap .tree-opt{background:#f6f0e1;border:1px solid #d9ccae;box-shadow:none;border-radius:16px;color:#748052}
+.storybook-theme .onboard-wrap .tree-opt.sel{background:#e3ebd2;border-color:#8ca569;box-shadow:inset 0 0 0 1px #8ca569;color:#4d6d3e}
+.storybook-theme .onboard-wrap .bubble{background:#f8f3e6;border:1px solid #e0d4b8;box-shadow:none;color:#63794b;font-family:var(--font)}
+.storybook-theme .onboard-wrap .bubble::before,.storybook-theme .onboard-wrap .bubble::after{display:none}
+.storybook-theme .parent-wrap{padding-bottom:24px}
+.storybook-theme .parent-wrap #pinGate{background:#fffaf0ed;border:1px solid #e1d5bc;border-radius:22px;padding:18px;flex:0 1 auto}
+.storybook-theme .parent-wrap #pinGate label{display:block;color:#6b7c4f;font:800 13px var(--font);margin-bottom:10px}
+.storybook-theme .parent-wrap #pinInput{width:100%;padding:12px}.storybook-theme .parent-wrap #pinEnter{width:100%;margin-top:12px}
+.storybook-theme .parent-wrap :is(.kid-row,.pend,details){padding:13px;margin-top:10px}
+.storybook-theme .parent-wrap .kid-head{flex-wrap:wrap}.storybook-theme .parent-wrap .kid-head .info{min-width:120px}
+.storybook-theme .parent-wrap .give-row{flex-wrap:wrap}.storybook-theme .parent-wrap .give-row input{min-width:70px}
+.storybook-theme .parent-wrap .mini.r{background:#f0e2d5;border:1px solid #d8bda5;color:#946b50;border-radius:12px}
+.storybook-theme .parent-wrap .mini.del{background:#b96d56;color:#fff8e8;border-radius:12px}
+.storybook-theme .parent-wrap .kid-head .bal{color:#557640}.storybook-theme .parent-wrap .kid-head .code{background:#eee7cc;border:1px solid #dac89f;color:#897343}
+.storybook-theme .storybook-rest :is(.page-note,#note,#pinNote){border-radius:14px;box-shadow:none;font-family:var(--font)}
+/* Public introduction and legacy operator dashboard share the palette. */
+body.storybook-landing{background:#f8f2e5;color:#3e5938}
+.storybook-landing .hero{background:#f8f2e5}.storybook-landing .hero-bg{background:#f8f2e5 url('assets/forest-storybook.webp') center/cover no-repeat;filter:none;opacity:1}
+.storybook-landing .hero-glow{background:linear-gradient(transparent,#f8f2e5)}
+.storybook-landing :is(.brand,.brand span,.tagline,h2){color:#365735;text-shadow:none;-webkit-text-stroke:0}
+.storybook-landing :is(.step,.shot,.code-box,.lead-form){background:#fffaf0ed;border:1px solid #dfd1b5;border-radius:23px;box-shadow:0 5px 20px #72592e14}
+.storybook-landing :is(.cta,.enter){background:#3f653c;color:#fff8e8;border:1px solid #315237;border-radius:16px;box-shadow:0 3px 9px #3b5b2f22;text-shadow:none}
+.storybook-landing .cta-ghost{background:#f8f1e3;border:1px solid #dacbac;color:#687c4c;box-shadow:none;border-radius:16px}
+.storybook-landing :is(.parents,.foot){background:#ecebd8;color:#64764b}
+.storybook-landing :is(input,select,textarea){background:#fffaf0;border:1px solid #d8cbae;border-radius:12px;color:#4d6541}
+body.storybook-admin{background:#f8f2e5 url('assets/forest-storybook.webp') center top/cover fixed;color:#3e5938;padding:24px;font-family:system-ui,sans-serif}
+.storybook-admin .card{background:#fffaf0ed;border:1px solid #dfd1b5;border-radius:20px;box-shadow:0 5px 20px #72592e14;overflow:auto}
+.storybook-admin :is(.card h3,th){color:#756343}.storybook-admin :is(th,td){border-color:#e3d8bf}.storybook-admin .green{color:#648647}.storybook-admin .red{color:#af7055}.storybook-admin .amber{color:#a3864b}
+.storybook-admin .grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+@media(max-width:350px){.storybook-theme .storybook-rest{padding-left:12px;padding-right:12px}.storybook-theme .storybook-rest > .title{font-size:21px}.storybook-theme .board-wrap .pod img{width:38px;height:38px}.storybook-theme .board-wrap .pod.p1 img{width:44px;height:44px}.storybook-theme .board-wrap .pod .nm{font-size:11px}.storybook-theme .onboard-wrap .panel{padding:12px}.storybook-theme .onboard-wrap .welcome{font-size:21px}}
+
+.storybook-theme .board-wrap > .hint{background:#fffaf0df;border:1px solid #e1d5bc;border-radius:15px;padding:11px;color:#7b7953}
+.storybook-landing .hero{overflow:hidden;isolation:isolate}.storybook-landing .hero-bg{transform:none}
+.storybook-landing :is(.hero-top,.brand,.tagline,.cta-row,.code-box){opacity:1;animation:none}
+.storybook-landing :is(.lead,.step p,.step h3,.parents p,.foot a,.foot .name,.lead-note,.hero-top){color:#758052}
+.storybook-landing :is(.section h2,.parents h2){color:#3f603b}
+
+/* Final visual review: stable history rows, readable secondary copy, touch controls. */
+.storybook-theme :is(.album-wrap,.news-wrap) .ev{flex-wrap:nowrap;align-items:flex-start}
+.storybook-theme :is(.album-wrap,.news-wrap) .ev > img{flex:none;width:30px;height:30px}
+.storybook-theme :is(.album-wrap,.news-wrap) .ev > div:not(.amt){flex:1;min-width:0;overflow-wrap:anywhere}
+.storybook-theme :is(.album-wrap,.news-wrap) .ev .amt{flex:none;font-size:15px;margin-top:2px}
+.storybook-theme .storybook-rest :is(.on-art,.empty){background:#fffaf0eb;border:1px solid #ded0b3;box-shadow:none;color:#756343;border-radius:15px;font:700 12px/1.5 var(--font)}
+.storybook-theme .guilds-wrap .gcard .row :is(.gather,.wake,.join){background:#e9e3c9!important;color:#6f653f!important;box-shadow:none!important;border:1px solid #d1c29b}
+.storybook-theme .guilds-wrap :is(.mrow select,.mrow input){background:#fffcf4;border:1px solid #d9ccae;border-radius:11px;color:#4b6541;min-height:38px;font-family:var(--font);max-width:100%}
+.storybook-theme :is(.shop-wrap,.gifts-wrap,.storybook-rest) .bubble{color:#50683e}
+.storybook-theme :is(.game-filters,.mailTabs,.sortTabs) button{min-height:42px}
+.storybook-theme :is(.deposit-wrap .term,.deposit-wrap .sum .s,.auction-wrap .bids .s,.gifts-wrap .ap,.pot-wrap .give .s){min-height:44px;box-sizing:border-box}
+@media(max-height:650px){.storybook-theme :is(.quests-wrap,.shop-wrap,.gifts-wrap,.guilds-wrap,.council-wrap,.deposit-wrap,.pot-wrap,.storybook-rest){overflow-y:auto}.storybook-theme :is(.quests-wrap,.shop-wrap,.gifts-wrap,.guilds-wrap,.council-wrap,.deposit-wrap,.pot-wrap,.storybook-rest) > :is(.title,.greet,.card,.head-card,.newg,.sub,.prop-form,.pot-img,.oracle,.lead,.panel){flex-shrink:0}}

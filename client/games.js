@@ -25,7 +25,7 @@ window.runGames = function () {
       if(id !== attemptId) return null;
       if(result.error) {
         document.getElementById('gameMsg').textContent = result.error;
-        document.querySelectorAll('#gameLevels button').forEach(b=>{b.disabled=false;});
+        document.querySelectorAll('#gameLevels button').forEach(b=>{b.disabled=false; if (b.dataset.result === 'pending') delete b.dataset.result;});
         return null;
       }
       questionLocked = true;
@@ -165,6 +165,11 @@ function closeGameOv() {
 }
 
 function resetGameSheet(title) {
+  document.getElementById('gameSheet').classList.remove('quiz-mode');
+  document.getElementById('quizGuide').hidden = true;
+  document.getElementById('gameNext').hidden = true;
+  document.getElementById('gameStage').style.display = '';
+  document.getElementById('gameMsg').classList.remove('feedback-correct','feedback-incorrect');
   startVersion++; attemptId=null; questionLocked=false;
   clearInterval(countTimer);
   countTimer = null;
@@ -839,7 +844,9 @@ function showStoryQ() {
 
 async function startQuizGame() {
   currentGame = 'quiz';
-  resetGameSheet('Викторина 10–14');
+  resetGameSheet('Лесная викторина');
+  document.getElementById('gameSheet').classList.add('quiz-mode');
+  document.getElementById('quizGuide').hidden = false;
   const r = await api('/api/game/quiz/start', {});
   if (r.error) {
     document.getElementById('gameMsg').textContent = r.error;
@@ -853,20 +860,25 @@ async function startQuizGame() {
 }
 
 function showQuizQ() {
+  document.getElementById('gameSheet').scrollTop = 0;
   questionLocked = false;
+  const next = document.getElementById('gameNext'); next.hidden = true; next.disabled = false;
+  document.getElementById('gameMsg').classList.remove('feedback-correct','feedback-incorrect');
   const q = quizQuestions[quizIdx];
   document.getElementById('gameQ').innerHTML = `<div class="story-text">${esc(q.q)}</div>`;
   document.getElementById('gameMsg').textContent = 'Выбери ответ';
   document.getElementById('gameMsg').style.color = '#5a3a18';
-  setGameProg(quizIdx, 8);
+  setGameProg(quizIdx, 8, `Вопрос ${quizIdx + 1} из 8 · верно ${quizCorrect}`);
   const box = document.getElementById('gameLevels');
   box.style.display = '';
   box.innerHTML = '';
-  (q.options || []).forEach((opt) => {
+  (q.options || []).forEach((opt, index) => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = opt;
+    b.textContent = opt; b.dataset.choice = ['А','Б','В','Г'][index] || '';
+    b.setAttribute('aria-label', opt);
     b.onclick = async () => {
+      if (answering || questionLocked || !attemptId) return;
       [...box.querySelectorAll('button')].forEach((x) => { x.disabled = true; });
       document.getElementById('gameA').value = opt;
       document.getElementById('gameBtn').click();
@@ -989,35 +1001,45 @@ if (document.getElementById('gameBtn')) {
       return;
     }
     if (currentGame === 'quiz') {
+      if (answering || questionLocked || !attemptId) return;
       const val = document.getElementById('gameA').value.trim();
       if (!val) return;
-      const q = quizQuestions[quizIdx];
       const box = document.getElementById('gameLevels');
+      box.querySelectorAll('button').forEach(btn => {btn.disabled = true; if (btn.textContent === val) btn.dataset.result = 'pending';});
+      document.getElementById('gameMsg').textContent = 'Проверяем ответ…';
       const r = await secureAnswer(quizIdx,val);
-      if(!r) return; q.answer=r.expected;
-      flashStage(!!r.correct);
-      if (box) {
-        [...box.querySelectorAll('button')].forEach((btn) => {
-          if (btn.textContent === q.answer) btn.style.outline = '3px solid #6fad45';
-          else if (btn.textContent === val && !r.correct) btn.style.outline = '3px solid #c45c4a';
-        });
-      }
-      if (r.correct) {
-        quizCorrect++;
-        document.getElementById('gameMsg').textContent = 'Верно!';
-        document.getElementById('gameMsg').style.color = '#5f8e37';
-      } else {
-        document.getElementById('gameMsg').textContent = `Почти! ${q.answer}`;
-        document.getElementById('gameMsg').style.color = '#b3452e';
-      }
-      quizIdx++;
-      if (quizIdx >= 8) {
-        setGameProg(8, 8);
-        if (box) { box.style.display = 'none'; box.innerHTML = ''; }
-        showGameDone(`Верно: ${quizCorrect} из 8`, quizCorrect >= 6 ? '🦉' : '📖');
-      } else {
-        later(showQuizQ, 900);
-      }
+      if (!r) return;
+      const expected = String(r.expected);
+      // Only the server response determines the correct option and score.
+      box.querySelectorAll('button').forEach(btn => {
+        btn.disabled = true;
+        if (btn.textContent === expected) {btn.dataset.result = 'correct'; btn.setAttribute('aria-label', `${btn.textContent}. Верный ответ`);}
+        else if (btn.textContent === val) {btn.dataset.result = 'incorrect'; btn.setAttribute('aria-label', `${btn.textContent}. Твой ответ, неверно`);}
+      });
+      const msg = document.getElementById('gameMsg');
+      msg.classList.remove('feedback-correct','feedback-incorrect');
+      msg.classList.add(r.correct ? 'feedback-correct' : 'feedback-incorrect');
+      msg.style.color = '';
+      if (r.correct) {quizCorrect++; msg.textContent = `✓ Верно!\n${expected}`;}
+      else msg.textContent = `Не совсем. Давай запомним:\nВерный ответ: ${expected}`;
+      setGameProg(quizIdx + 1,8,`Отвечено ${quizIdx + 1} из 8 · верно ${quizCorrect}`);
+      const next = document.getElementById('gameNext');
+      next.textContent = quizIdx === 7 ? 'Посмотреть результат →' : 'Следующий вопрос →';
+      next.hidden = false; next.disabled = false;
+      next.onclick = () => {
+        if (!questionLocked || answering || currentGame !== 'quiz' || next.disabled) return;
+        next.disabled = true; next.hidden = true; quizIdx++;
+        if (quizIdx < 8) showQuizQ();
+        else {
+          box.style.display = 'none'; box.innerHTML = '';
+          document.getElementById('gameStage').style.display = 'none';
+          document.getElementById('quizGuide').hidden = true;
+          msg.textContent = ''; msg.classList.remove('feedback-correct','feedback-incorrect');
+          showGameDone(`Верно: ${quizCorrect} из 8`, quizCorrect >= 6 ? '🦉' : '📖');
+        }
+      };
+      next.focus({preventScroll:true});
+      next.scrollIntoView?.({block:'nearest',behavior:'auto'});
       return;
     }
     if (currentGame === 'logic') {
@@ -1086,6 +1108,18 @@ if ((location.pathname.split('/').pop() || '') === 'games.html') (function bind(
   st.onclick = (e) => { e.preventDefault(); window._startStory(); };
   qz.onclick = (e) => { e.preventDefault(); window._startQuiz(); };
   lg.onclick = (e) => { e.preventDefault(); window._startLogic(); };
+  document.querySelectorAll('[data-game-filter]').forEach(button => {
+    button.onclick = () => {
+      const group = button.dataset.gameFilter; let visible = 0;
+      document.querySelectorAll('#grid .gtile').forEach(tile => {tile.hidden = group !== 'all' && tile.dataset.group !== group; if (!tile.hidden) visible++;});
+      document.querySelectorAll('[data-game-filter]').forEach(tab => {
+        const selected = tab === button; tab.setAttribute('aria-pressed',String(selected));
+        if (selected) tab.classList.add('selected'); else tab.classList.remove('selected');
+      });
+      document.getElementById('gameFilterStatus').textContent = `Игр на выбор: ${visible}`;
+      document.getElementById('grid').scrollTop = 0;
+    };
+  });
 })();
 
 };

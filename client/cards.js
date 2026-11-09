@@ -12,6 +12,8 @@ window.runCards = function () {
   const asset = (code, grade) => cardUrl(code, grade, 'full');   // крупный показ / evo / jackpot
   const thumb = (code, grade) => cardUrl(code, grade, 'thumb');  // сетки
   const md = (code, grade) => cardUrl(code, grade, 'md');        // модалки / средний превью
+  const presentation = window.ShishkaCardPresentation;
+  let albumCategory = 'zver', ownedOnly = false, openingPack = false;
   const NEW_BATCH = 10;   // новинки альбома — пачками, не все сразу (T17)
   let newShown = NEW_BATCH;
   let openNewAfterPack = false;
@@ -79,6 +81,8 @@ window.runCards = function () {
     if (!d.peek) OWN = d;
     PEEK = d.peek && d.friend ? d.friend : null;
     RAR = {}; d.rarities.forEach((r) => RAR[r.grade] = r);
+    const legend = document.getElementById('rarityLegend');
+    if (legend) legend.innerHTML = d.rarities.map(r => `<span style="--gc:${presentation.rarity(r.grade,d.rarities).color}">${r.grade} / 6 · ${esc(r.name)}</span>`).join('');
     LORE = {}; (d.lore || []).forEach((l) => LORE[l.category + ':' + l.grade] = l);   // титул+фраза по категории и грейду
     FAM = d.familiars || [];
     FACTS = {}; (d.facts || []).forEach((f) => FACTS[f.code] = f.fact);   // только за собранных целиком
@@ -92,8 +96,8 @@ window.runCards = function () {
     const beingsTotal = d.beings_total != null ? d.beings_total : cellsTotal;
     document.getElementById('progTxt').textContent = PEEK
       ? `У ${PEEK.name}: ${cells} / ${cellsTotal}`
-      : `Ячеек: ${cells} / ${cellsTotal}`;
-    document.getElementById('progBar').style.width = Math.round(cells / cellsTotal * 100) + '%';
+      : `Встречено ${met} из ${beingsTotal}`;
+    document.getElementById('progBar').style.width = Math.round((PEEK ? cells / cellsTotal : met / beingsTotal) * 100) + '%';
     // гарант новинки — видно, сколько паков осталось
     const pityEl = document.getElementById('pityTxt');
     if (pityEl) {
@@ -122,7 +126,7 @@ window.runCards = function () {
       }
     }
     const packBtn = document.getElementById('packBtn');
-    if (packBtn) packBtn.style.display = PEEK ? 'none' : '';
+    if (packBtn) {packBtn.style.display = PEEK ? 'none' : ''; packBtn.disabled = openingPack;}
     const albumTools = document.getElementById('albumTools');
     if (albumTools) albumTools.style.display = PEEK ? 'none' : '';
     const av = document.getElementById('albumView'); av.innerHTML = '';
@@ -132,20 +136,19 @@ window.runCards = function () {
     if (!PEEK) renderNewShelf(d.cards, nv || av);
     else paintNewTab(0);
     renderGroups(allCards, av);
-    // Категорийные табы: показать + скролл по клику
     const catTabs = document.getElementById('catTabs');
-    if (catTabs) {
-      const onAlbum = !document.getElementById('tabNew')?.classList.contains('on')
-        && !document.getElementById('tabMarket')?.classList.contains('on');
-      catTabs.style.display = onAlbum ? 'flex' : 'none';
-      catTabs.querySelectorAll('button').forEach((btn) => {
-        btn.onclick = () => {
-          const cat = btn.dataset.cat;
-          const hdr = av.querySelector('.cat[data-cat="' + cat + '"]') || av.querySelectorAll('.cat')[['zver','rastenie','nasekomoe'].indexOf(cat)];
-          if (hdr) hdr.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        };
-      });
+    if (catTabs) catTabs.style.display = av.style.display === 'none' ? 'none' : 'flex';
+    if (catTabs) catTabs.querySelectorAll('button').forEach(btn => {
+      btn.onclick = () => {albumCategory = btn.dataset.cat; applyAlbumFilter(); av.scrollTop = 0;};
+    });
+    const filter = document.getElementById('albumFilter');
+    if (filter) {
+      filter.disabled = false;
+      filter.value = ownedOnly ? 'owned' : 'all';
+      filter.options[1].textContent = PEEK ? 'Есть у друга' : 'Мои карты';
+      filter.onchange = () => {ownedOnly = filter.value === 'owned'; applyAlbumFilter(); av.scrollTop = 0;};
     }
+    applyAlbumFilter();
 
     // ── Особые карты: их не выпадает из паков, их вручает ведущий за дело ──
     const specials = d.cards.filter((c) => c.category === 'special');
@@ -154,7 +157,9 @@ window.runCards = function () {
       const h = document.createElement('div'); h.className = 'season sp';
       h.innerHTML = `<span class="sn">🎖 Особые</span><span class="stag off">за дело, не из паков</span>
         <span class="cc-count">${have}/${specials.length}</span>`;
-      av.appendChild(h);
+      const specialSection = document.createElement('details'); specialSection.className = 'special-album';
+      const summary = document.createElement('summary'); summary.textContent = `Особые награды · ${have}/${specials.length}`; specialSection.appendChild(summary);
+      specialSection.appendChild(h);
       const box = document.createElement('div'); box.className = 'sbody';
       for (const c of specials) {
         const g6 = c.grades.find((g) => g.grade === 6) || { qty: 0, mine_qty: 0 };
@@ -175,7 +180,7 @@ window.runCards = function () {
         el.onclick = () => openDetail(c, 6);
         box.appendChild(el);
       }
-      av.appendChild(box);
+      specialSection.appendChild(box); av.appendChild(specialSection);
     }
     if (openNewAfterPack) {
       openNewAfterPack = false;
@@ -224,12 +229,13 @@ window.runCards = function () {
   function paintNewCard({ c, gr }) {
     const rc = (RAR[gr.grade] || {}).color || '#ff5a4d';
     const rn = (RAR[gr.grade] || {}).name || '';
-    const card = document.createElement('div');
+    const card = document.createElement('button'); card.type = 'button';
+    card.setAttribute('aria-label', `${c.name}. ${rn}. Открыть карту`);
     card.className = 'ncard';
     card.dataset.type = c.id;
     card.dataset.grade = String(gr.grade);
     card.style.setProperty('--gc', rc);
-    card.innerHTML = `<div class="nf"><img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy"><div class="gnew">NEW</div></div>
+    card.innerHTML = `<div class="nf"><img src="${md(c.code, gr.grade)}" alt="${esc(c.name)}" loading="lazy"><div class="gnew">Новая</div></div>
       <div class="nl">${esc(c.name)}</div>
       <div class="ng">${esc(rn)}</div>`;
     card.onclick = () => {
@@ -262,6 +268,7 @@ window.runCards = function () {
     if (viewN) viewN.style.display = which === 'new' ? '' : 'none';
     if (viewM) viewM.style.display = which === 'market' ? '' : 'none';
     if (catTabs) catTabs.style.display = which === 'album' ? 'flex' : 'none';
+    const filter = document.getElementById('albumFilter'); if (filter) filter.hidden = which !== 'album';
   }
 
   function renderNewShelf(cards, host) {
@@ -281,7 +288,7 @@ window.runCards = function () {
     el.className = 'newshelf';
     el.innerHTML = `<div class="newshelf-h">
         <span class="nt">✨ Новинки · ${shown}/${n}</span>
-        <button type="button" class="nok" id="newShelfOk">Скрыть все</button>
+        <button type="button" class="nok" id="newShelfOk">Всё просмотрено</button>
       </div>
       <div class="newshelf-row" id="newShelfRow"></div>`;
     host.appendChild(el);
@@ -307,56 +314,46 @@ window.runCards = function () {
     }
   }
 
+  function applyAlbumFilter() {
+    const view = document.getElementById('albumView'); if (!view) return;
+    view.querySelectorAll('.cat[data-cat],.being-grid').forEach(el => {el.hidden = el.dataset.cat !== albumCategory;});
+    view.querySelectorAll('.being-grid').forEach(grid => {
+      let shown = 0;
+      grid.querySelectorAll('.being').forEach(card => {card.hidden = ownedOnly && card.dataset.owned !== 'true'; if (!card.hidden) shown++;});
+      const empty = grid.querySelector('.album-empty'); if (empty) empty.hidden = shown > 0;
+    });
+    document.querySelectorAll('#catTabs button').forEach(btn => {
+      const active = btn.dataset.cat === albumCategory; btn.classList.toggle('on',active); btn.setAttribute('aria-pressed',String(active));
+    });
+  }
+
   function renderGroups(cards, host) {
-    const groups = {};
-    cards.forEach((c) => (groups[c.category] ||= []).push(c));
-    const av = host;
-    for (const cat of ['zver', 'rastenie', 'nasekomoe']) {
-      if (!groups[cat]) continue;
-      const metN = groups[cat].filter((c) => c.grades.some((x) => x.qty > 0)).length;
-      const fullN = groups[cat].filter((c) => c.grades.filter((x) => x.qty > 0).length === 6).length;
-      const h = document.createElement('div'); h.className = 'cat';
-      h.setAttribute('data-cat', cat);
-      h.innerHTML = `${CAT[cat]}<span class="cc-count" title="полных: ${fullN}">${metN}/${groups[cat].length}</span>`;
-      av.appendChild(h);
-      // каждое существо = полка из 6 ячеек-грейдов (Panini)
-      for (const c of groups[cat]) {
-        const have6 = c.grades.filter((x) => x.qty > 0).length;
-        const full = have6 === 6;
-        const newN = PEEK ? 0 : c.grades.filter((g) => g.qty > 0 && g.unseen).length;
-        const helpN = PEEK ? c.grades.filter((g) => g.qty <= 0 && (g.mine_qty || 0) > 0).length : 0;
-        const being = document.createElement('div');
-        being.className = 'being' + (full ? ' full' : '') + (newN ? ' has-new' : '') + (helpN ? ' can-help' : '');
-        const cells = c.grades.map((gr) => {
-          const rc = (RAR[gr.grade] || {}).color || '#9aa4b2';
-          const has = gr.qty > 0;
-          const gap = PEEK && !has && (gr.mine_qty || 0) > 0;
-          return `<div class="gcell ${has ? 'has g' + gr.grade : 'locked'}${gap ? ' help-gap' : ''}" style="--gc:${rc}">
-            <img src="${thumb(c.code, gr.grade)}" alt="" loading="lazy">
-            ${has && gr.unseen ? '<div class="gnew">NEW</div>' : ''}
-            ${has && gr.qty > 1 ? `<div class="gdup">×${gr.qty}</div>` : ''}
-            ${gap ? '<div class="gdup" style="background:#6fad45">у тебя</div>' : ''}</div>`;
-        }).join('');
-        // «ещё 1 до эволюции» — есть 2 карты ранга (до слияния нужно 3) и следующий ранг ещё пустой.
-        // У полного 6/6 не показываем: коллекция уже собрана, дубли — не «дыра» в альбоме.
-        const almost = !PEEK && !full && c.grades.some((g) => {
-          if (g.qty !== 2 || g.grade >= 6) return false;
-          const next = c.grades.find((x) => x.grade === g.grade + 1);
-          return !next || next.qty <= 0;
-        });
-        being.innerHTML = `<div class="being-head"><span class="bn">${esc(c.name)}</span>
-          ${newN ? `<span class="bnew">${newN > 1 ? 'NEW ×' + newN : 'NEW'}</span>` : ''}
-          ${helpN ? `<span class="bnear">🤝 можешь помочь · ${helpN}</span>` : ''}
-          ${almost ? '<span class="bnear">🔥 ещё 1 до эволюции</span>' : ''}
-          <span class="bp ${full ? 'done' : ''}">${have6}/6${full ? ' ✓' : ''}</span></div>
-          <div class="grades6">${cells}</div>`;
-        being.onclick = () => openDetail(c);
-        // тап по конкретной ячейке открывает деталь сразу на этом грейде (пустая — с предложением «Хочу такую»)
-        being.querySelectorAll('.gcell').forEach((cell, i) => cell.onclick = (e) => {
-          e.stopPropagation(); openDetail(c, c.grades[i].grade);
-        });
-        av.appendChild(being);
+    for (const cat of ['zver','rastenie','nasekomoe']) {
+      const group = cards.filter(c => c.category === cat); if (!group.length) continue;
+      const met = group.filter(c => c.grades.some(g => g.qty > 0)).length;
+      const header = document.createElement('div'); header.className = 'cat'; header.dataset.cat = cat;
+      header.innerHTML = `${CAT[cat]}<span class="cc-count">${met}/${group.length}</span>`; host.appendChild(header);
+      const grid = document.createElement('div'); grid.className = 'being-grid'; grid.dataset.cat = cat;
+      // Keep found residents at the beginning, without changing their inventory or marking cards as seen.
+      const ordered = group.slice().sort((a,b) => Number(b.grades.some(g=>g.qty>0)) - Number(a.grades.some(g=>g.qty>0)) || (b.best || 0) - (a.best || 0));
+      for (const c of ordered) {
+        const owned = c.grades.filter(g=>g.qty>0), best = owned.reduce((a,g)=>Math.max(a,g.grade),1);
+        const rank = presentation.rarity(best, DATA.rarities), full = owned.length === 6;
+        const isNew = !PEEK && owned.some(g=>g.grade === best && g.unseen);
+        const help = PEEK && c.grades.some(g=>g.qty<=0 && g.mine_qty>0);
+        const card = document.createElement('button'); card.type = 'button';
+        card.className = 'being resident-card' + (full ? ' full' : '') + (!owned.length ? ' undiscovered' : '') + (help ? ' can-help' : '');
+        card.dataset.owned = String(owned.length > 0); card.style.setProperty('--gc', rank.color);
+        card.setAttribute('aria-label',`${c.name}. ${owned.length ? rank.name : 'Пока не встречен'}. Обликов ${owned.length} из 6. Открыть карту`);
+        card.innerHTML = `<div class="resident-art"><img src="${md(c.code,best)}" alt="" loading="lazy" width="300" height="400">
+          ${isNew ? '<span class="resident-new">Новая</span>' : ''}${!owned.length ? '<span class="resident-unknown">?</span>' : ''}</div>
+          <span class="resident-name">${esc(c.name)}</span>
+          <span class="rarity-tag">${owned.length ? esc(rank.name) : 'Ещё впереди'}</span>
+          <span class="resident-progress">${help ? 'Есть у тебя · можно помочь' : `${owned.length} из 6 обликов${full ? ' · собран!' : ''}`}</span>`;
+        card.onclick = () => openDetail(c, owned.length ? best : 1); grid.appendChild(card);
       }
+      const empty = document.createElement('div'); empty.className = 'album-empty'; empty.hidden = true;
+      empty.textContent = 'В этой части леса пока нет твоих карт. Посмотри других жителей или открой пак.'; grid.appendChild(empty); host.appendChild(grid);
     }
   }
 
@@ -376,7 +373,7 @@ window.runCards = function () {
           ? (gr.qty > 0 ? `×${gr.qty}` : '—') + (mine > 0 ? (gr.qty > 0 ? ` · у тебя ×${mine}` : ' · у тебя есть') : '')
           : (gr.qty > 0 ? '×' + gr.qty : '—');
         return `<div class="gr ${gr.qty > 0 ? 'has' : 'no'}${active}" data-g="${gr.grade}" style="--gc:${r.color}">
-          <span class="dot"></span><span class="gn">${r.name}${!PEEK && gr.unseen ? ' · NEW' : ''}</span>
+          <span class="dot"></span><span class="gn">${r.name}${!PEEK && gr.unseen ? ' · новая' : ''}</span>
           <span class="gq">${gq}</span></div>`;
       }).join('');
       const isSpecial = c.category === 'special';
@@ -837,7 +834,7 @@ window.runCards = function () {
       const col = (RAR[card.grade] || {}).color || '#9aa4b2';
       const el = document.createElement('div'); el.className = 'pcard'; el.style.setProperty('--rc', col);
       el.style.width = '150px';
-      el.innerHTML = `<img src="${md(card.code, card.grade)}">`;
+      el.innerHTML = `<img src="${md(card.code, card.grade)}" alt="${esc(card.name || card.code)}"><div class="reward-caption"><b>${esc(card.name || card.code)}</b><span>${esc(presentation.rarity(card.grade, DATA.rarities).name)}</span></div>`;
       box.appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
       done.style.display = 'block'; done.textContent = 'Забрать';
       ov.classList.add('on');
@@ -950,73 +947,64 @@ window.runCards = function () {
 
   // открытие пака: коробка → руби тапом → щепки/шишки → карты → награды
   document.getElementById('packBtn').onclick = async () => {
+    if (openingPack) return;
+    openingPack = true;
+    const packButton = document.getElementById('packBtn'); packButton.disabled = true;
     const ov = document.getElementById('packOv'), box = document.getElementById('packCards');
     const done = document.getElementById('packDone'), h = document.getElementById('packH');
     const crate = document.getElementById('crate'), crateBox = document.getElementById('crateBox');
+    const trigger = document.getElementById('crateTrigger'), hint = document.getElementById('crateHint');
     const rwBox = document.getElementById('packRewards');
     box.innerHTML = ''; rwBox.innerHTML = ''; done.style.display = 'none'; h.style.display = 'none';
     crate.style.display = 'flex'; crateBox.className = 'crate-box'; crateBox.src = 'assets/chest_closed.webp';
-    ov.classList.add('on');
-
-    // запрашиваем пак заранее (пока ребёнок рубит)
-    const packReq = api('/api/pack/open', {});
-    let hits = 0, done_open = false;
-    const reveal = async () => {
-      const r = await packReq;
-      if (r.error) { h.style.display = 'block'; h.textContent = r.error; setTimeout(() => ov.classList.remove('on'), 1500); return; }
-      if (r.pending) {
-        crate.style.display = 'none';
-        h.style.display = 'block'; h.textContent = r.message;
-        done.style.display = 'block';
-        return;
-      }
-      crate.style.display = 'none';
-      // показываем от простых к редким; топовые (5/6) НЕ спойлерим в сетке — они придут walkout'ом
-      const sorted = r.cards.slice().sort((a, b) => a.grade - b.grade);
-      const addToGrid = (c) => {
-        const col = (DATA.rarities.find((x) => x.grade === c.grade) || {}).color || '#9aa4b2';
-        const el = document.createElement('div'); el.className = 'pcard'; el.style.setProperty('--rc', col);
-        el.innerHTML = `<img src="${thumb(c.code, c.grade)}">${c.is_new ? '<div class="new">NEW</div>' : ''}`;
-        box.appendChild(el); requestAnimationFrame(() => el.classList.add('show'));
-      };
-      const simple = sorted.filter((c) => c.grade < 5);
-      const tops = sorted.filter((c) => c.grade >= 5);   // легендарка → золото, самое крутое последним
-      // 1) простые карты по очереди (нарастание)
-      simple.forEach((c, i) => setTimeout(() => addToGrid(c), 200 + i * 320));
-      const afterSimple = 200 + simple.length * 320 + 300;
-      setTimeout(async () => {
-        // 2) топовые — драматичный walkout по одному, потом встают в сетку
-        for (const c of tops) { await jackpotWalkout(c); addToGrid(c); }
-        h.style.display = 'block';
-        // альбом-награды, если пришли
-        (r.rewards || []).forEach((rw) => {
-          const t = rw.kind === 'being' ? `✨ Собрано существо «${rw.name}» +${rw.reward}🌰`
-                  : rw.kind === 'season' ? `🌲 Сезон «${rw.name}» собран целиком! +${rw.reward}🌰`
-                  : rw.kind === 'category' ? `🏆 Альбом «${rw.name}» собран! +${rw.reward}🌰`
-                  : `👑 Вся коллекция! ${rw.name} +${rw.reward}🌰`;
-          const el = document.createElement('div'); el.className = 'rw'; el.textContent = t; rwBox.appendChild(el);
-        });
-        done.style.display = 'block';
-      }, afterSimple);
-      const bal = document.getElementById('topBal'); if (bal) bal.textContent = r.balance;
-    };
-    crateBox.onclick = () => {
-      if (done_open) return;
-      hits++;
-      crateBox.classList.remove('hit'); void crateBox.offsetWidth; crateBox.classList.add('hit');
-      burstChips(6);
-      if (hits >= 3) {   // 3 удара — сундук распахивается
-        done_open = true;
-        crateBox.src = 'assets/chest_open.webp';   // раскрытый сундук со взрывом света
-        crateBox.classList.add('crack'); burstChips(20);
-        setTimeout(reveal, 560);
-      }
-    };
+    trigger.disabled = false; hint.textContent = 'Три нажатия — и сундук откроется';
+    ov.classList.add('on'); ov.scrollTop = 0; trigger.focus({preventScroll:true});
+    // Keep the existing operation/outbox protocol. Presentation never makes another purchase.
+    const packReq = Promise.resolve().then(() => api('/api/pack/open', {})).catch(() => ({error:'Не удалось получить ответ. Проверь связь и сохранённую очередь.'}));
+    let hits = 0, doneOpen = false;
     done.onclick = () => {
-      ov.classList.remove('on');
-      box.querySelectorAll('img').forEach((img) => img.removeAttribute('src'));
-      openNewAfterPack = true;
-      reload();
+      ov.classList.remove('on'); box.querySelectorAll('img').forEach(img=>img.removeAttribute('src'));
+      openingPack = false; packButton.disabled = false; openNewAfterPack = true;
+      reload(); packButton.focus({preventScroll:true});
+    };
+    const reveal = async () => {
+      const r = await packReq; if (!ov.isConnected) return;
+      crate.style.display = 'none'; h.style.display = 'block';
+      if (r.error || r.pending) {
+        h.textContent = r.error || r.message; done.textContent = 'К коллекции'; done.style.display = 'block';
+        h.focus({preventScroll:true}); return;
+      }
+      const cards = presentation.pack(r.cards, DATA.rarities);
+      h.textContent = `Твои находки · ${cards.length} карт`;
+      for (const [i,c] of cards.entries()) {
+        const el = document.createElement('article'); el.className = 'pcard show' + (i === 0 ? ' pack-feature' : '');
+        el.style.setProperty('--rc', c.rarity.color);
+        el.innerHTML = `${i === 0 ? '<div class="reward-eyebrow">ЛУЧШАЯ РЕДКОСТЬ В ЭТОМ ПАКЕ</div>' : ''}
+          <div class="reward-art"><img src="${md(c.code,c.grade)}" alt="${esc(c.name || c.code)}" width="300" height="400">
+          ${c.is_new ? '<span class="new">Новая</span>' : '<span class="new duplicate">Повтор</span>'}</div>
+          <div class="reward-caption"><b>${esc(c.name || c.code)}</b><span class="rarity-tag">${esc(c.rarity.name)}</span><small>Редкость ${c.rarity.rank}</small></div>`;
+        box.appendChild(el);
+      }
+      for (const rw of r.rewards || []) {
+        const el = document.createElement('div'); el.className = 'rw';
+        el.textContent = `${rw.name || 'Награда за коллекцию'} · +${rw.reward} шишек`; rwBox.appendChild(el);
+      }
+      done.textContent = 'В коллекцию'; done.style.display = 'block';
+      const balance = document.getElementById('topBal'); if (balance) balance.textContent = r.balance;
+      h.focus({preventScroll:true});
+    };
+    trigger.onclick = () => {
+      if (doneOpen) return;
+      hits++; hint.textContent = hits < 3 ? `Ещё ${3-hits} ${hits === 1 ? 'нажатия' : 'нажатие'}` : 'Смотрим, кто внутри…';
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {crateBox.classList.remove('hit'); void crateBox.offsetWidth; crateBox.classList.add('hit'); burstChips(6);}
+      if (hits >= 3) {doneOpen = true; trigger.disabled = true; crateBox.src = 'assets/chest_open.webp'; reveal();}
+    };
+    ov.onkeydown = e => {
+      if (e.key === 'Escape' && done.style.display !== 'none') {e.preventDefault(); done.click();}
+      if (e.key === 'Tab') {
+        const buttons = [...ov.querySelectorAll('button')].filter(b=>!b.disabled && b.getClientRects().length);
+        if (buttons.length) {e.preventDefault(); buttons[0].focus({preventScroll:true});}
+      }
     };
   };
 
@@ -1259,15 +1247,15 @@ window.runCards = function () {
     { emo: '🔥', title: 'Дубли — не мусор',
       text: 'Три одинаковые карты сливаются в одну рангом выше. Лишние можно обменять на обменной полке или подарить другу.' },
     { emo: '🙋', title: 'Не хватает карты?',
-      text: 'Тапни пустую ячейку — увидишь, продаёт ли её кто-то в лесу, и сможешь оставить заявку. Друзья её увидят.' },
+      text: 'Открой жителя и выбери недостающий облик — увидишь, продаёт ли её кто-то в лесу, и сможешь оставить заявку. Друзья её увидят.' },
     { emo: '🤝', title: 'Рынок и подарки',
       text: 'Свои карты можно продать друзьям или купить у них — цена подсказывается, чтобы не продешевить. Кнопка «Посмотреть» открывает альбом друга: зелёным видно, чем ты можешь помочь. А карту можно просто подарить.' },
     { emo: '🌱', title: 'Сезоны и честный шанс',
-      text: 'Каждый десятый пак обязательно принесёт карту, которой у тебя ещё нет, а каждый пятидесятый — редкую и выше. Собирай всех!' },
+      text: 'Каждый десятый пак обязательно принесёт карту, которой у тебя ещё нет, а каждый пятидесятый — эпическую и выше. Собирай всех!' },
   ];
   // force=true — памятку открыли вручную кнопкой «Памятка», а не первым входом
   async function showIntro(force) {
-    if (!force && localStorage.getItem('cardsIntro')) return;
+    if (!force) return;
     const ov = document.getElementById('askOv'), sheet = document.getElementById('askSheet');
     for (let i = 0; i < INTRO.length; i++) {
       const s = INTRO[i];

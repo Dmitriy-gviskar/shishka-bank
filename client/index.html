@@ -10,179 +10,102 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <style>
-  /* дом ≈ vision-cozy / 01_wallet: Дух + кошелёк в первом экране */
   .phone{background-image:url(assets/bg_wallet_pilot.webp),url(assets/bg_wallet.webp)}
-  .phone::after{background:
-    radial-gradient(ellipse 80% 40% at 50% 0%, rgba(255,230,150,.2), transparent 55%),
-    linear-gradient(180deg,rgba(255,248,230,.04),rgba(35,50,25,.28))}
-
-  /* Дух · пузырь · бейдж — в одном ряду, без наложений */
-  .greet-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-  .greet-row .spirit{width:72px;height:72px;flex:none;object-fit:contain;
-    filter:drop-shadow(0 0 0 #fff8eb) drop-shadow(0 0 2px #fff) drop-shadow(0 4px 8px rgba(60,40,15,.3))}
-  .greet-row .bubble{flex:1;min-width:0;margin-top:0;font-size:14px;padding:10px 12px;line-height:1.25;
-    font-family:"Fredoka","Nunito",sans-serif}
-  .greet-row .bubble::before{top:50%;margin-top:-9px;left:-13px}
-  .greet-row .bubble::after{top:50%;margin-top:-6px;left:-7px}
-
-  .lvlbadge{position:relative;flex:none;width:76px;height:76px;cursor:pointer;
-    filter:drop-shadow(0 3px 5px rgba(60,40,15,.28))}
-  .lvlbadge-ring{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
-  .lvlbadge-tree{position:absolute;top:11%;left:50%;transform:translateX(-50%);width:36%;height:36%;object-fit:contain}
-  .lvlbadge .level{position:absolute;top:48%;left:50%;transform:translateX(-50%);width:78%;
-    font-size:9px;font-weight:900;color:var(--brown);text-align:center;line-height:1.1;
-    text-shadow:0 1px 0 rgba(255,248,235,.75);font-family:"Fredoka","Nunito",sans-serif}
-
-  /* кожаный кошелёк — герой экрана */
-  .wallet-card{position:relative;margin-top:10px;aspect-ratio:1097/798;
-    background-image:url(assets/wallet_card.webp);background-size:100% 100%;
-    filter:drop-shadow(0 10px 16px rgba(50,35,15,.32))}
-  .wc-text{position:absolute;left:46%;right:8%;top:14%;bottom:28%;display:flex;flex-direction:column;
-    justify-content:center;text-align:left}
-  .wc-label{font-size:15px;font-weight:900;color:#fff8eb;letter-spacing:.2px;
-    font-family:"Fredoka","Nunito",sans-serif;text-shadow:0 1px 2px rgba(60,35,10,.55)}
-  .wc-num{font-size:54px;font-weight:900;line-height:1;letter-spacing:-1.5px;margin-top:2px;
-    background:linear-gradient(180deg,#fff6c8,#f0c14a 48%,#c9871f);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    -webkit-text-stroke:1.5px #5b3a1e;
-    filter:drop-shadow(0 2px 1px rgba(91,58,30,.4))}
-  .wc-unit{font-size:16px;font-weight:900;color:#f0d7a4;text-transform:uppercase;letter-spacing:.8px;
-    font-family:"Fredoka","Nunito",sans-serif;text-shadow:0 1px 2px rgba(60,35,10,.45);margin-top:1px}
-  .wc-sub{font-size:12px;font-weight:700;color:#e8d4b0;margin-top:4px;
-    text-shadow:0 1px 1px rgba(60,35,10,.35)}
-
-  .wc-cta{position:absolute;left:44%;right:7%;bottom:7%;margin:0;padding:0;border:none;background:none;
-    cursor:pointer;line-height:0;filter:drop-shadow(0 3px 0 rgba(40,60,20,.28));transition:transform .08s}
-  .wc-cta:active{transform:translateY(2px);filter:drop-shadow(0 1px 0 rgba(40,60,20,.28))}
-  .wc-cta img{display:block;width:100%;height:auto;max-height:48px;object-fit:contain;object-position:right center}
-
-  /* вторичное — ниже героя */
-  .home-below{margin-top:12px;display:flex;flex-direction:column;gap:8px}
-  .home-spend{display:block;width:100%;max-width:280px;margin:0 auto;padding:11px 18px;
-    background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid #8a6238;border-radius:18px;
-    color:var(--brown);font-size:16px;font-weight:900;cursor:pointer;
-    box-shadow:0 0 0 2px #fff8eb,0 4px 0 #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
-  .home-spend:active{transform:translateY(2px);box-shadow:0 0 0 2px #fff8eb,0 2px 0 #c9a86a}
-  .home-invite{display:block;width:100%;max-width:280px;margin:0 auto;padding:11px 18px;
-    background:linear-gradient(180deg,#8bc75a,#6fad45 55%,#5f9a38);border:3px solid var(--green-d);
-    border-radius:18px;color:#fff;font-size:15px;font-weight:900;cursor:pointer;
-    box-shadow:0 4px 0 var(--green-d);font-family:"Fredoka","Nunito",sans-serif;
-    text-shadow:0 1px 1px rgba(0,0,0,.15)}
-  .home-invite:active{transform:translateY(2px);box-shadow:0 2px 0 var(--green-d)}
-  .home-invite small{display:block;font-size:11px;font-weight:800;opacity:.9;margin-top:2px}
-
-  .next-deed{background:rgba(255,248,235,.94);border:3px solid #fff;border-radius:18px;
-    padding:10px 12px;display:none;text-align:left;cursor:pointer;
-    box-shadow:0 0 0 3px #c9a86a,0 4px 0 rgba(107,79,58,.14)}
-  .next-deed .nd-label{font-weight:800;color:#a1876a;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
-  .next-deed .nd-title{font-weight:900;color:var(--ink);font-size:15px;margin-top:2px;line-height:1.2;
-    font-family:"Fredoka","Nunito",sans-serif}
-  .next-deed .nd-meta{font-weight:800;color:var(--brown);font-size:12px;margin-top:3px}
-
-  /* ежедневка: ждёт — компактный CTA; получена — тонкий чип под кошельком */
-  .daily{display:none;align-items:center;gap:8px;margin:0 auto;width:fit-content;max-width:100%;
-    background:linear-gradient(135deg,#ffe9a8,#ffd062);border:2.5px solid #fff;border-radius:999px;
-    padding:6px 8px 6px 10px;box-shadow:0 0 0 2px #e0a52e,0 3px 0 rgba(160,110,20,.2)}
-  .daily .fire{font-size:18px;line-height:1}
-  .daily .txt{flex:1;text-align:left;min-width:0}
-  .daily .t1{font-weight:900;color:#6b4a12;font-size:13px;line-height:1.15;font-family:"Fredoka","Nunito",sans-serif}
-  .daily .t2{font-weight:800;color:#9a7420;font-size:11px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .daily button{background:linear-gradient(180deg,#8bc75a,#6fad45);border:2.5px solid var(--green-d);color:#fff;
-    font-size:13px;font-weight:900;padding:7px 12px;border-radius:999px;
-    box-shadow:0 2px 0 var(--green-d);cursor:pointer;white-space:nowrap}
-  .daily button:active{transform:translateY(1px);box-shadow:0 1px 0 var(--green-d)}
-  .daily.got{background:rgba(255,248,235,.9);border-color:#fff;box-shadow:0 0 0 2px #c9a86a;
-    padding:5px 12px;gap:5px}
-  .daily.got .fire{font-size:14px}
-  .daily.got .t1{color:#6b4f3a;font-size:12px}
-  .daily.got .t2{display:none}
-  .daily.got button{display:none!important}
-  .freeze-chip{font-weight:900;font-size:12px;color:#3a6a8a;background:rgba(255,255,255,.65);
-    border:2px solid #fff;border-radius:999px;padding:3px 8px;box-shadow:0 0 0 1.5px #9ec4d8}
-
-  .wc-links{display:flex;gap:8px;width:100%;align-self:stretch;box-sizing:border-box}
-  .wc-links a{flex:1 1 0;min-width:0;text-align:center;font-weight:800;font-size:13px;color:var(--brown);
-    background:rgba(255,248,235,.92);border:2.5px solid #fff;border-radius:16px;padding:9px 8px;
-    text-decoration:none;box-shadow:0 0 0 2px #c9a86a,0 3px 0 rgba(107,79,58,.12);
-    font-family:"Fredoka","Nunito",sans-serif}
-
-  .wallet-more > summary{list-style:none;cursor:pointer;font-weight:900;color:var(--brown);
-    background:rgba(255,248,235,.9);border:2.5px solid #fff;border-radius:16px;
-    padding:9px 12px;text-align:center;box-shadow:0 0 0 2px #c9a86a;font-size:13px}
+  .phone::after{background:linear-gradient(180deg,rgba(50,55,25,.08),rgba(35,50,25,.24))}
+  .home-wrap{gap:16px;padding:22px 18px 0}
+  .home-wrap > *{flex-shrink:0}
+  .greet-row{display:flex;align-items:center;gap:10px;min-height:54px}
+  .greet-row .spirit{width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 3px 3px var(--shadow))}
+  .home-greeting{flex:1;background:rgba(255,248,235,.96);border:1px solid #ddc89e;border-radius:18px;padding:10px 14px}
+  .home-kicker{font-size:10px;font-weight:900;letter-spacing:1.4px;color:#7c694b}
+  .home-greeting .bubble{margin:3px 0 0;padding:0;background:none;border:0;border-radius:0;box-shadow:none;font-size:15px;line-height:1.3;color:#493b28}
+  .home-greeting .bubble::before,.home-greeting .bubble::after{display:none}
+  .wallet-card{position:relative;padding:18px;background:linear-gradient(135deg,#fff9e9,#f2e3bf);border:1px solid #e5cea2;border-radius:25px;box-shadow:0 6px 20px rgba(48,36,15,.16)}
+  .wallet-main{display:flex;align-items:center;gap:16px;min-height:140px}
+  .tree-link{width:115px;flex:none;text-decoration:none;color:var(--ink);text-align:center;border-radius:16px}
+  .tree-link img{width:100px;height:106px;object-fit:contain;filter:drop-shadow(0 5px 6px rgba(64,62,21,.2))}
+  .tree-link .level{display:block;font-size:11px;font-weight:900;line-height:1.35}
+  .wc-text{flex:1;min-width:0}
+  .wc-label{font-size:13px;font-weight:800;color:#796349}
+  .wc-num{font-size:clamp(30px,11vw,48px);font-weight:900;line-height:1.15;color:#3f572c;letter-spacing:-1.5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .wc-unit{display:flex;align-items:center;gap:5px;font-size:14px;font-weight:900;color:#5d4b32}
+  .wc-unit img{width:20px;height:20px;object-fit:contain}
+  .wc-sub{font-size:11px;color:#796349;margin-top:5px;line-height:1.4}
+  .daily{display:none;align-items:center;gap:8px;border-top:1px solid #ddcca7;padding-top:12px;margin-top:12px}
+  .daily .fire{font-size:20px}
+  .daily .txt{flex:1;min-width:0}
+  .daily .t1{font-size:12px;font-weight:900;color:#594829}
+  .daily .t2{font-size:11px;font-weight:700;color:#76603e;line-height:1.4;margin-top:2px}
+  .daily button{flex:none;min-height:40px;background:#f4e5b7;border:1px solid #c9ac69;border-radius:12px;color:#60461f;font:900 12px var(--font);padding:8px 12px;cursor:pointer}
+  .daily.got .t2,.daily.got button{display:none!important}
+  .freeze-chip{font-size:11px;font-weight:800;color:#3a6a8a}
+  .next-deed{padding:17px;background:#fff9ed;border:1px solid #e0c99d;border-radius:22px;box-shadow:0 4px 12px rgba(48,36,15,.12)}
+  .nd-label{font-size:10px;letter-spacing:1.2px;font-weight:900;text-transform:uppercase;color:#786341}
+  .nd-title{display:block;margin-top:7px;color:#4f402b;font-size:19px;line-height:1.3;font-weight:900;text-decoration:none;overflow-wrap:anywhere}
+  .nd-meta{font-size:12px;font-weight:800;color:#6a7843;margin-top:6px;line-height:1.4}
+  .home-primary{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:48px;margin-top:14px;border:1px solid #476f2d;border-radius:14px;background:linear-gradient(#7da94c,#628b39);box-shadow:0 3px 0 #46682a;color:#fffef5;font:900 16px var(--font);cursor:pointer}
+  .home-primary:active{transform:translateY(2px);box-shadow:0 1px 0 #46682a}
+  .home-secondary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .home-secondary a,.home-secondary button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:62px;padding:10px;border:1px solid #dfc99e;border-radius:17px;background:rgba(255,249,237,.96);color:#5a4730;font:900 14px var(--font);text-decoration:none;cursor:pointer}
+  .home-secondary img{width:32px;height:32px;object-fit:contain}
+  .wallet-more{border-top:1px solid rgba(255,249,237,.55);padding-top:2px}
+  .wallet-more > summary{list-style:none;cursor:pointer;padding:12px 8px;min-height:44px;text-align:center;color:#fff8e8;font-weight:900;font-size:13px;text-shadow:0 1px 3px #3c3821}
   .wallet-more > summary::-webkit-details-marker{display:none}
-  .wallet-more[open] > summary{margin-bottom:8px}
-  .wallet-more .add{display:block;width:100%;margin:0;padding:11px 16px;
-    background:linear-gradient(180deg,#fff6e4,#f0d7a4);border:3px solid #8a6238;border-radius:16px;
-    color:var(--brown);font-size:15px;font-weight:900;cursor:pointer;
-    box-shadow:0 0 0 2px #fff8eb,0 4px 0 #c9a86a;font-family:"Fredoka","Nunito",sans-serif}
-  .wallet-more .add + .add{margin-top:8px}
-  .wallet-more .add.soft{background:linear-gradient(180deg,#fffaf0,#f5e6c8);border-color:#b8955e;
-    box-shadow:0 0 0 2px #fff,0 3px 0 #d4bc8a}
-
+  .wallet-more > summary::after{content:' ＋';margin-left:4px}
+  .wallet-more[open] > summary::after{content:' −'}
+  .home-extras{display:grid;gap:8px;padding-top:6px}
+  .home-extras a,.home-extras button,.qr-more > summary{display:block;width:100%;min-height:44px;padding:12px;background:#fff9ed;border:1px solid #dfc99e;border-radius:13px;color:var(--ink);font:800 13px var(--font);text-decoration:none;text-align:left;cursor:pointer}
+  .home-extras small{display:block;font-size:11px;font-weight:700;color:#796349;margin-top:3px}
+  .qr-more > summary{list-style:none}
+  .qr-more[open] > summary{margin-bottom:8px}
+  .qr-more button+button{margin-top:8px}
   .rain{position:absolute;inset:0;z-index:40;pointer-events:none;overflow:hidden}
   .rain span{position:absolute;top:-40px;font-size:26px;animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(900px) rotate(360deg);opacity:.2}}
   @media(prefers-reduced-motion:reduce){.rain span{animation-duration:.1s!important}}
+  @media(max-width:350px){.home-wrap{padding-left:14px;padding-right:14px;gap:12px}.wallet-card{padding:14px}.tree-link{width:94px}.tree-link img{width:88px;height:96px}.wallet-main{gap:10px}.daily{gap:5px}.daily button{padding:8px}.nd-title{font-size:18px}}
 </style>
-</head>
+<link rel="stylesheet" href="storybook-theme.css"></head>
 <body>
-  <div class="phone">
-    <div class="wrap">
-      <div class="greet-row">
+  <div class="phone storybook-theme" data-storybook-screen="home"><div class="cbg" aria-hidden="true"></div>
+    <main class="wrap home-wrap">
+      <header class="greet-row">
         <img class="spirit" src="assets/spirit_bust.webp" alt="Лесной Дух">
-        <div class="bubble">С возвращением!</div>
-        <div class="lvlbadge" onclick="navigate('profile.html')" title="Моё дерево">
-          <img class="lvlbadge-ring" src="assets/badge_level.webp" alt="">
-          <img class="lvlbadge-tree" src="assets/tree.webp" alt="Дерево">
-          <div class="level">Дубок<br>Уровень 1</div>
+        <div class="home-greeting"><div class="home-kicker">ШИШКА БАНК</div><div class="bubble">С возвращением!</div></div>
+      </header>
+      <section class="wallet-card" aria-label="Кошелёк и моё дерево">
+        <div class="wallet-main">
+          <a class="tree-link" href="profile.html" aria-label="Открыть моё дерево">
+            <img class="lvlbadge-tree" src="assets/tree.webp" alt="Моё дерево">
+            <span class="level">Уровень 1<br>Саженец</span>
+          </a>
+          <div class="wc-text"><div class="wc-label">В кошельке</div><div class="wc-num" id="bal">…</div>
+            <div class="wc-unit"><img src="assets/coin1.webp" alt="">шишки</div><div class="wc-sub">За добрые дела<br>и лесные приключения</div></div>
         </div>
-      </div>
-
-      <div class="wallet-card">
-        <div class="wc-text">
-          <div class="wc-label">Кошелёк</div>
-          <div class="wc-num" id="bal">…</div>
-          <div class="wc-unit">шишки</div>
-          <div class="wc-sub">Всего накоплено</div>
-        </div>
-        <button class="wc-cta" id="earnBtn" type="button" aria-label="Сделать дело">
-          <img src="assets/home_btn_earn.webp" alt="Сделать дело">
-        </button>
-      </div>
-
-      <div class="home-below">
         <div class="daily" id="daily">
-          <div class="fire" id="dailyFire">🎁</div>
-          <div class="txt"><div class="t1" id="dailyT1">Ежедневный подарок</div>
-            <div class="t2" id="dailyT2">Заходи каждый день — серия растёт</div></div>
-          <span class="freeze-chip" id="freezeChip" hidden>🌧×0</span>
-          <button id="dailyBtn">Забрать</button>
+          <div class="fire" id="dailyFire" aria-hidden="true">🎁</div>
+          <div class="txt"><div class="t1" id="dailyT1">Ежедневный подарок</div><div class="t2" id="dailyT2">Заходи каждый день — серия растёт</div></div>
+          <span class="freeze-chip" id="freezeChip" hidden>🌧×0</span><button id="dailyBtn" type="button">Забрать</button>
         </div>
-
-        <button class="home-spend" id="spendBtn" type="button">Потратить в магазине</button>
-        <button class="home-invite" id="inviteBtn" type="button">
-          Позвать друга в лес
-          <small>+100 шишек · ссылка в браузере</small>
-        </button>
-
-        <div class="next-deed" id="nextDeed">
-          <div class="nd-label">Следующее дело</div>
-          <div class="nd-title" id="nextDeedTitle">…</div>
-          <div class="nd-meta" id="nextDeedMeta"></div>
-        </div>
-
-        <div class="wc-links">
-          <a href="news.html">Новости леса →</a>
-          <a href="album.html">Лесной альбом →</a>
-          <a href="surprises.html" id="spLink" style="display:none">Шишки-сюрпризы →</a>
-        </div>
-
-        <details class="wallet-more">
-          <summary>Оплата по QR</summary>
-          <button class="add soft" id="qrBtn">Мой QR — принимать оплату</button>
-          <button class="add" id="scanBtn">Оплатить по QR</button>
-        </details>
+      </section>
+      <section class="next-deed" id="nextDeed" aria-label="Следующее дело">
+        <div class="nd-label">Твой следующий шаг</div>
+        <a class="nd-title" id="nextDeedTitle" href="quests.html">Сделаем доброе дело?</a>
+        <div class="nd-meta" id="nextDeedMeta">Выбирай задание и помогай своему дереву расти</div>
+        <button class="home-primary" id="earnBtn" type="button">Выбрать дело <span aria-hidden="true">→</span></button>
+      </section>
+      <div class="home-secondary">
+        <button id="spendBtn" type="button"><img src="assets/nav/n3.png" alt="">Магазин</button>
+        <a href="forest.html"><img src="assets/nav/n6.png" alt="">На поляну</a>
       </div>
+      <details class="wallet-more"><summary>Ещё возможности</summary><div class="home-extras">
+        <button id="inviteBtn" type="button">Позвать друга в лес<small>Приглашение и твой код</small></button>
+        <a href="news.html">Новости леса →</a><a href="album.html">Лесной альбом →</a>
+        <a href="surprises.html" id="spLink" style="display:none">Шишки-сюрпризы →</a>
+        <details class="qr-more"><summary>Оплата по QR ▾</summary>
+          <button id="qrBtn" type="button">Мой QR — принимать оплату</button><button id="scanBtn" type="button">Оплатить по QR</button>
+        </details>
+      </div></details>
 
       <div id="scanBox" style="display:none;position:absolute;inset:0;z-index:20;background:#1d241a">
         <video id="scanVideo" playsinline style="width:100%;height:100%;object-fit:cover"></video>
@@ -202,7 +125,7 @@
           <div style="font-weight:700;color:#8a7358;font-size:12px;margin-top:6px;line-height:1.4">Покупатель жмёт «Оплатить по QR» и наводит камеру. Комиссия Банка — 1 шишка со сделки</div>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 <script src="assets/qrcode.js"></script>
 <script src="assets/jsqr.js"></script>

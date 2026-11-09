@@ -9,12 +9,7 @@ let homeName = '';
 let nextOpen = null;
 const paintBubble = () => {
   const b = document.querySelector('.bubble'); if (!b) return;
-  if (nextOpen && nextOpen.status === 'open') {
-    const t = nextOpen.title;
-    b.innerHTML = `Есть дело:<br>«${esc(t.length > 22 ? t.slice(0, 22) + '…' : t)}»`;
-  } else if (homeName) {
-    b.innerHTML = `С возвращением,<br>${esc(homeName)}!`;
-  }
+  if (homeName) b.textContent = `С возвращением, ${homeName}!`;
 };
 api('/api/state').then((s) => {
   homeName = s.name || '';
@@ -29,14 +24,14 @@ api('/api/state').then((s) => {
 api('/api/tasks').then((tasks) => {
   const box = document.getElementById('nextDeed');
   if (!box || !Array.isArray(tasks)) return;
-  nextOpen = tasks.find((t) => t.status === 'open' || t.status === 'submitted') || null;
+  nextOpen = tasks.find((t) => t.status === 'open') || tasks.find((t) => t.status === 'submitted') || null;
   if (!nextOpen) return;
-  box.style.display = 'block';
   document.getElementById('nextDeedTitle').textContent = nextOpen.title;
   document.getElementById('nextDeedMeta').textContent = nextOpen.status === 'submitted'
     ? 'На проверке у ведущего'
-    : `+${nextOpen.reward} шишек · нажми, чтобы сделать`;
-  box.onclick = () => navigate('quests.html');
+    : `+${nextOpen.reward} шишек за доброе дело`;
+  const cta = document.getElementById('earnBtn');
+  if (cta) cta.textContent = nextOpen.status === 'submitted' ? 'Посмотреть дела →' : 'Сделать дело →';
   paintBubble();
 });
 const earnBtn = document.getElementById('earnBtn');
@@ -145,7 +140,6 @@ if (scanBtn) scanBtn.onclick = async () => {
   const box = document.getElementById('scanBox'), video = document.getElementById('scanVideo');
   try { scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); }
   catch { return alert('Нет доступа к камере — разреши в настройках, или пусть продавец пришлёт ссылку'); }
-  box.style.display = 'block';
   video.srcObject = scanStream; await video.play();
   const cv = document.createElement('canvas'), ctx = cv.getContext('2d', { willReadFrequently: true });
   const tick = () => {
